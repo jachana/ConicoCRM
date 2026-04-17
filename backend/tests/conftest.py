@@ -50,7 +50,7 @@ def client():
 
 
 @pytest.fixture
-def admin_user():
+def admin_user(setup_test_db):
     from app.models.user import User
     from app.core.security import get_password_hash
 

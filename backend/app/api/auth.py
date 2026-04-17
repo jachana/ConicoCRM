@@ -13,7 +13,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     payload = decode_token(token)
-    if not payload or payload.get("type") != "access":
+    if not payload or payload.get("type") != "access" or not payload.get("sub"):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     user = db.query(User).filter_by(email=payload["sub"]).first()
     if not user or not user.is_active:
@@ -35,7 +35,7 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
 @router.post("/refresh", response_model=Token)
 def refresh(body: RefreshRequest, db: Session = Depends(get_db)):
     payload = decode_token(body.refresh_token)
-    if not payload or payload.get("type") != "refresh":
+    if not payload or payload.get("type") != "refresh" or not payload.get("sub"):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
     user = db.query(User).filter_by(email=payload["sub"]).first()
     if not user or not user.is_active:
