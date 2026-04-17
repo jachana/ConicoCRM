@@ -25,7 +25,7 @@ _DEFAULT: dict[str, dict[str, dict[str, bool]]] = {
     },
     "vendedor": {
         "catalogo":       {"view": True,  "create": False, "edit": False, "delete": False},
-        "clientes":       {"view": True,  "create": True,  "edit": True,  "delete": False},
+        "clientes":       {"view": True,  "create": True,  "edit": True,  "delete": False},  # no borrar clientes propios
         "proveedores":    {"view": False, "create": False, "edit": False, "delete": False},
         "cotizaciones":   {"view": True,  "create": True,  "edit": True,  "delete": False},
         "nota_venta":     {"view": True,  "create": False, "edit": False, "delete": False},
