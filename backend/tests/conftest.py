@@ -77,3 +77,53 @@ def admin_user(setup_test_db):
 def admin_token(client, admin_user):
     resp = client.post("/api/auth/login", data={"username": "admin@conico.cl", "password": "secret123"})
     return resp.json()["access_token"]
+
+
+@pytest.fixture
+def subadmin_user(setup_test_db):
+    from app.models.user import User
+    from app.core.security import get_password_hash
+
+    db = TestingSession()
+    user = User(
+        email="subadmin@conico.cl",
+        name="SubAdmin",
+        hashed_password=get_password_hash("secret123"),
+        role="subadmin",
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    db.close()
+    return user
+
+
+@pytest.fixture
+def subadmin_token(client, subadmin_user):
+    resp = client.post("/api/auth/login", data={"username": "subadmin@conico.cl", "password": "secret123"})
+    return resp.json()["access_token"]
+
+
+@pytest.fixture
+def vendedor_user(setup_test_db):
+    from app.models.user import User
+    from app.core.security import get_password_hash
+
+    db = TestingSession()
+    user = User(
+        email="vendedor@conico.cl",
+        name="Vendedor",
+        hashed_password=get_password_hash("secret123"),
+        role="vendedor",
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    db.close()
+    return user
+
+
+@pytest.fixture
+def vendedor_token(client, vendedor_user):
+    resp = client.post("/api/auth/login", data={"username": "vendedor@conico.cl", "password": "secret123"})
+    return resp.json()["access_token"]
