@@ -16,6 +16,10 @@ const MODULE_LABELS: Record<Module, string> = {
   rrhh: 'RRHH', dashboard: 'Dashboard', usuarios: 'Usuarios',
 }
 
+const ACTION_LABELS: Record<Action, string> = {
+  view: 'Ver', create: 'Crear', edit: 'Editar', delete: 'Eliminar',
+}
+
 export default function Users() {
   const qc = useQueryClient()
   const { data: users = [], isLoading } = useQuery<User[]>({
@@ -24,21 +28,33 @@ export default function Users() {
   })
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [permissions, setPermissions] = useState<Permissions | null>(null)
+  const [permissionsError, setPermissionsError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const savePermissions = useMutation({
-    mutationFn: (payload: Permissions) =>
-      api.put(`/api/users/${selectedUser!.id}/permissions`, payload).then(r => r.data),
+    mutationFn: ({ userId, payload }: { userId: number; payload: Permissions }) =>
+      api.put(`/api/users/${userId}/permissions`, payload).then(r => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] })
       setSelectedUser(null)
       setPermissions(null)
+      setSaveError(null)
+    },
+    onError: () => {
+      setSaveError('No se pudo guardar. Intenta de nuevo.')
     },
   })
 
   async function openPermissions(user: User) {
+    setPermissionsError(null)
     setSelectedUser(user)
-    const res = await api.get<Permissions>(`/api/users/${user.id}/permissions`)
-    setPermissions(res.data)
+    try {
+      const res = await api.get<Permissions>(`/api/users/${user.id}/permissions`)
+      setPermissions(res.data)
+    } catch {
+      setSelectedUser(null)
+      setPermissionsError(user.id.toString())
+    }
   }
 
   function toggle(module: Module, action: Action) {
@@ -56,9 +72,11 @@ export default function Users() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
             <tr>
-              {['Nombre','Email','Rol','Estado',''].map(h => (
-                <th key={h} className="text-left px-4 py-3 font-medium">{h}</th>
-              ))}
+              <th className="text-left px-4 py-3 font-medium">Nombre</th>
+              <th className="text-left px-4 py-3 font-medium">Email</th>
+              <th className="text-left px-4 py-3 font-medium">Rol</th>
+              <th className="text-left px-4 py-3 font-medium">Estado</th>
+              <th className="text-left px-4 py-3 font-medium" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -72,13 +90,21 @@ export default function Users() {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`inline-block w-2 h-2 rounded-full ${u.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
+                  <span
+                    aria-label={u.is_active ? 'Activo' : 'Inactivo'}
+                    className={`inline-block w-2 h-2 rounded-full ${u.is_active ? 'bg-green-500' : 'bg-gray-400'}`}
+                  />
                 </td>
                 <td className="px-4 py-3">
                   {u.role !== 'admin' && (
-                    <button onClick={() => openPermissions(u)} className="text-xs text-blue-600 hover:underline">
-                      Permisos
-                    </button>
+                    <span className="inline-flex items-center gap-2">
+                      <button onClick={() => openPermissions(u)} className="text-xs text-blue-600 hover:underline">
+                        Permisos
+                      </button>
+                      {permissionsError === u.id.toString() && (
+                        <span className="text-xs text-red-500">Error al cargar</span>
+                      )}
+                    </span>
                   )}
                 </td>
               </tr>
@@ -102,7 +128,7 @@ export default function Users() {
                   <tr className="text-gray-500 dark:text-gray-400">
                     <th className="text-left py-2 pr-6 font-medium">Módulo</th>
                     {ACTIONS.map(a => (
-                      <th key={a} className="text-center py-2 px-3 font-medium capitalize">{a}</th>
+                      <th key={a} className="text-center py-2 px-3 font-medium">{ACTION_LABELS[a]}</th>
                     ))}
                   </tr>
                 </thead>
@@ -128,6 +154,7 @@ export default function Users() {
               </table>
             </div>
             <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
+              {saveError && <p className="text-xs text-red-500 mr-auto">{saveError}</p>}
               <button
                 onClick={() => { setSelectedUser(null); setPermissions(null) }}
                 className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
@@ -135,7 +162,7 @@ export default function Users() {
                 Cancelar
               </button>
               <button
-                onClick={() => savePermissions.mutate(permissions)}
+                onClick={() => savePermissions.mutate({ userId: selectedUser.id, payload: permissions })}
                 disabled={savePermissions.isPending}
                 className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors"
               >

@@ -27,3 +27,20 @@ it('renders list of users', async () => {
   await waitFor(() => expect(screen.getByText('a@b.cl')).toBeInTheDocument())
   expect(screen.getByText('Admin')).toBeInTheDocument()
 })
+
+it('does not show Permisos button for admin users', async () => {
+  vi.mocked(apiModule.api.get).mockResolvedValue({
+    data: [{ id: 1, email: 'a@b.cl', name: 'Admin', role: 'admin', is_active: true, created_at: '' }],
+  })
+  render(wrap(<Users />))
+  await waitFor(() => expect(screen.getByText('a@b.cl')).toBeInTheDocument())
+  expect(screen.queryByText('Permisos')).not.toBeInTheDocument()
+})
+
+it('shows Permisos button for non-admin users', async () => {
+  vi.mocked(apiModule.api.get).mockResolvedValue({
+    data: [{ id: 2, email: 'v@b.cl', name: 'Vendedor', role: 'vendedor', is_active: true, created_at: '' }],
+  })
+  render(wrap(<Users />))
+  await waitFor(() => expect(screen.getByText('Permisos')).toBeInTheDocument())
+})
