@@ -79,3 +79,29 @@ def test_exportar_excel_clientes(client, admin_token):
     r = client.get("/api/clientes/export/excel", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
     assert "spreadsheetml" in r.headers["content-type"]
+
+
+def test_actualizar_rut_duplicado(client, admin_token):
+    client.post("/api/clientes/", json={"nombre": "A", "rut": "88.000.001-1"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.post("/api/clientes/", json={"nombre": "B", "rut": "88.000.002-2"}, headers={"Authorization": f"Bearer {admin_token}"})
+    cid = r.json()["id"]
+    r2 = client.patch(f"/api/clientes/{cid}", json={"rut": "88.000.001-1"}, headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 409
+
+
+def test_obtener_cliente(client, admin_token):
+    r = client.post("/api/clientes/", json={"nombre": "Empresa Directa"}, headers={"Authorization": f"Bearer {admin_token}"})
+    cid = r.json()["id"]
+    r2 = client.get(f"/api/clientes/{cid}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 200
+    assert r2.json()["nombre"] == "Empresa Directa"
+
+
+def test_listar_clientes_con_filtro_q(client, admin_token):
+    client.post("/api/clientes/", json={"nombre": "Ferretería Norte"}, headers={"Authorization": f"Bearer {admin_token}"})
+    client.post("/api/clientes/", json={"nombre": "Supermercado Sur"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get("/api/clientes/?q=Ferretería", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) == 1
+    assert data[0]["nombre"] == "Ferretería Norte"
