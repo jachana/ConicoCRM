@@ -89,12 +89,12 @@ export default function Productos() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Catálogo de productos</h1>
         <div className="flex gap-2">
-          <a
-            href="/api/productos/export/excel"
+          <button
+            onClick={() => api.get('/api/productos/export/excel', { responseType: 'blob' }).then(r => { const url = URL.createObjectURL(r.data); const a = document.createElement('a'); a.href = url; a.download = 'catalogo.xlsx'; a.click(); URL.revokeObjectURL(url) })}
             className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             Exportar Excel
-          </a>
+          </button>
           <button
             onClick={abrirCrear}
             className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -159,7 +159,7 @@ export default function Productos() {
                   ) : (
                     <span className="inline-flex gap-3">
                       <button onClick={() => abrirEditar(p)} className="text-xs text-blue-600 hover:underline">Editar</button>
-                      <button onClick={() => setEliminandoId(p.id)} className="text-xs text-red-500 hover:underline">Eliminar</button>
+                      <button onClick={() => { setEliminandoId(p.id); setDeleteError(null) }} className="text-xs text-red-500 hover:underline">Eliminar</button>
                     </span>
                   )}
                 </td>
