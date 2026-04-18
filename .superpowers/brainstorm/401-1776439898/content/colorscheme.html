@@ -1,0 +1,58 @@
+<h2>¿Qué estilo visual prefieren?</h2>
+<p class="subtitle">Tono general del sistema</p>
+
+<div class="options">
+  <div class="option" data-choice="dark-pro" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Dark profesional</h3>
+      <p>Fondo oscuro, acentos azul/verde. Menos fatiga visual en jornadas largas.</p>
+      <div style="margin-top:.75rem;background:#0f172a;border-radius:6px;padding:.75rem;display:flex;gap:.5rem;align-items:center">
+        <div style="width:32px;background:#1e293b;border-radius:4px;height:60px"></div>
+        <div style="flex:1">
+          <div style="background:#1e293b;border-radius:4px;padding:.4rem .6rem;margin-bottom:.3rem;display:flex;justify-content:space-between;align-items:center">
+            <span style="color:#e2e8f0;font-size:.75rem">COT-0042</span>
+            <span style="background:#10b981;color:white;font-size:.65rem;padding:.1rem .4rem;border-radius:10px">Aprobada</span>
+          </div>
+          <div style="background:#1e293b;border-radius:4px;padding:.4rem .6rem;display:flex;justify-content:space-between;align-items:center">
+            <span style="color:#e2e8f0;font-size:.75rem">COT-0041</span>
+            <span style="background:#3b82f6;color:white;font-size:.65rem;padding:.1rem .4rem;border-radius:10px">Pendiente</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="light-clean" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Light limpio</h3>
+      <p>Fondo blanco/gris claro, acentos azul corporativo. Familiar, fácil de imprimir.</p>
+      <div style="margin-top:.75rem;background:#f8fafc;border-radius:6px;padding:.75rem;display:flex;gap:.5rem;align-items:center;border:1px solid #e2e8f0">
+        <div style="width:32px;background:#1e293b;border-radius:4px;height:60px"></div>
+        <div style="flex:1">
+          <div style="background:white;border:1px solid #e2e8f0;border-radius:4px;padding:.4rem .6rem;margin-bottom:.3rem;display:flex;justify-content:space-between;align-items:center">
+            <span style="color:#0f172a;font-size:.75rem">COT-0042</span>
+            <span style="background:#d1fae5;color:#065f46;font-size:.65rem;padding:.1rem .4rem;border-radius:10px">Aprobada</span>
+          </div>
+          <div style="background:white;border:1px solid #e2e8f0;border-radius:4px;padding:.4rem .6rem;display:flex;justify-content:space-between;align-items:center">
+            <span style="color:#0f172a;font-size:.75rem">COT-0041</span>
+            <span style="background:#dbeafe;color:#1e40af;font-size:.65rem;padding:.1rem .4rem;border-radius:10px">Pendiente</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="system" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Adaptable al sistema</h3>
+      <p>Detecta modo oscuro/claro del OS. Cada usuario ve lo que prefiere.</p>
+      <div style="margin-top:.75rem;display:flex;gap:.5rem">
+        <div style="flex:1;background:#0f172a;border-radius:6px;padding:.5rem;font-size:.65rem;color:#94a3b8;text-align:center">🌙 dark</div>
+        <div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:.5rem;font-size:.65rem;color:#64748b;text-align:center">☀️ light</div>
+      </div>
+    </div>
+  </div>
+</div>

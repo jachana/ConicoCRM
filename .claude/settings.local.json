@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash *)",
+      "Bash(xargs cat *)",
+      "Bash(alembic init *)",
+      "Bash(py --version)",
+      "Bash(pip show *)",
+      "Bash(python -m alembic --version)",
+      "Bash(python -m alembic init migrations)",
+      "Bash(npm install *)",
+      "Bash(python *)",
+      "Bash([ -f \"$d/__init__.py\" ])",
+      "Bash(docker compose up *)",
+      "Bash(docker info *)",
+      "Bash(docker context ls *)",
+      "Bash(docker context *)",
+      "Bash(DATABASE_URL=postgresql://conico:conico@db:5432/conico SECRET_KEY=dummy alembic revision --autogenerate -m \"create users table\")",
+      "Bash(DATABASE_URL=postgresql://conico:conico@localhost:5432/conico SECRET_KEY=dummy alembic revision -m \"create users table\")",
+      "Bash(DATABASE_URL=postgresql://conico:conico@localhost:5432/conico SECRET_KEY=dummy alembic upgrade head)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(pytest tests/test_models.py -v)",
+      "Bash(pytest tests/test_permissions.py -v)",
+      "Bash(alembic revision *)",
+      "Bash(pip install *)",
+      "Bash(pytest tests/test_auth.py -q)",
+      "Bash(pytest tests/test_auth.py -v)",
+      "Bash(rm -f test.db)",
+      "Bash(pytest tests/test_auth.py::test_login_success -v -s)",
+      "Bash(pytest tests/ -q)",
+      "Bash(npm test *)",
+      "Bash(npm run *)",
+      "Bash(git commit *)",
+      "Bash(pytest -q)",
+      "Bash(npx tsc *)",
+      "Bash(git init *)"
+    ]
+  }
+}

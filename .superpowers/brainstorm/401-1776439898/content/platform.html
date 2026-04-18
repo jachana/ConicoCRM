@@ -1,0 +1,47 @@
+<h2>¿Excel o aplicación web?</h2>
+<p class="subtitle">Esta decisión define todo lo demás — elige la opción que mejor se adapta a la empresa</p>
+
+<div class="options">
+  <div class="option" data-choice="excel" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Excel avanzado</h3>
+      <p>Archivos .xlsx con tablas inteligentes, fórmulas, listas desplegables y macros VBA. Funciona offline, sin servidor, sin costo mensual.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>A favor</h4><ul>
+          <li>Sin instalación, ya lo tienen</li>
+          <li>Sin costo de hosting</li>
+          <li>Funciona offline</li>
+          <li>Fácil de editar por ellos mismos</li>
+        </ul></div>
+        <div class="cons"><h4>En contra</h4><ul>
+          <li>Un usuario a la vez por archivo</li>
+          <li>Sin control de accesos por usuario</li>
+          <li>Difícil de escalar</li>
+          <li>Sin historial de cambios real</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="webapp" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Aplicación web interna</h3>
+      <p>Sistema web hecho a medida, accesible desde cualquier navegador en la red local o en internet. Base de datos real, múltiples usuarios simultáneos.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>A favor</h4><ul>
+          <li>Varios usuarios al mismo tiempo</li>
+          <li>Roles y permisos por persona</li>
+          <li>Historial y auditoría real</li>
+          <li>Exactamente lo que necesitan, sin extras</li>
+        </ul></div>
+        <div class="cons"><h4>En contra</h4><ul>
+          <li>Requiere servidor (puede ser local)</li>
+          <li>Más tiempo de desarrollo</li>
+          <li>Necesita mantenimiento técnico</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,102 @@
+<h2>Arquitectura del sistema</h2>
+<p class="subtitle">¿Esto refleja bien lo que necesitan?</p>
+
+<div class="section">
+  <h3>Stack tecnológico</h3>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+      <div class="label">Backend</div>
+      <strong>FastAPI (Python)</strong>
+      <p style="font-size:.85rem;margin-top:.5rem;color:var(--text-secondary)">API REST · JWT auth · SQLAlchemy ORM</p>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+      <div class="label">Frontend</div>
+      <strong>React + Vite + Tailwind</strong>
+      <p style="font-size:.85rem;margin-top:.5rem;color:var(--text-secondary)">SPA · React Query · React Router</p>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+      <div class="label">Base de datos</div>
+      <strong>PostgreSQL</strong>
+      <p style="font-size:.85rem;margin-top:.5rem;color:var(--text-secondary)">Alembic migrations · relaciones entre módulos</p>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+      <div class="label">PDF</div>
+      <strong>WeasyPrint</strong>
+      <p style="font-size:.85rem;margin-top:.5rem;color:var(--text-secondary)">Genera PDFs desde templates HTML</p>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+      <div class="label">Email</div>
+      <strong>SMTP / SendGrid</strong>
+      <p style="font-size:.85rem;margin-top:.5rem;color:var(--text-secondary)">Envío de cotizaciones y facturas con adjunto PDF</p>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+      <div class="label">Hosting</div>
+      <strong>VPS + Docker</strong>
+      <p style="font-size:.85rem;margin-top:.5rem;color:var(--text-secondary)">DigitalOcean / Hetzner · Nginx reverse proxy · HTTPS</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Módulos y flujo principal</h3>
+  <div style="margin-top:1rem;overflow-x:auto">
+    <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
+      <div style="background:#3b82f6;color:white;padding:.5rem 1rem;border-radius:6px;font-weight:600">Cotización</div>
+      <div style="color:var(--text-secondary);font-size:1.2rem">→</div>
+      <div style="background:#8b5cf6;color:white;padding:.5rem 1rem;border-radius:6px;font-weight:600">Nota de Venta</div>
+      <div style="color:var(--text-secondary);font-size:1.2rem">→</div>
+      <div style="background:#10b981;color:white;padding:.5rem 1rem;border-radius:6px;font-weight:600">Factura</div>
+      <div style="color:var(--text-secondary);font-size:.85rem;margin-left:.5rem">(datos heredados, editables en cada paso)</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem">
+      <div style="border:1px solid var(--border);border-radius:6px;padding:.75rem">
+        <div class="label" style="color:#3b82f6">Catálogo</div>
+        <p style="font-size:.82rem;color:var(--text-secondary)">Productos, precios, stock mínimo, proveedor</p>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:6px;padding:.75rem">
+        <div class="label">Clientes</div>
+        <p style="font-size:.82rem;color:var(--text-secondary)">Contacto, RUT, historial de documentos</p>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:6px;padding:.75rem">
+        <div class="label">Proveedores</div>
+        <p style="font-size:.82rem;color:var(--text-secondary)">Contacto, productos que suministran</p>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:6px;padding:.75rem">
+        <div class="label">Inventario</div>
+        <p style="font-size:.82rem;color:var(--text-secondary)">Stock actual, movimientos, alertas de quiebre</p>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:6px;padding:.75rem">
+        <div class="label">Órdenes de Compra</div>
+        <p style="font-size:.82rem;color:var(--text-secondary)">OC a proveedores, estado, recepción</p>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:6px;padding:.75rem">
+        <div class="label" style="color:#ef4444">RRHH (solo Admin)</div>
+        <p style="font-size:.82rem;color:var(--text-secondary)">Empleados, sueldos, documentos internos</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Roles y accesos</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:.85rem;margin-top:.75rem">
+    <thead>
+      <tr style="border-bottom:2px solid var(--border)">
+        <th style="text-align:left;padding:.5rem">Módulo</th>
+        <th style="text-align:center;padding:.5rem">Admin</th>
+        <th style="text-align:center;padding:.5rem">SubAdmin</th>
+        <th style="text-align:center;padding:.5rem">Vendedor</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:.5rem">Catálogo</td><td style="text-align:center">✅ editar</td><td style="text-align:center">✅ editar</td><td style="text-align:center">👁 ver</td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:.5rem">Clientes</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:.5rem">Cotizaciones</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">✅ propias</td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:.5rem">Nota de Venta / Factura</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">👁 ver</td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:.5rem">Inventario / OC</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">❌</td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:.5rem">Proveedores</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">❌</td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:.5rem">Dashboard / Reportes</td><td style="text-align:center">✅ completo</td><td style="text-align:center">✅ completo</td><td style="text-align:center">👁 ventas propias</td></tr>
+      <tr><td style="padding:.5rem">RRHH</td><td style="text-align:center">✅</td><td style="text-align:center">❌</td><td style="text-align:center">❌</td></tr>
+    </tbody>
+  </table>
+</div>
