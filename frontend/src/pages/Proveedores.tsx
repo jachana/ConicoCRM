@@ -29,6 +29,7 @@ export default function Proveedores() {
   const [form, setForm] = useState<FormData>(EMPTY_FORM)
   const [error, setError] = useState<string | null>(null)
   const [eliminandoId, setEliminandoId] = useState<number | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   function abrirCrear() {
     setEditando(null)
@@ -62,8 +63,8 @@ export default function Proveedores() {
 
   const eliminar = useMutation({
     mutationFn: (id: number) => api.delete(`/api/proveedores/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['proveedores'] }); setEliminandoId(null) },
-    onError: () => setEliminandoId(null),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['proveedores'] }); setEliminandoId(null); setDeleteError(null) },
+    onError: (e: any) => setDeleteError(e?.response?.data?.detail ?? 'Error al eliminar'),
   })
 
   if (isLoading) return <div className="p-6 text-gray-500">Cargando...</div>
@@ -116,9 +117,11 @@ export default function Proveedores() {
                 <td className="px-4 py-3">
                   {eliminandoId === p.id ? (
                     <span className="inline-flex items-center gap-2 text-xs">
-                      <span className="text-gray-600 dark:text-gray-400">¿Eliminar?</span>
-                      <button onClick={() => eliminar.mutate(p.id)} className="text-red-600 hover:underline font-medium">Sí</button>
-                      <button onClick={() => setEliminandoId(null)} className="text-gray-500 hover:underline">No</button>
+                      {deleteError
+                        ? <span className="text-red-500">{deleteError}</span>
+                        : <span className="text-gray-600 dark:text-gray-400">¿Eliminar?</span>}
+                      <button onClick={() => eliminar.mutate(p.id)} disabled={eliminar.isPending} className="text-red-600 hover:underline font-medium disabled:opacity-50">Sí</button>
+                      <button onClick={() => { setEliminandoId(null); setDeleteError(null) }} className="text-gray-500 hover:underline">No</button>
                     </span>
                   ) : (
                     <span className="inline-flex gap-3">
