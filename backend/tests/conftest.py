@@ -18,6 +18,9 @@ def setup_test_db():
     from app.database import Base
     import app.models.user  # noqa: F401 — registers User with Base.metadata
     import app.models.permission  # noqa: F401 — registers PermissionOverride with Base.metadata
+    import app.models.proveedor  # noqa: F401 — registers Proveedor with Base.metadata
+    import app.models.producto  # noqa: F401 — registers Producto with Base.metadata
+    import app.models.cliente  # noqa: F401 — registers Cliente with Base.metadata
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
