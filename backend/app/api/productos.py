@@ -1,7 +1,7 @@
 from io import BytesIO
 
 import openpyxl
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
