@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 from sqlalchemy import String, Text, Numeric, Integer, ForeignKey, DateTime, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
@@ -10,8 +11,8 @@ class Producto(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(255), index=True)
     descripcion: Mapped[str | None] = mapped_column(Text, nullable=True)
-    precio_costo: Mapped[float] = mapped_column(Numeric(12, 2), default=0)
-    precio_venta: Mapped[float] = mapped_column(Numeric(12, 2), default=0)
+    precio_costo: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
+    precio_venta: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     stock_minimo: Mapped[int] = mapped_column(Integer, default=0)
     stock_actual: Mapped[int] = mapped_column(Integer, default=0)
     proveedor_id: Mapped[int | None] = mapped_column(

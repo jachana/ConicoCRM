@@ -9,13 +9,14 @@ def test_crear_proveedor(db):
     assert p.created_at is not None
 
 def test_crear_producto(db):
+    from decimal import Decimal
     from app.models.producto import Producto
     p = Producto(nombre="Producto Test", precio_costo=100.0, precio_venta=150.0)
     db.add(p)
     db.commit()
     db.refresh(p)
     assert p.id is not None
-    assert float(p.precio_venta) == 150.0
+    assert p.precio_venta == Decimal("150.0")
 
 def test_crear_cliente(db):
     from app.models.cliente import Cliente
