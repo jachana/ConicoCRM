@@ -75,3 +75,17 @@ def test_eliminar_proveedor(client, admin_token):
 def test_subadmin_puede_ver_proveedores(client, subadmin_token):
     r = client.get("/api/proveedores/", headers={"Authorization": f"Bearer {subadmin_token}"})
     assert r.status_code == 200
+
+
+def test_actualizar_rut_duplicado(client, admin_token):
+    client.post("/api/proveedores/", json={"nombre": "A", "rut": "11.111.111-1"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r2 = client.post("/api/proveedores/", json={"nombre": "B", "rut": "22.222.222-2"}, headers={"Authorization": f"Bearer {admin_token}"})
+    pid = r2.json()["id"]
+    r3 = client.patch(f"/api/proveedores/{pid}", json={"rut": "11.111.111-1"}, headers={"Authorization": f"Bearer {admin_token}"})
+    assert r3.status_code == 409
+
+
+def test_exportar_excel(client, admin_token):
+    r = client.get("/api/proveedores/export/excel", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert "spreadsheetml" in r.headers["content-type"]
