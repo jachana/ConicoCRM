@@ -156,7 +156,7 @@ export default function Users() {
             <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
               {saveError && <p className="text-xs text-red-500 mr-auto">{saveError}</p>}
               <button
-                onClick={() => { setSelectedUser(null); setPermissions(null) }}
+                onClick={() => { setSelectedUser(null); setPermissions(null); setSaveError(null) }}
                 className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               >
                 Cancelar
