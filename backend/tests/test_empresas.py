@@ -91,3 +91,17 @@ def test_vendedor_puede_ver_empresas(client, vendedor_token):
 def test_vendedor_no_puede_crear_empresa(client, vendedor_token):
     r = client.post("/api/empresas/", json={"nombre": "Intento"}, headers={"Authorization": f"Bearer {vendedor_token}"})
     assert r.status_code == 403
+
+
+def test_actualizar_rut_duplicado(client, admin_token):
+    client.post("/api/empresas/", json={"nombre": "Emp 1", "rut": "76.111.111-1"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r2 = client.post("/api/empresas/", json={"nombre": "Emp 2", "rut": "76.222.222-2"}, headers={"Authorization": f"Bearer {admin_token}"})
+    eid = r2.json()["id"]
+    r3 = client.patch(f"/api/empresas/{eid}", json={"rut": "76.111.111-1"}, headers={"Authorization": f"Bearer {admin_token}"})
+    assert r3.status_code == 409
+
+
+def test_exportar_excel(client, admin_token):
+    r = client.get("/api/empresas/export/excel", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert "spreadsheetml" in r.headers["content-type"]
