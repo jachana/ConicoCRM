@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2, FileText, Mail, ArrowLeft } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
-import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa } from '../types'
+import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta } from '../types'
 
 type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string }
 
@@ -231,6 +231,17 @@ export default function CotizacionDetalle() {
     },
   })
 
+  const crearNvMut = useMutation({
+    mutationFn: () => api.post<NotaVenta>(`/api/nota_ventas/from_cotizacion/${id}`),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['cotizacion', id] })
+      navigate(`/notas-venta/${res.data.id}`)
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.detail || 'Error al crear nota de venta')
+    },
+  })
+
   return (
     <div className="p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
@@ -259,6 +270,13 @@ export default function CotizacionDetalle() {
               >
                 <Mail size={15} />
                 {emailMut.isPending ? 'Enviando...' : 'Email'}
+              </button>
+              <button
+                onClick={() => crearNvMut.mutate()}
+                disabled={crearNvMut.isPending}
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+              >
+                {crearNvMut.isPending ? 'Creando...' : 'Crear NV'}
               </button>
             </>
           )}
