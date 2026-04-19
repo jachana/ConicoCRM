@@ -60,3 +60,42 @@ def enviar_cotizacion(cotizacion, pdf_bytes: bytes) -> None:
         server.starttls()
         server.login(cfg["user"], cfg["password"])
         server.sendmail(cfg["from"], to_addr, msg.as_string())
+
+
+def enviar_nota_venta(nota_venta, pdf_bytes: bytes) -> None:
+    cfg = _get_smtp_config()
+
+    empresa_nombre = "Conico"
+    to_addr = nota_venta.correo or ""
+    if not to_addr:
+        raise ValueError("La nota de venta no tiene correo de destino")
+
+    numero_str = f"NV-{nota_venta.numero:05d}"
+    fecha_str = nota_venta.fecha.strftime("%d/%m/%Y") if nota_venta.fecha else ""
+    cliente_nombre = nota_venta.cliente.nombre if nota_venta.cliente else ""
+
+    msg = MIMEMultipart()
+    msg["From"] = cfg["from"]
+    msg["To"] = to_addr
+    msg["Subject"] = f"Nota de Venta {numero_str} — {empresa_nombre}"
+
+    body = (
+        f"Estimado/a {nota_venta.contacto or cliente_nombre},\n\n"
+        f"Adjuntamos la nota de venta {numero_str} de fecha {fecha_str}.\n\n"
+        f"Cliente: {cliente_nombre}\n"
+        f"Total: $ {nota_venta.total:,.0f}\n\n"
+        f"Quedamos a su disposición para cualquier consulta.\n\n"
+        f"Saludos,\n{empresa_nombre}"
+    )
+    msg.attach(MIMEText(body, "plain", "utf-8"))
+
+    filename = f"{numero_str} {fecha_str}.{nota_venta.contacto or cliente_nombre}.pdf"
+    attachment = MIMEApplication(pdf_bytes, _subtype="pdf")
+    attachment.add_header("Content-Disposition", "attachment", filename=filename)
+    msg.attach(attachment)
+
+    with smtplib.SMTP(cfg["host"], cfg["port"]) as server:
+        server.ehlo()
+        server.starttls()
+        server.login(cfg["user"], cfg["password"])
+        server.sendmail(cfg["from"], to_addr, msg.as_string())

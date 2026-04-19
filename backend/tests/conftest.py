@@ -8,6 +8,7 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-for-unit-tests")
 
 # Mock weasyprint before any app import — native GTK libs are not available on Windows dev.
 _weasyprint_mock = MagicMock()
+_weasyprint_mock.HTML.return_value.write_pdf.return_value = b"%PDF-1.4 mock"
 sys.modules.setdefault("weasyprint", _weasyprint_mock)
 
 import pytest
@@ -31,6 +32,9 @@ def setup_test_db():
     import app.models.empleado  # noqa: F401
     import app.models.empleado_documento  # noqa: F401
     import app.models.empleado_vacacion  # noqa: F401
+    import app.models.cotizacion  # noqa: F401
+    import app.models.nota_venta  # noqa: F401
+    import app.models.system_config  # noqa: F401
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)

@@ -10,3 +10,10 @@ def generar_pdf_cotizacion(cotizacion, config: dict) -> bytes:
     template = env.get_template("cotizacion.html")
     html_str = template.render(cotizacion=cotizacion, config=config)
     return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()
+
+
+def generar_pdf_nota_venta(nota_venta, config: dict) -> bytes:
+    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+    template = env.get_template("nota_venta.html")
+    html_str = template.render(nota_venta=nota_venta, config=config)
+    return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()

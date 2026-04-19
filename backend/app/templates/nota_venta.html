@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #333; padding: 20px; }
+  @page { size: A4; margin: 15mm; }
+
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; border-bottom: 2px solid #16a34a; padding-bottom: 16px; }
+  .header-left { flex: 1; }
+  .header-right { text-align: right; }
+  .logo { max-height: 60px; max-width: 180px; margin-bottom: 8px; }
+  .empresa-nombre { font-size: 14px; font-weight: bold; color: #1e3a5f; }
+  .empresa-info { font-size: 10px; color: #666; margin-top: 2px; }
+  .nv-numero { font-size: 22px; font-weight: bold; color: #16a34a; }
+  .nv-fecha { font-size: 11px; color: #555; margin-top: 4px; }
+
+  .section-title { font-size: 10px; font-weight: bold; text-transform: uppercase; color: #888; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .cliente-block { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+  .cliente-nombre { font-size: 13px; font-weight: bold; color: #1e3a5f; margin-bottom: 4px; }
+  .cliente-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 10px; color: #555; }
+
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  thead th { background: #16a34a; color: white; padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  thead th.right { text-align: right; }
+  tbody tr:nth-child(even) { background: #f8f9fb; }
+  tbody td { padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 10px; vertical-align: top; }
+  tbody td.right { text-align: right; white-space: nowrap; }
+  tbody td.center { text-align: center; }
+
+  .totales { display: flex; justify-content: flex-end; margin-top: 8px; }
+  .totales-tabla { width: 260px; }
+  .totales-tabla td { padding: 4px 8px; font-size: 11px; }
+  .totales-tabla td:last-child { text-align: right; font-weight: 600; }
+  .totales-tabla tr:last-child td { border-top: 2px solid #16a34a; font-size: 13px; font-weight: bold; color: #16a34a; }
+
+  .nota-block { margin-top: 20px; padding: 10px 12px; border-left: 3px solid #16a34a; background: #f0fdf4; font-size: 10px; color: #444; }
+  .nota-label { font-weight: bold; color: #16a34a; margin-bottom: 4px; }
+
+  .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 9px; color: #aaa; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    {% if config.empresa_logo_url %}
+    <img src="{{ config.empresa_logo_url }}" class="logo" alt="Logo">
+    {% endif %}
+    <div class="empresa-nombre">{{ config.empresa_nombre or 'Distribuidora Conico Ltda.' }}</div>
+    {% if config.empresa_rut %}<div class="empresa-info">RUT: {{ config.empresa_rut }}</div>{% endif %}
+    {% if config.empresa_direccion %}<div class="empresa-info">{{ config.empresa_direccion }}</div>{% endif %}
+  </div>
+  <div class="header-right">
+    <div class="nv-numero">NV-{{ '%05d' % nota_venta.numero }}</div>
+    <div class="nv-fecha">Fecha: {{ nota_venta.fecha.strftime('%d/%m/%Y') if nota_venta.fecha else '' }}</div>
+    <div class="nv-fecha">Estado: {{ nota_venta.estado }}</div>
+  </div>
+</div>
+
+<!-- CLIENTE -->
+<div class="section-title">Datos del Cliente</div>
+<div class="cliente-block">
+  <div class="cliente-nombre">{{ nota_venta.cliente.nombre if nota_venta.cliente else '' }}</div>
+  <div class="cliente-grid">
+    {% if nota_venta.cliente and nota_venta.cliente.rut %}
+    <div><strong>RUT:</strong> {{ nota_venta.cliente.rut }}</div>
+    {% endif %}
+    {% if nota_venta.contacto %}
+    <div><strong>Contacto:</strong> {{ nota_venta.contacto }}</div>
+    {% endif %}
+    {% if nota_venta.correo %}
+    <div><strong>Email:</strong> {{ nota_venta.correo }}</div>
+    {% endif %}
+    {% if nota_venta.cliente and nota_venta.cliente.telefono %}
+    <div><strong>Teléfono:</strong> {{ nota_venta.cliente.telefono }}</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- LÍNEAS -->
+<div class="section-title">Detalle de Productos</div>
+<table>
+  <thead>
+    <tr>
+      <th style="width:28px">Nº</th>
+      <th style="width:80px">SKU</th>
+      <th>Descripción</th>
+      <th style="width:70px">Formato</th>
+      <th class="right" style="width:55px">Cant.</th>
+      <th class="right" style="width:85px">Valor Neto</th>
+      <th class="right" style="width:90px">Total Neto</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for linea in nota_venta.lineas %}
+    <tr>
+      <td class="center">{{ loop.index }}</td>
+      <td>{{ linea.sku or '' }}</td>
+      <td>{{ linea.descripcion }}</td>
+      <td>{{ linea.formato or '' }}</td>
+      <td class="right">{{ linea.cantidad }}</td>
+      <td class="right">{{ '{:,.0f}'.format(linea.valor_neto) }}</td>
+      <td class="right">{{ '{:,.0f}'.format(linea.total_neto) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- TOTALES -->
+<div class="totales">
+  <table class="totales-tabla">
+    <tr>
+      <td>Total Neto</td>
+      <td>$ {{ '{:,.0f}'.format(nota_venta.total_neto) }}</td>
+    </tr>
+    <tr>
+      <td>IVA (19%)</td>
+      <td>$ {{ '{:,.0f}'.format(nota_venta.total_iva) }}</td>
+    </tr>
+    <tr>
+      <td>TOTAL</td>
+      <td>$ {{ '{:,.0f}'.format(nota_venta.total) }}</td>
+    </tr>
+  </table>
+</div>
+
+<!-- NOTA -->
+{% if nota_venta.nota %}
+<div class="nota-block">
+  <div class="nota-label">Observaciones</div>
+  <div>{{ nota_venta.nota }}</div>
+</div>
+{% endif %}
+
+<div class="footer">
+  Documento generado el {{ nota_venta.fecha.strftime('%d/%m/%Y') if nota_venta.fecha else '' }} · {{ config.empresa_nombre or '' }}
+</div>
+
+</body>
+</html>
