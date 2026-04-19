@@ -10,6 +10,7 @@ from app.api import config
 from app.api import cotizaciones
 from app.api import empleados
 from app.api import empleados_documentos
+from app.api import empleados_vacaciones
 
 app = FastAPI(title="Conico PMS")
 
@@ -31,3 +32,4 @@ app.include_router(config.router, prefix="/api/config", tags=["config"])
 app.include_router(cotizaciones.router, prefix="/api/cotizaciones", tags=["cotizaciones"])
 app.include_router(empleados.router, prefix="/api/empleados", tags=["rrhh"])
 app.include_router(empleados_documentos.router, prefix="/api/empleados", tags=["rrhh"])
+app.include_router(empleados_vacaciones.router, prefix="/api/empleados", tags=["rrhh"])
