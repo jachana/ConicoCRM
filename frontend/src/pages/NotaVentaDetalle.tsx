@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, FileText, Mail, ArrowLeft, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, FileText, Mail, ArrowLeft, ExternalLink, Receipt } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { NotaVenta, NotaVentaLinea, Cliente, User, Producto, Empresa } from '../types'
@@ -259,6 +259,11 @@ export default function NotaVentaDetalle() {
     },
   })
 
+  const genFacturaMut = useMutation({
+    mutationFn: () => api.post(`/api/facturas/from_nv/${id}`),
+    onSuccess: (res: any) => navigate(`/facturas/${res.data.id}`),
+  })
+
   const validTransitions = !isNew && nv ? getValidTransitions(nv.estado, isAdmin) : []
 
   return (
@@ -316,6 +321,23 @@ export default function NotaVentaDetalle() {
                 <Mail size={15} />
                 {emailMut.isPending ? 'Enviando...' : 'Email'}
               </button>
+              {nv?.factura_id == null && (
+                <button
+                  onClick={() => genFacturaMut.mutate()}
+                  disabled={genFacturaMut.isPending}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  <Receipt size={15} /> Generar Factura
+                </button>
+              )}
+              {nv?.factura_id != null && (
+                <Link
+                  to={`/facturas/${nv.factura_id}`}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200"
+                >
+                  <Receipt size={15} /> Ver Factura
+                </Link>
+              )}
             </>
           )}
           <button
