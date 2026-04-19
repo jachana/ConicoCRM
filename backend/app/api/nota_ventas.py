@@ -24,6 +24,7 @@ from app.schemas.nota_venta import (
     NotaVentaOut,
     NotaVentaUpdate,
 )
+from app.models.movimiento_inventario import MovimientoInventario
 from app.services.email import EmailNotConfiguredError, enviar_nota_venta
 from app.services.pdf import generar_pdf_nota_venta
 
@@ -97,6 +98,40 @@ def _can_edit(current_user: User, nv: NotaVenta) -> bool:
     if current_user.role in ("admin", "subadmin"):
         return True
     return nv.vendedor_id == current_user.id
+
+
+def _registrar_movimientos_salida(db: Session, nv_id: int, lineas: list, usuario_id: int | None) -> None:
+    for linea in lineas:
+        if linea.producto_id and linea.cantidad > 0:
+            producto = db.get(Producto, linea.producto_id)
+            if producto:
+                producto.stock_actual -= linea.cantidad
+                db.add(MovimientoInventario(
+                    producto_id=linea.producto_id,
+                    tipo="salida",
+                    cantidad=linea.cantidad,
+                    signo=-1,
+                    referencia_tipo="nota_venta",
+                    referencia_id=nv_id,
+                    usuario_id=usuario_id,
+                ))
+
+
+def _registrar_movimientos_devolucion(db: Session, nv_id: int, lineas: list, usuario_id: int | None) -> None:
+    for linea in lineas:
+        if linea.producto_id and linea.cantidad > 0:
+            producto = db.get(Producto, linea.producto_id)
+            if producto:
+                producto.stock_actual += linea.cantidad
+                db.add(MovimientoInventario(
+                    producto_id=linea.producto_id,
+                    tipo="entrada",
+                    cantidad=linea.cantidad,
+                    signo=1,
+                    referencia_tipo="nota_venta",
+                    referencia_id=nv_id,
+                    usuario_id=usuario_id,
+                ))
 
 
 def _load_nv(db: Session, nv_id: int) -> NotaVenta:
@@ -205,6 +240,7 @@ def crear_nv(
     for linea in nv.lineas:
         linea.nv_id = nv.id
     _recalcular_totales(nv)
+    _registrar_movimientos_salida(db, nv.id, nv.lineas, current_user.id)
     db.commit()
     return _load_nv(db, nv.id)
 
@@ -259,6 +295,7 @@ def crear_nv_desde_cotizacion(
     _recalcular_totales(nv)
 
     cot.estado = "cerrada_fv"
+    _registrar_movimientos_salida(db, nv.id, nv.lineas, current_user.id)
     db.commit()
     return _load_nv(db, nv.id)
 
@@ -305,6 +342,13 @@ def reemplazar_lineas(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nota de venta no encontrada")
     if not _can_edit(current_user, nv):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos")
+
+    # snapshot old quantities per product
+    old_qtys: dict[int, int] = {}
+    for linea in nv.lineas:
+        if linea.producto_id:
+            old_qtys[linea.producto_id] = old_qtys.get(linea.producto_id, 0) + linea.cantidad
+
     for linea in list(nv.lineas):
         db.delete(linea)
     db.flush()
@@ -316,6 +360,33 @@ def reemplazar_lineas(
     nv.lineas = nuevas
     _recalcular_totales(nv)
     nv.updated_at = datetime.now(timezone.utc)
+
+    # new quantities per product
+    new_qtys: dict[int, int] = {}
+    for linea in nuevas:
+        if linea.producto_id:
+            new_qtys[linea.producto_id] = new_qtys.get(linea.producto_id, 0) + linea.cantidad
+
+    # apply delta: positive delta = more sold = subtract from stock; negative = less sold = add back
+    all_ids = set(old_qtys) | set(new_qtys)
+    for prod_id in all_ids:
+        delta = new_qtys.get(prod_id, 0) - old_qtys.get(prod_id, 0)
+        if delta == 0:
+            continue
+        producto = db.get(Producto, prod_id)
+        if not producto:
+            continue
+        producto.stock_actual -= delta
+        db.add(MovimientoInventario(
+            producto_id=prod_id,
+            tipo="ajuste",
+            cantidad=abs(delta),
+            signo=-1 if delta > 0 else 1,
+            referencia_tipo="nota_venta",
+            referencia_id=nv_id,
+            usuario_id=current_user.id,
+        ))
+
     db.commit()
     return _load_nv(db, nv_id)
 
@@ -342,6 +413,9 @@ def cambiar_estado(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin/subadmin puede hacer esta transición")
 
     nv.estado = body.estado
+    if body.estado == "cancelada":
+        nv_full = db.query(NotaVenta).options(joinedload(NotaVenta.lineas)).filter(NotaVenta.id == nv_id).first()
+        _registrar_movimientos_devolucion(db, nv_id, nv_full.lineas if nv_full else [], current_user.id)
     db.commit()
     return _load_nv(db, nv_id)
 
@@ -360,6 +434,8 @@ def eliminar_nv(
             status_code=status.HTTP_409_CONFLICT,
             detail="Solo se pueden eliminar notas de venta en estado 'pendiente'",
         )
+    nv_full = db.query(NotaVenta).options(joinedload(NotaVenta.lineas)).filter(NotaVenta.id == nv_id).first()
+    _registrar_movimientos_devolucion(db, nv_id, nv_full.lineas if nv_full else [], current_user.id)
     db.delete(nv)
     db.commit()
 

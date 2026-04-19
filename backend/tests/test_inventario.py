@@ -180,3 +180,72 @@ def test_recepcion_oc_crea_movimiento_entrada(client, admin_token):
     assert m["signo"] == 1
     assert m["referencia_tipo"] == "orden_compra"
     assert m["referencia_id"] == oc_id
+
+
+def _crear_nv(client, token, producto_id: int, cantidad: int = 3):
+    cli = client.post("/api/clientes/",
+        json={"nombre": "CLI Test", "rut": None},
+        headers={"Authorization": f"Bearer {token}"}).json()["id"]
+    return client.post("/api/nota_ventas/",
+        json={
+            "cliente_id": cli,
+            "fecha": "2026-04-19",
+            "lineas": [{"orden": 1, "descripcion": "Item", "cantidad": cantidad,
+                         "valor_neto": 1000, "producto_id": producto_id}],
+        },
+        headers={"Authorization": f"Bearer {token}"}).json()
+
+
+def test_crear_nv_descuenta_stock(client, admin_token):
+    pid = _crear_producto(client, admin_token, nombre="ProdNV", stock_actual=20)
+    nv = _crear_nv(client, admin_token, pid, cantidad=3)
+    prod = client.get(f"/api/productos/{pid}", headers={"Authorization": f"Bearer {admin_token}"}).json()
+    assert prod["stock_actual"] == 17
+    movs = client.get(f"/api/inventario/movimientos?producto_id={pid}",
+        headers={"Authorization": f"Bearer {admin_token}"}).json()
+    assert movs["total"] == 1
+    m = movs["items"][0]
+    assert m["tipo"] == "salida"
+    assert m["cantidad"] == 3
+    assert m["signo"] == -1
+    assert m["referencia_tipo"] == "nota_venta"
+    assert m["referencia_id"] == nv["id"]
+
+
+def test_reemplazar_lineas_nv_ajusta_stock(client, admin_token):
+    pid = _crear_producto(client, admin_token, nombre="ProdLineas", stock_actual=20)
+    nv = _crear_nv(client, admin_token, pid, cantidad=3)
+    # stock now 17; replace with cantidad=5 → delta +2 more sold → stock = 15
+    client.put(f"/api/nota_ventas/{nv['id']}/lineas",
+        json=[{"orden": 1, "descripcion": "Item", "cantidad": 5,
+               "valor_neto": 1000, "producto_id": pid}],
+        headers={"Authorization": f"Bearer {admin_token}"})
+    prod = client.get(f"/api/productos/{pid}", headers={"Authorization": f"Bearer {admin_token}"}).json()
+    assert prod["stock_actual"] == 15
+    movs = client.get(f"/api/inventario/movimientos?producto_id={pid}",
+        headers={"Authorization": f"Bearer {admin_token}"}).json()
+    assert movs["total"] == 2
+
+
+def test_cancelar_nv_restaura_stock(client, admin_token):
+    pid = _crear_producto(client, admin_token, nombre="ProdCancel", stock_actual=20)
+    nv = _crear_nv(client, admin_token, pid, cantidad=3)
+    # stock now 17
+    client.patch(f"/api/nota_ventas/{nv['id']}/estado",
+        json={"estado": "cancelada"},
+        headers={"Authorization": f"Bearer {admin_token}"})
+    prod = client.get(f"/api/productos/{pid}", headers={"Authorization": f"Bearer {admin_token}"}).json()
+    assert prod["stock_actual"] == 20
+    movs = client.get(f"/api/inventario/movimientos?producto_id={pid}",
+        headers={"Authorization": f"Bearer {admin_token}"}).json()
+    assert movs["total"] == 2  # salida + devolución
+
+
+def test_eliminar_nv_restaura_stock(client, admin_token):
+    pid = _crear_producto(client, admin_token, nombre="ProdDel", stock_actual=20)
+    nv = _crear_nv(client, admin_token, pid, cantidad=3)
+    # stock now 17
+    client.delete(f"/api/nota_ventas/{nv['id']}",
+        headers={"Authorization": f"Bearer {admin_token}"})
+    prod = client.get(f"/api/productos/{pid}", headers={"Authorization": f"Bearer {admin_token}"}).json()
+    assert prod["stock_actual"] == 20
