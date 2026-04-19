@@ -8,6 +8,7 @@ from app.api import clientes
 from app.api import empresas
 from app.api import config
 from app.api import cotizaciones
+from app.api import empleados
 
 app = FastAPI(title="Conico PMS")
 
@@ -27,3 +28,4 @@ app.include_router(clientes.router, prefix="/api/clientes", tags=["clientes"])
 app.include_router(empresas.router, prefix="/api/empresas", tags=["empresas"])
 app.include_router(config.router, prefix="/api/config", tags=["config"])
 app.include_router(cotizaciones.router, prefix="/api/cotizaciones", tags=["cotizaciones"])
+app.include_router(empleados.router, prefix="/api/empleados", tags=["rrhh"])
