@@ -6,3 +6,6 @@ from app.models.empresa import Empresa  # noqa: F401
 from app.models.cliente import Cliente
 from app.models.system_config import SystemConfig
 from app.models.cotizacion import Cotizacion, CotizacionLinea
+from app.models.empleado import Empleado  # noqa: F401
+from app.models.empleado_documento import EmpleadoDocumento  # noqa: F401
+from app.models.empleado_vacacion import EmpleadoVacacion  # noqa: F401

@@ -28,6 +28,9 @@ def setup_test_db():
     import app.models.producto  # noqa: F401 — registers Producto with Base.metadata
     import app.models.cliente  # noqa: F401 — registers Cliente with Base.metadata
     import app.models.empresa  # noqa: F401
+    import app.models.empleado  # noqa: F401
+    import app.models.empleado_documento  # noqa: F401
+    import app.models.empleado_vacacion  # noqa: F401
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
