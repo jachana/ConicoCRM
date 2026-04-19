@@ -1,14 +1,11 @@
 // frontend/src/components/dashboard/WidgetGrid.tsx
-import GridLayout from 'react-grid-layout'
+import ReactGridLayout, { WidthProvider } from 'react-grid-layout/legacy'
 import type { WidgetConfig } from '../../types/dashboard'
 import Widget from './Widget'
 
 type LayoutItem = { i: string; x: number; y: number; w: number; h: number; static?: boolean }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const WidthProvider = (GridLayout as any).WidthProvider as (c: React.ComponentType<any>) => React.ComponentClass<any>
-
-const ResponsiveGrid = WidthProvider(GridLayout)
+const ResponsiveGrid = WidthProvider(ReactGridLayout)
 
 interface WidgetGridProps {
   widgets: WidgetConfig[]

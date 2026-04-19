@@ -38,7 +38,9 @@
       "Bash(git stash *)",
       "Bash(git checkout *)",
       "Bash(node -e \"require\\('react-grid-layout'\\); require\\('recharts'\\); console.log\\('OK'\\)\")",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('version'\\)\\); print\\(json.dumps\\(d.get\\('exports','none'\\), indent=2\\)[:500]\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('exports','none'\\), indent=2\\)\\)\")"
     ]
   }
 }
