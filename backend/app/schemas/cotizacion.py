@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from pydantic import BaseModel
+from app.schemas.empresa import EmpresaRef
 
 
 class CotizacionLineaCreate(BaseModel):
@@ -30,6 +31,7 @@ class CotizacionCreate(BaseModel):
     estado: str = "no_definido"
     nota: str | None = None
     correo: str | None = None
+    empresa_id: int | None = None
     lineas: list[CotizacionLineaCreate] = []
 
 
@@ -41,6 +43,7 @@ class CotizacionUpdate(BaseModel):
     nota: str | None = None
     correo: str | None = None
     vendedor_id: int | None = None
+    empresa_id: int | None = None
 
 
 class ClienteMinOut(BaseModel):
@@ -76,6 +79,7 @@ class CotizacionOut(BaseModel):
     updated_at: datetime
     cliente: ClienteMinOut | None = None
     vendedor: VendedorMinOut | None = None
+    empresa: EmpresaRef | None = None
     lineas: list[CotizacionLineaOut] = []
     model_config = {"from_attributes": True}
 
@@ -96,6 +100,7 @@ class CotizacionListOut(BaseModel):
     updated_at: datetime
     cliente: ClienteMinOut | None = None
     vendedor: VendedorMinOut | None = None
+    empresa: EmpresaRef | None = None
     model_config = {"from_attributes": True}
 
 

@@ -12,6 +12,9 @@ class Cotizacion(Base):
     numero: Mapped[int] = mapped_column(Integer, unique=True, index=True)
     cliente_id: Mapped[int] = mapped_column(ForeignKey("clientes.id", ondelete="RESTRICT"))
     vendedor_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    empresa_id: Mapped[int | None] = mapped_column(
+        ForeignKey("empresas.id", ondelete="SET NULL"), nullable=True
+    )
     contacto: Mapped[str | None] = mapped_column(String(255), nullable=True)
     fecha: Mapped[date] = mapped_column(Date, default=date.today)
     estado: Mapped[str] = mapped_column(String(20), default="no_definido")
@@ -34,6 +37,7 @@ class Cotizacion(Base):
 
     cliente: Mapped["Cliente"] = relationship("Cliente")
     vendedor: Mapped["User"] = relationship("User")
+    empresa: Mapped["Empresa | None"] = relationship("Empresa")
     lineas: Mapped[list["CotizacionLinea"]] = relationship(
         "CotizacionLinea",
         back_populates="cotizacion",
