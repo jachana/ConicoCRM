@@ -138,13 +138,11 @@ export default function Productos() {
                 </td>
                 <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">{formatPrecio(p.precio_costo)}</td>
                 <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">{formatPrecio(p.precio_venta)}</td>
-                <td className="px-4 py-3 text-right">
-                  <span className={p.stock_actual <= p.stock_minimo && p.stock_minimo > 0
-                    ? 'text-red-600 dark:text-red-400 font-medium'
-                    : 'text-gray-700 dark:text-gray-300'
-                  }>
-                    {p.stock_actual}
-                  </span>
+                <td className={`px-4 py-2 text-right font-medium ${p.stock_actual < p.stock_minimo ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}`}>
+                  {p.stock_actual}
+                  {p.stock_actual < p.stock_minimo && (
+                    <span className="ml-1 text-xs text-red-500" title="Stock bajo mínimo">⚠</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right text-gray-400">{p.stock_minimo}</td>
                 <td className="px-4 py-3">

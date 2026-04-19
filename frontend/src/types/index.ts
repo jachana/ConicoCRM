@@ -271,3 +271,32 @@ export interface OrdenCompra {
   proveedor?: { id: number; nombre: string; rut: string | null; email: string | null; contacto: string | null; telefono: string | null } | null
   lineas?: OrdenCompraLinea[]
 }
+
+export interface MovimientoInventario {
+  id: number
+  producto_id: number
+  tipo: 'entrada' | 'salida' | 'ajuste'
+  cantidad: number
+  signo: number
+  referencia_tipo: 'orden_compra' | 'nota_venta' | 'ajuste_manual' | null
+  referencia_id: number | null
+  motivo: 'conteo_fisico' | 'merma' | 'correccion' | 'otro' | null
+  nota: string | null
+  usuario_id: number | null
+  created_at: string
+  producto?: { id: number; nombre: string; sku: string | null } | null
+  usuario?: { id: number; name: string } | null
+}
+
+export interface MovimientoListOut {
+  items: MovimientoInventario[]
+  total: number
+}
+
+export interface StockBajoItem {
+  id: number
+  nombre: string
+  sku: string | null
+  stock_actual: number
+  stock_minimo: number
+}

@@ -5,6 +5,8 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth'
 import { useTheme } from './ThemeProvider'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '../../lib/api'
 
 interface SidebarProps {
   collapsed: boolean
@@ -31,6 +33,14 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const user = useAuthStore(s => s.user)
   const { theme, toggle: toggleTheme } = useTheme()
 
+  const { data: stockBajo = [] } = useQuery<{ id: number }[]>({
+    queryKey: ['stock-bajo'],
+    queryFn: () => api.get('/api/inventario/stock-bajo').then(r => r.data),
+    enabled: !!user && user.role !== 'vendedor',
+    staleTime: 60_000,
+  })
+  const stockBajoCount = stockBajo.length
+
   return (
     <aside className={`flex flex-col bg-gray-900 text-gray-300 transition-all duration-200 flex-shrink-0 ${collapsed ? 'w-14' : 'w-56'}`}>
       <div className="flex items-center justify-between px-3 py-4 border-b border-gray-700">
@@ -45,21 +55,36 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       <nav className="flex-1 overflow-y-auto py-2">
-        {NAV.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 mx-1 rounded-lg text-sm transition-colors
-               ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 hover:text-white'}`
-            }
-            title={collapsed ? label : undefined}
-          >
-            <Icon size={18} className="flex-shrink-0" />
-            {!collapsed && <span className="truncate">{label}</span>}
-          </NavLink>
-        ))}
+        {NAV.map(({ to, icon: Icon, label }) => {
+          const badge = to === '/inventario' ? stockBajoCount : 0
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/'}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2 mx-1 rounded-lg text-sm transition-colors
+                 ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 hover:text-white'}`
+              }
+              title={collapsed ? label : undefined}
+            >
+              <span className="relative flex-shrink-0">
+                <Icon size={18} />
+                {badge > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
+                    {badge > 99 ? '99+' : badge}
+                  </span>
+                )}
+              </span>
+              {!collapsed && <span className="truncate">{label}</span>}
+              {!collapsed && badge > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {badge > 99 ? '99+' : badge}
+                </span>
+              )}
+            </NavLink>
+          )
+        })}
       </nav>
 
       <div className="border-t border-gray-700 p-2 space-y-1">

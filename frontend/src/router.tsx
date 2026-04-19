@@ -10,6 +10,7 @@ import CotizacionDetalle from './pages/CotizacionDetalle'
 import OrdenesCompra from './pages/OrdenesCompra'
 import OrdenCompraDetalle from './pages/OrdenCompraDetalle'
 import RRHH from './pages/RRHH'
+import Inventario from './pages/Inventario'
 import NotaVentas from './pages/NotaVentas'
 import NotaVentaDetalle from './pages/NotaVentaDetalle'
 import Facturas from './pages/Facturas'
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
       { path: 'facturas/nueva', element: <FacturaDetalle /> },
       { path: 'facturas/:id', element: <FacturaDetalle /> },
       { path: 'rrhh', element: <RRHH /> },
+      { path: 'inventario', element: <Inventario /> },
     ],
   },
 ])
