@@ -11,6 +11,7 @@ router = APIRouter()
 
 INITIAL_CONFIG = {
     "cotizacion_last_id": "12250",
+    "orden_compra_last_id": "0",
     "empresa_nombre": "Distribuidora Conico Ltda.",
     "empresa_rut": "82.638.800-5",
     "empresa_direccion": "",
