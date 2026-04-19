@@ -8,6 +8,8 @@ import Clientes from './pages/Clientes'
 import Cotizaciones from './pages/Cotizaciones'
 import CotizacionDetalle from './pages/CotizacionDetalle'
 import RRHH from './pages/RRHH'
+import NotaVentas from './pages/NotaVentas'
+import NotaVentaDetalle from './pages/NotaVentaDetalle'
 import { useAuthStore } from './stores/auth'
 import AppLayout from './components/layout/AppLayout'
 
@@ -32,6 +34,9 @@ export const router = createBrowserRouter([
       { path: 'cotizaciones', element: <Cotizaciones /> },
       { path: 'cotizaciones/nueva', element: <CotizacionDetalle /> },
       { path: 'cotizaciones/:id', element: <CotizacionDetalle /> },
+      { path: 'notas-venta', element: <NotaVentas /> },
+      { path: 'notas-venta/nueva', element: <NotaVentaDetalle /> },
+      { path: 'notas-venta/:id', element: <NotaVentaDetalle /> },
       { path: 'rrhh', element: <RRHH /> },
     ],
   },
