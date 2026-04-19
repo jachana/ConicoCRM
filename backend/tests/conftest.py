@@ -36,6 +36,7 @@ def setup_test_db():
     import app.models.nota_venta  # noqa: F401
     import app.models.factura  # noqa: F401
     import app.models.orden_compra  # noqa: F401
+    import app.models.movimiento_inventario  # noqa: F401
     import app.models.system_config  # noqa: F401
     Base.metadata.create_all(bind=test_engine)
     yield

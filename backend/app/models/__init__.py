@@ -11,3 +11,4 @@ from app.models.empleado_documento import EmpleadoDocumento  # noqa: F401
 from app.models.empleado_vacacion import EmpleadoVacacion  # noqa: F401
 from app.models.nota_venta import NotaVenta, NotaVentaLinea  # noqa: F401
 from app.models.factura import Factura, FacturaLinea  # noqa: F401
+from app.models.movimiento_inventario import MovimientoInventario  # noqa: F401
