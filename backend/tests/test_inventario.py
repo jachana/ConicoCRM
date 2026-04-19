@@ -152,10 +152,14 @@ def test_recepcion_oc_crea_movimiento_entrada(client, admin_token):
     oc_id = oc["id"]
     linea_id = oc["lineas"][0]["id"]
 
-    # enviar orden
-    client.patch(f"/api/ordenes-compra/{oc_id}/estado",
-        json={"estado": "enviada"},
-        headers={"Authorization": f"Bearer {admin_token}"})
+    # set estado enviada directly (API only allows borrador→cancelada)
+    from app.models.orden_compra import OrdenCompra
+    from tests.conftest import TestingSession
+    _db = TestingSession()
+    _oc = _db.get(OrdenCompra, oc_id)
+    _oc.estado = "enviada"
+    _db.commit()
+    _db.close()
 
     # recepcionar
     client.post(f"/api/ordenes-compra/{oc_id}/recepcionar",
