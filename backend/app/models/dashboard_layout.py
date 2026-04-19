@@ -8,7 +8,7 @@ class DashboardLayout(Base):
     __tablename__ = "dashboard_layouts"
 
     role: Mapped[str] = mapped_column(String(20), primary_key=True)
-    layout_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}", server_default=text("{}"))
+    layout_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}", server_default=text("'{}' "))
     updated_by: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

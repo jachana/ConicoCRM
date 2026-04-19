@@ -15,6 +15,7 @@ from app.api import empleados_documentos
 from app.api import empleados_vacaciones
 from app.api import ordenes_compra
 from app.api import inventario
+from app.api import dashboard
 
 app = FastAPI(title="Conico PMS")
 
@@ -41,3 +42,4 @@ app.include_router(empleados_documentos.router, prefix="/api/empleados", tags=["
 app.include_router(empleados_vacaciones.router, prefix="/api/empleados", tags=["rrhh"])
 app.include_router(ordenes_compra.router, prefix="/api/ordenes-compra", tags=["ordenes_compra"])
 app.include_router(inventario.router, prefix="/api/inventario", tags=["inventario"])
+app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
