@@ -37,49 +37,44 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("rut"),
     )
-    op.create_index("ix_empresas_rut", "empresas", ["rut"])
-
     # rename clientes.direccion → clientes.direccion_despacho
-    op.execute("ALTER TABLE clientes RENAME COLUMN direccion TO direccion_despacho")
+    bind = op.get_bind()
+    if bind.dialect.name == "sqlite":
+        with op.batch_alter_table("clientes") as batch_op:
+            batch_op.alter_column("direccion", new_column_name="direccion_despacho")
+    else:
+        op.execute("ALTER TABLE clientes RENAME COLUMN direccion TO direccion_despacho")
 
     # extend clientes
     op.add_column("clientes", sa.Column("empresa_id", sa.Integer(), nullable=True))
-    op.add_column("clientes", sa.Column("recibe_correo", sa.Boolean(), nullable=False, server_default=sa.text("1")))
+    op.add_column("clientes", sa.Column("recibe_correo", sa.Boolean(), nullable=False, server_default=sa.text("true")))
     op.add_column("clientes", sa.Column("forma_pago", sa.String(100), nullable=True))
     op.add_column("clientes", sa.Column("despacho_o_retiro", sa.String(20), nullable=True))
     op.add_column("clientes", sa.Column("comuna", sa.String(100), nullable=True))
     op.add_column("clientes", sa.Column("ultimo_contacto", sa.Date(), nullable=True))
     op.add_column("clientes", sa.Column("forma_captacion", sa.String(100), nullable=True))
     op.add_column("clientes", sa.Column("compromiso", sa.Text(), nullable=True))
-    op.add_column("clientes", sa.Column("es_nuevo", sa.Boolean(), nullable=False, server_default=sa.text("0")))
-    try:
+    op.add_column("clientes", sa.Column("es_nuevo", sa.Boolean(), nullable=False, server_default=sa.text("false")))
+    if bind.dialect.name != "sqlite":
         op.create_foreign_key(
             "fk_clientes_empresa_id", "clientes", "empresas", ["empresa_id"], ["id"], ondelete="SET NULL"
         )
-    except Exception:
-        pass  # SQLite does not support adding FK constraints
 
     # add empresa_id to cotizaciones
     op.add_column("cotizaciones", sa.Column("empresa_id", sa.Integer(), nullable=True))
-    try:
+    if bind.dialect.name != "sqlite":
         op.create_foreign_key(
             "fk_cotizaciones_empresa_id", "cotizaciones", "empresas", ["empresa_id"], ["id"], ondelete="SET NULL"
         )
-    except Exception:
-        pass  # SQLite does not support adding FK constraints
 
 
 def downgrade() -> None:
-    try:
+    bind = op.get_bind()
+    if bind.dialect.name != "sqlite":
         op.drop_constraint("fk_cotizaciones_empresa_id", "cotizaciones", type_="foreignkey")
-    except Exception:
-        pass
+        op.drop_constraint("fk_clientes_empresa_id", "clientes", type_="foreignkey")
     op.drop_column("cotizaciones", "empresa_id")
 
-    try:
-        op.drop_constraint("fk_clientes_empresa_id", "clientes", type_="foreignkey")
-    except Exception:
-        pass
     op.drop_column("clientes", "compromiso")
     op.drop_column("clientes", "forma_captacion")
     op.drop_column("clientes", "ultimo_contacto")
@@ -89,7 +84,11 @@ def downgrade() -> None:
     op.drop_column("clientes", "recibe_correo")
     op.drop_column("clientes", "es_nuevo")
     op.drop_column("clientes", "empresa_id")
-    op.execute("ALTER TABLE clientes RENAME COLUMN direccion_despacho TO direccion")
 
-    op.drop_index("ix_empresas_rut", table_name="empresas")
+    if bind.dialect.name == "sqlite":
+        with op.batch_alter_table("clientes") as batch_op:
+            batch_op.alter_column("direccion_despacho", new_column_name="direccion")
+    else:
+        op.execute("ALTER TABLE clientes RENAME COLUMN direccion_despacho TO direccion")
+
     op.drop_table("empresas")
