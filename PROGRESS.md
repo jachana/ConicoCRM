@@ -47,11 +47,12 @@
   - Al recepcionar: actualiza stock en inventario
   - PDF + email al proveedor
 
-- [ ] **Fase 7 — Inventario**
+- [x] **Fase 7 — Inventario**
   - Stock actual por producto
-  - Movimientos: entrada (OC), salida (factura), ajuste manual
-  - Historial con fecha, tipo y usuario
-  - Alertas de stock bajo
+  - Movimientos: entrada (OC recepcionada), salida (NV creada), ajuste manual con motivo
+  - Historial global y por producto (con filtros tipo/fecha/producto)
+  - Alertas de stock bajo: badge en sidebar, banner en /inventario, indicador en catálogo
+  - Ajuste manual: suma/resta, motivo fijo (conteo_fisico, merma, correccion, otro), nota opcional
 
 - [x] **Fase 8 — RRHH** *(solo Admin)*
   - CRUD empleados: nombre, cargo, sueldo, fecha ingreso
