@@ -139,3 +139,7 @@ def enviar_orden_compra(orden_compra, pdf_bytes: bytes) -> None:
         server.starttls()
         server.login(cfg["user"], cfg["password"])
         server.sendmail(cfg["from"], to_addr, msg.as_string())
+
+
+def enviar_factura(factura, pdf_bytes: bytes) -> None:
+    raise NotImplementedError("enviar_factura not yet implemented")
