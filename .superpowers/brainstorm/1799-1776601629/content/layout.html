@@ -1,0 +1,156 @@
+<h2>¿Qué estilo de dashboard preferís?</h2>
+<p class="subtitle">Las tres opciones tienen los mismos datos — difieren en cómo se presentan</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1e293b;padding:12px;border-radius:6px;font-family:monospace;font-size:11px;color:#94a3b8">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+          <div style="background:#0f172a;border-radius:4px;padding:8px;text-align:center">
+            <div style="color:#38bdf8;font-size:16px;font-weight:bold">$4.2M</div>
+            <div style="font-size:9px">Ventas mes</div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:8px;text-align:center">
+            <div style="color:#34d399;font-size:16px;font-weight:bold">12</div>
+            <div style="font-size:9px">Cotiz. abiertas</div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:8px;text-align:center">
+            <div style="color:#f87171;font-size:16px;font-weight:bold">5</div>
+            <div style="font-size:9px">Stock crítico</div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:8px;text-align:center">
+            <div style="color:#fb923c;font-size:16px;font-weight:bold">$820K</div>
+            <div style="font-size:9px">Por cobrar</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:6px">
+          <div style="background:#0f172a;border-radius:4px;padding:8px">
+            <div style="font-size:9px;margin-bottom:4px;color:#64748b">Ventas por mes</div>
+            <div style="display:flex;align-items:flex-end;gap:3px;height:40px">
+              <div style="background:#38bdf8;width:10px;height:50%"></div>
+              <div style="background:#38bdf8;width:10px;height:70%"></div>
+              <div style="background:#38bdf8;width:10px;height:60%"></div>
+              <div style="background:#38bdf8;width:10px;height:90%"></div>
+              <div style="background:#38bdf8;width:10px;height:80%"></div>
+              <div style="background:#38bdf8;width:10px;height:100%"></div>
+            </div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:8px">
+            <div style="font-size:9px;margin-bottom:4px;color:#64748b">Top clientes</div>
+            <div style="font-size:9px;color:#e2e8f0;line-height:1.6">
+              1. Empresa A<br>2. Empresa B<br>3. Empresa C
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — KPIs + Gráfico de barras</h3>
+      <p>4 métricas clave arriba, gráfico de ventas mensual abajo. Simple y directo. Sin dependencias de librerías pesadas.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1e293b;padding:12px;border-radius:6px;font-family:monospace;font-size:11px;color:#94a3b8">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+          <div style="background:#0f172a;border-radius:4px;padding:8px">
+            <div style="font-size:9px;margin-bottom:4px;color:#64748b">Ventas del período</div>
+            <div style="display:flex;align-items:flex-end;gap:2px;height:35px">
+              <div style="background:#6366f1;width:8px;height:40%"></div>
+              <div style="background:#6366f1;width:8px;height:60%"></div>
+              <div style="background:#6366f1;width:8px;height:50%"></div>
+              <div style="background:#6366f1;width:8px;height:80%"></div>
+              <div style="background:#6366f1;width:8px;height:70%"></div>
+              <div style="background:#6366f1;width:8px;height:100%"></div>
+            </div>
+            <div style="color:#a5b4fc;font-size:14px;font-weight:bold;margin-top:4px">$4.2M</div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:8px">
+            <div style="font-size:9px;margin-bottom:4px;color:#64748b">Por cobrar</div>
+            <div style="background:#1e293b;height:35px;border-radius:4px;display:flex;align-items:center;justify-content:center">
+              <div style="width:35px;height:35px;border-radius:50%;background:conic-gradient(#f87171 60%, #374151 0);display:inline-block"></div>
+            </div>
+            <div style="color:#fca5a5;font-size:14px;font-weight:bold;margin-top:4px">$820K</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+          <div style="background:#0f172a;border-radius:4px;padding:6px;text-align:center">
+            <div style="color:#34d399;font-size:13px;font-weight:bold">12</div>
+            <div style="font-size:9px">Abiertas</div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:6px;text-align:center">
+            <div style="color:#f87171;font-size:13px;font-weight:bold">5</div>
+            <div style="font-size:9px">Stock bajo</div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:6px;text-align:center">
+            <div style="color:#fb923c;font-size:13px;font-weight:bold">3</div>
+            <div style="font-size:9px">NV pendiente</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Widgets mixtos (gráficos + KPIs)</h3>
+      <p>Cada sección tiene su propio mini-gráfico integrado. Más visual, requiere Recharts. Layout tipo "Bloomberg".</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1e293b;padding:12px;border-radius:6px;font-family:monospace;font-size:11px;color:#94a3b8">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:8px">
+          <div style="background:#0f172a;border-radius:4px;padding:6px;text-align:center;border-left:3px solid #38bdf8">
+            <div style="color:#38bdf8;font-size:15px;font-weight:bold">$4.2M</div>
+            <div style="font-size:8px">Ventas</div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:6px;text-align:center;border-left:3px solid #34d399">
+            <div style="color:#34d399;font-size:15px;font-weight:bold">12</div>
+            <div style="font-size:8px">Cotiz.</div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:6px;text-align:center;border-left:3px solid #f87171">
+            <div style="color:#f87171;font-size:15px;font-weight:bold">5</div>
+            <div style="font-size:8px">Stock</div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:6px;text-align:center;border-left:3px solid #fb923c">
+            <div style="color:#fb923c;font-size:15px;font-weight:bold">$820K</div>
+            <div style="font-size:8px">Cobrar</div>
+          </div>
+        </div>
+        <div style="background:#0f172a;border-radius:4px;padding:8px;margin-bottom:6px">
+          <div style="font-size:9px;color:#64748b;margin-bottom:4px">Top Clientes del período</div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="display:flex;justify-content:space-between;font-size:9px">
+              <span>Empresa A</span>
+              <div style="display:flex;align-items:center;gap:4px"><div style="background:#6366f1;height:6px;width:60px"></div><span style="color:#a5b4fc">$1.2M</span></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:9px">
+              <span>Empresa B</span>
+              <div style="display:flex;align-items:center;gap:4px"><div style="background:#6366f1;height:6px;width:40px"></div><span style="color:#a5b4fc">$800K</span></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:9px">
+              <span>Empresa C</span>
+              <div style="display:flex;align-items:center;gap:4px"><div style="background:#6366f1;height:6px;width:25px"></div><span style="color:#a5b4fc">$500K</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div style="background:#0f172a;border-radius:4px;padding:6px">
+            <div style="font-size:9px;color:#64748b;margin-bottom:2px">Stock crítico</div>
+            <div style="font-size:9px;color:#e2e8f0;line-height:1.5">⚠ Producto X (2 un.)<br>⚠ Producto Y (1 un.)</div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:6px">
+            <div style="font-size:9px;color:#64748b;margin-bottom:2px">NV por cobrar</div>
+            <div style="font-size:9px;color:#e2e8f0;line-height:1.5">NV #045 — $320K<br>NV #039 — $500K</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — KPIs + Tablas horizontales</h3>
+      <p>Sin gráficos de barras. Rankings con barra de progreso CSS. Más denso en info, cero librerías extra.</p>
+    </div>
+  </div>
+
+</div>

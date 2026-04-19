@@ -1,0 +1,125 @@
+<h2>¿Cómo funciona el modo edición?</h2>
+<p class="subtitle">Cómo el admin agrega, mueve y configura widgets</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1e293b;padding:10px;border-radius:6px;font-size:10px;color:#94a3b8">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="color:#e2e8f0;font-weight:bold">Dashboard — Rol: Vendedor</span>
+          <div style="display:flex;gap:4px">
+            <div style="background:#6366f1;color:white;padding:2px 8px;border-radius:3px;font-size:9px">✏ Editar</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div style="background:#0f172a;border-radius:4px;padding:8px;border:2px dashed #6366f1;position:relative">
+            <div style="position:absolute;top:4px;right:4px;display:flex;gap:3px">
+              <div style="background:#334155;padding:1px 4px;border-radius:2px;cursor:pointer">⚙</div>
+              <div style="background:#334155;padding:1px 4px;border-radius:2px;cursor:pointer;color:#f87171">✕</div>
+            </div>
+            <div style="font-size:8px;color:#64748b;margin-bottom:4px">Ventas del mes</div>
+            <div style="color:#38bdf8;font-size:14px;font-weight:bold">$4.2M</div>
+            <div style="font-size:8px;cursor:move;color:#475569;margin-top:6px;text-align:center">⠿ arrastrar</div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:8px;border:2px dashed #6366f1;position:relative">
+            <div style="position:absolute;top:4px;right:4px;display:flex;gap:3px">
+              <div style="background:#334155;padding:1px 4px;border-radius:2px">⚙</div>
+              <div style="background:#334155;padding:1px 4px;border-radius:2px;color:#f87171">✕</div>
+            </div>
+            <div style="font-size:8px;color:#64748b;margin-bottom:2px">Top productos</div>
+            <div style="font-size:8px;line-height:1.6;color:#e2e8f0">
+              1. Producto A — $800K<br>
+              2. Producto B — $600K<br>
+            </div>
+            <div style="font-size:8px;cursor:move;color:#475569;margin-top:4px;text-align:center">⠿ arrastrar</div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:8px;border:2px dashed #475569;grid-column:span 2;display:flex;align-items:center;justify-content:center;min-height:40px;cursor:pointer">
+            <span style="color:#475569;font-size:10px">＋ Agregar widget</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Drag-and-drop libre</h3>
+      <p>Widgets arrastrables a cualquier posición (react-grid-layout). Cada widget tiene ⚙ para configurar tipo de gráfico y rango. Más potente, más complejo de implementar.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1e293b;padding:10px;border-radius:6px;font-size:10px;color:#94a3b8">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="color:#e2e8f0;font-weight:bold">Dashboard — Rol: Admin</span>
+          <div style="background:#6366f1;color:white;padding:2px 8px;border-radius:3px;font-size:9px">✏ Editar layout</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:5px">
+          <div style="background:#0f172a;border-radius:4px;padding:6px;border:1px solid #6366f1">
+            <div style="font-size:8px;color:#64748b">KPI — Ventas mes</div>
+            <div style="display:flex;justify-content:flex-end;gap:3px;margin-top:4px">
+              <div style="background:#1e3a5f;padding:1px 5px;border-radius:2px;font-size:8px">↑↓</div>
+              <div style="background:#1e3a5f;padding:1px 5px;border-radius:2px;font-size:8px">⚙</div>
+            </div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:6px;border:1px solid #6366f1">
+            <div style="font-size:8px;color:#64748b">Bar — Cotizaciones</div>
+            <div style="display:flex;justify-content:flex-end;gap:3px;margin-top:4px">
+              <div style="background:#1e3a5f;padding:1px 5px;border-radius:2px;font-size:8px">↑↓</div>
+              <div style="background:#1e3a5f;padding:1px 5px;border-radius:2px;font-size:8px">⚙</div>
+            </div>
+          </div>
+          <div style="background:#334155;border-radius:4px;padding:6px;border:2px dashed #475569;display:flex;align-items:center;justify-content:center;cursor:pointer">
+            <span style="font-size:9px;color:#64748b">＋ widget</span>
+          </div>
+        </div>
+        <div style="background:#0f172a;border-radius:4px;padding:6px;border:1px solid #6366f1">
+          <div style="font-size:8px;color:#64748b">Tabla — Top clientes (ancho completo)</div>
+          <div style="display:flex;justify-content:flex-end;gap:3px;margin-top:2px">
+            <div style="background:#1e3a5f;padding:1px 5px;border-radius:2px;font-size:8px">↑↓</div>
+            <div style="background:#1e3a5f;padding:1px 5px;border-radius:2px;font-size:8px">⚙</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Grid fijo con reordenamiento</h3>
+      <p>Columnas fijas (1, 2, o 3 cols por widget). Se reordenan con flechas ↑↓ o drag dentro del grid. Más predecible, más fácil de implementar.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1e293b;padding:10px;border-radius:6px;font-size:10px;color:#94a3b8">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="color:#e2e8f0;font-weight:bold">Dashboard — Rol: Vendedor</span>
+          <div style="background:#6366f1;color:white;padding:2px 8px;border-radius:3px;font-size:9px">✏ Editar</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <div style="background:#0f172a;border-radius:4px;padding:8px;flex:1;border:1px solid #374151">
+            <div style="font-size:8px;color:#64748b;margin-bottom:6px;border-bottom:1px solid #1e293b;padding-bottom:4px">Panel izquierdo</div>
+            <div style="background:#1e293b;border-radius:3px;padding:5px;margin-bottom:4px;border:1px dashed #475569">
+              <div style="font-size:8px">KPI — Ventas</div>
+            </div>
+            <div style="background:#1e293b;border-radius:3px;padding:5px;border:1px dashed #475569">
+              <div style="font-size:8px">Bar — Cotizaciones</div>
+            </div>
+          </div>
+          <div style="background:#0f172a;border-radius:4px;padding:8px;flex:1;border:1px solid #374151">
+            <div style="font-size:8px;color:#64748b;margin-bottom:6px;border-bottom:1px solid #1e293b;padding-bottom:4px">Panel derecho</div>
+            <div style="background:#1e293b;border-radius:3px;padding:5px;margin-bottom:4px;border:1px dashed #475569">
+              <div style="font-size:8px">Tabla — Top productos</div>
+            </div>
+            <div style="background:#334155;border-radius:3px;padding:5px;border:2px dashed #475569;text-align:center;color:#64748b">
+              ＋ widget
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Columnas tipo Jira</h3>
+      <p>2–3 columnas fijas, widgets apilados verticalmente dentro de cada columna. Drag-and-drop entre columnas. El modelo más cercano a Jira Dashboard.</p>
+    </div>
+  </div>
+
+</div>

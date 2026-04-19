@@ -34,7 +34,11 @@
       "Bash(git commit *)",
       "Bash(pytest -q)",
       "Bash(npx tsc *)",
-      "Bash(git init *)"
+      "Bash(git init *)",
+      "Bash(git stash *)",
+      "Bash(git checkout *)",
+      "Bash(node -e \"require\\('react-grid-layout'\\); require\\('recharts'\\); console.log\\('OK'\\)\")",
+      "Bash(git push *)"
     ]
   }
 }
