@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2, FileText, Mail, ArrowLeft } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
-import type { Cotizacion, CotizacionLinea, Cliente, User, Producto } from '../types'
+import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa } from '../types'
 
 type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string }
 
@@ -59,6 +59,7 @@ export default function CotizacionDetalle() {
   const [estado, setEstado] = useState('no_definido')
   const [nota, setNota] = useState('')
   const [lineas, setLineas] = useState<LineaLocal[]>([newLinea(1)])
+  const [empresaId, setEmpresaId] = useState<number | ''>('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [emailToast, setEmailToast] = useState<{ msg: string; ok: boolean } | null>(null)
@@ -81,6 +82,7 @@ export default function CotizacionDetalle() {
       setFecha(cotizacion.fecha)
       setEstado(cotizacion.estado)
       setNota(cotizacion.nota ?? '')
+      setEmpresaId(cotizacion.empresa_id ?? '')
       setLineas(
         (cotizacion.lineas ?? []).map((l, i) => ({
           ...l,
@@ -105,6 +107,11 @@ export default function CotizacionDetalle() {
     enabled: isAdmin,
   })
 
+  const { data: empresas = [] } = useQuery<Empresa[]>({
+    queryKey: ['empresas'],
+    queryFn: () => api.get('/api/empresas/').then(r => r.data),
+  })
+
   function handleClienteChange(cid: number | '') {
     setClienteId(cid)
     if (cid) {
@@ -112,6 +119,7 @@ export default function CotizacionDetalle() {
       if (c) {
         if (!contacto) setContacto(c.nombre)
         if (!correo && c.email) setCorreo(c.email)
+        if (c.empresa_id) setEmpresaId(c.empresa_id)
       }
     }
   }
@@ -181,6 +189,7 @@ export default function CotizacionDetalle() {
         fecha,
         estado,
         nota: nota || null,
+        empresa_id: empresaId || null,
       }
       const lineasPayload = lineas.map((l, i) => ({
         orden: i + 1,
@@ -280,6 +289,17 @@ export default function CotizacionDetalle() {
               ))}
             </select>
           </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Empresa</label>
+                <select
+                  value={empresaId}
+                  onChange={e => setEmpresaId(e.target.value ? Number(e.target.value) : '')}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="">— Sin empresa —</option>
+                  {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                </select>
+              </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Contacto</label>
             <input type="text" value={contacto} onChange={e => setContacto(e.target.value)}
