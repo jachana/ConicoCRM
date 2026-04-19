@@ -1,15 +1,15 @@
 """add movimientos_inventario table
 
-Revision ID: a1b2c3d4e5f6
-Revises: f6a3b0c1d2e5
+Revision ID: g7h8i9j0k1l2
+Revises: a1b2c3d4e5f6
 Create Date: 2026-04-19 00:00:00.000000
 """
 from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-revision: str = "a1b2c3d4e5f6"
-down_revision: Union[str, None] = "f6a3b0c1d2e5"
+revision: str = "g7h8i9j0k1l2"
+down_revision: Union[str, None] = "a1b2c3d4e5f6"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
