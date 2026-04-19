@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Users from './pages/Users'
+import Empresas from './pages/Empresas'
 import Proveedores from './pages/Proveedores'
 import Productos from './pages/Productos'
 import Clientes from './pages/Clientes'
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <div className="p-6 text-gray-700 dark:text-gray-300">Dashboard — próximamente</div> },
       { path: 'usuarios', element: <Users /> },
+      { path: 'empresas', element: <Empresas /> },
       { path: 'proveedores', element: <Proveedores /> },
       { path: 'catalogo', element: <Productos /> },
       { path: 'clientes', element: <Clientes /> },

@@ -8,11 +8,11 @@ type FormData = {
   rut: string
   email: string
   telefono: string
-  direccion: string
+  direccion_despacho: string
   notas: string
 }
 
-const EMPTY_FORM: FormData = { nombre: '', rut: '', email: '', telefono: '', direccion: '', notas: '' }
+const EMPTY_FORM: FormData = { nombre: '', rut: '', email: '', telefono: '', direccion_despacho: '', notas: '' }
 
 export default function Clientes() {
   const qc = useQueryClient()
@@ -36,7 +36,7 @@ export default function Clientes() {
 
   function abrirEditar(c: Cliente) {
     setEditando(c)
-    setForm({ nombre: c.nombre, rut: c.rut ?? '', email: c.email ?? '', telefono: c.telefono ?? '', direccion: c.direccion ?? '', notas: c.notas ?? '' })
+    setForm({ nombre: c.nombre, rut: c.rut ?? '', email: c.email ?? '', telefono: c.telefono ?? '', direccion_despacho: c.direccion_despacho ?? '', notas: c.notas ?? '' })
     setError(null); setModalOpen(true)
   }
 
@@ -160,7 +160,7 @@ export default function Clientes() {
               ))}
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
-                <input type="text" value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))}
+                <input type="text" value={form.direccion_despacho} onChange={e => setForm(f => ({ ...f, direccion_despacho: e.target.value }))}
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div className="col-span-2">

@@ -8,7 +8,7 @@ export interface User {
 }
 
 export type Module =
-  | 'catalogo' | 'clientes' | 'proveedores' | 'cotizaciones'
+  | 'catalogo' | 'clientes' | 'empresas' | 'proveedores' | 'cotizaciones'
   | 'nota_venta' | 'facturas' | 'ordenes_compra' | 'inventario'
   | 'rrhh' | 'dashboard' | 'usuarios'
 
@@ -24,6 +24,27 @@ export interface Proveedor {
   email: string | null
   telefono: string | null
   notas: string | null
+  created_at: string
+}
+
+export interface EmpresaRef {
+  id: number
+  nombre: string
+  razon_social: string | null
+  rut: string | null
+}
+
+export interface Empresa {
+  id: number
+  nombre: string
+  razon_social: string | null
+  rut: string | null
+  forma_pago: string | null
+  prioridad: string | null
+  sector: string | null
+  email: string | null
+  nota_cobranza: string | null
+  ubicacion: string | null
   created_at: string
 }
 
@@ -47,8 +68,18 @@ export interface Cliente {
   rut: string | null
   email: string | null
   telefono: string | null
-  direccion: string | null
+  direccion_despacho: string | null
   notas: string | null
+  empresa_id: number | null
+  empresa: EmpresaRef | null
+  recibe_correo: boolean
+  forma_pago: string | null
+  despacho_o_retiro: string | null
+  comuna: string | null
+  ultimo_contacto: string | null
+  forma_captacion: string | null
+  compromiso: string | null
+  es_nuevo: boolean
   created_at: string
 }
 
@@ -77,6 +108,8 @@ export interface Cotizacion {
   numero: number
   cliente_id: number
   vendedor_id: number
+  empresa_id: number | null
+  empresa?: EmpresaRef | null
   contacto: string | null
   fecha: string
   estado: 'no_definido' | 'abierta' | 'cerrada_fv' | 'rechazada'

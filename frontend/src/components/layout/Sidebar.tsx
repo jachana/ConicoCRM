@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Users, Package, ShoppingCart,
-  Warehouse, Receipt, Truck, UserCog, ChevronLeft, ChevronRight, LogOut, Sun, Moon
+  Warehouse, Receipt, Truck, UserCog, Building2, ChevronLeft, ChevronRight, LogOut, Sun, Moon
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth'
 import { useTheme } from './ThemeProvider'
@@ -15,6 +15,7 @@ const NAV = [
   { to: '/',              icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/cotizaciones',  icon: FileText,        label: 'Cotizaciones' },
   { to: '/clientes',      icon: Users,           label: 'Clientes' },
+  { to: '/empresas',      icon: Building2,       label: 'Empresas' },
   { to: '/catalogo',      icon: Package,         label: 'Catálogo' },
   { to: '/notas-venta',   icon: ShoppingCart,    label: 'Notas de Venta' },
   { to: '/facturas',      icon: Receipt,         label: 'Facturas' },
