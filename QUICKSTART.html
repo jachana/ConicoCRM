@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conico PMS — Quickstart</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a; color: #e2e8f0;
+      line-height: 1.6; padding: 2rem 1rem;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { font-size: 1.75rem; font-weight: 700; color: #f8fafc; margin-bottom: 0.25rem; }
+    .subtitle { color: #94a3b8; font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.1rem; font-weight: 600; color: #f8fafc;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid #1e293b;
+    }
+    h3 { font-size: 0.95rem; font-weight: 600; color: #cbd5e1; margin: 1.25rem 0 0.5rem; }
+    p { color: #94a3b8; margin-bottom: 0.75rem; font-size: 0.925rem; }
+    pre {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 8px; padding: 1rem 1.25rem;
+      overflow-x: auto; margin: 0.75rem 0 1rem;
+      font-size: 0.85rem; line-height: 1.7;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", Consolas, monospace; color: #7dd3fc; }
+    pre code { color: #e2e8f0; }
+    .badge {
+      display: inline-block; font-size: 0.75rem; font-weight: 600;
+      padding: 0.15rem 0.5rem; border-radius: 4px; margin-right: 0.4rem;
+    }
+    .badge-blue { background: #1e3a5f; color: #60a5fa; }
+    .badge-green { background: #14532d; color: #4ade80; }
+    .badge-yellow { background: #422006; color: #fbbf24; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin: 0.75rem 0 1.25rem; }
+    th {
+      text-align: left; padding: 0.5rem 0.75rem;
+      background: #1e293b; color: #94a3b8;
+      font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    td { padding: 0.5rem 0.75rem; border-top: 1px solid #1e293b; color: #cbd5e1; }
+    td code { color: #7dd3fc; font-size: 0.82rem; }
+    .step {
+      display: flex; gap: 1rem; margin-bottom: 1.25rem;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 1.75rem; height: 1.75rem;
+      background: #1e40af; color: #bfdbfe;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700; margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .note {
+      background: #1e293b; border-left: 3px solid #f59e0b;
+      border-radius: 0 6px 6px 0; padding: 0.6rem 1rem;
+      font-size: 0.875rem; color: #fcd34d; margin: 0.75rem 0;
+    }
+    .section {
+      background: #111827; border: 1px solid #1e293b;
+      border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+    }
+    .section h2 { margin-top: 0; }
+    hr { border: none; border-top: 1px solid #1e293b; margin: 2rem 0; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    .tag {
+      background: #1e293b; color: #94a3b8;
+      padding: 0.25rem 0.75rem; border-radius: 999px;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Conico PMS</h1>
+  <p class="subtitle">Guía de inicio rápido · Sistema de gestión para Distribuidora Conico Ltda.</p>
+
+  <!-- DEV -->
+  <div class="section">
+    <h2>Desarrollo local</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Requisitos</h3>
+        <p>Docker Desktop y Git instalados.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Clonar y configurar</h3>
+        <pre><code>git clone git@github.com:jachana/ConicoCRM.git
+cd ConicoCRM
+cp .env.example .env   # editar con tus valores</code></pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Variables de entorno mínimas <code>.env</code></h3>
+        <pre><code>DATABASE_URL=postgresql://conico:conico@db:5432/conico
+SECRET_KEY=cambia-esto-por-un-secreto-largo
+CORS_ORIGINS=http://localhost:5173</code></pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h3>Levantar servicios</h3>
+        <pre><code>docker compose up --build</code></pre>
+        <table>
+          <tr><th>Servicio</th><th>URL</th></tr>
+          <tr><td>Frontend</td><td><code>http://localhost:5173</code></td></tr>
+          <tr><td>Backend API</td><td><code>http://localhost:8000</code></td></tr>
+          <tr><td>Swagger docs</td><td><code>http://localhost:8000/docs</code></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h3>Crear usuario admin inicial</h3>
+        <pre><code>docker compose exec backend python scripts/seed_admin.py</code></pre>
+        <div class="note">Crea <strong>admin@conico.cl</strong> / <strong>admin123</strong>. Cambiar después del primer login.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROD -->
+  <div class="section">
+    <h2>Producción — Coolify</h2>
+
+    <h3>Variables de entorno requeridas</h3>
+    <table>
+      <tr><th>Variable</th><th>Descripción</th></tr>
+      <tr><td><code>DATABASE_URL</code></td><td>postgresql://conico:&lt;password&gt;@db:5432/conico</td></tr>
+      <tr><td><code>SECRET_KEY</code></td><td>String aleatorio largo (mín. 32 chars)</td></tr>
+      <tr><td><code>CORS_ORIGINS</code></td><td>URL del dominio, ej. https://crm.conico.cl</td></tr>
+      <tr><td><code>POSTGRES_PASSWORD</code></td><td>Contraseña de la base de datos</td></tr>
+    </table>
+
+    <h3>Variables opcionales (email)</h3>
+    <table>
+      <tr><th>Variable</th><th>Descripción</th></tr>
+      <tr><td><code>SMTP_HOST</code></td><td>Servidor SMTP</td></tr>
+      <tr><td><code>SMTP_PORT</code></td><td>Puerto (default: 587)</td></tr>
+      <tr><td><code>SMTP_USER</code></td><td>Usuario SMTP</td></tr>
+      <tr><td><code>SMTP_PASSWORD</code></td><td>Contraseña SMTP</td></tr>
+      <tr><td><code>SMTP_FROM</code></td><td>Dirección remitente</td></tr>
+    </table>
+
+    <h3>Pasos en Coolify</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body"><p>Nuevo recurso → <strong>Docker Compose</strong></p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body"><p>Repositorio: <code>git@github.com:jachana/ConicoCRM.git</code></p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body"><p>Archivo compose: <code>docker-compose.prod.yml</code></p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body"><p>Agregar variables de entorno → Deploy.</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <p>Crear admin inicial (una sola vez):</p>
+        <pre><code>docker compose -f docker-compose.prod.yml exec backend python scripts/seed_admin.py</code></pre>
+      </div>
+    </div>
+
+    <div class="note">Las migraciones de base de datos corren automáticamente en cada deploy antes de iniciar el backend.</div>
+  </div>
+
+  <!-- STACK -->
+  <div class="section">
+    <h2>Stack técnico</h2>
+    <table>
+      <tr><th>Capa</th><th>Tecnología</th></tr>
+      <tr><td>Backend</td><td>FastAPI 0.115 · SQLAlchemy 2 · Alembic · Python 3.12</td></tr>
+      <tr><td>Frontend</td><td>React 18 · TypeScript · Vite · TailwindCSS · React Query 5</td></tr>
+      <tr><td>Base de datos</td><td>PostgreSQL 15</td></tr>
+      <tr><td>PDF</td><td>WeasyPrint</td></tr>
+      <tr><td>Auth</td><td>JWT (access + refresh tokens)</td></tr>
+      <tr><td>Deploy</td><td>Docker Compose · Nginx · Coolify</td></tr>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>
