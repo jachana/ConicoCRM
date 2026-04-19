@@ -173,6 +173,7 @@ export interface NotaVenta {
   id: number
   numero: number
   cotizacion_id: number | null
+  factura_id: number | null
   cliente_id: number
   vendedor_id: number | null
   empresa_id: number | null
@@ -191,6 +192,51 @@ export interface NotaVenta {
   vendedor?: { id: number; name: string; email: string }
   cotizacion?: { id: number; numero: number } | null
   lineas?: NotaVentaLinea[]
+}
+
+export interface FacturaLinea {
+  id: number;
+  orden: number;
+  producto_id: number | null;
+  sku: string | null;
+  descripcion: string;
+  formato: string | null;
+  cantidad: number;
+  valor_neto: number;
+  total_neto: number;
+  iva: number;
+  total: number;
+  margen: number | null;
+}
+
+export interface Factura {
+  id: number;
+  numero: number;
+  cotizacion_id: number | null;
+  nv_id: number | null;
+  cliente_id: number;
+  vendedor_id: number | null;
+  empresa_id: number | null;
+  contacto: string | null;
+  fecha: string;
+  fecha_vencimiento: string | null;
+  estado: string;
+  nota: string | null;
+  correo: string | null;
+  total_neto: number;
+  total_iva: number;
+  total: number;
+  fecha_pago: string | null;
+  monto_pagado: number | null;
+  metodo_pago: string | null;
+  created_at: string;
+  updated_at: string;
+  cliente: { id: number; nombre: string; rut: string | null } | null;
+  vendedor: { id: number; name: string; email: string } | null;
+  empresa: { id: number; nombre: string } | null;
+  nv: { id: number; numero: number } | null;
+  cotizacion: { id: number; numero: number } | null;
+  lineas: FacturaLinea[];
 }
 
 export type OrdenCompraEstado = 'borrador' | 'enviada' | 'recibida_parcial' | 'recibida_completa' | 'cancelada'

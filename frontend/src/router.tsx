@@ -12,6 +12,8 @@ import OrdenCompraDetalle from './pages/OrdenCompraDetalle'
 import RRHH from './pages/RRHH'
 import NotaVentas from './pages/NotaVentas'
 import NotaVentaDetalle from './pages/NotaVentaDetalle'
+import Facturas from './pages/Facturas'
+import FacturaDetalle from './pages/FacturaDetalle'
 import { useAuthStore } from './stores/auth'
 import AppLayout from './components/layout/AppLayout'
 
@@ -42,6 +44,9 @@ export const router = createBrowserRouter([
       { path: 'notas-venta', element: <NotaVentas /> },
       { path: 'notas-venta/nueva', element: <NotaVentaDetalle /> },
       { path: 'notas-venta/:id', element: <NotaVentaDetalle /> },
+      { path: 'facturas', element: <Facturas /> },
+      { path: 'facturas/nueva', element: <FacturaDetalle /> },
+      { path: 'facturas/:id', element: <FacturaDetalle /> },
       { path: 'rrhh', element: <RRHH /> },
     ],
   },
