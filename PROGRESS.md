@@ -60,10 +60,13 @@
   - Registro de períodos de vacaciones
   - Volumen Docker `uploads_data` para persistencia de archivos
 
-- [ ] **Fase 9 — Dashboard / Reportes**
-  - Admin/SubAdmin: ventas del período, cotizaciones pendientes, stock crítico, facturas por cobrar, top clientes, top productos
-  - Vendedor: solo métricas propias
-  - Filtros por fecha + exportación Excel
+- [x] **Fase 9 — Dashboard configurable**
+  - 8 widgets: ventas período, cotizaciones abiertas, top clientes, top productos, stock crítico, NV por cobrar, cotizaciones/ventas por vendedor
+  - Layout persistido por rol en DB (dashboard_layouts); admin edita layouts con drag-and-drop (react-grid-layout)
+  - Modo edición: agregar/mover/redimensionar/eliminar widgets; configurar tipo de gráfico y rango de tiempo
+  - Templates predefinidos: Ventas, Operacional, Completo
+  - Vendedor ve datos filtrados automáticamente a sus propias ventas; sin acceso a widgets admin-only
+  - Gráficos: KPI, barras, línea (Recharts); tablas inline
 
 ---
 
