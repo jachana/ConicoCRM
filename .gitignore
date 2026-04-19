@@ -33,3 +33,6 @@ Thumbs.db
 
 # Claude local settings (permissions, personal config)
 .claude/settings.local.json
+
+uploads/*
+!uploads/.gitkeep
