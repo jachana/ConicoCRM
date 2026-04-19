@@ -192,3 +192,36 @@ export interface NotaVenta {
   cotizacion?: { id: number; numero: number } | null
   lineas?: NotaVentaLinea[]
 }
+
+export type OrdenCompraEstado = 'borrador' | 'enviada' | 'recibida_parcial' | 'recibida_completa' | 'cancelada'
+
+export interface OrdenCompraLinea {
+  id?: number
+  orden: number
+  producto_id: number | null
+  sku: string | null
+  descripcion: string
+  cantidad: number
+  cantidad_recibida: number
+  valor_neto: number
+  total_neto: number
+  iva: number
+  total: number
+}
+
+export interface OrdenCompra {
+  id: number
+  numero: number
+  proveedor_id: number
+  fecha: string
+  fecha_entrega_esperada: string | null
+  estado: OrdenCompraEstado
+  nota: string | null
+  total_neto: number
+  total_iva: number
+  total: number
+  created_at: string
+  updated_at: string
+  proveedor?: { id: number; nombre: string; rut: string | null; email: string | null; contacto: string | null; telefono: string | null } | null
+  lineas?: OrdenCompraLinea[]
+}
