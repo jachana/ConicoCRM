@@ -11,6 +11,6 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_user: str = ""
     smtp_password: str = ""
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "http://localhost:15173"
 
 settings = Settings()
