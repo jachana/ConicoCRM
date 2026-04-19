@@ -99,3 +99,43 @@ def enviar_nota_venta(nota_venta, pdf_bytes: bytes) -> None:
         server.starttls()
         server.login(cfg["user"], cfg["password"])
         server.sendmail(cfg["from"], to_addr, msg.as_string())
+
+
+def enviar_orden_compra(orden_compra, pdf_bytes: bytes) -> None:
+    cfg = _get_smtp_config()
+
+    to_addr = orden_compra.proveedor.email if orden_compra.proveedor else ""
+    if not to_addr:
+        raise ValueError("El proveedor no tiene email de destino")
+
+    empresa_nombre = "Conico"
+    numero_str = f"OC-{orden_compra.numero:05d}"
+    fecha_str = orden_compra.fecha.strftime("%d/%m/%Y") if orden_compra.fecha else ""
+    proveedor_nombre = orden_compra.proveedor.nombre if orden_compra.proveedor else ""
+    contacto = orden_compra.proveedor.contacto if orden_compra.proveedor else proveedor_nombre
+
+    msg = MIMEMultipart()
+    msg["From"] = cfg["from"]
+    msg["To"] = to_addr
+    msg["Subject"] = f"Orden de Compra {numero_str} — {empresa_nombre}"
+
+    body = (
+        f"Estimado/a {contacto},\n\n"
+        f"Adjuntamos la orden de compra {numero_str} de fecha {fecha_str}.\n\n"
+        f"Proveedor: {proveedor_nombre}\n"
+        f"Total: $ {orden_compra.total:,.0f}\n\n"
+        f"Quedamos a su disposición para cualquier consulta.\n\n"
+        f"Saludos,\n{empresa_nombre}"
+    )
+    msg.attach(MIMEText(body, "plain", "utf-8"))
+
+    filename = f"{numero_str} {fecha_str}.{proveedor_nombre}.pdf"
+    attachment = MIMEApplication(pdf_bytes, _subtype="pdf")
+    attachment.add_header("Content-Disposition", "attachment", filename=filename)
+    msg.attach(attachment)
+
+    with smtplib.SMTP(cfg["host"], cfg["port"]) as server:
+        server.ehlo()
+        server.starttls()
+        server.login(cfg["user"], cfg["password"])
+        server.sendmail(cfg["from"], to_addr, msg.as_string())
