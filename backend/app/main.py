@@ -5,6 +5,7 @@ from app.api import auth, users
 from app.api import proveedores
 from app.api import productos
 from app.api import clientes
+from app.api import empresas
 from app.api import config
 from app.api import cotizaciones
 
@@ -23,5 +24,6 @@ app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(proveedores.router, prefix="/api/proveedores", tags=["proveedores"])
 app.include_router(productos.router, prefix="/api/productos", tags=["catálogo"])
 app.include_router(clientes.router, prefix="/api/clientes", tags=["clientes"])
+app.include_router(empresas.router, prefix="/api/empresas", tags=["empresas"])
 app.include_router(config.router, prefix="/api/config", tags=["config"])
 app.include_router(cotizaciones.router, prefix="/api/cotizaciones", tags=["cotizaciones"])

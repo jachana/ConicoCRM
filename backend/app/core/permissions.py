@@ -3,7 +3,7 @@ from app.models.user import User
 from app.models.permission import PermissionOverride
 
 MODULES = [
-    "catalogo", "clientes", "proveedores", "cotizaciones", "nota_venta",
+    "catalogo", "clientes", "proveedores", "empresas", "cotizaciones", "nota_venta",
     "facturas", "ordenes_compra", "inventario", "rrhh", "dashboard", "usuarios",
 ]
 ACTIONS = ["view", "create", "edit", "delete"]
@@ -14,6 +14,7 @@ _DEFAULT: dict[str, dict[str, dict[str, bool]]] = {
         "catalogo":       {"view": True,  "create": True,  "edit": True,  "delete": True},
         "clientes":       {"view": True,  "create": True,  "edit": True,  "delete": True},
         "proveedores":    {"view": True,  "create": True,  "edit": True,  "delete": True},
+        "empresas":       {"view": True,  "create": True,  "edit": True,  "delete": True},
         "cotizaciones":   {"view": True,  "create": True,  "edit": True,  "delete": True},
         "nota_venta":     {"view": True,  "create": True,  "edit": True,  "delete": True},
         "facturas":       {"view": True,  "create": True,  "edit": True,  "delete": True},
@@ -27,6 +28,7 @@ _DEFAULT: dict[str, dict[str, dict[str, bool]]] = {
         "catalogo":       {"view": True,  "create": False, "edit": False, "delete": False},
         "clientes":       {"view": True,  "create": True,  "edit": True,  "delete": False},  # no borrar clientes propios
         "proveedores":    {"view": False, "create": False, "edit": False, "delete": False},
+        "empresas":       {"view": True,  "create": False, "edit": False, "delete": False},
         "cotizaciones":   {"view": True,  "create": True,  "edit": True,  "delete": False},
         "nota_venta":     {"view": True,  "create": False, "edit": False, "delete": False},
         "facturas":       {"view": True,  "create": False, "edit": False, "delete": False},

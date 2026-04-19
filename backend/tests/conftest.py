@@ -1,8 +1,14 @@
 import os
+import sys
+from unittest.mock import MagicMock
 
 # Set required env vars before any app imports so pydantic_settings doesn't fail.
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-unit-tests")
+
+# Mock weasyprint before any app import — native GTK libs are not available on Windows dev.
+_weasyprint_mock = MagicMock()
+sys.modules.setdefault("weasyprint", _weasyprint_mock)
 
 import pytest
 from sqlalchemy import create_engine
@@ -21,6 +27,7 @@ def setup_test_db():
     import app.models.proveedor  # noqa: F401 — registers Proveedor with Base.metadata
     import app.models.producto  # noqa: F401 — registers Producto with Base.metadata
     import app.models.cliente  # noqa: F401 — registers Cliente with Base.metadata
+    import app.models.empresa  # noqa: F401
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
