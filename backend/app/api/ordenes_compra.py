@@ -167,7 +167,6 @@ def crear_orden(
         linea.orden_compra_id = orden.id
     _recalcular_totales(orden)
     db.commit()
-    db.refresh(orden)
     return _get_orden_con_relaciones(db, orden.id)
 
 
@@ -337,6 +336,7 @@ def cambiar_estado(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
     transiciones_validas = {
         "borrador": ["cancelada"],
+        "enviada": ["cancelada"],
     }
     permitidas = transiciones_validas.get(orden.estado, [])
     if body.estado not in permitidas:
