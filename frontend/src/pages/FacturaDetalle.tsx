@@ -88,11 +88,12 @@ function PaymentModal({ onConfirm, onCancel, totalSugerido }: PaymentModalProps)
               onChange={e => setMetodoPago(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="transferencia">Transferencia</option>
               <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
               <option value="cheque">Cheque</option>
-              <option value="tarjeta">Tarjeta</option>
-              <option value="otro">Otro</option>
+              <option value="debito">Débito</option>
+              <option value="credito">Crédito</option>
+              <option value="deposito">Depósito</option>
             </select>
           </div>
         </div>
@@ -620,7 +621,7 @@ export default function FacturaDetalle() {
       {/* Lines section */}
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Líneas</h2>
-        {!editingLineas && (
+        {!editingLineas && currentUser?.role === 'admin' && (
           <button
             onClick={() => { setEditingLineas(true); setEditing(true) }}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-indigo-300 dark:border-indigo-700 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
