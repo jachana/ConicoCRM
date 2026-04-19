@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #333; padding: 20px; }
+  @page { size: A4; margin: 15mm; }
+
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; border-bottom: 2px solid #2563eb; padding-bottom: 16px; }
+  .header-left { flex: 1; }
+  .header-right { text-align: right; }
+  .logo { max-height: 60px; max-width: 180px; margin-bottom: 8px; }
+  .empresa-nombre { font-size: 14px; font-weight: bold; color: #1e3a5f; }
+  .empresa-info { font-size: 10px; color: #666; margin-top: 2px; }
+  .oc-numero { font-size: 22px; font-weight: bold; color: #2563eb; }
+  .oc-fecha { font-size: 11px; color: #555; margin-top: 4px; }
+
+  .section-title { font-size: 10px; font-weight: bold; text-transform: uppercase; color: #888; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .proveedor-block { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+  .proveedor-nombre { font-size: 13px; font-weight: bold; color: #1e3a5f; margin-bottom: 4px; }
+  .proveedor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 10px; color: #555; }
+
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  thead th { background: #2563eb; color: white; padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  thead th.right { text-align: right; }
+  tbody tr:nth-child(even) { background: #f8f9fb; }
+  tbody td { padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 10px; vertical-align: top; }
+  tbody td.right { text-align: right; white-space: nowrap; }
+  tbody td.center { text-align: center; }
+
+  .totales { display: flex; justify-content: flex-end; margin-top: 8px; }
+  .totales-tabla { width: 260px; }
+  .totales-tabla td { padding: 4px 8px; font-size: 11px; }
+  .totales-tabla td:last-child { text-align: right; font-weight: 600; }
+  .totales-tabla tr:last-child td { border-top: 2px solid #2563eb; font-size: 13px; font-weight: bold; color: #2563eb; }
+
+  .nota-block { margin-top: 20px; padding: 10px 12px; border-left: 3px solid #2563eb; background: #f0f4ff; font-size: 10px; color: #444; }
+  .nota-label { font-weight: bold; color: #2563eb; margin-bottom: 4px; }
+
+  .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 9px; color: #aaa; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    {% if config.empresa_logo_url %}
+    <img src="{{ config.empresa_logo_url }}" class="logo" alt="Logo">
+    {% endif %}
+    <div class="empresa-nombre">{{ config.empresa_nombre or 'Distribuidora Conico Ltda.' }}</div>
+    {% if config.empresa_rut %}<div class="empresa-info">RUT: {{ config.empresa_rut }}</div>{% endif %}
+    {% if config.empresa_direccion %}<div class="empresa-info">{{ config.empresa_direccion }}</div>{% endif %}
+  </div>
+  <div class="header-right">
+    <div class="oc-numero">OC-{{ '%05d' % orden_compra.numero }}</div>
+    <div class="oc-fecha">Fecha: {{ orden_compra.fecha.strftime('%d/%m/%Y') if orden_compra.fecha else '' }}</div>
+    {% if orden_compra.fecha_entrega_esperada %}
+    <div class="oc-fecha">Entrega estimada: {{ orden_compra.fecha_entrega_esperada.strftime('%d/%m/%Y') }}</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="section-title">Datos del Proveedor</div>
+<div class="proveedor-block">
+  <div class="proveedor-nombre">{{ orden_compra.proveedor.nombre if orden_compra.proveedor else '' }}</div>
+  <div class="proveedor-grid">
+    {% if orden_compra.proveedor and orden_compra.proveedor.rut %}
+    <div><strong>RUT:</strong> {{ orden_compra.proveedor.rut }}</div>
+    {% endif %}
+    {% if orden_compra.proveedor and orden_compra.proveedor.contacto %}
+    <div><strong>Contacto:</strong> {{ orden_compra.proveedor.contacto }}</div>
+    {% endif %}
+    {% if orden_compra.proveedor and orden_compra.proveedor.email %}
+    <div><strong>Email:</strong> {{ orden_compra.proveedor.email }}</div>
+    {% endif %}
+    {% if orden_compra.proveedor and orden_compra.proveedor.telefono %}
+    <div><strong>Teléfono:</strong> {{ orden_compra.proveedor.telefono }}</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="section-title">Detalle de Productos</div>
+<table>
+  <thead>
+    <tr>
+      <th style="width:28px">Nº</th>
+      <th style="width:80px">SKU</th>
+      <th>Descripción</th>
+      <th class="right" style="width:55px">Cant.</th>
+      <th class="right" style="width:85px">Valor Neto</th>
+      <th class="right" style="width:90px">Total Neto</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for linea in orden_compra.lineas %}
+    <tr>
+      <td class="center">{{ loop.index }}</td>
+      <td>{{ linea.sku or '' }}</td>
+      <td>{{ linea.descripcion }}</td>
+      <td class="right">{{ linea.cantidad }}</td>
+      <td class="right">$ {{ '{:,.0f}'.format(linea.valor_neto) }}</td>
+      <td class="right">$ {{ '{:,.0f}'.format(linea.total_neto) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="totales">
+  <table class="totales-tabla">
+    <tr>
+      <td>Total Neto</td>
+      <td>$ {{ '{:,.0f}'.format(orden_compra.total_neto) }}</td>
+    </tr>
+    <tr>
+      <td>IVA (19%)</td>
+      <td>$ {{ '{:,.0f}'.format(orden_compra.total_iva) }}</td>
+    </tr>
+    <tr>
+      <td>TOTAL</td>
+      <td>$ {{ '{:,.0f}'.format(orden_compra.total) }}</td>
+    </tr>
+  </table>
+</div>
+
+{% if orden_compra.nota %}
+<div class="nota-block">
+  <div class="nota-label">Observaciones</div>
+  <div>{{ orden_compra.nota }}</div>
+</div>
+{% endif %}
+
+<div class="footer">
+  Documento generado el {{ orden_compra.fecha.strftime('%d/%m/%Y') if orden_compra.fecha else '' }} · {{ config.empresa_nombre or '' }}
+</div>
+
+</body>
+</html>

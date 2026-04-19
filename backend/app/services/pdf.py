@@ -17,3 +17,10 @@ def generar_pdf_nota_venta(nota_venta, config: dict) -> bytes:
     template = env.get_template("nota_venta.html")
     html_str = template.render(nota_venta=nota_venta, config=config)
     return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()
+
+
+def generar_pdf_orden_compra(orden_compra, config: dict) -> bytes:
+    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+    template = env.get_template("orden_compra.html")
+    html_str = template.render(orden_compra=orden_compra, config=config)
+    return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()
