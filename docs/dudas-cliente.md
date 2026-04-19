@@ -40,11 +40,15 @@ Pendiente → Despachada → Entregada → Pagada
 
 ---
 
-### 5. Formato PDF de Nota de Venta y Factura
+### 5. Campos adicionales en PDF de Factura *(pendiente)*
 
-**Asunción actual:** Mismo formato que cotización (logo, datos empresa, tabla de líneas, totales), cambiando solo el título del documento.
+**Contexto:** La Nota de Venta usa el mismo formato que la cotización (solo cambia el título). La Factura probablemente necesita campos adicionales.
 
-**Confirmar:** ¿El cliente necesita algún campo adicional en NV o Factura que no aparece en la cotización? (ej. condición de pago, fecha de vencimiento en la factura, número de OC del cliente, etc.)
+**Confirmar con el cliente:** ¿Qué campos adicionales necesita el PDF de Factura?
+- Número de OC del cliente
+- Condición de pago (ej. "30 días")
+- Fecha de vencimiento (ya está en el sistema, ¿mostrar en PDF?)
+- Otros datos legales o comerciales requeridos
 
 ---
 
