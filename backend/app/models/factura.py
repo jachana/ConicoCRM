@@ -5,13 +5,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 
-class NotaVenta(Base):
-    __tablename__ = "nota_ventas"
+class Factura(Base):
+    __tablename__ = "facturas"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     numero: Mapped[int] = mapped_column(Integer, unique=True, index=True)
     cotizacion_id: Mapped[int | None] = mapped_column(
         ForeignKey("cotizaciones.id", ondelete="SET NULL"), nullable=True
+    )
+    nv_id: Mapped[int | None] = mapped_column(
+        ForeignKey("nota_ventas.id", ondelete="SET NULL"), nullable=True
     )
     cliente_id: Mapped[int] = mapped_column(ForeignKey("clientes.id", ondelete="RESTRICT"))
     empresa_id: Mapped[int | None] = mapped_column(
@@ -22,12 +25,16 @@ class NotaVenta(Base):
     )
     contacto: Mapped[str | None] = mapped_column(String(255), nullable=True)
     fecha: Mapped[date] = mapped_column(Date, default=date.today)
-    estado: Mapped[str] = mapped_column(String(20), default="pendiente")
+    fecha_vencimiento: Mapped[date | None] = mapped_column(Date, nullable=True)
+    estado: Mapped[str] = mapped_column(String(20), default="emitida")
     nota: Mapped[str | None] = mapped_column(Text, nullable=True)
     correo: Mapped[str | None] = mapped_column(String(255), nullable=True)
     total_neto: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     total_iva: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
+    fecha_pago: Mapped[date | None] = mapped_column(Date, nullable=True)
+    monto_pagado: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    metodo_pago: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -44,26 +51,20 @@ class NotaVenta(Base):
     empresa: Mapped["Empresa | None"] = relationship("Empresa")
     vendedor: Mapped["User | None"] = relationship("User")
     cotizacion: Mapped["Cotizacion | None"] = relationship("Cotizacion")
-    lineas: Mapped[list["NotaVentaLinea"]] = relationship(
-        "NotaVentaLinea",
-        back_populates="nv",
+    nv: Mapped["NotaVenta | None"] = relationship("NotaVenta", back_populates="factura")
+    lineas: Mapped[list["FacturaLinea"]] = relationship(
+        "FacturaLinea",
+        back_populates="factura",
         cascade="all, delete-orphan",
-        order_by="NotaVentaLinea.orden",
-    )
-    factura: Mapped["Factura | None"] = relationship(
-        "Factura", back_populates="nv", uselist=False
+        order_by="FacturaLinea.orden",
     )
 
-    @property
-    def factura_id(self) -> int | None:
-        return self.factura.id if self.factura else None
 
-
-class NotaVentaLinea(Base):
-    __tablename__ = "nota_venta_lineas"
+class FacturaLinea(Base):
+    __tablename__ = "factura_lineas"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    nv_id: Mapped[int] = mapped_column(ForeignKey("nota_ventas.id", ondelete="CASCADE"))
+    factura_id: Mapped[int] = mapped_column(ForeignKey("facturas.id", ondelete="CASCADE"))
     orden: Mapped[int] = mapped_column(Integer, default=0)
     producto_id: Mapped[int | None] = mapped_column(
         ForeignKey("productos.id", ondelete="SET NULL"), nullable=True
@@ -78,5 +79,5 @@ class NotaVentaLinea(Base):
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     margen: Mapped[Decimal | None] = mapped_column(Numeric(10, 8), nullable=True)
 
-    nv: Mapped["NotaVenta"] = relationship("NotaVenta", back_populates="lineas")
+    factura: Mapped["Factura"] = relationship("Factura", back_populates="lineas")
     producto: Mapped["Producto | None"] = relationship("Producto")
