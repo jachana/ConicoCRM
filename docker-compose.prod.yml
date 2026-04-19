@@ -19,7 +19,9 @@ services:
     build: ./backend
     restart: unless-stopped
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
-    env_file: .env.prod
+    env_file:
+      - path: .env.prod
+        required: false
     depends_on:
       db:
         condition: service_healthy
@@ -29,8 +31,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
     restart: unless-stopped
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     depends_on:
       - backend
 
