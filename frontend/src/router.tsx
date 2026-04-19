@@ -7,6 +7,8 @@ import Productos from './pages/Productos'
 import Clientes from './pages/Clientes'
 import Cotizaciones from './pages/Cotizaciones'
 import CotizacionDetalle from './pages/CotizacionDetalle'
+import OrdenesCompra from './pages/OrdenesCompra'
+import OrdenCompraDetalle from './pages/OrdenCompraDetalle'
 import RRHH from './pages/RRHH'
 import NotaVentas from './pages/NotaVentas'
 import NotaVentaDetalle from './pages/NotaVentaDetalle'
@@ -34,6 +36,9 @@ export const router = createBrowserRouter([
       { path: 'cotizaciones', element: <Cotizaciones /> },
       { path: 'cotizaciones/nueva', element: <CotizacionDetalle /> },
       { path: 'cotizaciones/:id', element: <CotizacionDetalle /> },
+      { path: 'ordenes-compra', element: <OrdenesCompra /> },
+      { path: 'ordenes-compra/nueva', element: <OrdenCompraDetalle /> },
+      { path: 'ordenes-compra/:id', element: <OrdenCompraDetalle /> },
       { path: 'notas-venta', element: <NotaVentas /> },
       { path: 'notas-venta/nueva', element: <NotaVentaDetalle /> },
       { path: 'notas-venta/:id', element: <NotaVentaDetalle /> },
