@@ -1,7 +1,12 @@
 // frontend/src/components/dashboard/WidgetGrid.tsx
-import GridLayout, { WidthProvider, Layout } from 'react-grid-layout'
+import GridLayout from 'react-grid-layout'
 import type { WidgetConfig } from '../../types/dashboard'
 import Widget from './Widget'
+
+type LayoutItem = { i: string; x: number; y: number; w: number; h: number; static?: boolean }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const WidthProvider = (GridLayout as any).WidthProvider as (c: React.ComponentType<any>) => React.ComponentClass<any>
 
 const ResponsiveGrid = WidthProvider(GridLayout)
 
@@ -16,7 +21,7 @@ interface WidgetGridProps {
 export default function WidgetGrid({
   widgets, editMode, onLayoutChange, onConfigure, onRemove,
 }: WidgetGridProps) {
-  const layout: Layout[] = widgets.map(w => ({
+  const layout: LayoutItem[] = widgets.map(w => ({
     i: w.id,
     x: w.grid.x,
     y: w.grid.y,
@@ -25,7 +30,7 @@ export default function WidgetGrid({
     static: !editMode,
   }))
 
-  function handleLayoutChange(newLayout: Layout[]) {
+  function handleLayoutChange(newLayout: LayoutItem[]) {
     const posMap = Object.fromEntries(newLayout.map(l => [l.i, l]))
     const updated = widgets.map(w => {
       const pos = posMap[w.id]
@@ -38,12 +43,12 @@ export default function WidgetGrid({
   return (
     <ResponsiveGrid
       className="layout"
-      layout={layout}
+      layout={layout as never}
       cols={12}
       rowHeight={60}
       isDraggable={editMode}
       isResizable={editMode}
-      onLayoutChange={handleLayoutChange}
+      onLayoutChange={handleLayoutChange as never}
       draggableHandle=".drag-handle"
     >
       {widgets.map(w => (

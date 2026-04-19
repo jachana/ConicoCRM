@@ -15,6 +15,7 @@ import NotaVentas from './pages/NotaVentas'
 import NotaVentaDetalle from './pages/NotaVentaDetalle'
 import Facturas from './pages/Facturas'
 import FacturaDetalle from './pages/FacturaDetalle'
+import Dashboard from './pages/Dashboard'
 import { useAuthStore } from './stores/auth'
 import AppLayout from './components/layout/AppLayout'
 
@@ -30,7 +31,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: <RequireAuth><AppLayout /></RequireAuth>,
     children: [
-      { index: true, element: <div className="p-6 text-gray-700 dark:text-gray-300">Dashboard — próximamente</div> },
+      { index: true, element: <Dashboard /> },
       { path: 'usuarios', element: <Users /> },
       { path: 'empresas', element: <Empresas /> },
       { path: 'proveedores', element: <Proveedores /> },

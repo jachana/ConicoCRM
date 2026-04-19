@@ -54,7 +54,7 @@ function SimpleBarChart({ data, xKey, yKey }: { data: object[]; xKey: string; yK
       <BarChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
         <XAxis dataKey={xKey} tick={{ fontSize: 10 }} />
         <YAxis tick={{ fontSize: 10 }} width={50} />
-        <Tooltip formatter={(v: number) => formatMoney(v)} />
+        <Tooltip formatter={(v) => formatMoney(v as number)} />
         <Bar dataKey={yKey} fill="#6366f1" radius={[3, 3, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
@@ -67,7 +67,7 @@ function SimpleLineChart({ data, xKey, yKey }: { data: object[]; xKey: string; y
       <LineChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
         <XAxis dataKey={xKey} tick={{ fontSize: 10 }} />
         <YAxis tick={{ fontSize: 10 }} width={50} />
-        <Tooltip formatter={(v: number) => formatMoney(v)} />
+        <Tooltip formatter={(v) => formatMoney(v as number)} />
         <Line type="monotone" dataKey={yKey} stroke="#6366f1" dot={false} strokeWidth={2} />
       </LineChart>
     </ResponsiveContainer>
