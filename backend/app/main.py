@@ -1,15 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.config import settings
 from app.api import auth, users
 from app.api import proveedores
 from app.api import productos
 from app.api import clientes
+from app.api import config
+from app.api import cotizaciones
 
 app = FastAPI(title="Conico PMS")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[o.strip() for o in settings.cors_origins.split(",")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -20,3 +23,5 @@ app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(proveedores.router, prefix="/api/proveedores", tags=["proveedores"])
 app.include_router(productos.router, prefix="/api/productos", tags=["catálogo"])
 app.include_router(clientes.router, prefix="/api/clientes", tags=["clientes"])
+app.include_router(config.router, prefix="/api/config", tags=["config"])
+app.include_router(cotizaciones.router, prefix="/api/cotizaciones", tags=["cotizaciones"])

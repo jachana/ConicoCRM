@@ -31,6 +31,8 @@ export interface Producto {
   id: number
   nombre: string
   descripcion: string | null
+  sku: string | null
+  formato: string | null
   precio_costo: number
   precio_venta: number
   stock_minimo: number
@@ -48,4 +50,44 @@ export interface Cliente {
   direccion: string | null
   notas: string | null
   created_at: string
+}
+
+export interface SystemConfig {
+  key: string
+  value: string
+}
+
+export interface CotizacionLinea {
+  id?: number
+  orden: number
+  producto_id: number | null
+  sku: string | null
+  descripcion: string
+  formato: string | null
+  cantidad: number
+  valor_neto: number
+  total_neto: number
+  iva: number
+  total: number
+  margen: number | null
+}
+
+export interface Cotizacion {
+  id: number
+  numero: number
+  cliente_id: number
+  vendedor_id: number
+  contacto: string | null
+  fecha: string
+  estado: 'no_definido' | 'abierta' | 'cerrada_fv' | 'rechazada'
+  nota: string | null
+  correo: string | null
+  total_neto: number
+  total_iva: number
+  total: number
+  created_at: string
+  updated_at: string
+  cliente?: { id: number; nombre: string; rut: string | null; email: string | null; telefono: string | null }
+  vendedor?: { id: number; name: string; email: string }
+  lineas?: CotizacionLinea[]
 }

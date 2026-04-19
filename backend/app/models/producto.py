@@ -15,6 +15,8 @@ class Producto(Base):
     precio_venta: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     stock_minimo: Mapped[int] = mapped_column(Integer, default=0)
     stock_actual: Mapped[int] = mapped_column(Integer, default=0)
+    sku: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    formato: Mapped[str | None] = mapped_column(String(50), nullable=True)
     proveedor_id: Mapped[int | None] = mapped_column(
         ForeignKey("proveedores.id", ondelete="SET NULL"), nullable=True
     )

@@ -1,0 +1,62 @@
+import os
+import smtplib
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+
+class EmailNotConfiguredError(Exception):
+    pass
+
+
+def _get_smtp_config() -> dict:
+    host = os.getenv("SMTP_HOST", "")
+    port = int(os.getenv("SMTP_PORT", "587"))
+    user = os.getenv("SMTP_USER", "")
+    password = os.getenv("SMTP_PASSWORD", "")
+    from_addr = os.getenv("SMTP_FROM", user)
+
+    if not host or not user or not password:
+        raise EmailNotConfiguredError(
+            "Email no configurado. Configure SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM en el servidor."
+        )
+    return {"host": host, "port": port, "user": user, "password": password, "from": from_addr}
+
+
+def enviar_cotizacion(cotizacion, pdf_bytes: bytes) -> None:
+    cfg = _get_smtp_config()
+
+    empresa_nombre = "Conico"
+    to_addr = cotizacion.correo or ""
+    if not to_addr:
+        raise ValueError("La cotización no tiene correo de destino")
+
+    numero_str = f"COT-{cotizacion.numero:05d}"
+    fecha_str = cotizacion.fecha.strftime("%d/%m/%Y") if cotizacion.fecha else ""
+    cliente_nombre = cotizacion.cliente.nombre if cotizacion.cliente else ""
+
+    msg = MIMEMultipart()
+    msg["From"] = cfg["from"]
+    msg["To"] = to_addr
+    msg["Subject"] = f"Cotización {numero_str} — {empresa_nombre}"
+
+    body = (
+        f"Estimado/a {cotizacion.contacto or cliente_nombre},\n\n"
+        f"Adjuntamos la cotización {numero_str} de fecha {fecha_str}.\n\n"
+        f"Cliente: {cliente_nombre}\n"
+        f"Total: $ {cotizacion.total:,.0f}\n\n"
+        f"Quedamos a su disposición para cualquier consulta.\n\n"
+        f"Saludos,\n{empresa_nombre}"
+    )
+    msg.attach(MIMEText(body, "plain", "utf-8"))
+
+    filename = f"{numero_str} {fecha_str}.{cotizacion.contacto or cliente_nombre}.pdf"
+    attachment = MIMEApplication(pdf_bytes, _subtype="pdf")
+    attachment.add_header("Content-Disposition", "attachment", filename=filename)
+    msg.attach(attachment)
+
+    with smtplib.SMTP(cfg["host"], cfg["port"]) as server:
+        server.ehlo()
+        server.starttls()
+        server.login(cfg["user"], cfg["password"])
+        server.sendmail(cfg["from"], to_addr, msg.as_string())

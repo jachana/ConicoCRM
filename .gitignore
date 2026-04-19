@@ -29,4 +29,7 @@ frontend/dist/
 Thumbs.db
 
 # Test artifacts
-test.db
+*.db
+
+# Claude local settings (permissions, personal config)
+.claude/settings.local.json

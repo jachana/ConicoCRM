@@ -1,0 +1,332 @@
+from datetime import date
+from decimal import Decimal
+from io import BytesIO
+
+import openpyxl
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session, joinedload
+
+from app.api.auth import get_current_user
+from app.api.deps import require_permission
+from app.database import get_db
+from app.models.cotizacion import Cotizacion, CotizacionLinea
+from app.models.producto import Producto
+from app.models.system_config import SystemConfig
+from app.models.user import User
+from app.schemas.cotizacion import (
+    CotizacionCreate,
+    CotizacionListOut,
+    CotizacionOut,
+    CotizacionUpdate,
+    CotizacionLineaCreate,
+)
+from app.services.email import EmailNotConfiguredError, enviar_cotizacion
+from app.services.pdf import generar_pdf_cotizacion
+
+router = APIRouter()
+
+
+def _get_config_dict(db: Session) -> dict:
+    rows = db.query(SystemConfig).all()
+    return {r.key: r.value for r in rows}
+
+
+def _calcular_lineas(db: Session, lineas_data: list[CotizacionLineaCreate]) -> list[CotizacionLinea]:
+    lineas = []
+    for data in lineas_data:
+        total_neto = data.cantidad * data.valor_neto
+        iva = total_neto * Decimal("0.19")
+        total = total_neto + iva
+
+        margen = None
+        if data.producto_id:
+            producto = db.get(Producto, data.producto_id)
+            if producto and data.valor_neto > 0:
+                margen = (data.valor_neto - producto.precio_costo) / data.valor_neto
+
+        lineas.append(CotizacionLinea(
+            orden=data.orden,
+            producto_id=data.producto_id,
+            sku=data.sku,
+            descripcion=data.descripcion,
+            formato=data.formato,
+            cantidad=data.cantidad,
+            valor_neto=data.valor_neto,
+            total_neto=total_neto,
+            iva=iva,
+            total=total,
+            margen=margen,
+        ))
+    return lineas
+
+
+def _recalcular_totales(cotizacion: Cotizacion) -> None:
+    cotizacion.total_neto = sum(l.total_neto for l in cotizacion.lineas)
+    cotizacion.total_iva = sum(l.iva for l in cotizacion.lineas)
+    cotizacion.total = sum(l.total for l in cotizacion.lineas)
+
+
+def _asignar_numero(db: Session) -> int:
+    config = (
+        db.query(SystemConfig)
+        .filter_by(key="cotizacion_last_id")
+        .with_for_update()
+        .first()
+    )
+    if not config:
+        config = SystemConfig(key="cotizacion_last_id", value="12250")
+        db.add(config)
+        db.flush()
+    numero = int(config.value) + 1
+    config.value = str(numero)
+    return numero
+
+
+def _can_edit(current_user: User, cotizacion: Cotizacion) -> bool:
+    if current_user.role in ("admin", "subadmin"):
+        return True
+    return cotizacion.vendedor_id == current_user.id
+
+
+@router.get("/export/excel")
+def exportar_excel(
+    perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
+):
+    _, db = perms
+    cotizaciones = (
+        db.query(Cotizacion)
+        .options(joinedload(Cotizacion.cliente), joinedload(Cotizacion.vendedor))
+        .order_by(Cotizacion.numero.desc())
+        .all()
+    )
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Cotizaciones"
+    ws.append(["Nº COT", "Fecha", "Cliente", "Contacto", "Total Neto", "IVA", "Total", "Estado", "Encargado"])
+    for c in cotizaciones:
+        ws.append([
+            c.numero,
+            c.fecha.strftime("%d/%m/%Y") if c.fecha else "",
+            c.cliente.nombre if c.cliente else "",
+            c.contacto or "",
+            float(c.total_neto),
+            float(c.total_iva),
+            float(c.total),
+            c.estado,
+            c.vendedor.name if c.vendedor else "",
+        ])
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=cotizaciones.xlsx"},
+    )
+
+
+@router.get("/", response_model=list[CotizacionListOut])
+def listar_cotizaciones(
+    estado: str | None = Query(None),
+    vendedor_id: int | None = Query(None),
+    cliente_id: int | None = Query(None),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
+):
+    _, db = perms
+    q = db.query(Cotizacion).options(
+        joinedload(Cotizacion.cliente),
+        joinedload(Cotizacion.vendedor),
+    )
+    if estado:
+        q = q.filter(Cotizacion.estado == estado)
+    if vendedor_id:
+        q = q.filter(Cotizacion.vendedor_id == vendedor_id)
+    if cliente_id:
+        q = q.filter(Cotizacion.cliente_id == cliente_id)
+    if fecha_desde:
+        q = q.filter(Cotizacion.fecha >= fecha_desde)
+    if fecha_hasta:
+        q = q.filter(Cotizacion.fecha <= fecha_hasta)
+    return q.order_by(Cotizacion.numero.desc()).all()
+
+
+@router.post("/", response_model=CotizacionOut, status_code=status.HTTP_201_CREATED)
+def crear_cotizacion(
+    body: CotizacionCreate,
+    perms: tuple[User, Session] = require_permission("cotizaciones", "create"),
+):
+    current_user, db = perms
+    numero = _asignar_numero(db)
+    vendedor_id = body.vendedor_id if body.vendedor_id and current_user.role in ("admin", "subadmin") else current_user.id
+    cotizacion = Cotizacion(
+        numero=numero,
+        cliente_id=body.cliente_id,
+        vendedor_id=vendedor_id,
+        contacto=body.contacto,
+        fecha=body.fecha or date.today(),
+        estado=body.estado,
+        nota=body.nota,
+        correo=body.correo,
+    )
+    db.add(cotizacion)
+    db.flush()
+
+    cotizacion.lineas = _calcular_lineas(db, body.lineas)
+    _recalcular_totales(cotizacion)
+    db.commit()
+    db.refresh(cotizacion)
+
+    return db.query(Cotizacion).options(
+        joinedload(Cotizacion.cliente),
+        joinedload(Cotizacion.vendedor),
+        joinedload(Cotizacion.lineas),
+    ).get(cotizacion.id)
+
+
+@router.get("/{cotizacion_id}", response_model=CotizacionOut)
+def obtener_cotizacion(
+    cotizacion_id: int,
+    perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
+):
+    _, db = perms
+    cot = db.query(Cotizacion).options(
+        joinedload(Cotizacion.cliente),
+        joinedload(Cotizacion.vendedor),
+        joinedload(Cotizacion.lineas),
+    ).filter(Cotizacion.id == cotizacion_id).first()
+    if not cot:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    return cot
+
+
+@router.patch("/{cotizacion_id}", response_model=CotizacionOut)
+def actualizar_cotizacion(
+    cotizacion_id: int,
+    body: CotizacionUpdate,
+    perms: tuple[User, Session] = require_permission("cotizaciones", "edit"),
+):
+    current_user, db = perms
+    cot = db.get(Cotizacion, cotizacion_id)
+    if not cot:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    if not _can_edit(current_user, cot):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No puedes editar cotizaciones de otros vendedores")
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(cot, field, value)
+    db.commit()
+    db.refresh(cot)
+    return db.query(Cotizacion).options(
+        joinedload(Cotizacion.cliente),
+        joinedload(Cotizacion.vendedor),
+        joinedload(Cotizacion.lineas),
+    ).get(cotizacion_id)
+
+
+@router.put("/{cotizacion_id}/lineas", response_model=CotizacionOut)
+def reemplazar_lineas(
+    cotizacion_id: int,
+    lineas_data: list[CotizacionLineaCreate],
+    perms: tuple[User, Session] = require_permission("cotizaciones", "edit"),
+):
+    current_user, db = perms
+    cot = db.query(Cotizacion).options(joinedload(Cotizacion.lineas)).get(cotizacion_id)
+    if not cot:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    if not _can_edit(current_user, cot):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos")
+
+    for linea in list(cot.lineas):
+        db.delete(linea)
+    db.flush()
+
+    nuevas_lineas = _calcular_lineas(db, lineas_data)
+    for linea in nuevas_lineas:
+        linea.cotizacion_id = cotizacion_id
+        db.add(linea)
+    db.flush()
+
+    cot.lineas = nuevas_lineas
+    _recalcular_totales(cot)
+    db.commit()
+
+    return db.query(Cotizacion).options(
+        joinedload(Cotizacion.cliente),
+        joinedload(Cotizacion.vendedor),
+        joinedload(Cotizacion.lineas),
+    ).get(cotizacion_id)
+
+
+@router.delete("/{cotizacion_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_cotizacion(
+    cotizacion_id: int,
+    perms: tuple[User, Session] = require_permission("cotizaciones", "delete"),
+):
+    current_user, db = perms
+    cot = db.get(Cotizacion, cotizacion_id)
+    if not cot:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    if cot.estado != "no_definido":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Solo se pueden eliminar cotizaciones con estado 'no_definido'",
+        )
+    if not _can_edit(current_user, cot):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos")
+    db.delete(cot)
+    db.commit()
+
+
+@router.get("/{cotizacion_id}/pdf")
+def generar_pdf(
+    cotizacion_id: int,
+    perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
+):
+    _, db = perms
+    cot = db.query(Cotizacion).options(
+        joinedload(Cotizacion.cliente),
+        joinedload(Cotizacion.vendedor),
+        joinedload(Cotizacion.lineas),
+    ).filter(Cotizacion.id == cotizacion_id).first()
+    if not cot:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+
+    config = _get_config_dict(db)
+    pdf_bytes = generar_pdf_cotizacion(cot, config)
+
+    cliente_nombre = cot.cliente.nombre if cot.cliente else "cliente"
+    filename = f"COT - {cot.numero} {cot.fecha}.{cot.contacto or ''}. {cliente_nombre}.pdf"
+
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
+
+
+@router.post("/{cotizacion_id}/email")
+def enviar_email(
+    cotizacion_id: int,
+    perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
+):
+    _, db = perms
+    cot = db.query(Cotizacion).options(
+        joinedload(Cotizacion.cliente),
+        joinedload(Cotizacion.vendedor),
+        joinedload(Cotizacion.lineas),
+    ).filter(Cotizacion.id == cotizacion_id).first()
+    if not cot:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+
+    config = _get_config_dict(db)
+    try:
+        pdf_bytes = generar_pdf_cotizacion(cot, config)
+        enviar_cotizacion(cot, pdf_bytes)
+    except EmailNotConfiguredError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Error al enviar email: {e}")
+
+    return {"detail": "Email enviado correctamente"}

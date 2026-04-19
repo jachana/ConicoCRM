@@ -37,6 +37,9 @@ class ProductoBusquedaOut(BaseModel):
     id: int
     nombre: str
     descripcion: str | None = None
+    sku: str | None = None
+    formato: str | None = None
     precio_venta: Decimal
+    precio_costo: Decimal
     stock_actual: int
     model_config = {"from_attributes": True}
