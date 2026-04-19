@@ -1,4 +1,5 @@
-from datetime import date
+import re
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from io import BytesIO
 
@@ -217,6 +218,11 @@ def crear_nv_desde_cotizacion(
     cot = db.query(Cotizacion).options(joinedload(Cotizacion.lineas)).filter(Cotizacion.id == cot_id).first()
     if not cot:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    if cot.estado == "cerrada_fv":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="La cotización ya está cerrada (ya tiene una nota de venta generada)",
+        )
 
     numero = _asignar_numero_nv(db)
     nv = NotaVenta(
@@ -278,7 +284,10 @@ def actualizar_nv(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nota de venta no encontrada")
     if not _can_edit(current_user, nv):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos para editar esta NV")
-    for field, value in body.model_dump(exclude_unset=True).items():
+    updates = body.model_dump(exclude_unset=True)
+    if "vendedor_id" in updates and current_user.role not in ("admin", "subadmin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin/subadmin puede reasignar el encargado")
+    for field, value in updates.items():
         setattr(nv, field, value)
     db.commit()
     return _load_nv(db, nv_id)
@@ -306,6 +315,7 @@ def reemplazar_lineas(
     db.flush()
     nv.lineas = nuevas
     _recalcular_totales(nv)
+    nv.updated_at = datetime.now(timezone.utc)
     db.commit()
     return _load_nv(db, nv_id)
 
@@ -364,7 +374,8 @@ def generar_pdf(
     config = _get_config_dict(db)
     pdf_bytes = generar_pdf_nota_venta(nv, config)
     cliente_nombre = nv.cliente.nombre if nv.cliente else "cliente"
-    filename = f"NV - {nv.numero} {nv.fecha}.{nv.contacto or ''}. {cliente_nombre}.pdf"
+    raw_filename = f"NV - {nv.numero} {nv.fecha}.{nv.contacto or ''}. {cliente_nombre}.pdf"
+    filename = re.sub(r'[^\w\s\-.]', '_', raw_filename)
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
