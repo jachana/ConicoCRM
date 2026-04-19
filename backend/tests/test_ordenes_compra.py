@@ -141,10 +141,19 @@ def test_cancelar_orden_enviada(client, admin_token):
 
 
 def test_no_puede_eliminar_orden_no_borrador(client, admin_token):
+    from tests.conftest import TestingSession
+    from app.models.orden_compra import OrdenCompra
+
     pid = _crear_proveedor(client, admin_token, email="prov8@test.cl")
     r = client.post("/api/ordenes-compra/", json=_payload_orden(pid), headers={"Authorization": f"Bearer {admin_token}"})
     oid = r.json()["id"]
-    client.patch(f"/api/ordenes-compra/{oid}/estado", json={"estado": "cancelada"}, headers={"Authorization": f"Bearer {admin_token}"})
+
+    db = TestingSession()
+    orden = db.get(OrdenCompra, oid)
+    orden.estado = "enviada"
+    db.commit()
+    db.close()
+
     r2 = client.delete(f"/api/ordenes-compra/{oid}", headers={"Authorization": f"Bearer {admin_token}"})
     assert r2.status_code == 400
 
