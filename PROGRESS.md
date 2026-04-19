@@ -23,16 +23,20 @@
   - Exportación Excel
   - SystemConfig: tabla key/value para configuración global
 
-- [ ] **Fase 4 — Nota de Venta**
-  - Conversión desde cotización aprobada (datos heredados, editables)
-  - Misma estructura de líneas que cotización
-  - Estados: Pendiente → Entregada → Cancelada
-  - PDF + email
-  - Botón "Generar Factura"
+- [ ] **Fase 4a — Empresa + Cliente (actualización)**
+  - Nuevo módulo Empresa: CRUD, búsqueda, Excel
+  - Clientes asociados a Empresa (FK nullable); campos heredados read-only en formulario
+  - Nuevos campos en Cliente: recibe_correo, forma_pago, despacho_o_retiro, comuna, direccion_despacho, ultimo_contacto, forma_captacion, compromiso, es_nuevo
+  - Migración cotizaciones: agregar empresa_id nullable
 
-- [ ] **Fase 5 — Facturas**
-  - Generada desde nota de venta
-  - Número correlativo
+- [ ] **Fase 4b — Nota de Venta + Factura**
+  - Nota de Venta: creación desde cero o desde cotización (líneas editables, selección parcial)
+  - Numeración correlativa propia (nv_last_id)
+  - Estados: Pendiente → Despachada → Entregada → Pagada | Cancelada
+  - Factura generada manualmente desde NV (botón "Generar Factura")
+  - Factura hereda líneas y totales desde NV; registro de pago opcional
+  - PDF mismo formato que cotización + email
+  - Número correlativo propio (factura_last_id)
   - Estados: Emitida → Pagada → Anulada
   - Fecha de vencimiento + registro de pago (fecha, monto, método)
   - PDF + email
