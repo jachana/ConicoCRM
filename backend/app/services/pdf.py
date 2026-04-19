@@ -27,4 +27,7 @@ def generar_pdf_orden_compra(orden_compra, config: dict) -> bytes:
 
 
 def generar_pdf_factura(factura, config: dict) -> bytes:
-    raise NotImplementedError("generar_pdf_factura not yet implemented")
+    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+    template = env.get_template("factura.html")
+    html_str = template.render(factura=factura, config=config)
+    return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()

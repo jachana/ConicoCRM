@@ -142,4 +142,39 @@ def enviar_orden_compra(orden_compra, pdf_bytes: bytes) -> None:
 
 
 def enviar_factura(factura, pdf_bytes: bytes) -> None:
-    raise NotImplementedError("enviar_factura not yet implemented")
+    cfg = _get_smtp_config()
+
+    empresa_nombre = "Conico"
+    to_addr = factura.correo or ""
+    if not to_addr:
+        raise ValueError("La factura no tiene correo de destino")
+
+    numero_str = f"FAC-{factura.numero:05d}"
+    fecha_str = factura.fecha.strftime("%d/%m/%Y") if factura.fecha else ""
+    cliente_nombre = factura.cliente.nombre if factura.cliente else ""
+
+    msg = MIMEMultipart()
+    msg["From"] = cfg["from"]
+    msg["To"] = to_addr
+    msg["Subject"] = f"Factura {numero_str} — {empresa_nombre}"
+
+    body = (
+        f"Estimado/a {factura.contacto or cliente_nombre},\n\n"
+        f"Adjuntamos la factura {numero_str} de fecha {fecha_str}.\n\n"
+        f"Cliente: {cliente_nombre}\n"
+        f"Total: $ {factura.total:,.0f}\n\n"
+        f"Quedamos a su disposición para cualquier consulta.\n\n"
+        f"Saludos,\n{empresa_nombre}"
+    )
+    msg.attach(MIMEText(body, "plain", "utf-8"))
+
+    filename = f"{numero_str} {fecha_str}.{factura.contacto or cliente_nombre}.pdf"
+    attachment = MIMEApplication(pdf_bytes, _subtype="pdf")
+    attachment.add_header("Content-Disposition", "attachment", filename=filename)
+    msg.attach(attachment)
+
+    with smtplib.SMTP(cfg["host"], cfg["port"]) as server:
+        server.ehlo()
+        server.starttls()
+        server.login(cfg["user"], cfg["password"])
+        server.sendmail(cfg["from"], to_addr, msg.as_string())

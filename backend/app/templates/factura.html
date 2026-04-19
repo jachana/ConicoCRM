@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #333; padding: 20px; }
+  @page { size: A4; margin: 15mm; }
+
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; border-bottom: 2px solid #4f46e5; padding-bottom: 16px; }
+  .header-left { flex: 1; }
+  .header-right { text-align: right; }
+  .logo { max-height: 60px; max-width: 180px; margin-bottom: 8px; }
+  .empresa-nombre { font-size: 14px; font-weight: bold; color: #1e3a5f; }
+  .empresa-info { font-size: 10px; color: #666; margin-top: 2px; }
+  .doc-numero { font-size: 22px; font-weight: bold; color: #4f46e5; }
+  .doc-fecha { font-size: 11px; color: #555; margin-top: 4px; }
+
+  .section-title { font-size: 10px; font-weight: bold; text-transform: uppercase; color: #888; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .cliente-block { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+  .cliente-nombre { font-size: 13px; font-weight: bold; color: #1e3a5f; margin-bottom: 4px; }
+  .cliente-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 10px; color: #555; }
+
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  thead th { background: #4f46e5; color: white; padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  thead th.right { text-align: right; }
+  tbody tr:nth-child(even) { background: #f8f9fb; }
+  tbody td { padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 10px; vertical-align: top; }
+  tbody td.right { text-align: right; white-space: nowrap; }
+  tbody td.center { text-align: center; }
+
+  .totales { display: flex; justify-content: flex-end; margin-top: 8px; }
+  .totales-tabla { width: 260px; }
+  .totales-tabla td { padding: 4px 8px; font-size: 11px; }
+  .totales-tabla td:last-child { text-align: right; font-weight: 600; }
+  .totales-tabla tr:last-child td { border-top: 2px solid #4f46e5; font-size: 13px; font-weight: bold; color: #4f46e5; }
+
+  .nota-block { margin-top: 20px; padding: 10px 12px; border-left: 3px solid #4f46e5; background: #eef2ff; font-size: 10px; color: #444; }
+  .nota-label { font-weight: bold; color: #4f46e5; margin-bottom: 4px; }
+
+  .pago-block { margin-top: 16px; padding: 10px 12px; border: 1px solid #bbf7d0; border-radius: 4px; background: #f0fdf4; font-size: 10px; color: #166534; }
+  .pago-label { font-weight: bold; margin-bottom: 4px; }
+
+  .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 9px; color: #aaa; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    {% if config.empresa_logo_url %}
+    <img src="{{ config.empresa_logo_url }}" class="logo" alt="Logo">
+    {% endif %}
+    <div class="empresa-nombre">{{ config.empresa_nombre or 'Conico' }}</div>
+    {% if config.empresa_rut %}<div class="empresa-info">RUT: {{ config.empresa_rut }}</div>{% endif %}
+    {% if config.empresa_direccion %}<div class="empresa-info">{{ config.empresa_direccion }}</div>{% endif %}
+    {% if config.empresa_telefono %}<div class="empresa-info">Tel: {{ config.empresa_telefono }}</div>{% endif %}
+  </div>
+  <div class="header-right">
+    <div class="doc-numero">FACTURA FAC-{{ '%05d' % factura.numero }}</div>
+    <div class="doc-fecha">Fecha: {{ factura.fecha.strftime('%d/%m/%Y') if factura.fecha else '' }}</div>
+    {% if factura.fecha_vencimiento %}
+    <div class="doc-fecha">Vencimiento: {{ factura.fecha_vencimiento.strftime('%d/%m/%Y') }}</div>
+    {% endif %}
+    <div class="doc-fecha" style="margin-top:6px; font-weight:bold;">Estado: {{ factura.estado | upper }}</div>
+  </div>
+</div>
+
+<!-- CLIENTE -->
+<div class="cliente-block">
+  <div class="section-title">Cliente</div>
+  <div class="cliente-nombre">{{ factura.cliente.nombre if factura.cliente else '' }}</div>
+  <div class="cliente-grid">
+    {% if factura.cliente and factura.cliente.rut %}<span>RUT: {{ factura.cliente.rut }}</span>{% endif %}
+    {% if factura.contacto %}<span>Contacto: {{ factura.contacto }}</span>{% endif %}
+    {% if factura.correo %}<span>Email: {{ factura.correo }}</span>{% endif %}
+    {% if factura.empresa %}<span>Empresa: {{ factura.empresa.nombre }}</span>{% endif %}
+  </div>
+</div>
+
+<!-- LINEAS -->
+<table>
+  <thead>
+    <tr>
+      <th style="width:40px">#</th>
+      <th style="width:70px">SKU</th>
+      <th>Descripción</th>
+      <th style="width:60px">Formato</th>
+      <th class="right" style="width:50px">Cant.</th>
+      <th class="right" style="width:80px">P. Neto</th>
+      <th class="right" style="width:90px">Total Neto</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for linea in factura.lineas %}
+    <tr>
+      <td class="center">{{ loop.index }}</td>
+      <td>{{ linea.sku or '' }}</td>
+      <td>{{ linea.descripcion }}</td>
+      <td class="center">{{ linea.formato or '' }}</td>
+      <td class="right">{{ linea.cantidad }}</td>
+      <td class="right">$ {{ '{:,.0f}'.format(linea.valor_neto) }}</td>
+      <td class="right">$ {{ '{:,.0f}'.format(linea.total_neto) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- TOTALES -->
+<div class="totales">
+  <table class="totales-tabla">
+    <tr><td>Neto</td><td>$ {{ '{:,.0f}'.format(factura.total_neto) }}</td></tr>
+    <tr><td>IVA (19%)</td><td>$ {{ '{:,.0f}'.format(factura.total_iva) }}</td></tr>
+    <tr><td><strong>Total</strong></td><td>$ {{ '{:,.0f}'.format(factura.total) }}</td></tr>
+  </table>
+</div>
+
+{% if factura.estado == 'pagada' and factura.fecha_pago %}
+<div class="pago-block">
+  <div class="pago-label">Información de Pago</div>
+  <div>Fecha de pago: {{ factura.fecha_pago.strftime('%d/%m/%Y') }}</div>
+  {% if factura.monto_pagado %}<div>Monto pagado: $ {{ '{:,.0f}'.format(factura.monto_pagado) }}</div>{% endif %}
+  {% if factura.metodo_pago %}<div>Método: {{ factura.metodo_pago }}</div>{% endif %}
+</div>
+{% endif %}
+
+{% if factura.nota %}
+<div class="nota-block">
+  <div class="nota-label">Nota</div>
+  {{ factura.nota }}
+</div>
+{% endif %}
+
+<div class="footer">
+  Documento generado por {{ config.empresa_nombre or 'Conico' }}
+</div>
+</body>
+</html>
