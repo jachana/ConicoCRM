@@ -53,10 +53,11 @@
   - Historial con fecha, tipo y usuario
   - Alertas de stock bajo
 
-- [ ] **Fase 8 — RRHH** *(solo Admin)*
+- [x] **Fase 8 — RRHH** *(solo Admin)*
   - CRUD empleados: nombre, cargo, sueldo, fecha ingreso
-  - Documentos adjuntos (contratos, liquidaciones)
-  - Registro de vacaciones
+  - Documentos adjuntos (contratos, liquidaciones) — almacenados en disco, descarga protegida
+  - Registro de períodos de vacaciones
+  - Volumen Docker `uploads_data` para persistencia de archivos
 
 - [ ] **Fase 9 — Dashboard / Reportes**
   - Admin/SubAdmin: ventas del período, cotizaciones pendientes, stock crítico, facturas por cobrar, top clientes, top productos
