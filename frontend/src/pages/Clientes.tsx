@@ -159,7 +159,7 @@ export default function Clientes() {
                 </div>
               ))}
               <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección de despacho</label>
                 <input type="text" value={form.direccion_despacho} onChange={e => setForm(f => ({ ...f, direccion_despacho: e.target.value }))}
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
