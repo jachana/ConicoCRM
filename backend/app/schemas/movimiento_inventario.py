@@ -66,3 +66,12 @@ class MovimientoOut(BaseModel):
 class MovimientoListOut(BaseModel):
     items: list[MovimientoOut]
     total: int
+
+
+class StockBajoItem(BaseModel):
+    id: int
+    nombre: str
+    sku: str | None = None
+    stock_actual: int
+    stock_minimo: int
+    model_config = {"from_attributes": True}

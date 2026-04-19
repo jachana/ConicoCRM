@@ -61,6 +61,18 @@ def test_ajuste_resta_stock(client, admin_token):
     assert prod["stock_actual"] == 7
 
 
+def test_ajuste_stock_negativo_rechazado(client, admin_token):
+    pid = _crear_producto(client, admin_token, stock_actual=5)
+    r = client.post(
+        "/api/inventario/ajustes",
+        json={"producto_id": pid, "cantidad": 10, "signo": -1, "motivo": "merma"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 422
+    prod = client.get(f"/api/productos/{pid}", headers={"Authorization": f"Bearer {admin_token}"}).json()
+    assert prod["stock_actual"] == 5  # unchanged
+
+
 def test_ajuste_motivo_invalido(client, admin_token):
     pid = _crear_producto(client, admin_token)
     r = client.post(

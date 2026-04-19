@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, time, timezone
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
@@ -6,7 +6,7 @@ from app.api.deps import require_permission
 from app.models.movimiento_inventario import MovimientoInventario
 from app.models.producto import Producto
 from app.models.user import User
-from app.schemas.movimiento_inventario import AjusteCreate, MovimientoListOut, MovimientoOut
+from app.schemas.movimiento_inventario import AjusteCreate, MovimientoListOut, MovimientoOut, StockBajoItem
 
 router = APIRouter()
 
@@ -42,7 +42,8 @@ def listar_movimientos(
     if fecha_desde:
         q = q.filter(MovimientoInventario.created_at >= fecha_desde)
     if fecha_hasta:
-        q = q.filter(MovimientoInventario.created_at <= fecha_hasta)
+        end_of_day = datetime.combine(fecha_hasta, time.max).replace(tzinfo=timezone.utc)
+        q = q.filter(MovimientoInventario.created_at <= end_of_day)
     total = q.count()
     items = q.order_by(MovimientoInventario.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
     return MovimientoListOut(items=items, total=total)
@@ -57,7 +58,13 @@ def crear_ajuste(
     producto = db.get(Producto, body.producto_id)
     if not producto:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
-    producto.stock_actual += body.signo * body.cantidad
+    new_stock = producto.stock_actual + body.signo * body.cantidad
+    if new_stock < 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="El ajuste resultaría en stock negativo",
+        )
+    producto.stock_actual = new_stock
     mov = MovimientoInventario(
         producto_id=body.producto_id,
         tipo="ajuste",
@@ -74,7 +81,7 @@ def crear_ajuste(
     return _load_movimiento(db, mov.id)
 
 
-@router.get("/stock-bajo", response_model=list[dict])
+@router.get("/stock-bajo", response_model=list[StockBajoItem])
 def stock_bajo(
     perms: tuple[User, Session] = require_permission("inventario", "view"),
 ):
