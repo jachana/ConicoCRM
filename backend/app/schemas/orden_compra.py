@@ -12,15 +12,9 @@ class OrdenCompraLineaCreate(BaseModel):
     valor_neto: Decimal = Decimal("0")
 
 
-class OrdenCompraLineaOut(BaseModel):
+class OrdenCompraLineaOut(OrdenCompraLineaCreate):
     id: int
-    orden: int
-    producto_id: int | None = None
-    sku: str | None = None
-    descripcion: str
-    cantidad: int
     cantidad_recibida: int
-    valor_neto: Decimal
     total_neto: Decimal
     iva: Decimal
     total: Decimal
