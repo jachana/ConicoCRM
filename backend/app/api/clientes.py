@@ -23,9 +23,13 @@ def exportar_excel(
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Clientes"
-    ws.append(["ID", "Nombre", "RUT", "Email", "Teléfono", "Dirección", "Notas"])
+    ws.append(["ID", "Nombre", "RUT", "Email", "Teléfono", "Empresa", "Dirección Despacho", "Notas"])
     for c in clientes:
-        ws.append([c.id, c.nombre, c.rut or "", c.email or "", c.telefono or "", c.direccion or "", c.notas or ""])
+        ws.append([
+            c.id, c.nombre, c.rut or "", c.email or "", c.telefono or "",
+            c.empresa.nombre if c.empresa else "",
+            c.direccion_despacho or "", c.notas or "",
+        ])
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
@@ -39,14 +43,15 @@ def exportar_excel(
 @router.get("/", response_model=list[ClienteOut])
 def listar_clientes(
     q: str = Query("", description="Filtrar por nombre o RUT"),
+    empresa_id: int | None = Query(None),
     perms: tuple[User, Session] = require_permission("clientes", "view"),
 ):
     _, db = perms
     query = db.query(Cliente)
     if q:
-        query = query.filter(
-            Cliente.nombre.ilike(f"%{q}%") | Cliente.rut.ilike(f"%{q}%")
-        )
+        query = query.filter(Cliente.nombre.ilike(f"%{q}%") | Cliente.rut.ilike(f"%{q}%"))
+    if empresa_id is not None:
+        query = query.filter(Cliente.empresa_id == empresa_id)
     return query.order_by(Cliente.nombre).all()
 
 

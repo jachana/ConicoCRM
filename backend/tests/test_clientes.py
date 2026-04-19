@@ -105,3 +105,64 @@ def test_listar_clientes_con_filtro_q(client, admin_token):
     data = r.json()
     assert len(data) == 1
     assert data[0]["nombre"] == "Ferretería Norte"
+
+
+def test_crear_cliente_con_empresa(client, admin_token):
+    emp = client.post(
+        "/api/empresas/",
+        json={"nombre": "Empresa Z", "rut": "76.999.999-9"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    ).json()
+    r = client.post(
+        "/api/clientes/",
+        json={"nombre": "Juan Pérez", "empresa_id": emp["id"]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201
+    data = r.json()
+    assert data["empresa_id"] == emp["id"]
+    assert data["empresa"]["nombre"] == "Empresa Z"
+    assert data["empresa"]["rut"] == "76.999.999-9"
+
+
+def test_filtrar_clientes_por_empresa(client, admin_token):
+    emp = client.post(
+        "/api/empresas/",
+        json={"nombre": "Empresa Filtro"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    ).json()
+    client.post("/api/clientes/", json={"nombre": "Cliente 1", "empresa_id": emp["id"]}, headers={"Authorization": f"Bearer {admin_token}"})
+    client.post("/api/clientes/", json={"nombre": "Cliente Otro"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get(f"/api/clientes/?empresa_id={emp['id']}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) == 1
+    assert data[0]["nombre"] == "Cliente 1"
+
+
+def test_cliente_sin_empresa_retorna_empresa_none(client, admin_token):
+    r = client.post("/api/clientes/", json={"nombre": "Sin Empresa"}, headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 201
+    assert r.json()["empresa"] is None
+
+
+def test_crear_cliente_con_nuevos_campos(client, admin_token):
+    r = client.post(
+        "/api/clientes/",
+        json={
+            "nombre": "María García",
+            "recibe_correo": False,
+            "forma_pago": "Crédito 30 días",
+            "despacho_o_retiro": "despacho",
+            "comuna": "Las Condes",
+            "es_nuevo": True,
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201
+    data = r.json()
+    assert data["recibe_correo"] is False
+    assert data["forma_pago"] == "Crédito 30 días"
+    assert data["despacho_o_retiro"] == "despacho"
+    assert data["comuna"] == "Las Condes"
+    assert data["es_nuevo"] is True
