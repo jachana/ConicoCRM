@@ -124,3 +124,32 @@ export interface Cotizacion {
   vendedor?: { id: number; name: string; email: string }
   lineas?: CotizacionLinea[]
 }
+
+export interface Empleado {
+  id: number
+  nombre: string
+  cargo: string
+  sueldo_base: number | null
+  fecha_ingreso: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export interface EmpleadoDocumento {
+  id: number
+  empleado_id: number
+  nombre: string
+  tipo: 'contrato' | 'liquidacion' | 'otro'
+  subido_en: string
+  subido_por_id: number | null
+}
+
+export interface EmpleadoVacacion {
+  id: number
+  empleado_id: number
+  fecha_inicio: string
+  fecha_fin: string
+  dias: number
+  descripcion: string | null
+  registrado_en: string
+}
