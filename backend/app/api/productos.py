@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_permission
 from app.models.producto import Producto
 from app.models.user import User
+from app.models.movimiento_inventario import MovimientoInventario
 from app.schemas.producto import ProductoBusquedaOut, ProductoCreate, ProductoOut, ProductoUpdate
+from app.schemas.movimiento_inventario import MovimientoListOut
 
 router = APIRouter()
 
@@ -115,3 +117,24 @@ def eliminar_producto(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
     db.delete(p)
     db.commit()
+
+
+@router.get("/{producto_id}/movimientos", response_model=MovimientoListOut)
+def listar_movimientos_producto(
+    producto_id: int,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    perms: tuple[User, Session] = require_permission("inventario", "view"),
+):
+    _, db = perms
+    if not db.get(Producto, producto_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
+    from sqlalchemy.orm import joinedload
+    q = (
+        db.query(MovimientoInventario)
+        .options(joinedload(MovimientoInventario.producto), joinedload(MovimientoInventario.usuario))
+        .filter(MovimientoInventario.producto_id == producto_id)
+    )
+    total = q.count()
+    items = q.order_by(MovimientoInventario.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    return MovimientoListOut(items=items, total=total)

@@ -249,3 +249,16 @@ def test_eliminar_nv_restaura_stock(client, admin_token):
         headers={"Authorization": f"Bearer {admin_token}"})
     prod = client.get(f"/api/productos/{pid}", headers={"Authorization": f"Bearer {admin_token}"}).json()
     assert prod["stock_actual"] == 20
+
+
+def test_historial_por_producto(client, admin_token):
+    pid = _crear_producto(client, admin_token, nombre="ProdHistorial", stock_actual=10)
+    client.post("/api/inventario/ajustes",
+        json={"producto_id": pid, "cantidad": 2, "signo": 1, "motivo": "otro"},
+        headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get(f"/api/productos/{pid}/movimientos",
+        headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["total"] == 1
+    assert data["items"][0]["producto_id"] == pid
