@@ -139,6 +139,7 @@ def listar_cotizaciones(
     q = db.query(Cotizacion).options(
         joinedload(Cotizacion.cliente),
         joinedload(Cotizacion.vendedor),
+        joinedload(Cotizacion.empresa),
     )
     if estado:
         q = q.filter(Cotizacion.estado == estado)
@@ -170,6 +171,7 @@ def crear_cotizacion(
         estado=body.estado,
         nota=body.nota,
         correo=body.correo,
+        empresa_id=body.empresa_id,
     )
     db.add(cotizacion)
     db.flush()
@@ -182,6 +184,7 @@ def crear_cotizacion(
     return db.query(Cotizacion).options(
         joinedload(Cotizacion.cliente),
         joinedload(Cotizacion.vendedor),
+        joinedload(Cotizacion.empresa),
         joinedload(Cotizacion.lineas),
     ).get(cotizacion.id)
 
@@ -195,6 +198,7 @@ def obtener_cotizacion(
     cot = db.query(Cotizacion).options(
         joinedload(Cotizacion.cliente),
         joinedload(Cotizacion.vendedor),
+        joinedload(Cotizacion.empresa),
         joinedload(Cotizacion.lineas),
     ).filter(Cotizacion.id == cotizacion_id).first()
     if not cot:
@@ -221,6 +225,7 @@ def actualizar_cotizacion(
     return db.query(Cotizacion).options(
         joinedload(Cotizacion.cliente),
         joinedload(Cotizacion.vendedor),
+        joinedload(Cotizacion.empresa),
         joinedload(Cotizacion.lineas),
     ).get(cotizacion_id)
 
@@ -255,6 +260,7 @@ def reemplazar_lineas(
     return db.query(Cotizacion).options(
         joinedload(Cotizacion.cliente),
         joinedload(Cotizacion.vendedor),
+        joinedload(Cotizacion.empresa),
         joinedload(Cotizacion.lineas),
     ).get(cotizacion_id)
 
