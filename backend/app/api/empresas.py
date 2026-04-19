@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_permission
+from app.models.cliente import Cliente as ClienteModel
 from app.models.empresa import Empresa
 from app.models.user import User
 from app.schemas.empresa import EmpresaCreate, EmpresaOut, EmpresaUpdate
@@ -112,7 +113,8 @@ def eliminar_empresa(
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
-    if e.clientes:
+    has_clientes = db.query(ClienteModel.id).filter(ClienteModel.empresa_id == empresa_id).first()
+    if has_clientes:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="No se puede eliminar: tiene clientes asociados",

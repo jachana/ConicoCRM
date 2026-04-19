@@ -119,7 +119,7 @@ export default function CotizacionDetalle() {
       if (c) {
         if (!contacto) setContacto(c.nombre)
         if (!correo && c.email) setCorreo(c.email)
-        if (c.empresa_id) setEmpresaId(c.empresa_id)
+        if (c.empresa_id && !empresaId) setEmpresaId(c.empresa_id)
       }
     }
   }

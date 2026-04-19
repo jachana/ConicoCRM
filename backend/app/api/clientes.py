@@ -4,7 +4,7 @@ import openpyxl
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_permission
 from app.models.cliente import Cliente
@@ -19,7 +19,7 @@ def exportar_excel(
     perms: tuple[User, Session] = require_permission("clientes", "view"),
 ):
     _, db = perms
-    clientes = db.query(Cliente).order_by(Cliente.nombre).all()
+    clientes = db.query(Cliente).options(joinedload(Cliente.empresa)).order_by(Cliente.nombre).all()
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Clientes"
