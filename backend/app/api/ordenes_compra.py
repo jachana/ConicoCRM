@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_permission
 from app.database import get_db
+from app.models.movimiento_inventario import MovimientoInventario
 from app.models.orden_compra import OrdenCompra, OrdenCompraLinea
 from app.models.producto import Producto
 from app.models.system_config import SystemConfig
@@ -292,7 +293,7 @@ def recepcionar(
     body: RecepcionPayload,
     perms: tuple[User, Session] = require_permission("ordenes_compra", "edit"),
 ):
-    _, db = perms
+    current_user, db = perms
     orden = _get_orden_con_relaciones(db, orden_id)
     if not orden:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
@@ -314,6 +315,15 @@ def recepcionar(
             producto = db.get(Producto, linea.producto_id)
             if producto:
                 producto.stock_actual += delta
+                db.add(MovimientoInventario(
+                    producto_id=linea.producto_id,
+                    tipo="entrada",
+                    cantidad=delta,
+                    signo=1,
+                    referencia_tipo="orden_compra",
+                    referencia_id=orden_id,
+                    usuario_id=current_user.id,
+                ))
 
     if all(l.cantidad_recibida >= l.cantidad for l in orden.lineas):
         orden.estado = "recibida_completa"

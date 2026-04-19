@@ -125,3 +125,54 @@ def test_listar_movimientos_filtro_tipo(client, admin_token):
     assert r.status_code == 200
     for item in r.json()["items"]:
         assert item["tipo"] == "ajuste"
+
+
+def test_recepcion_oc_crea_movimiento_entrada(client, admin_token):
+    # Create provider
+    r = client.post(
+        "/api/proveedores/",
+        json={"nombre": "ProvOC", "rut": None, "email": "prov_oc@test.cl"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201, f"Provider creation failed: {r.status_code} - {r.json()}"
+    pid_prov = r.json()["id"]
+
+    pid_prod = _crear_producto(client, admin_token, nombre="ProdOC", stock_actual=0)
+
+    oc = client.post(
+        "/api/ordenes-compra/",
+        json={
+            "proveedor_id": pid_prov,
+            "fecha": "2026-04-19",
+            "lineas": [{"orden": 1, "descripcion": "ProdOC", "cantidad": 5,
+                         "valor_neto": 1000, "producto_id": pid_prod}],
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    ).json()
+    oc_id = oc["id"]
+    linea_id = oc["lineas"][0]["id"]
+
+    # enviar orden
+    client.patch(f"/api/ordenes-compra/{oc_id}/estado",
+        json={"estado": "enviada"},
+        headers={"Authorization": f"Bearer {admin_token}"})
+
+    # recepcionar
+    client.post(f"/api/ordenes-compra/{oc_id}/recepcionar",
+        json={"lineas": [{"id": linea_id, "cantidad_recibida": 5}]},
+        headers={"Authorization": f"Bearer {admin_token}"})
+
+    # stock_actual actualizado
+    prod = client.get(f"/api/productos/{pid_prod}", headers={"Authorization": f"Bearer {admin_token}"}).json()
+    assert prod["stock_actual"] == 5
+
+    # movimiento creado
+    movs = client.get(f"/api/inventario/movimientos?producto_id={pid_prod}",
+        headers={"Authorization": f"Bearer {admin_token}"}).json()
+    assert movs["total"] == 1
+    m = movs["items"][0]
+    assert m["tipo"] == "entrada"
+    assert m["cantidad"] == 5
+    assert m["signo"] == 1
+    assert m["referencia_tipo"] == "orden_compra"
+    assert m["referencia_id"] == oc_id
