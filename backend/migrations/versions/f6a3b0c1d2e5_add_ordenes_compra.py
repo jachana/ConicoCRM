@@ -31,7 +31,6 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         sa.ForeignKeyConstraint(["proveedor_id"], ["proveedores.id"], ondelete="RESTRICT"),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("numero"),
     )
     op.create_index("ix_ordenes_compra_numero", "ordenes_compra", ["numero"], unique=True)
 
