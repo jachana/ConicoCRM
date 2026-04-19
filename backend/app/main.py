@@ -8,6 +8,7 @@ from app.api import clientes
 from app.api import empresas
 from app.api import config
 from app.api import cotizaciones
+from app.api import nota_ventas
 from app.api import empleados
 from app.api import empleados_documentos
 from app.api import empleados_vacaciones
@@ -30,6 +31,7 @@ app.include_router(clientes.router, prefix="/api/clientes", tags=["clientes"])
 app.include_router(empresas.router, prefix="/api/empresas", tags=["empresas"])
 app.include_router(config.router, prefix="/api/config", tags=["config"])
 app.include_router(cotizaciones.router, prefix="/api/cotizaciones", tags=["cotizaciones"])
+app.include_router(nota_ventas.router, prefix="/api/nota_ventas", tags=["nota_ventas"])
 app.include_router(empleados.router, prefix="/api/empleados", tags=["rrhh"])
 app.include_router(empleados_documentos.router, prefix="/api/empleados", tags=["rrhh"])
 app.include_router(empleados_vacaciones.router, prefix="/api/empleados", tags=["rrhh"])

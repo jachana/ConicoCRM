@@ -30,7 +30,7 @@ _DEFAULT: dict[str, dict[str, dict[str, bool]]] = {
         "proveedores":    {"view": False, "create": False, "edit": False, "delete": False},
         "empresas":       {"view": True,  "create": False, "edit": False, "delete": False},
         "cotizaciones":   {"view": True,  "create": True,  "edit": True,  "delete": False},
-        "nota_venta":     {"view": True,  "create": False, "edit": False, "delete": False},
+        "nota_venta":     {"view": True,  "create": True,  "edit": True,  "delete": False},
         "facturas":       {"view": True,  "create": False, "edit": False, "delete": False},
         "ordenes_compra": {"view": False, "create": False, "edit": False, "delete": False},
         "inventario":     {"view": False, "create": False, "edit": False, "delete": False},
