@@ -13,3 +13,4 @@ from app.models.nota_venta import NotaVenta, NotaVentaLinea  # noqa: F401
 from app.models.factura import Factura, FacturaLinea  # noqa: F401
 from app.models.movimiento_inventario import MovimientoInventario  # noqa: F401
 from app.models.pago import Pago  # noqa: F401
+from app.models.aprobacion_credito import AprobacionCredito  # noqa: F401
