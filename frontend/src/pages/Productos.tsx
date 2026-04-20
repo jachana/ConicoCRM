@@ -43,12 +43,13 @@ export default function Productos() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editando, setEditando] = useState<Producto | null>(null)
   const [form, setForm] = useState<FormData>(EMPTY_FORM)
+  const [formDirty, setFormDirty] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [eliminandoId, setEliminandoId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   function abrirCrear() {
-    setEditando(null); setForm(EMPTY_FORM); setError(null); setModalOpen(true)
+    setEditando(null); setForm(EMPTY_FORM); setFormDirty(false); setError(null); setModalOpen(true)
   }
 
   function abrirEditar(p: Producto) {
@@ -65,10 +66,10 @@ export default function Productos() {
       stock_actual: String(p.stock_actual),
       proveedor_id: p.proveedor_id ? String(p.proveedor_id) : '',
     })
-    setError(null); setModalOpen(true)
+    setError(null); setFormDirty(false); setModalOpen(true)
   }
 
-  function cerrarModal() { setModalOpen(false); setEditando(null); setError(null) }
+  function cerrarModal() { setModalOpen(false); setEditando(null); setError(null); setFormDirty(false) }
 
   const guardar = useMutation({
     mutationFn: (data: FormData) => {
@@ -95,6 +96,7 @@ export default function Productos() {
   })
 
   function handleCostoChange(val: string) {
+    setFormDirty(true)
     setForm(f => {
       const m = parseFloat(f.margen)
       const c = parseFloat(val)
@@ -107,6 +109,7 @@ export default function Productos() {
   }
 
   function handleVentaChange(val: string) {
+    setFormDirty(true)
     setForm(f => {
       const costoNum = parseFloat(f.precio_costo)
       const newMargen = costoNum > 0 ? calcMargen(f.precio_costo, val) : f.margen
@@ -115,6 +118,7 @@ export default function Productos() {
   }
 
   function handleMargenChange(val: string) {
+    setFormDirty(true)
     setForm(f => {
       const m = parseFloat(val)
       const c = parseFloat(f.precio_costo)
@@ -257,11 +261,11 @@ export default function Productos() {
                   value={form.precio_venta}
                   onChange={e => handleVentaChange(e.target.value)}
                   className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${
-                    venta <= costo ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    formDirty && venta <= costo ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                {venta <= costo && (
-                  <p className="mt-1 text-xs text-red-500">Debe ser mayor al costo</p>
+                {formDirty && venta <= costo && (
+                  <p className="mt-1 text-xs text-red-500">El precio de venta debe ser mayor al costo</p>
                 )}
               </div>
 
@@ -274,12 +278,12 @@ export default function Productos() {
                     value={form.margen}
                     onChange={e => handleMargenChange(e.target.value)}
                     className={`w-full px-3 py-2 pr-7 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${
-                      margenVal <= 0 ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      formDirty && margenVal <= 0 ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                   />
                   <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
                 </div>
-                {margenVal <= 0 && (
+                {formDirty && margenVal <= 0 && (
                   <p className="mt-1 text-xs text-red-500">Debe ser mayor a 0%</p>
                 )}
               </div>
@@ -290,7 +294,7 @@ export default function Productos() {
                 <input
                   type="number" min="0" step="1"
                   value={form.stock_minimo}
-                  onChange={e => setForm(f => ({ ...f, stock_minimo: e.target.value }))}
+                  onChange={e => { setFormDirty(true); setForm(f => ({ ...f, stock_minimo: e.target.value })) }}
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
@@ -299,7 +303,7 @@ export default function Productos() {
                 <input
                   type="number" min="0" step="1"
                   value={form.stock_actual}
-                  onChange={e => setForm(f => ({ ...f, stock_actual: e.target.value }))}
+                  onChange={e => { setFormDirty(true); setForm(f => ({ ...f, stock_actual: e.target.value })) }}
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
