@@ -1,5 +1,5 @@
 import { openPdf } from '../lib/pdf'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -8,6 +8,7 @@ import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta } from '../types'
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
+import UnsavedChangesModal from '../components/UnsavedChangesModal'
 
 type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string; _stock?: number | null; _costo?: number | null }
 
@@ -47,6 +48,36 @@ function calcLinea(l: LineaLocal): LineaLocal {
 
 function fmtMoney(n: number | string | null | undefined) {
   return `$ ${Math.round(Number(n) || 0).toLocaleString('es-CL')}`
+}
+
+function getLineasErrors(lineas: LineaLocal[]): string[] {
+  const errors: string[] = []
+  if (lineas.some(l => l.producto_id === null || l.producto_id === undefined))
+    errors.push('Hay líneas sin producto seleccionado')
+  if (lineas.some(l => l.margen !== null && l.margen !== undefined && Number(l.margen) < 0))
+    errors.push('Hay líneas con margen negativo')
+  return errors
+}
+
+function cotizacionSnapshot(cot: Cotizacion): string {
+  return JSON.stringify({
+    clienteId: cot.cliente_id,
+    vendedorId: cot.vendedor_id ?? '',
+    contacto: cot.contacto ?? '',
+    correo: cot.correo ?? '',
+    fecha: cot.fecha,
+    estado: cot.estado,
+    nota: cot.nota ?? '',
+    empresaId: cot.empresa_id ?? '',
+    lineas: (cot.lineas ?? []).map(l => ({
+      producto_id: l.producto_id ?? null,
+      cantidad: l.cantidad,
+      valor_neto: l.valor_neto,
+      descripcion: l.descripcion ?? '',
+      sku: l.sku ?? null,
+      formato: l.formato ?? null,
+    }))
+  })
 }
 
 export default function CotizacionDetalle() {
@@ -95,6 +126,27 @@ export default function CotizacionDetalle() {
   } | null>(null)
 
   const [revokeDialog, setRevokeDialog] = useState<{ pendingChange: () => void } | null>(null)
+
+  const [unsavedModal, setUnsavedModal] = useState(false)
+  const [pendingAction, setPendingAction] = useState<'pdf' | 'email' | null>(null)
+  const [modalSaving, setModalSaving] = useState(false)
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
+
+  const lineasErrors = useMemo(() => getLineasErrors(lineas), [lineas])
+
+  const currentSnapshot = useMemo(() => JSON.stringify({
+    clienteId, vendedorId, contacto, correo, fecha, estado, nota, empresaId,
+    lineas: lineas.map(l => ({
+      producto_id: l.producto_id ?? null,
+      cantidad: l.cantidad,
+      valor_neto: l.valor_neto,
+      descripcion: l.descripcion ?? '',
+      sku: l.sku ?? null,
+      formato: l.formato ?? null,
+    }))
+  }), [clienteId, vendedorId, contacto, correo, fecha, estado, nota, empresaId, lineas])
+
+  const isDirty = !isNew && savedSnapshot !== null && currentSnapshot !== savedSnapshot
 
   const { data: cotizacion } = useQuery<Cotizacion>({
     queryKey: ['cotizacion', id],
@@ -149,6 +201,7 @@ export default function CotizacionDetalle() {
         }))
       )
       setPropuestas({})
+      setSavedSnapshot(cotizacionSnapshot(cotizacion))
     }
   }, [cotizacion])
 
@@ -394,7 +447,7 @@ export default function CotizacionDetalle() {
     checkCredit(total, 'warning', doSave)
   }
 
-  async function doSave() {
+  async function doSave(): Promise<boolean> {
     setSaving(true)
     setError('')
     try {
@@ -429,11 +482,53 @@ export default function CotizacionDetalle() {
       }
       qc.invalidateQueries({ queryKey: ['cotizaciones'] })
       navigate(`/cotizaciones/${cotId}`)
+      return true
     } catch (err: any) {
       setError(err?.response?.data?.detail || 'Error al guardar')
+      return false
     } finally {
       setSaving(false)
     }
+  }
+
+  async function handleSaveAndContinue() {
+    setModalSaving(true)
+    const ok = await doSave()
+    setModalSaving(false)
+    if (ok) {
+      setUnsavedModal(false)
+      if (pendingAction === 'pdf') openPdf(`/api/cotizaciones/${id}/pdf`)
+      else if (pendingAction === 'email') emailMut.mutate()
+      setPendingAction(null)
+    }
+  }
+
+  function handleDiscardAndContinue() {
+    if (cotizacion) {
+      setClienteId(cotizacion.cliente_id)
+      setVendedorId(cotizacion.vendedor_id ?? '')
+      setContacto(cotizacion.contacto ?? '')
+      setCorreo(cotizacion.correo ?? '')
+      setFecha(cotizacion.fecha)
+      setEstado(cotizacion.estado)
+      setNota(cotizacion.nota ?? '')
+      setEmpresaId(cotizacion.empresa_id ?? '')
+      setLineas(
+        (cotizacion.lineas ?? []).map((l, i) => ({
+          ...l,
+          _key: `${l.id ?? i}`,
+          producto_id: l.producto_id ?? null,
+          sku: l.sku ?? null,
+          formato: l.formato ?? null,
+          margen: l.margen ?? null,
+        }))
+      )
+      setSavedSnapshot(cotizacionSnapshot(cotizacion))
+    }
+    setUnsavedModal(false)
+    if (pendingAction === 'pdf') openPdf(`/api/cotizaciones/${id}/pdf`)
+    else if (pendingAction === 'email') emailMut.mutate()
+    setPendingAction(null)
   }
 
   const emailMut = useMutation({
@@ -474,18 +569,34 @@ export default function CotizacionDetalle() {
           {!isNew && (
             <>
               <button
-                onClick={() => openPdf(`/api/cotizaciones/${id}/pdf`)}
-                disabled={!isAdmin && !!marginStatus?.blocked}
-                title={!isAdmin && marginStatus?.blocked ? 'Requiere aprobacion de margenes' : undefined}
+                onClick={() => {
+                  if (lineasErrors.length > 0) return
+                  if (isDirty) { setPendingAction('pdf'); setUnsavedModal(true); return }
+                  openPdf(`/api/cotizaciones/${id}/pdf`)
+                }}
+                disabled={(!isAdmin && !!marginStatus?.blocked) || lineasErrors.length > 0}
+                title={
+                  lineasErrors.length > 0 ? lineasErrors.join(' | ')
+                  : (!isAdmin && marginStatus?.blocked) ? 'Requiere aprobacion de margenes'
+                  : undefined
+                }
                 className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FileText size={15} />
                 PDF
               </button>
               <button
-                onClick={() => emailMut.mutate()}
-                disabled={emailMut.isPending || (!isAdmin && !!marginStatus?.blocked)}
-                title={!isAdmin && marginStatus?.blocked ? 'Requiere aprobacion de margenes' : undefined}
+                onClick={() => {
+                  if (lineasErrors.length > 0) return
+                  if (isDirty) { setPendingAction('email'); setUnsavedModal(true); return }
+                  emailMut.mutate()
+                }}
+                disabled={emailMut.isPending || (!isAdmin && !!marginStatus?.blocked) || lineasErrors.length > 0}
+                title={
+                  lineasErrors.length > 0 ? lineasErrors.join(' | ')
+                  : (!isAdmin && marginStatus?.blocked) ? 'Requiere aprobacion de margenes'
+                  : undefined
+                }
                 className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Mail size={15} />
@@ -511,7 +622,8 @@ export default function CotizacionDetalle() {
           )}
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || lineasErrors.length > 0}
+            title={lineasErrors.length > 0 ? lineasErrors.join(' | ') : undefined}
             className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
           >
             {saving ? 'Guardando...' : 'Guardar'}
@@ -896,6 +1008,15 @@ export default function CotizacionDetalle() {
           </div>
         </div>
       )}
+
+      <UnsavedChangesModal
+        open={unsavedModal}
+        saving={modalSaving}
+        onSaveAndContinue={handleSaveAndContinue}
+        onDiscardAndContinue={handleDiscardAndContinue}
+        onCancel={() => { setUnsavedModal(false); setPendingAction(null) }}
+        docType="cotizacion"
+      />
 
       {autocompleteIdx !== null && autocompleteResults.length > 0 && dropdownRect && createPortal(
         <div
