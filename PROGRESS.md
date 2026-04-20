@@ -60,6 +60,16 @@
   - Registro de períodos de vacaciones
   - Volumen Docker `uploads_data` para persistencia de archivos
 
+- [x] **Fase 10 — Control de crédito + aprobaciones**
+  - `GET /api/empresas/{id}/credito`: calcula crédito usado (facturas no pagadas) y disponible
+  - Cotización: advertencia no bloqueante si se excede el crédito al guardar
+  - NV nueva: si excede el crédito, flujo de aprobación asíncrono (no se crea hasta que admin apruebe)
+  - `AprobacionCredito`: modelo con origen (cotizacion/directa), payload JSON de la NV, estado (pendiente/aprobada/denegada)
+  - Admin aprueba → NV se crea automáticamente y vendedor es redirigido
+  - Admin deniega → vendedor ve error y permanece en el formulario
+  - `CreditWarningModal`: modo warning (cotización) y modo request (NV) con spinner de espera y polling cada 3s
+  - Página `/aprobaciones`: solo admin/subadmin; lista pendientes con Aprobar/Denegar por fila; badge en sidebar
+
 - [x] **Fase 9 — Dashboard configurable**
   - 8 widgets: ventas período, cotizaciones abiertas, top clientes, top productos, stock crítico, NV por cobrar, cotizaciones/ventas por vendedor
   - Layout persistido por rol en DB (dashboard_layouts); admin edita layouts con drag-and-drop (react-grid-layout)
