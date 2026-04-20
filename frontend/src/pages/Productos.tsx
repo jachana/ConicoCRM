@@ -98,7 +98,7 @@ export default function Productos() {
     setForm(f => {
       const m = parseFloat(f.margen)
       const c = parseFloat(val)
-      if (!isNaN(m) && m > 0 && !isNaN(c)) {
+      if (!isNaN(m) && m > 0 && m < 100 && !isNaN(c) && c > 0) {
         const newVenta = (c / (1 - m / 100)).toFixed(2)
         return { ...f, precio_costo: val, precio_venta: newVenta }
       }
@@ -108,7 +108,9 @@ export default function Productos() {
 
   function handleVentaChange(val: string) {
     setForm(f => {
-      return { ...f, precio_venta: val, margen: calcMargen(f.precio_costo, val) }
+      const costoNum = parseFloat(f.precio_costo)
+      const newMargen = costoNum > 0 ? calcMargen(f.precio_costo, val) : f.margen
+      return { ...f, precio_venta: val, margen: newMargen }
     })
   }
 
@@ -116,7 +118,7 @@ export default function Productos() {
     setForm(f => {
       const m = parseFloat(val)
       const c = parseFloat(f.precio_costo)
-      if (!isNaN(m) && m > 0 && !isNaN(c) && c > 0) {
+      if (!isNaN(m) && m > 0 && m < 100 && !isNaN(c) && c > 0) {
         const newVenta = (c / (1 - m / 100)).toFixed(2)
         return { ...f, margen: val, precio_venta: newVenta }
       }
