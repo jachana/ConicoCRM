@@ -6,6 +6,7 @@ import { Plus, Trash2, FileText, Mail, ArrowLeft, ExternalLink, Receipt } from '
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { NotaVenta, NotaVentaLinea, Cliente, User, Producto, Empresa } from '../types'
+import CreditWarningModal, { type CreditoInfo } from '../components/CreditWarningModal'
 
 type LineaLocal = Omit<NotaVentaLinea, 'id'> & { id?: number; _key: string }
 
@@ -86,6 +87,10 @@ export default function NotaVentaDetalle() {
   const [error, setError] = useState('')
   const [emailToast, setEmailToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const [showEstadoMenu, setShowEstadoMenu] = useState(false)
+  const [creditModal, setCreditModal] = useState<{
+    credito: CreditoInfo
+    onConfirm: () => void
+  } | null>(null)
 
   const [autocompleteIdx, setAutocompleteIdx] = useState<number | null>(null)
   const [autocompleteResults, setAutocompleteResults] = useState<Producto[]>([])
@@ -196,8 +201,32 @@ export default function NotaVentaDetalle() {
   const totalIva = lineas.reduce((s, l) => s + (Number(l.iva) || 0), 0)
   const total = lineas.reduce((s, l) => s + (Number(l.total) || 0), 0)
 
+  async function checkCredit(saleTotal: number, onProceed: () => void) {
+    if (!empresaId) { onProceed(); return }
+    const empresa = empresas.find(e => e.id === empresaId)
+    if (!empresa?.limite_credito) { onProceed(); return }
+    try {
+      const res = await api.get<CreditoInfo>(`/api/empresas/${empresaId}/credito`)
+      const credito = res.data
+      if (credito.credito_disponible !== null && Number(credito.credito_disponible) < saleTotal) {
+        setCreditModal({
+          credito,
+          onConfirm: () => { setCreditModal(null); onProceed() },
+        })
+      } else {
+        onProceed()
+      }
+    } catch {
+      onProceed()
+    }
+  }
+
   async function handleSave() {
     if (!clienteId) { setError('Selecciona un cliente'); return }
+    checkCredit(total, doSave)
+  }
+
+  async function doSave() {
     setSaving(true)
     setError('')
     try {
@@ -530,6 +559,17 @@ export default function NotaVentaDetalle() {
         <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
           {emailToast.msg}
         </div>
+      )}
+
+      {creditModal && (
+        <CreditWarningModal
+          mode="block"
+          empresaNombre={empresas.find(e => e.id === empresaId)?.nombre ?? ''}
+          credito={creditModal.credito}
+          saleTotal={total}
+          onConfirm={creditModal.onConfirm}
+          onCancel={() => setCreditModal(null)}
+        />
       )}
     </div>
   )
