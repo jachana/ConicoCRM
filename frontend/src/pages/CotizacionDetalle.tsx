@@ -85,11 +85,24 @@ export default function CotizacionDetalle() {
     onDenied?: () => void
   } | null>(null)
 
+  const [marginStatus, setMarginStatus] = useState<{
+    blocked: boolean
+    estado: 'pendiente' | 'aprobada' | 'denegada' | 'revocada' | null
+    aprobacion_id: number | null
+  } | null>(null)
+
   const { data: cotizacion } = useQuery<Cotizacion>({
     queryKey: ['cotizacion', id],
     queryFn: () => api.get(`/api/cotizaciones/${id}`).then(r => r.data),
     enabled: !isNew,
   })
+
+  useEffect(() => {
+    if (isNew || isAdmin) return
+    api.get(`/api/cotizaciones/${id}/margin-status`)
+      .then(r => setMarginStatus(r.data))
+      .catch(() => {})
+  }, [id, isNew, isAdmin])
 
   useEffect(() => {
     if (cotizacion) {
@@ -368,15 +381,18 @@ export default function CotizacionDetalle() {
             <>
               <button
                 onClick={() => openPdf(`/api/cotizaciones/${id}/pdf`)}
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                disabled={!isAdmin && !!marginStatus?.blocked}
+                title={!isAdmin && marginStatus?.blocked ? 'Requiere aprobacion de margenes' : undefined}
+                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FileText size={15} />
                 PDF
               </button>
               <button
                 onClick={() => emailMut.mutate()}
-                disabled={emailMut.isPending}
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                disabled={emailMut.isPending || (!isAdmin && !!marginStatus?.blocked)}
+                title={!isAdmin && marginStatus?.blocked ? 'Requiere aprobacion de margenes' : undefined}
+                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Mail size={15} />
                 {emailMut.isPending ? 'Enviando...' : 'Email'}
@@ -401,6 +417,18 @@ export default function CotizacionDetalle() {
       </div>
 
       {error && <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">{error}</div>}
+
+      {!isAdmin && marginStatus?.blocked && (
+        <div className={`mb-4 px-4 py-3 rounded-lg text-sm border flex items-center gap-2 ${
+          marginStatus.estado === 'pendiente'
+            ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400'
+            : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400'
+        }`}>
+          {marginStatus.estado === 'pendiente'
+            ? 'Precios modificados — solicitud de aprobacion pendiente. PDF y email deshabilitados.'
+            : 'Precios modificados requieren aprobacion antes de generar PDF o enviar email.'}
+        </div>
+      )}
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 mb-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
