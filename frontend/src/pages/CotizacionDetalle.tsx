@@ -239,11 +239,11 @@ export default function CotizacionDetalle() {
     if (!revokeDialog || !marginStatus?.aprobacion_id) return
     revokeDialog.pendingChange()
     setRevokeDialog(null)
+    setMarginStatus(prev => prev ? { ...prev, blocked: true, estado: 'revocada' } : prev)
     try {
       await api.patch(`/api/aprobaciones_margen/${marginStatus.aprobacion_id}`, { accion: 'revocar' })
     } catch {
     }
-    setMarginStatus(prev => prev ? { ...prev, blocked: true, estado: 'revocada' } : prev)
   }
 
   function handleMargenChange(idx: number, pctStr: string) {
