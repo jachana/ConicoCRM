@@ -94,6 +94,36 @@ export default function Productos() {
     onError: (e: any) => setDeleteError(e?.response?.data?.detail ?? 'Error al eliminar'),
   })
 
+  function handleCostoChange(val: string) {
+    setForm(f => {
+      const m = parseFloat(f.margen)
+      const c = parseFloat(val)
+      if (!isNaN(m) && m > 0 && !isNaN(c)) {
+        const newVenta = (c / (1 - m / 100)).toFixed(2)
+        return { ...f, precio_costo: val, precio_venta: newVenta }
+      }
+      return { ...f, precio_costo: val }
+    })
+  }
+
+  function handleVentaChange(val: string) {
+    setForm(f => {
+      return { ...f, precio_venta: val, margen: calcMargen(f.precio_costo, val) }
+    })
+  }
+
+  function handleMargenChange(val: string) {
+    setForm(f => {
+      const m = parseFloat(val)
+      const c = parseFloat(f.precio_costo)
+      if (!isNaN(m) && m > 0 && !isNaN(c) && c > 0) {
+        const newVenta = (c / (1 - m / 100)).toFixed(2)
+        return { ...f, margen: val, precio_venta: newVenta }
+      }
+      return { ...f, margen: val }
+    })
+  }
+
   if (isLoading) return <div className="p-6 text-gray-500">Cargando...</div>
 
   return (
