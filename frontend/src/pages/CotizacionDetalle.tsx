@@ -514,13 +514,14 @@ export default function CotizacionDetalle() {
       setNota(cotizacion.nota ?? '')
       setEmpresaId(cotizacion.empresa_id ?? '')
       setLineas(
-        (cotizacion.lineas ?? []).map((l, i) => ({
+        (cotizacion.lineas ?? []).map((l, i) => calcLinea({
           ...l,
           _key: `${l.id ?? i}`,
           producto_id: l.producto_id ?? null,
           sku: l.sku ?? null,
           formato: l.formato ?? null,
           margen: l.margen ?? null,
+          _costo: (l.margen != null && Number(l.valor_neto) > 0) ? Number(l.valor_neto) * (1 - l.margen) : null,
         }))
       )
       setSavedSnapshot(cotizacionSnapshot(cotizacion))
