@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Users, Package, ShoppingCart,
   Warehouse, Receipt, Truck, UserCog, Building2, CreditCard,
-  ChevronLeft, ChevronRight, LogOut, Sun, Moon, X,
+  ChevronLeft, ChevronRight, LogOut, Sun, Moon, X, ClipboardList,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth'
 import { useTheme } from './ThemeProvider'
@@ -43,6 +43,15 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
     staleTime: 60_000,
   })
   const stockBajoCount = stockBajo.length
+
+  const isAdminUser = !!user && (user.role === 'admin' || user.role === 'subadmin')
+  const { data: aprobacionesPendientes = [] } = useQuery<{ id: number }[]>({
+    queryKey: ['aprobaciones-pendientes'],
+    queryFn: () => api.get('/api/aprobaciones/?estado=pendiente').then(r => r.data),
+    enabled: isAdminUser,
+    staleTime: 30_000,
+  })
+  const aprobacionesCount = aprobacionesPendientes.length
 
   return (
     <aside
@@ -116,6 +125,45 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
             </NavLink>
           )
         })}
+        {isAdminUser && (() => {
+          const badge = aprobacionesCount
+          return (
+            <NavLink
+              to="/aprobaciones"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm transition-colors
+                 ${isActive
+                   ? 'bg-brand-500/15 text-brand-400 font-medium'
+                   : 'hover:bg-white/8 hover:text-white text-gray-400'}`
+              }
+              title={collapsed ? 'Aprobaciones' : undefined}
+            >
+              {({ isActive }) => (
+                <>
+                  <span className="relative flex-shrink-0">
+                    <ClipboardList size={18} strokeWidth={isActive ? 2.5 : 1.8} />
+                    {badge > 0 && collapsed && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-orange-500 text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
+                        {badge > 99 ? '99+' : badge}
+                      </span>
+                    )}
+                  </span>
+                  {!collapsed && (
+                    <>
+                      <span className="truncate flex-1">Aprobaciones</span>
+                      {badge > 0 && (
+                        <span className="bg-orange-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                          {badge > 99 ? '99+' : badge}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </NavLink>
+          )
+        })()}
       </nav>
 
       {/* Footer */}
