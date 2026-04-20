@@ -2,7 +2,7 @@ import { openPdf } from '../lib/pdf'
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, CreditCard, Pencil } from 'lucide-react'
+import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, CreditCard, Pencil, ExternalLink } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta } from '../types'
@@ -321,7 +321,8 @@ export default function CotizacionDetalle() {
                 <select
                   value={empresaId}
                   onChange={e => setEmpresaId(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  disabled={!!clienteId}
+                  className={`w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${clienteId ? 'bg-gray-50 dark:bg-gray-800/50 cursor-default' : 'bg-white dark:bg-gray-800'}`}
                 >
                   <option value="">— Sin empresa —</option>
                   {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
@@ -329,7 +330,7 @@ export default function CotizacionDetalle() {
               </div>
           {selectedCliente && (
             <div className="sm:col-span-2 lg:col-span-3">
-              <div className="flex flex-wrap gap-x-6 gap-y-1.5 px-3 py-2.5 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 px-3 py-2.5 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300">
                 {selectedCliente.empresa && (
                   <span className="flex items-center gap-1.5"><Building2 size={12} className="text-gray-400" />{selectedCliente.empresa.nombre}</span>
                 )}
@@ -342,19 +343,29 @@ export default function CotizacionDetalle() {
                 {selectedCliente.forma_pago && (
                   <span className="flex items-center gap-1.5"><CreditCard size={12} className="text-gray-400" />{selectedCliente.forma_pago}</span>
                 )}
+                <button
+                  type="button"
+                  onClick={() => navigate('/clientes')}
+                  className="ml-auto flex items-center gap-1 text-blue-500 hover:text-blue-600 dark:text-blue-400"
+                  title="Editar cliente"
+                >
+                  <ExternalLink size={11} /> Editar cliente
+                </button>
               </div>
             </div>
           )}
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Contacto</label>
             <input type="text" value={contacto} onChange={e => setContacto(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              readOnly={!!clienteId}
+              className={`w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${clienteId ? 'bg-gray-50 dark:bg-gray-800/50 cursor-default' : 'bg-white dark:bg-gray-800'}`}
               placeholder="Nombre del contacto" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Correo</label>
             <input type="email" value={correo} onChange={e => setCorreo(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              readOnly={!!clienteId}
+              className={`w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${clienteId ? 'bg-gray-50 dark:bg-gray-800/50 cursor-default' : 'bg-white dark:bg-gray-800'}`}
               placeholder="email@ejemplo.com" />
           </div>
           <div>
