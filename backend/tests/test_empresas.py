@@ -1,3 +1,33 @@
+import datetime
+
+import pytest
+
+
+def _create_cliente_bulk(client, admin_token, empresa_id=None):
+    payload = {"nombre": "Cliente Bulk Test", "rut": "22.222.222-2"}
+    if empresa_id:
+        payload["empresa_id"] = empresa_id
+    r = client.post("/api/clientes/", json=payload, headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 201
+    return r.json()["id"]
+
+
+def _create_factura_bulk(client, admin_token, cliente_id, empresa_id, total_neto=10000,
+                          fecha_vencimiento=None, fecha=None):
+    payload = {
+        "cliente_id": cliente_id,
+        "empresa_id": empresa_id,
+        "lineas": [{"orden": 0, "descripcion": "Item", "cantidad": 1, "valor_neto": total_neto}],
+    }
+    if fecha_vencimiento:
+        payload["fecha_vencimiento"] = fecha_vencimiento
+    if fecha:
+        payload["fecha"] = fecha
+    r = client.post("/api/facturas/", json=payload, headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
 def test_listar_empresas_sin_auth(client):
     r = client.get("/api/empresas/")
     assert r.status_code == 401
@@ -105,3 +135,101 @@ def test_exportar_excel(client, admin_token):
     r = client.get("/api/empresas/export/excel", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
     assert "spreadsheetml" in r.headers["content-type"]
+
+
+def test_deuda_bulk_lista_vacia(client, admin_token):
+    r = client.get("/api/empresas/deuda-bulk", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_deuda_bulk_empresa_sin_facturas(client, admin_token):
+    emp = client.post(
+        "/api/empresas/",
+        json={"nombre": "Emp Bulk", "plazo_credito": "30 Dias", "limite_credito": 5000000},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    ).json()
+    r = client.get("/api/empresas/deuda-bulk", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    items = r.json()
+    item = next(i for i in items if i["empresa_id"] == emp["id"])
+    assert float(item["deuda_total"]) == 0
+    assert float(item["deuda_vencida"]) == 0
+    assert item["plazo_credito"] == "30 Dias"
+    assert float(item["limite_credito"]) == 5000000
+
+
+def test_deuda_bulk_con_factura_sin_pagar(client, admin_token):
+    emp = client.post(
+        "/api/empresas/", json={"nombre": "Emp Deudora"}, headers={"Authorization": f"Bearer {admin_token}"}
+    ).json()
+    cid = _create_cliente_bulk(client, admin_token, emp["id"])
+    _create_factura_bulk(client, admin_token, cid, emp["id"], total_neto=10000)
+    r = client.get("/api/empresas/deuda-bulk", headers={"Authorization": f"Bearer {admin_token}"})
+    item = next(i for i in r.json() if i["empresa_id"] == emp["id"])
+    # 10000 neto * 1.19 IVA = 11900
+    assert float(item["deuda_total"]) == pytest.approx(11900.0)
+    assert float(item["deuda_vencida"]) == 0  # no fecha_vencimiento and plazo is None
+
+
+def test_deuda_bulk_vencida_por_fecha_vencimiento(client, admin_token):
+    emp = client.post(
+        "/api/empresas/", json={"nombre": "Emp Vencida"}, headers={"Authorization": f"Bearer {admin_token}"}
+    ).json()
+    cid = _create_cliente_bulk(client, admin_token, emp["id"])
+    past_date = (datetime.date.today() - datetime.timedelta(days=10)).isoformat()
+    _create_factura_bulk(client, admin_token, cid, emp["id"], total_neto=5000, fecha_vencimiento=past_date)
+    r = client.get("/api/empresas/deuda-bulk", headers={"Authorization": f"Bearer {admin_token}"})
+    item = next(i for i in r.json() if i["empresa_id"] == emp["id"])
+    # 5000 neto * 1.19 = 5950
+    assert float(item["deuda_total"]) == pytest.approx(5950.0)
+    assert float(item["deuda_vencida"]) == pytest.approx(5950.0)
+
+
+def test_deuda_bulk_vencida_por_plazo(client, admin_token):
+    emp = client.post(
+        "/api/empresas/", json={"nombre": "Emp Plazo Vencido", "plazo_credito": "30 Dias"},
+        headers={"Authorization": f"Bearer {admin_token}"}
+    ).json()
+    cid = _create_cliente_bulk(client, admin_token, emp["id"])
+    old_date = (datetime.date.today() - datetime.timedelta(days=60)).isoformat()
+    _create_factura_bulk(client, admin_token, cid, emp["id"], total_neto=3000, fecha=old_date)
+    r = client.get("/api/empresas/deuda-bulk", headers={"Authorization": f"Bearer {admin_token}"})
+    item = next(i for i in r.json() if i["empresa_id"] == emp["id"])
+    # 60 days old, 30-day plazo → vencida
+    assert float(item["deuda_vencida"]) == pytest.approx(3570.0)  # 3000 * 1.19
+
+
+def test_deuda_bulk_no_vencida_si_plazo_especial(client, admin_token):
+    emp = client.post(
+        "/api/empresas/", json={"nombre": "Emp Especial", "plazo_credito": "Especial"},
+        headers={"Authorization": f"Bearer {admin_token}"}
+    ).json()
+    cid = _create_cliente_bulk(client, admin_token, emp["id"])
+    _create_factura_bulk(client, admin_token, cid, emp["id"], total_neto=2000)
+    r = client.get("/api/empresas/deuda-bulk", headers={"Authorization": f"Bearer {admin_token}"})
+    item = next(i for i in r.json() if i["empresa_id"] == emp["id"])
+    assert float(item["deuda_total"]) == pytest.approx(2380.0)
+    assert float(item["deuda_vencida"]) == 0  # Especial + no fecha_vencimiento → skip
+
+
+def test_deuda_bulk_factura_anulada_no_cuenta(client, admin_token):
+    emp = client.post(
+        "/api/empresas/", json={"nombre": "Emp Anulada"}, headers={"Authorization": f"Bearer {admin_token}"}
+    ).json()
+    cid = _create_cliente_bulk(client, admin_token, emp["id"])
+    f = _create_factura_bulk(client, admin_token, cid, emp["id"], total_neto=10000)
+    # Anular la factura
+    client.patch(
+        f"/api/facturas/{f['id']}",
+        json={"estado": "anulada"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    r = client.get("/api/empresas/deuda-bulk", headers={"Authorization": f"Bearer {admin_token}"})
+    item = next(i for i in r.json() if i["empresa_id"] == emp["id"])
+    assert float(item["deuda_total"]) == 0
+
+
+def test_deuda_bulk_sin_auth(client):
+    r = client.get("/api/empresas/deuda-bulk")
+    assert r.status_code == 401
