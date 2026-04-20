@@ -206,8 +206,8 @@ export default function Empresas() {
         </button>
       </div>
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
+        <table className="w-full text-sm min-w-[900px]">
           <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
             <tr>
               <th
