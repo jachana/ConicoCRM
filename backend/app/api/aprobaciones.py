@@ -51,6 +51,7 @@ def crear_aprobacion(
 @router.get("/", response_model=list[AprobacionOut])
 def listar_aprobaciones(
     estado: str | None = Query(None),
+    cotizacion_id: int | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -62,6 +63,8 @@ def listar_aprobaciones(
         q = q.filter(AprobacionCredito.vendedor_id == current_user.id)
     if estado:
         q = q.filter(AprobacionCredito.estado == estado)
+    if cotizacion_id:
+        q = q.filter(AprobacionCredito.cotizacion_id == cotizacion_id)
     return q.order_by(AprobacionCredito.created_at.desc()).all()
 
 
