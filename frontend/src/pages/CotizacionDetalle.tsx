@@ -3,13 +3,13 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, CreditCard, Pencil, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, RotateCcw, ExternalLink } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta } from '../types'
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 
-type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string; _stock?: number | null }
+type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string; _stock?: number | null; _costo?: number | null }
 
 const ESTADOS = [
   { value: 'no_definido', label: 'Sin definir' },
@@ -108,6 +108,7 @@ export default function CotizacionDetalle() {
           sku: l.sku ?? null,
           formato: l.formato ?? null,
           margen: l.margen ?? null,
+          _costo: (l.margen != null && Number(l.valor_neto) > 0) ? Number(l.valor_neto) * (1 - l.margen) : null,
         }))
       )
     }
@@ -187,6 +188,7 @@ export default function CotizacionDetalle() {
         margen: producto.precio_venta > 0
           ? (producto.precio_venta - producto.precio_costo) / producto.precio_venta
           : null,
+        _costo: producto.precio_costo ?? null,
         _stock: producto.stock_actual,
       }
       return calcLinea(updated)
@@ -205,6 +207,38 @@ export default function CotizacionDetalle() {
 
   function removeLinea(idx: number) {
     setLineas(prev => prev.filter((_, i) => i !== idx).map((l, i) => ({ ...l, orden: i + 1 })))
+  }
+
+  function handleMargenChange(idx: number, pctStr: string) {
+    setLineas(prev => prev.map((l, i) => {
+      if (i !== idx) return l
+      const pct = parseFloat(pctStr)
+      const newMargen = isNaN(pct) ? null : pct / 100
+      const updates: Partial<LineaLocal> = { margen: newMargen }
+      if (newMargen !== null && newMargen < 1 && l._costo != null)
+        updates.valor_neto = Math.round(l._costo / (1 - newMargen))
+      return calcLinea({ ...l, ...updates })
+    }))
+  }
+
+  function handleValorNetoChange(idx: number, val: string) {
+    setLineas(prev => prev.map((l, i) => {
+      if (i !== idx) return l
+      const vn = Math.max(0, parseFloat(val) || 0)
+      const newMargen = l._costo != null && vn > 0 ? (vn - l._costo) / vn : l.margen
+      return calcLinea({ ...l, valor_neto: vn, margen: newMargen })
+    }))
+  }
+
+  function handleResetPrecio(idx: number) {
+    const linea = lineas[idx]
+    if (!linea.producto_id) return
+    const prod = productos.find(p => p.id === linea.producto_id)
+    if (!prod) return
+    const vn = prod.precio_venta
+    const costo = prod.precio_costo ?? null
+    const newMargen = vn > 0 && costo != null ? (vn - costo) / vn : linea.margen
+    setLineas(prev => prev.map((l, i) => i !== idx ? l : calcLinea({ ...l, valor_neto: vn, margen: newMargen, _costo: costo })))
   }
 
   const totalNeto = lineas.reduce((s, l) => s + (Number(l.total_neto) || 0), 0)
@@ -484,23 +518,31 @@ export default function CotizacionDetalle() {
                     onChange={e => updateLinea(idx, { cantidad: Math.max(1, parseInt(e.target.value) || 1) })}
                     className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right ${linea._stock != null && linea.cantidad > linea._stock ? 'border-orange-400 dark:border-orange-500' : 'border-gray-200 dark:border-gray-700'}`} />
                 </td>
-                <td className="px-3 py-2 text-right text-gray-900 dark:text-white text-sm font-medium">
-                  {fmtMoney(linea.valor_neto)}
-                </td>
-                <td className="px-3 py-3 text-right text-gray-700 dark:text-gray-300 text-sm font-medium">{fmtMoney(linea.total_neto)}</td>
-                <td className="px-3 py-3 text-right text-xs">
+                <td className="px-3 py-2">
                   <div className="flex items-center justify-end gap-1">
-                    {linea.margen !== null
-                      ? <span className={linea.margen >= 0.15 ? 'text-green-600 dark:text-green-400' : 'text-orange-500'}>{(linea.margen * 100).toFixed(1)}%</span>
-                      : <span className="text-gray-400">—</span>}
-                    {isAdmin && (
-                      <button type="button"
-                        onClick={() => { setMarginOverrideIdx(idx); setMarginOverrideInput(linea.margen !== null ? (linea.margen * 100).toFixed(1) : '') }}
+                    {linea.producto_id && (
+                      <button type="button" onClick={() => handleResetPrecio(idx)}
                         className="p-0.5 text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
-                        title="Forzar margen">
-                        <Pencil size={10} />
+                        title="Restablecer precio">
+                        <RotateCcw size={10} />
                       </button>
                     )}
+                    <input type="number" min="0" value={linea.valor_neto}
+                      onChange={e => handleValorNetoChange(idx, e.target.value)}
+                      className="w-28 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                  </div>
+                </td>
+                <td className="px-3 py-3 text-right text-gray-700 dark:text-gray-300 text-sm font-medium">{fmtMoney(linea.total_neto)}</td>
+                <td className="px-3 py-2">
+                  <div className="flex items-center justify-end gap-0.5">
+                    <input
+                      type="number" step="0.1"
+                      value={linea.margen !== null ? linea.margen * 100 : ''}
+                      onChange={e => handleMargenChange(idx, e.target.value)}
+                      placeholder="—"
+                      className={`w-16 px-1.5 py-1.5 text-xs border rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 ${linea.margen !== null && linea.margen < 0.15 ? 'border-orange-400 dark:border-orange-500 text-orange-500' : 'border-gray-200 dark:border-gray-700 text-green-600 dark:text-green-400'}`}
+                    />
+                    <span className="text-xs text-gray-400">%</span>
                   </div>
                 </td>
                 <td className="px-3 py-2">
@@ -533,40 +575,6 @@ export default function CotizacionDetalle() {
           </div>
         </div>
       </div>
-
-      {marginOverrideIdx !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 w-full max-w-xs">
-            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-1">Forzar margen</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Línea {marginOverrideIdx + 1} · ingresa el margen deseado (%)</p>
-            <input
-              type="number"
-              step="0.1"
-              value={marginOverrideInput}
-              onChange={e => setMarginOverrideInput(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-              placeholder="Ej: 25.0"
-              autoFocus
-            />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setMarginOverrideIdx(null)}
-                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  const pct = parseFloat(marginOverrideInput)
-                  if (!isNaN(pct)) updateLinea(marginOverrideIdx, { margen: pct / 100 })
-                  setMarginOverrideIdx(null)
-                }}
-                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-              >
-                Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {emailToast && (
         <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
