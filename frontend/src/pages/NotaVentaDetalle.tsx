@@ -6,7 +6,7 @@ import { Plus, Trash2, FileText, Mail, ArrowLeft, ExternalLink, Receipt } from '
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { NotaVenta, NotaVentaLinea, Cliente, User, Producto, Empresa } from '../types'
-import CreditWarningModal, { type CreditoInfo } from '../components/CreditWarningModal'
+import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 
 type LineaLocal = Omit<NotaVentaLinea, 'id'> & { id?: number; _key: string }
 
@@ -89,7 +89,9 @@ export default function NotaVentaDetalle() {
   const [showEstadoMenu, setShowEstadoMenu] = useState(false)
   const [creditModal, setCreditModal] = useState<{
     credito: CreditoInfo
-    onConfirm: () => void
+    aprobacionPayload?: AprobacionPayload
+    onApproved?: (nvId: number) => void
+    onDenied?: () => void
   } | null>(null)
 
   const [autocompleteIdx, setAutocompleteIdx] = useState<number | null>(null)
@@ -201,7 +203,7 @@ export default function NotaVentaDetalle() {
   const totalIva = lineas.reduce((s, l) => s + (Number(l.iva) || 0), 0)
   const total = lineas.reduce((s, l) => s + (Number(l.total) || 0), 0)
 
-  async function checkCredit(saleTotal: number, onProceed: () => void) {
+  async function checkCredit(saleTotal: number, onProceed: () => void, aprobacionPayload?: AprobacionPayload) {
     if (!empresaId) { onProceed(); return }
     const empresa = empresas.find(e => e.id === empresaId)
     if (!empresa?.limite_credito) { onProceed(); return }
@@ -211,7 +213,9 @@ export default function NotaVentaDetalle() {
       if (credito.credito_disponible !== null && Number(credito.credito_disponible) < saleTotal) {
         setCreditModal({
           credito,
-          onConfirm: () => { setCreditModal(null); onProceed() },
+          aprobacionPayload,
+          onApproved: (nvId) => { setCreditModal(null); navigate(`/notas-venta/${nvId}`) },
+          onDenied: () => { setCreditModal(null); setError('Solicitud denegada por el administrador.') },
         })
       } else {
         onProceed()
@@ -223,7 +227,32 @@ export default function NotaVentaDetalle() {
 
   async function handleSave() {
     if (!clienteId) { setError('Selecciona un cliente'); return }
-    checkCredit(total, doSave)
+    if (!isNew) { doSave(); return }
+    const lineasPayload = lineas.map((l, i) => ({
+      orden: i + 1,
+      producto_id: l.producto_id,
+      sku: l.sku,
+      descripcion: l.descripcion,
+      formato: l.formato,
+      cantidad: l.cantidad,
+      valor_neto: l.valor_neto,
+    }))
+    const aprobacionPayload: AprobacionPayload = {
+      empresa_id: Number(empresaId) || 0,
+      total,
+      origen: 'directa',
+      nv_payload: {
+        cliente_id: clienteId,
+        vendedor_id: vendedorId || currentUser?.id,
+        contacto: contacto || null,
+        correo: correo || null,
+        fecha,
+        nota: nota || null,
+        empresa_id: empresaId || null,
+        lineas: lineasPayload,
+      },
+    }
+    checkCredit(total, doSave, aprobacionPayload)
   }
 
   async function doSave() {
@@ -563,11 +592,13 @@ export default function NotaVentaDetalle() {
 
       {creditModal && (
         <CreditWarningModal
-          mode="block"
+          mode="request"
           empresaNombre={empresas.find(e => e.id === empresaId)?.nombre ?? ''}
           credito={creditModal.credito}
           saleTotal={total}
-          onConfirm={creditModal.onConfirm}
+          aprobacionPayload={creditModal.aprobacionPayload}
+          onApproved={creditModal.onApproved}
+          onDenied={creditModal.onDenied}
           onCancel={() => setCreditModal(null)}
         />
       )}
