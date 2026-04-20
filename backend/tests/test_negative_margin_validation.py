@@ -1,0 +1,93 @@
+import pytest
+import random
+
+
+# ── helpers ──────────────────────────────────────────────────────────────────
+
+def _make_producto(client, token, precio_venta=1000, precio_costo=600):
+    r = client.post("/api/productos/", json={
+        "nombre": "Prod Validation Test",
+        "sku": f"SKU-VAL-{precio_venta}-{precio_costo}-{random.randint(10000, 99999)}",
+        "precio_venta": precio_venta,
+        "precio_costo": precio_costo,
+        "unidad": "un",
+    }, headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def _make_cliente(client, token):
+    r = client.post("/api/clientes/", json={"nombre": f"Cliente Val {random.randint(1000, 9999)}"},
+                    headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 201
+    return r.json()["id"]
+
+
+def _make_cotizacion_linea(client, token, cid, producto_id, valor_neto):
+    r = client.post("/api/cotizaciones/", json={
+        "cliente_id": cid,
+        "lineas": [{"orden": 1, "descripcion": "Test", "producto_id": producto_id,
+                    "cantidad": 1, "valor_neto": valor_neto}],
+    }, headers={"Authorization": f"Bearer {token}"})
+    return r
+
+
+# ── cotizacion save ───────────────────────────────────────────────────────────
+
+def test_cot_save_blocked_negative_margin(client, admin_token):
+    # precio_venta=500 < precio_costo=1000 → margen = (500-1000)/500 = -1.0
+    prod = _make_producto(client, admin_token, precio_venta=500, precio_costo=1000)
+    cid = _make_cliente(client, admin_token)
+    r = _make_cotizacion_linea(client, admin_token, cid, prod["id"], valor_neto=500)
+    assert r.status_code == 422
+    assert "margen_negativo" in r.json()["detail"]
+
+
+def test_cot_save_blocked_empty_item(client, admin_token):
+    cid = _make_cliente(client, admin_token)
+    r = client.post("/api/cotizaciones/", json={
+        "cliente_id": cid,
+        "lineas": [{"orden": 1, "descripcion": "Texto libre", "producto_id": None,
+                    "cantidad": 1, "valor_neto": 1000}],
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 422
+    assert "linea_sin_item" in r.json()["detail"]
+
+
+def test_cot_save_allowed_positive_margin(client, admin_token):
+    # precio_venta=1000, precio_costo=600 → margen = (1000-600)/1000 = 0.4
+    prod = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    cid = _make_cliente(client, admin_token)
+    r = _make_cotizacion_linea(client, admin_token, cid, prod["id"], valor_neto=1000)
+    assert r.status_code == 201
+
+
+def test_cot_update_lineas_blocked_negative_margin(client, admin_token):
+    prod_ok = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    prod_neg = _make_producto(client, admin_token, precio_venta=500, precio_costo=1000)
+    cid = _make_cliente(client, admin_token)
+    # Create valid cotizacion
+    r = _make_cotizacion_linea(client, admin_token, cid, prod_ok["id"], valor_neto=1000)
+    assert r.status_code == 201
+    cot_id = r.json()["id"]
+    # Now update lineas with negative margin
+    r2 = client.put(f"/api/cotizaciones/{cot_id}/lineas", json=[
+        {"orden": 1, "descripcion": "Test", "producto_id": prod_neg["id"],
+         "cantidad": 1, "valor_neto": 500}
+    ], headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 422
+    assert "margen_negativo" in r2.json()["detail"]
+
+
+def test_cot_update_lineas_blocked_empty_item(client, admin_token):
+    prod_ok = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    cid = _make_cliente(client, admin_token)
+    r = _make_cotizacion_linea(client, admin_token, cid, prod_ok["id"], valor_neto=1000)
+    assert r.status_code == 201
+    cot_id = r.json()["id"]
+    r2 = client.put(f"/api/cotizaciones/{cot_id}/lineas", json=[
+        {"orden": 1, "descripcion": "Texto libre", "producto_id": None,
+         "cantidad": 1, "valor_neto": 1000}
+    ], headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 422
+    assert "linea_sin_item" in r2.json()["detail"]

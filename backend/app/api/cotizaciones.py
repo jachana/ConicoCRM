@@ -90,6 +90,23 @@ def _can_edit(current_user: User, cotizacion: Cotizacion) -> bool:
     return cotizacion.vendedor_id == current_user.id
 
 
+def _check_lineas_invalidas(lineas) -> None:
+    errors = []
+    if any(l.producto_id is None for l in lineas):
+        errors.append("linea_sin_item")
+    if any(l.margen is not None and l.margen < 0 for l in lineas):
+        errors.append("margen_negativo")
+    if errors:
+        messages = {
+            "linea_sin_item": "linea_sin_item: Hay líneas sin producto seleccionado",
+            "margen_negativo": "margen_negativo: Hay líneas con margen negativo",
+        }
+        raise HTTPException(
+            status_code=422,
+            detail=" | ".join(messages[e] for e in errors),
+        )
+
+
 def check_margin_approval_required(db: Session, cotizacion_id: int) -> bool:
     deviation = (
         db.query(CotizacionLinea)
@@ -225,6 +242,7 @@ def crear_cotizacion(
     db.flush()
 
     cotizacion.lineas = _calcular_lineas(db, body.lineas)
+    _check_lineas_invalidas(cotizacion.lineas)
     _recalcular_totales(cotizacion)
     db.commit()
     db.refresh(cotizacion)
@@ -296,6 +314,7 @@ def reemplazar_lineas(
     db.flush()
 
     nuevas_lineas = _calcular_lineas(db, lineas_data)
+    _check_lineas_invalidas(nuevas_lineas)
     for linea in nuevas_lineas:
         linea.cotizacion_id = cotizacion_id
         db.add(linea)
