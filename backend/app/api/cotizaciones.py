@@ -366,6 +366,7 @@ def generar_pdf(
     ).filter(Cotizacion.id == cotizacion_id).first()
     if not cot:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    _check_lineas_invalidas(cot.lineas)
     if current_user.role not in ("admin", "subadmin") and check_margin_approval_required(db, cotizacion_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -398,6 +399,7 @@ def enviar_email(
     ).filter(Cotizacion.id == cotizacion_id).first()
     if not cot:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    _check_lineas_invalidas(cot.lineas)
     if current_user.role not in ("admin", "subadmin") and check_margin_approval_required(db, cotizacion_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

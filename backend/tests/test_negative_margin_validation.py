@@ -110,3 +110,59 @@ def test_cot_save_blocked_both_errors(client, admin_token):
     detail = r.json()["detail"]
     assert "margen_negativo" in detail
     assert "linea_sin_item" in detail
+
+
+# ── cotizacion PDF / email gates ──────────────────────────────────────────────
+
+def test_cot_pdf_blocked_negative_margin(client, db, admin_token):
+    from app.models.cotizacion import CotizacionLinea
+    from decimal import Decimal
+    # Create valid cotizacion via API (passes save validation)
+    prod = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    cid = _make_cliente(client, admin_token)
+    r = _make_cotizacion_linea(client, admin_token, cid, prod["id"], valor_neto=1000)
+    assert r.status_code == 201
+    cot_id = r.json()["id"]
+    # Directly set margen to negative in DB (simulates legacy data)
+    linea = db.query(CotizacionLinea).filter(CotizacionLinea.cotizacion_id == cot_id).first()
+    linea.margen = Decimal("-0.5")
+    db.commit()
+    # PDF should be blocked
+    r2 = client.get(f"/api/cotizaciones/{cot_id}/pdf",
+                    headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 422
+    assert "margen_negativo" in r2.json()["detail"]
+
+
+def test_cot_pdf_blocked_empty_item(client, db, admin_token):
+    from app.models.cotizacion import CotizacionLinea
+    prod = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    cid = _make_cliente(client, admin_token)
+    r = _make_cotizacion_linea(client, admin_token, cid, prod["id"], valor_neto=1000)
+    assert r.status_code == 201
+    cot_id = r.json()["id"]
+    # Directly nullify producto_id in DB (simulates legacy data)
+    linea = db.query(CotizacionLinea).filter(CotizacionLinea.cotizacion_id == cot_id).first()
+    linea.producto_id = None
+    db.commit()
+    r2 = client.get(f"/api/cotizaciones/{cot_id}/pdf",
+                    headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 422
+    assert "linea_sin_item" in r2.json()["detail"]
+
+
+def test_cot_email_blocked_negative_margin(client, db, admin_token):
+    from app.models.cotizacion import CotizacionLinea
+    from decimal import Decimal
+    prod = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    cid = _make_cliente(client, admin_token)
+    r = _make_cotizacion_linea(client, admin_token, cid, prod["id"], valor_neto=1000)
+    assert r.status_code == 201
+    cot_id = r.json()["id"]
+    linea = db.query(CotizacionLinea).filter(CotizacionLinea.cotizacion_id == cot_id).first()
+    linea.margen = Decimal("-0.5")
+    db.commit()
+    r2 = client.post(f"/api/cotizaciones/{cot_id}/email",
+                     headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 422
+    assert "margen_negativo" in r2.json()["detail"]
