@@ -76,6 +76,10 @@ export default function CotizacionDetalle() {
   const [marginOverrideIdx, setMarginOverrideIdx] = useState<number | null>(null)
   const [marginOverrideInput, setMarginOverrideInput] = useState('')
   const [propuestas, setPropuestas] = useState<Record<number, { margenPropuesto: number; valorNetoPropuesto: number }>>({})
+  const [solicitudMargenModal, setSolicitudMargenModal] = useState(false)
+  const [notaSolicitud, setNotaSolicitud] = useState('')
+  const [solicitudMargenError, setSolicitudMargenError] = useState('')
+  const [enviandoSolicitud, setEnviandoSolicitud] = useState(false)
   const [focusedPrecioIdx, setFocusedPrecioIdx] = useState<number | null>(null)
   const [creditModal, setCreditModal] = useState<{
     mode: 'warning' | 'request'
@@ -96,6 +100,15 @@ export default function CotizacionDetalle() {
     queryKey: ['aprobacion-credito', id],
     queryFn: () =>
       api.get(`/api/aprobaciones/?cotizacion_id=${id}`).then(r => r.data[0] ?? null),
+    enabled: !isNew,
+  })
+
+  const { data: aprobacionMargen, refetch: refetchAprobacionMargen } = useQuery<{
+    id: number; estado: string; lineas_propuestas: unknown[]
+  } | null>({
+    queryKey: ['aprobacion-margen', id],
+    queryFn: () =>
+      api.get(`/api/aprobaciones_margen/?cotizacion_id=${id}`).then(r => r.data[0] ?? null),
     enabled: !isNew,
   })
 
@@ -276,6 +289,37 @@ export default function CotizacionDetalle() {
     setPropuestas(prev => ({ ...prev, [lineaId]: { margenPropuesto: newMargen, valorNetoPropuesto } }))
   }
 
+  async function handleEnviarSolicitudMargen() {
+    if (!id || Object.keys(propuestas).length === 0) return
+    setEnviandoSolicitud(true)
+    setSolicitudMargenError('')
+    try {
+      const lineasPropuestas = lineas
+        .filter(l => l.id != null && propuestas[l.id!] != null)
+        .map(l => ({
+          linea_id: l.id!,
+          descripcion: l.descripcion,
+          valor_neto_actual: Number(l.valor_neto),
+          margen_actual: l.margen != null ? Number(l.margen) : null,
+          valor_neto_propuesto: propuestas[l.id!].valorNetoPropuesto,
+          margen_propuesto: propuestas[l.id!].margenPropuesto,
+        }))
+      await api.post('/api/aprobaciones_margen/', {
+        cotizacion_id: Number(id),
+        nota: notaSolicitud || null,
+        lineas_propuestas: lineasPropuestas,
+      })
+      setSolicitudMargenModal(false)
+      setNotaSolicitud('')
+      setPropuestas({})
+      refetchAprobacionMargen()
+    } catch (err: any) {
+      setSolicitudMargenError(err?.response?.data?.detail || 'Error al enviar solicitud')
+    } finally {
+      setEnviandoSolicitud(false)
+    }
+  }
+
   const totalNeto = lineas.reduce((s, l) => s + (Number(l.total_neto) || 0), 0)
   const totalIva = lineas.reduce((s, l) => s + (Number(l.iva) || 0), 0)
   const total = lineas.reduce((s, l) => s + (Number(l.total) || 0), 0)
@@ -417,6 +461,15 @@ export default function CotizacionDetalle() {
               </button>
             </>
           )}
+          {!isAdmin && !isNew && Object.keys(propuestas).length > 0 && (
+            <button
+              type="button"
+              onClick={() => setSolicitudMargenModal(true)}
+              className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors"
+            >
+              Solicitar ajuste de márgenes
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={saving}
@@ -450,6 +503,20 @@ export default function CotizacionDetalle() {
               Ver nota de venta →
             </button>
           )}
+        </div>
+      )}
+
+      {!isNew && aprobacionMargen && (
+        <div className={`mb-4 px-4 py-3 rounded-lg text-sm ${
+          aprobacionMargen.estado === 'pendiente'
+            ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
+            : aprobacionMargen.estado === 'aprobada'
+            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300'
+            : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400'
+        }`}>
+          {aprobacionMargen.estado === 'pendiente' && 'Solicitud de ajuste de márgenes enviada — pendiente de aprobación'}
+          {aprobacionMargen.estado === 'aprobada' && 'Solicitud aprobada — los precios han sido actualizados'}
+          {aprobacionMargen.estado === 'denegada' && 'Solicitud de ajuste de márgenes denegada'}
         </div>
       )}
 
@@ -689,6 +756,67 @@ export default function CotizacionDetalle() {
           onSubmitted={() => { setCreditModal(null); refetchAprobacionCredito() }}
           onCancel={() => setCreditModal(null)}
         />
+      )}
+
+      {solicitudMargenModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-lg mx-4">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+              Solicitar ajuste de márgenes
+            </h2>
+            <table className="w-full text-xs mb-4">
+              <thead>
+                <tr className="text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                  <th className="pb-2 text-left font-medium">Producto</th>
+                  <th className="pb-2 text-right font-medium">Precio actual</th>
+                  <th className="pb-2 text-right font-medium">Precio propuesto</th>
+                  <th className="pb-2 text-right font-medium">Margen prop.</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {lineas
+                  .filter(l => l.id != null && propuestas[l.id!] != null)
+                  .map(l => (
+                    <tr key={l._key}>
+                      <td className="py-2 text-gray-900 dark:text-white truncate max-w-[180px]">{l.descripcion}</td>
+                      <td className="py-2 text-right text-gray-600 dark:text-gray-400">{fmtMoney(l.valor_neto)}</td>
+                      <td className="py-2 text-right text-blue-600 dark:text-blue-400 font-medium">
+                        {fmtMoney(propuestas[l.id!].valorNetoPropuesto)}
+                      </td>
+                      <td className="py-2 text-right text-blue-600 dark:text-blue-400 font-medium">
+                        {(propuestas[l.id!].margenPropuesto * 100).toFixed(1)}%
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+            <textarea
+              placeholder="Nota para el administrador (opcional)..."
+              value={notaSolicitud}
+              onChange={e => setNotaSolicitud(e.target.value)}
+              rows={2}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-3"
+            />
+            {solicitudMargenError && (
+              <p className="text-xs text-red-600 dark:text-red-400 mb-2">{solicitudMargenError}</p>
+            )}
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => { setSolicitudMargenModal(false); setSolicitudMargenError('') }}
+                className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEnviarSolicitudMargen}
+                disabled={enviandoSolicitud}
+                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg transition-colors font-medium"
+              >
+                {enviandoSolicitud ? 'Enviando...' : 'Enviar solicitud'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {autocompleteIdx !== null && autocompleteResults.length > 0 && dropdownRect && createPortal(
