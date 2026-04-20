@@ -1,21 +1,27 @@
 # backend/tests/test_dashboard.py
-import json
 import pytest
 from tests.conftest import TestingSession
-from app.models.user import User
-from app.core.security import get_password_hash
+
+# ── helpers ───────────────────────────────────────────────────────────────────
+
+SAMPLE_WIDGETS = [
+    {
+        "id": "w1",
+        "type": "ventas_periodo",
+        "chart": "bar",
+        "date_range": "month",
+        "limit": 10,
+        "grid": {"x": 0, "y": 0, "w": 6, "h": 4},
+    }
+]
+SAMPLE_LAYOUT = {"widgets": SAMPLE_WIDGETS}
 
 
-# ── helpers ──────────────────────────────────────────────────────────────────
-
-def _make_user(role: str, email: str) -> User:
+def _make_user(role: str, email: str):
+    from app.models.user import User
+    from app.core.security import get_password_hash
     db = TestingSession()
-    user = User(
-        email=email,
-        name=role.capitalize(),
-        hashed_password=get_password_hash("secret"),
-        role=role,
-    )
+    user = User(email=email, name=role, hashed_password=get_password_hash("secret123"), role=role)
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -24,70 +30,97 @@ def _make_user(role: str, email: str) -> User:
 
 
 def _token(client, email: str) -> str:
-    r = client.post("/api/auth/login", data={"username": email, "password": "secret"})
-    return r.json()["access_token"]
+    resp = client.post("/api/auth/login", data={"username": email, "password": "secret123"})
+    return resp.json()["access_token"]
 
 
-SAMPLE_LAYOUT = {
-    "widgets": [
-        {"id": "w1", "type": "ventas_periodo", "chart": "bar", "date_range": "month", "limit": 10}
-    ]
-}
+# ── preset CRUD ───────────────────────────────────────────────────────────────
 
-
-# ── layout CRUD ───────────────────────────────────────────────────────────────
-
-class TestLayoutCRUD:
-    def test_get_layout_no_saved_returns_empty(self, client, setup_test_db):
+class TestPresetCRUD:
+    def test_list_presets_empty(self, client, setup_test_db):
         _make_user("admin", "a@test.cl")
         tok = _token(client, "a@test.cl")
         r = client.get("/api/dashboard/layout/admin", headers={"Authorization": f"Bearer {tok}"})
         assert r.status_code == 200
-        body = r.json()
-        assert body["role"] == "admin"
-        assert body["layout"]["widgets"] == []
+        assert r.json() == []
 
-    def test_put_layout_saves_and_returns(self, client, setup_test_db):
+    def test_create_preset(self, client, setup_test_db):
         _make_user("admin", "a@test.cl")
         tok = _token(client, "a@test.cl")
-        r = client.put(
+        r = client.post(
             "/api/dashboard/layout/admin",
-            json=SAMPLE_LAYOUT,
+            json={"name": "Principal"},
             headers={"Authorization": f"Bearer {tok}"},
         )
-        assert r.status_code == 200
-        assert r.json()["layout"]["widgets"][0]["id"] == "w1"
+        assert r.status_code == 201
+        body = r.json()
+        assert body["name"] == "Principal"
+        assert body["slot"] == 1
+        assert body["layout"]["widgets"] == []
 
-    def test_get_layout_returns_saved(self, client, setup_test_db):
+    def test_save_preset_updates_layout(self, client, setup_test_db):
         _make_user("admin", "a@test.cl")
         tok = _token(client, "a@test.cl")
-        client.put("/api/dashboard/layout/admin", json=SAMPLE_LAYOUT,
-                   headers={"Authorization": f"Bearer {tok}"})
-        r = client.get("/api/dashboard/layout/admin",
-                       headers={"Authorization": f"Bearer {tok}"})
-        assert r.json()["layout"]["widgets"][0]["type"] == "ventas_periodo"
+        r = client.post("/api/dashboard/layout/admin", json={"name": "P"}, headers={"Authorization": f"Bearer {tok}"})
+        slot = r.json()["slot"]
+        r2 = client.put(
+            f"/api/dashboard/layout/admin/{slot}",
+            json={"name": "Renombrado", "layout": SAMPLE_LAYOUT},
+            headers={"Authorization": f"Bearer {tok}"},
+        )
+        assert r2.status_code == 200
+        assert r2.json()["name"] == "Renombrado"
+        assert r2.json()["layout"]["widgets"][0]["id"] == "w1"
 
-    def test_put_layout_forbidden_for_vendedor(self, client, setup_test_db):
+    def test_create_forbidden_for_vendedor(self, client, setup_test_db):
         _make_user("vendedor", "v@test.cl")
         tok = _token(client, "v@test.cl")
-        r = client.put(
+        r = client.post(
             "/api/dashboard/layout/vendedor",
-            json=SAMPLE_LAYOUT,
+            json={"name": "Mi dash"},
             headers={"Authorization": f"Bearer {tok}"},
         )
         assert r.status_code == 403
 
-    def test_subadmin_layout_falls_back_to_admin_when_missing(self, client, setup_test_db):
+    def test_subadmin_fallback_to_admin_presets(self, client, setup_test_db):
         _make_user("admin", "a@test.cl")
         _make_user("subadmin", "s@test.cl")
         admin_tok = _token(client, "a@test.cl")
         subadmin_tok = _token(client, "s@test.cl")
-        client.put("/api/dashboard/layout/admin", json=SAMPLE_LAYOUT,
-                   headers={"Authorization": f"Bearer {admin_tok}"})
-        r = client.get("/api/dashboard/layout/subadmin",
-                       headers={"Authorization": f"Bearer {subadmin_tok}"})
+        client.post("/api/dashboard/layout/admin", json={"name": "Admin dash"}, headers={"Authorization": f"Bearer {admin_tok}"})
+        r = client.get("/api/dashboard/layout/subadmin", headers={"Authorization": f"Bearer {subadmin_tok}"})
         assert r.status_code == 200
-        assert r.json()["layout"]["widgets"][0]["type"] == "ventas_periodo"
+        assert len(r.json()) == 1
+        assert r.json()[0]["name"] == "Admin dash"
+
+    def test_max_5_presets(self, client, setup_test_db):
+        _make_user("admin", "a@test.cl")
+        tok = _token(client, "a@test.cl")
+        for i in range(5):
+            r = client.post("/api/dashboard/layout/admin", json={"name": f"D{i+1}"}, headers={"Authorization": f"Bearer {tok}"})
+            assert r.status_code == 201
+        r = client.post("/api/dashboard/layout/admin", json={"name": "Extra"}, headers={"Authorization": f"Bearer {tok}"})
+        assert r.status_code == 400
+
+    def test_delete_preset(self, client, setup_test_db):
+        _make_user("admin", "a@test.cl")
+        tok = _token(client, "a@test.cl")
+        r1 = client.post("/api/dashboard/layout/admin", json={"name": "A"}, headers={"Authorization": f"Bearer {tok}"})
+        client.post("/api/dashboard/layout/admin", json={"name": "B"}, headers={"Authorization": f"Bearer {tok}"})
+        slot1 = r1.json()["slot"]
+        r = client.delete(f"/api/dashboard/layout/admin/{slot1}", headers={"Authorization": f"Bearer {tok}"})
+        assert r.status_code == 204
+        r = client.get("/api/dashboard/layout/admin", headers={"Authorization": f"Bearer {tok}"})
+        assert len(r.json()) == 1
+        assert r.json()[0]["name"] == "B"
+
+    def test_delete_last_preset_fails(self, client, setup_test_db):
+        _make_user("admin", "a@test.cl")
+        tok = _token(client, "a@test.cl")
+        r = client.post("/api/dashboard/layout/admin", json={"name": "Solo"}, headers={"Authorization": f"Bearer {tok}"})
+        slot = r.json()["slot"]
+        r = client.delete(f"/api/dashboard/layout/admin/{slot}", headers={"Authorization": f"Bearer {tok}"})
+        assert r.status_code == 400
 
     def test_unauthenticated_returns_401(self, client, setup_test_db):
         r = client.get("/api/dashboard/layout/admin")

@@ -25,12 +25,20 @@ class LayoutPayload(BaseModel):
     widgets: list[WidgetConfig]
 
 
-class DashboardLayoutOut(BaseModel):
-    role: str
+class PresetOut(BaseModel):
+    slot: int
+    name: str
     layout: LayoutPayload
     updated_at: datetime | None = None
 
-    model_config = {"from_attributes": True}
+
+class PresetPayload(BaseModel):
+    name: str
+    layout: LayoutPayload
+
+
+class CreatePresetPayload(BaseModel):
+    name: str
 
 
 # --- Analytics response schemas ---

@@ -18,11 +18,13 @@ from app.models.user import User
 from app.models.user import User as UserModel
 from app.schemas.dashboard_layout import (
     CotizacionesAbiertasOut,
-    DashboardLayoutOut,
+    CreatePresetPayload,
     EstadoCount,
     LayoutPayload,
     NVPorCobrarItem,
     NVPorCobrarOut,
+    PresetOut,
+    PresetPayload,
     StockCriticoItem,
     TopClienteItem,
     TopProductoItem,
@@ -34,49 +36,92 @@ from app.schemas.dashboard_layout import (
 router = APIRouter()
 
 
-def _get_layout_for_role(db: Session, role: str) -> DashboardLayout | None:
-    layout = db.query(DashboardLayout).filter_by(role=role).first()
-    if layout is None and role == "subadmin":
-        layout = db.query(DashboardLayout).filter_by(role="admin").first()
-    return layout
-
-
-def _layout_to_out(role: str, layout: DashboardLayout | None) -> DashboardLayoutOut:
-    if layout is None:
-        return DashboardLayoutOut(role=role, layout=LayoutPayload(widgets=[]))
+def _layout_to_preset(layout: DashboardLayout) -> PresetOut:
     payload = LayoutPayload(**json.loads(layout.layout_json))
-    return DashboardLayoutOut(role=role, layout=payload, updated_at=layout.updated_at)
+    return PresetOut(slot=layout.slot, name=layout.name, layout=payload, updated_at=layout.updated_at)
 
 
-@router.get("/layout/{role}", response_model=DashboardLayoutOut)
-def get_layout(
+def _get_presets_for_role(db: Session, role: str) -> list[DashboardLayout]:
+    rows = db.query(DashboardLayout).filter_by(role=role).order_by(DashboardLayout.slot).all()
+    if not rows and role == "subadmin":
+        rows = db.query(DashboardLayout).filter_by(role="admin").order_by(DashboardLayout.slot).all()
+    return rows
+
+
+@router.get("/layout/{role}", response_model=list[PresetOut])
+def list_presets(
     role: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    layout = _get_layout_for_role(db, role)
-    return _layout_to_out(role, layout)
+    return [_layout_to_preset(l) for l in _get_presets_for_role(db, role)]
 
 
-@router.put("/layout/{role}", response_model=DashboardLayoutOut)
-def save_layout(
+@router.post("/layout/{role}", response_model=PresetOut, status_code=201)
+def create_preset(
     role: str,
-    body: LayoutPayload,
+    body: CreatePresetPayload,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin puede crear dashboards")
+    existing = db.query(DashboardLayout).filter_by(role=role).all()
+    if len(existing) >= 5:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Máximo 5 dashboards por rol")
+    used_slots = {l.slot for l in existing}
+    slot = next(s for s in range(1, 6) if s not in used_slots)
+    layout = DashboardLayout(
+        role=role, slot=slot, name=body.name,
+        layout_json='{"widgets": []}',
+        updated_by=current_user.id,
+        updated_at=datetime.now(timezone.utc),
+    )
+    db.add(layout)
+    db.commit()
+    db.refresh(layout)
+    return _layout_to_preset(layout)
+
+
+@router.put("/layout/{role}/{slot}", response_model=PresetOut)
+def save_preset(
+    role: str,
+    slot: int,
+    body: PresetPayload,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin puede editar el layout")
-    layout = db.query(DashboardLayout).filter_by(role=role).first()
+    layout = db.query(DashboardLayout).filter_by(role=role, slot=slot).first()
     if layout is None:
-        layout = DashboardLayout(role=role)
-        db.add(layout)
-    layout.layout_json = body.model_dump_json()
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dashboard no encontrado")
+    layout.name = body.name
+    layout.layout_json = body.layout.model_dump_json()
     layout.updated_by = current_user.id
     layout.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(layout)
-    return _layout_to_out(role, layout)
+    return _layout_to_preset(layout)
+
+
+@router.delete("/layout/{role}/{slot}", status_code=204)
+def delete_preset(
+    role: str,
+    slot: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin puede eliminar dashboards")
+    layout = db.query(DashboardLayout).filter_by(role=role, slot=slot).first()
+    if not layout:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dashboard no encontrado")
+    count = db.query(DashboardLayout).filter_by(role=role).count()
+    if count <= 1:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se puede eliminar el único dashboard")
+    db.delete(layout)
+    db.commit()
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
