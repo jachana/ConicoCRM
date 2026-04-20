@@ -7,7 +7,7 @@ import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, CreditCard, 
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta } from '../types'
-import CreditWarningModal, { type CreditoInfo } from '../components/CreditWarningModal'
+import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 
 type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string; _stock?: number | null }
 
@@ -76,9 +76,12 @@ export default function CotizacionDetalle() {
   const [marginOverrideIdx, setMarginOverrideIdx] = useState<number | null>(null)
   const [marginOverrideInput, setMarginOverrideInput] = useState('')
   const [creditModal, setCreditModal] = useState<{
-    mode: 'warning' | 'block'
+    mode: 'warning' | 'request'
     credito: CreditoInfo
-    onConfirm: () => void
+    onConfirm?: () => void
+    aprobacionPayload?: AprobacionPayload
+    onApproved?: (nvId: number) => void
+    onDenied?: () => void
   } | null>(null)
 
   const { data: cotizacion } = useQuery<Cotizacion>({
@@ -208,24 +211,34 @@ export default function CotizacionDetalle() {
   const totalIva = lineas.reduce((s, l) => s + (Number(l.iva) || 0), 0)
   const total = lineas.reduce((s, l) => s + (Number(l.total) || 0), 0)
 
-  async function checkCredit(saleTotal: number, mode: 'warning' | 'block', onProceed: () => void) {
-    if (!empresaId) { onProceed(); return }
+  async function checkCredit(saleTotal: number, mode: 'warning' | 'request', onProceed: (() => void) | null, aprobacionPayload?: AprobacionPayload) {
+    if (!empresaId) { onProceed?.(); return }
     const empresa = empresas.find(e => e.id === empresaId)
-    if (!empresa?.limite_credito) { onProceed(); return }
+    if (!empresa?.limite_credito) { onProceed?.(); return }
     try {
       const res = await api.get<CreditoInfo>(`/api/empresas/${empresaId}/credito`)
       const credito = res.data
       if (credito.credito_disponible !== null && Number(credito.credito_disponible) < saleTotal) {
-        setCreditModal({
-          mode,
-          credito,
-          onConfirm: () => { setCreditModal(null); onProceed() },
-        })
+        if (mode === 'warning') {
+          setCreditModal({
+            mode: 'warning',
+            credito,
+            onConfirm: () => { setCreditModal(null); onProceed!() },
+          })
+        } else {
+          setCreditModal({
+            mode: 'request',
+            credito,
+            aprobacionPayload,
+            onApproved: (nvId) => { setCreditModal(null); navigate(`/notas-venta/${nvId}`) },
+            onDenied: () => { setCreditModal(null); setError('Solicitud denegada por el administrador.') },
+          })
+        }
       } else {
-        onProceed()
+        onProceed?.()
       }
     } catch {
-      onProceed()
+      onProceed?.()
     }
   }
 
@@ -329,7 +342,7 @@ export default function CotizacionDetalle() {
                 {emailMut.isPending ? 'Enviando...' : 'Email'}
               </button>
               <button
-                onClick={() => checkCredit(total, 'block', () => crearNvMut.mutate())}
+                onClick={() => checkCredit(total, 'request', () => crearNvMut.mutate(), { empresa_id: Number(empresaId), total, origen: 'cotizacion', cotizacion_id: Number(id) })}
                 disabled={crearNvMut.isPending}
                 className="flex items-center gap-2 px-3 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 transition-colors"
               >
@@ -568,6 +581,9 @@ export default function CotizacionDetalle() {
           credito={creditModal.credito}
           saleTotal={total}
           onConfirm={creditModal.onConfirm}
+          aprobacionPayload={creditModal.aprobacionPayload}
+          onApproved={creditModal.onApproved}
+          onDenied={creditModal.onDenied}
           onCancel={() => setCreditModal(null)}
         />
       )}
