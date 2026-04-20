@@ -606,8 +606,14 @@ export default function CotizacionDetalle() {
               </button>
               <button
                 onClick={() => checkCredit(total, 'request', () => crearNvMut.mutate(), { empresa_id: Number(empresaId), total, origen: 'cotizacion', cotizacion_id: Number(id) })}
-                disabled={crearNvMut.isPending}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                disabled={crearNvMut.isPending || lineasErrors.length > 0 || isDirty || cotizacion?.estado === 'cerrada_fv'}
+                title={
+                  cotizacion?.estado === 'cerrada_fv' ? 'Ya existe una nota de venta para esta cotización'
+                  : lineasErrors.length > 0 ? lineasErrors.join(' | ')
+                  : isDirty ? 'Guarda los cambios antes de crear la NV'
+                  : undefined
+                }
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {crearNvMut.isPending ? 'Creando...' : 'Crear NV'}
               </button>
