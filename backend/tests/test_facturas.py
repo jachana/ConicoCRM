@@ -1,4 +1,5 @@
 import pytest
+import random
 from decimal import Decimal
 
 
@@ -10,6 +11,22 @@ def _create_cliente(client, admin_token):
     )
     assert r.status_code == 201
     return r.json()["id"]
+
+
+def _create_producto(client, admin_token):
+    r = client.post(
+        "/api/productos/",
+        json={
+            "nombre": "Prod Factura Test",
+            "sku": f"SKU-FAC-{random.randint(10000, 99999)}",
+            "precio_venta": 500,
+            "precio_costo": 300,
+            "unidad": "un",
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201, r.text
+    return r.json()
 
 
 def _create_factura(client, admin_token, cliente_id, lineas=None):
@@ -25,10 +42,12 @@ def _create_factura(client, admin_token, cliente_id, lineas=None):
 
 
 def _create_nv(client, admin_token, cliente_id):
+    prod = _create_producto(client, admin_token)
     r = client.post(
         "/api/nota_ventas/",
         json={"cliente_id": cliente_id, "correo": "nv@test.com",
-              "lineas": [{"orden": 0, "descripcion": "Prod", "cantidad": 1, "valor_neto": 500}]},
+              "lineas": [{"orden": 0, "descripcion": "Prod", "producto_id": prod["id"],
+                          "cantidad": 1, "valor_neto": 500}]},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 201, r.text

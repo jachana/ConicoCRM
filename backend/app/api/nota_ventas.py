@@ -100,6 +100,22 @@ def _can_edit(current_user: User, nv: NotaVenta) -> bool:
     return nv.vendedor_id == current_user.id
 
 
+def _check_lineas_invalidas(lineas: list[NotaVentaLinea]) -> None:
+    errors = []
+    if any(l.producto_id is None for l in lineas):
+        errors.append("linea_sin_item")
+    if any(l.margen is not None and l.margen < 0 for l in lineas):
+        errors.append("margen_negativo")
+    if errors:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=" | ".join({
+                "linea_sin_item": "linea_sin_item: Hay líneas sin producto seleccionado",
+                "margen_negativo": "margen_negativo: Hay líneas con margen negativo",
+            }[e] for e in errors),
+        )
+
+
 def _registrar_movimientos_salida(db: Session, nv_id: int, lineas: list, usuario_id: int | None) -> None:
     for linea in lineas:
         if linea.producto_id and linea.cantidad > 0:
@@ -237,6 +253,7 @@ def crear_nv(
     db.add(nv)
     db.flush()
     nv.lineas = _calcular_lineas(db, body.lineas)
+    _check_lineas_invalidas(nv.lineas)
     for linea in nv.lineas:
         linea.nv_id = nv.id
     _recalcular_totales(nv)
@@ -343,6 +360,10 @@ def reemplazar_lineas(
     if not _can_edit(current_user, nv):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos")
 
+    # calculate new lineas and validate before any mutation
+    nuevas = _calcular_lineas(db, lineas_data)
+    _check_lineas_invalidas(nuevas)
+
     # snapshot old quantities per product
     old_qtys: dict[int, int] = {}
     for linea in nv.lineas:
@@ -352,7 +373,6 @@ def reemplazar_lineas(
     for linea in list(nv.lineas):
         db.delete(linea)
     db.flush()
-    nuevas = _calcular_lineas(db, lineas_data)
     for linea in nuevas:
         linea.nv_id = nv_id
         db.add(linea)
@@ -447,6 +467,7 @@ def generar_pdf(
 ):
     _, db = perms
     nv = _load_nv(db, nv_id)
+    _check_lineas_invalidas(nv.lineas)
     config = _get_config_dict(db)
     pdf_bytes = generar_pdf_nota_venta(nv, config)
     cliente_nombre = nv.cliente.nombre if nv.cliente else "cliente"
@@ -466,6 +487,7 @@ def enviar_email(
 ):
     _, db = perms
     nv = _load_nv(db, nv_id)
+    _check_lineas_invalidas(nv.lineas)
     config = _get_config_dict(db)
     try:
         pdf_bytes = generar_pdf_nota_venta(nv, config)

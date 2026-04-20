@@ -1,6 +1,19 @@
 import pytest
+import random
 
 # ── helpers ──────────────────────────────────────────────────────────────────
+
+def _make_producto(client, token):
+    r = client.post("/api/productos/", json={
+        "nombre": "Prod NV Test",
+        "sku": f"SKU-NV-{random.randint(10000, 99999)}",
+        "precio_venta": 1000,
+        "precio_costo": 300,
+        "unidad": "un",
+    }, headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 201, r.text
+    return r.json()
+
 
 def _make_cliente(client, token):
     r = client.post("/api/clientes/", json={"nombre": "Cliente NV Test"},
@@ -10,9 +23,11 @@ def _make_cliente(client, token):
 
 
 def _make_cotizacion(client, token, cliente_id):
+    prod = _make_producto(client, token)
     r = client.post("/api/cotizaciones/", json={
         "cliente_id": cliente_id,
-        "lineas": [{"orden": 1, "descripcion": "Prod A", "cantidad": 2, "valor_neto": 1000}],
+        "lineas": [{"orden": 1, "descripcion": "Prod A", "producto_id": prod["id"],
+                    "cantidad": 2, "valor_neto": 1000}],
     }, headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 201
     return r.json()
@@ -37,9 +52,11 @@ def test_crear_sin_auth(client):
 # ── crear desde cero ──────────────────────────────────────────────────────────
 
 def test_crear_nv_admin(client, admin_token):
+    prod = _make_producto(client, admin_token)
     cid = _make_cliente(client, admin_token)
     r = _create_nv(client, admin_token, cid,
-                   lineas=[{"orden": 1, "descripcion": "Artículo", "cantidad": 1, "valor_neto": 500}])
+                   lineas=[{"orden": 1, "descripcion": "Artículo", "producto_id": prod["id"],
+                             "cantidad": 1, "valor_neto": 500}])
     assert r.status_code == 201
     data = r.json()
     assert data["numero"] >= 1
@@ -165,12 +182,22 @@ def test_vendedor_puede_editar_nv_propia(client, admin_token, vendedor_token, ve
 # ── reemplazar líneas ─────────────────────────────────────────────────────────
 
 def test_reemplazar_lineas_recalcula_totales(client, admin_token):
+    # Use a cheap product so valor_neto=200 still yields positive margin
+    prod = client.post("/api/productos/", json={
+        "nombre": "Prod Cheap",
+        "sku": f"SKU-CHEAP-{random.randint(10000, 99999)}",
+        "precio_venta": 200,
+        "precio_costo": 100,
+        "unidad": "un",
+    }, headers={"Authorization": f"Bearer {admin_token}"}).json()
     cid = _make_cliente(client, admin_token)
     nv_id = _create_nv(client, admin_token, cid,
-                       lineas=[{"orden": 1, "descripcion": "X", "cantidad": 1, "valor_neto": 100}]
+                       lineas=[{"orden": 1, "descripcion": "X", "producto_id": prod["id"],
+                                "cantidad": 1, "valor_neto": 200}]
                        ).json()["id"]
     r = client.put(f"/api/nota_ventas/{nv_id}/lineas",
-                   json=[{"orden": 1, "descripcion": "Y", "cantidad": 3, "valor_neto": 200}],
+                   json=[{"orden": 1, "descripcion": "Y", "producto_id": prod["id"],
+                          "cantidad": 3, "valor_neto": 200}],
                    headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
     data = r.json()

@@ -166,3 +166,81 @@ def test_cot_email_blocked_negative_margin(client, db, admin_token):
                      headers={"Authorization": f"Bearer {admin_token}"})
     assert r2.status_code == 422
     assert "margen_negativo" in r2.json()["detail"]
+
+
+# ── nota de venta ─────────────────────────────────────────────────────────────
+
+def _make_nv_linea(client, token, cid, producto_id, valor_neto):
+    r = client.post("/api/nota_ventas/", json={
+        "cliente_id": cid,
+        "lineas": [{"orden": 1, "descripcion": "Test NV", "producto_id": producto_id,
+                    "cantidad": 1, "valor_neto": valor_neto}],
+    }, headers={"Authorization": f"Bearer {token}"})
+    return r
+
+
+def test_nv_save_blocked_negative_margin(client, admin_token):
+    prod = _make_producto(client, admin_token, precio_venta=500, precio_costo=1000)
+    cid = _make_cliente(client, admin_token)
+    r = _make_nv_linea(client, admin_token, cid, prod["id"], valor_neto=500)
+    assert r.status_code == 422
+    assert "margen_negativo" in r.json()["detail"]
+
+
+def test_nv_save_blocked_empty_item(client, admin_token):
+    cid = _make_cliente(client, admin_token)
+    r = client.post("/api/nota_ventas/", json={
+        "cliente_id": cid,
+        "lineas": [{"orden": 1, "descripcion": "Texto libre", "producto_id": None,
+                    "cantidad": 1, "valor_neto": 1000}],
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 422
+    assert "linea_sin_item" in r.json()["detail"]
+
+
+def test_nv_update_lineas_blocked_negative_margin(client, admin_token):
+    prod_ok = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    prod_neg = _make_producto(client, admin_token, precio_venta=500, precio_costo=1000)
+    cid = _make_cliente(client, admin_token)
+    r = _make_nv_linea(client, admin_token, cid, prod_ok["id"], valor_neto=1000)
+    assert r.status_code == 201
+    nv_id = r.json()["id"]
+    r2 = client.put(f"/api/nota_ventas/{nv_id}/lineas", json=[
+        {"orden": 1, "descripcion": "Test", "producto_id": prod_neg["id"],
+         "cantidad": 1, "valor_neto": 500}
+    ], headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 422
+    assert "margen_negativo" in r2.json()["detail"]
+
+
+def test_nv_pdf_blocked_negative_margin(client, db, admin_token):
+    from app.models.nota_venta import NotaVentaLinea
+    from decimal import Decimal
+    prod = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    cid = _make_cliente(client, admin_token)
+    r = _make_nv_linea(client, admin_token, cid, prod["id"], valor_neto=1000)
+    assert r.status_code == 201
+    nv_id = r.json()["id"]
+    linea = db.query(NotaVentaLinea).filter(NotaVentaLinea.nv_id == nv_id).first()
+    linea.margen = Decimal("-0.5")
+    db.commit()
+    r2 = client.get(f"/api/nota_ventas/{nv_id}/pdf",
+                    headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 422
+    assert "margen_negativo" in r2.json()["detail"]
+
+
+def test_nv_email_blocked_empty_item(client, db, admin_token):
+    from app.models.nota_venta import NotaVentaLinea
+    prod = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    cid = _make_cliente(client, admin_token)
+    r = _make_nv_linea(client, admin_token, cid, prod["id"], valor_neto=1000)
+    assert r.status_code == 201
+    nv_id = r.json()["id"]
+    linea = db.query(NotaVentaLinea).filter(NotaVentaLinea.nv_id == nv_id).first()
+    linea.producto_id = None
+    db.commit()
+    r2 = client.post(f"/api/nota_ventas/{nv_id}/email",
+                     headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 422
+    assert "linea_sin_item" in r2.json()["detail"]
