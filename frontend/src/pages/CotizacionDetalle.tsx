@@ -1,5 +1,5 @@
 import { openPdf } from '../lib/pdf'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, CreditCard, Pencil, ExternalLink } from 'lucide-react'
@@ -118,6 +118,11 @@ export default function CotizacionDetalle() {
     queryFn: () => api.get('/api/empresas/').then(r => r.data),
   })
 
+  const { data: productos = [] } = useQuery<Producto[]>({
+    queryKey: ['productos'],
+    queryFn: () => api.get('/api/productos/').then(r => r.data),
+  })
+
   function handleClienteChange(cid: number | '') {
     setClienteId(cid)
     if (cid) {
@@ -132,20 +137,24 @@ export default function CotizacionDetalle() {
 
   const selectedCliente = clientes.find(c => c.id === clienteId) ?? null
 
-  const fetchAutocomplete = useCallback(async (q: string) => {
-    if (q.length < 1) { setAutocompleteResults([]); return }
-    try {
-      const res = await api.get<Producto[]>(`/api/productos/buscar?q=${encodeURIComponent(q)}`)
-      setAutocompleteResults(res.data)
-    } catch {
-      setAutocompleteResults([])
-    }
-  }, [])
+  function filterProductos(q: string): Producto[] {
+    const lower = q.toLowerCase()
+    return productos.filter(p =>
+      p.nombre.toLowerCase().includes(lower) ||
+      (p.sku ?? '').toLowerCase().includes(lower) ||
+      (p.formato ?? '').toLowerCase().includes(lower)
+    ).slice(0, 10)
+  }
 
   function handleDescripcionChange(idx: number, value: string) {
     setAutocompleteIdx(idx)
-    fetchAutocomplete(value)
+    setAutocompleteResults(filterProductos(value))
     updateLinea(idx, { descripcion: value })
+  }
+
+  function handleDescripcionFocus(idx: number, value: string) {
+    setAutocompleteIdx(idx)
+    setAutocompleteResults(filterProductos(value))
   }
 
   function selectProducto(idx: number, producto: Producto) {
@@ -427,7 +436,8 @@ export default function CotizacionDetalle() {
                 <td className="px-3 py-2 relative">
                   <input type="text" value={linea.descripcion}
                     onChange={e => handleDescripcionChange(idx, e.target.value)}
-                    onBlur={() => setTimeout(() => { setAutocompleteIdx(null); setAutocompleteResults([]) }, 200)}
+                    onFocus={() => handleDescripcionFocus(idx, linea.descripcion)}
+                    onBlur={() => setTimeout(() => { setAutocompleteIdx(null); setAutocompleteResults([]) }, 150)}
                     className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="Buscar en catálogo..." />
                   {autocompleteIdx === idx && autocompleteResults.length > 0 && (

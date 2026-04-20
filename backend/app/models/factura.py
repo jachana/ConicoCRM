@@ -58,6 +58,11 @@ class Factura(Base):
         cascade="all, delete-orphan",
         order_by="FacturaLinea.orden",
     )
+    pagos: Mapped[list["Pago"]] = relationship(
+        "Pago",
+        back_populates="factura",
+        order_by="Pago.fecha",
+    )
 
 
 class FacturaLinea(Base):
