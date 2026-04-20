@@ -70,6 +70,7 @@ export default function CotizacionDetalle() {
 
   const [autocompleteIdx, setAutocompleteIdx] = useState<number | null>(null)
   const [autocompleteResults, setAutocompleteResults] = useState<Producto[]>([])
+  const [dropdownAbove, setDropdownAbove] = useState(false)
   const [marginOverrideIdx, setMarginOverrideIdx] = useState<number | null>(null)
   const [marginOverrideInput, setMarginOverrideInput] = useState('')
 
@@ -152,7 +153,9 @@ export default function CotizacionDetalle() {
     updateLinea(idx, { descripcion: value })
   }
 
-  function handleDescripcionFocus(idx: number, value: string) {
+  function handleDescripcionFocus(idx: number, value: string, e: React.FocusEvent<HTMLInputElement>) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setDropdownAbove(rect.bottom + 300 > window.innerHeight)
     setAutocompleteIdx(idx)
     setAutocompleteResults(filterProductos(value))
   }
@@ -343,6 +346,7 @@ export default function CotizacionDetalle() {
                 {selectedCliente.empresa && (
                   <span className="flex items-center gap-1.5"><Building2 size={12} className="text-gray-400" />{selectedCliente.empresa.nombre}</span>
                 )}
+                <span className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-200">{selectedCliente.nombre}</span>
                 {selectedCliente.telefono && (
                   <span className="flex items-center gap-1.5"><Phone size={12} className="text-gray-400" />{selectedCliente.telefono}</span>
                 )}
@@ -363,20 +367,6 @@ export default function CotizacionDetalle() {
               </div>
             </div>
           )}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Contacto</label>
-            <input type="text" value={contacto} onChange={e => setContacto(e.target.value)}
-              readOnly={!!clienteId}
-              className={`w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${clienteId ? 'bg-gray-50 dark:bg-gray-800/50 cursor-default' : 'bg-white dark:bg-gray-800'}`}
-              placeholder="Nombre del contacto" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Correo</label>
-            <input type="email" value={correo} onChange={e => setCorreo(e.target.value)}
-              readOnly={!!clienteId}
-              className={`w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${clienteId ? 'bg-gray-50 dark:bg-gray-800/50 cursor-default' : 'bg-white dark:bg-gray-800'}`}
-              placeholder="email@ejemplo.com" />
-          </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
             <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
@@ -427,7 +417,7 @@ export default function CotizacionDetalle() {
                 <td className="px-3 py-2 relative">
                   <input type="text" value={linea.descripcion}
                     onChange={e => handleDescripcionChange(idx, e.target.value)}
-                    onFocus={() => handleDescripcionFocus(idx, linea.descripcion)}
+                    onFocus={e => handleDescripcionFocus(idx, linea.descripcion, e)}
                     onBlur={() => setTimeout(() => { setAutocompleteIdx(null); setAutocompleteResults([]) }, 150)}
                     className="w-full px-2.5 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="Buscar en catálogo..." />
@@ -443,7 +433,7 @@ export default function CotizacionDetalle() {
                     </div>
                   )}
                   {autocompleteIdx === idx && autocompleteResults.length > 0 && (
-                    <div className="absolute z-20 left-3 right-3 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden">
+                    <div className={`absolute z-20 left-3 right-3 ${dropdownAbove ? 'bottom-full mb-1' : 'top-full mt-1'} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden max-h-64 overflow-y-auto`}>
                       {autocompleteResults.map(p => (
                         <button key={p.id} type="button" onMouseDown={() => selectProducto(idx, p)}
                           className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
