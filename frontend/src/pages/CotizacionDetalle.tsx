@@ -1,5 +1,6 @@
 import { openPdf } from '../lib/pdf'
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, CreditCard, Pencil, ExternalLink } from 'lucide-react'
@@ -70,7 +71,7 @@ export default function CotizacionDetalle() {
 
   const [autocompleteIdx, setAutocompleteIdx] = useState<number | null>(null)
   const [autocompleteResults, setAutocompleteResults] = useState<Producto[]>([])
-  const [dropdownAbove, setDropdownAbove] = useState(false)
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number; above: boolean } | null>(null)
   const [marginOverrideIdx, setMarginOverrideIdx] = useState<number | null>(null)
   const [marginOverrideInput, setMarginOverrideInput] = useState('')
 
@@ -147,7 +148,10 @@ export default function CotizacionDetalle() {
     ).slice(0, 10)
   }
 
-  function handleDescripcionChange(idx: number, value: string) {
+  function handleDescripcionChange(idx: number, value: string, e: React.ChangeEvent<HTMLInputElement>) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const above = rect.bottom + 280 > window.innerHeight
+    setDropdownRect({ top: above ? rect.top : rect.bottom, left: rect.left, width: rect.width, above })
     setAutocompleteIdx(idx)
     setAutocompleteResults(filterProductos(value))
     updateLinea(idx, { descripcion: value })
@@ -155,7 +159,8 @@ export default function CotizacionDetalle() {
 
   function handleDescripcionFocus(idx: number, value: string, e: React.FocusEvent<HTMLInputElement>) {
     const rect = e.currentTarget.getBoundingClientRect()
-    setDropdownAbove(rect.bottom + 300 > window.innerHeight)
+    const above = rect.bottom + 280 > window.innerHeight
+    setDropdownRect({ top: above ? rect.top : rect.bottom, left: rect.left, width: rect.width, above })
     setAutocompleteIdx(idx)
     setAutocompleteResults(filterProductos(value))
   }
@@ -416,7 +421,7 @@ export default function CotizacionDetalle() {
                 <td className="px-3 py-3 text-center text-gray-400 text-xs">{idx + 1}</td>
                 <td className="px-3 py-2 relative">
                   <input type="text" value={linea.descripcion}
-                    onChange={e => handleDescripcionChange(idx, e.target.value)}
+                    onChange={e => handleDescripcionChange(idx, e.target.value, e)}
                     onFocus={e => handleDescripcionFocus(idx, linea.descripcion, e)}
                     onBlur={() => setTimeout(() => { setAutocompleteIdx(null); setAutocompleteResults([]) }, 150)}
                     className="w-full px-2.5 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -430,24 +435,6 @@ export default function CotizacionDetalle() {
                           Stock: {linea._stock}
                         </span>
                       )}
-                    </div>
-                  )}
-                  {autocompleteIdx === idx && autocompleteResults.length > 0 && (
-                    <div className={`absolute z-20 left-3 right-3 ${dropdownAbove ? 'bottom-full mb-1' : 'top-full mt-1'} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden max-h-64 overflow-y-auto`}>
-                      {autocompleteResults.map(p => (
-                        <button key={p.id} type="button" onMouseDown={() => selectProducto(idx, p)}
-                          className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">{p.nombre}</div>
-                          <div className="flex gap-3 mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                            {p.sku && <span>SKU: {p.sku}</span>}
-                            {p.formato && <span>{p.formato}</span>}
-                            <span className="ml-auto font-medium text-gray-700 dark:text-gray-300">{fmtMoney(p.precio_venta)}</span>
-                            <span className={p.stock_actual > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}>
-                              Stock: {p.stock_actual}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
                     </div>
                   )}
                 </td>
@@ -544,6 +531,37 @@ export default function CotizacionDetalle() {
         <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
           {emailToast.msg}
         </div>
+      )}
+
+      {autocompleteIdx !== null && autocompleteResults.length > 0 && dropdownRect && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            left: dropdownRect.left,
+            width: dropdownRect.width,
+            ...(dropdownRect.above
+              ? { bottom: window.innerHeight - dropdownRect.top + 4 }
+              : { top: dropdownRect.top + 4 }),
+            zIndex: 9999,
+          }}
+          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden max-h-64 overflow-y-auto"
+        >
+          {autocompleteResults.map(p => (
+            <button key={p.id} type="button"
+              onMouseDown={() => { selectProducto(autocompleteIdx, p); setAutocompleteIdx(null); setAutocompleteResults([]) }}
+              className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+            >
+              <div className="text-sm font-medium text-gray-900 dark:text-white">{p.nombre}</div>
+              <div className="flex gap-3 mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                {p.sku && <span>SKU: {p.sku}</span>}
+                {p.formato && <span>{p.formato}</span>}
+                <span className="ml-auto font-medium text-gray-700 dark:text-gray-300">{fmtMoney(p.precio_venta)}</span>
+                <span className={p.stock_actual > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}>Stock: {p.stock_actual}</span>
+              </div>
+            </button>
+          ))}
+        </div>,
+        document.body
       )}
     </div>
   )
