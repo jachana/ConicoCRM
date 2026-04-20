@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import RouteError from './pages/RouteError'
 import Login from './pages/Login'
 import Users from './pages/Users'
 import Empresas from './pages/Empresas'
@@ -26,10 +27,11 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 }
 
 export const router = createBrowserRouter([
-  { path: '/login', element: <Login /> },
+  { path: '/login', element: <Login />, errorElement: <RouteError /> },
   {
     path: '/',
     element: <RequireAuth><AppLayout /></RequireAuth>,
+    errorElement: <RouteError />,
     children: [
       { index: true, element: <Dashboard /> },
       { path: 'usuarios', element: <Users /> },
