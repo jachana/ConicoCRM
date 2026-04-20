@@ -185,6 +185,7 @@ def test_revocar_pendiente_fails(client, admin_token):
             "valor_neto_actual": 800, "margen_actual": 0.25,
             "valor_neto_propuesto": 800, "margen_propuesto": 0.25}],
     }, headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 201, r.text
     aprobacion_id = r.json()["id"]
     r = client.patch(f"/api/aprobaciones_margen/{aprobacion_id}",
                      json={"accion": "revocar"},
