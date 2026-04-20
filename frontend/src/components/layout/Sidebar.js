@@ -1,6 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, FileText, Users, Package, ShoppingCart, Warehouse, Receipt, Truck, UserCog, Building2, ChevronLeft, ChevronRight, LogOut, Sun, Moon, X, } from 'lucide-react';
+import { LayoutDashboard, FileText, Users, Package, ShoppingCart, Warehouse, Receipt, Truck, UserCog, Building2, CreditCard, ChevronLeft, ChevronRight, LogOut, Sun, Moon, X, } from 'lucide-react';
 import { useAuthStore } from '../../stores/auth';
 import { useTheme } from './ThemeProvider';
 import { useQuery } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ const NAV = [
     { to: '/catalogo', icon: Package, label: 'Catálogo' },
     { to: '/notas-venta', icon: ShoppingCart, label: 'Notas de Venta' },
     { to: '/facturas', icon: Receipt, label: 'Facturas' },
+    { to: '/pagos', icon: CreditCard, label: 'Pagos' },
     { to: '/inventario', icon: Warehouse, label: 'Inventario' },
     { to: '/ordenes-compra', icon: ShoppingCart, label: 'Órdenes de Compra' },
     { to: '/proveedores', icon: Truck, label: 'Proveedores' },

@@ -9,8 +9,9 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_permission
 from app.models.cliente import Cliente as ClienteModel
 from app.models.empresa import Empresa
+from app.models.factura import Factura
 from app.models.user import User
-from app.schemas.empresa import EmpresaCreate, EmpresaOut, EmpresaUpdate
+from app.schemas.empresa import EmpresaCreate, EmpresaDeudaOut, EmpresaOut, EmpresaUpdate, FacturaResumen
 
 router = APIRouter()
 
@@ -69,6 +70,43 @@ def crear_empresa(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="RUT ya registrado")
     db.refresh(empresa)
     return empresa
+
+
+@router.get("/{empresa_id}/deuda", response_model=EmpresaDeudaOut)
+def deuda_empresa(
+    empresa_id: int,
+    perms: tuple[User, Session] = require_permission("empresas", "view"),
+):
+    _, db = perms
+    e = db.get(Empresa, empresa_id)
+    if not e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    facturas = (
+        db.query(Factura)
+        .filter(Factura.empresa_id == empresa_id, Factura.estado != "anulada")
+        .order_by(Factura.fecha.desc())
+        .all()
+    )
+    from decimal import Decimal as D
+    total_facturado = sum((f.total for f in facturas), D("0"))
+    total_pagado = sum((f.monto_pagado or D("0") for f in facturas), D("0"))
+    return EmpresaDeudaOut(
+        total_facturado=total_facturado,
+        total_pagado=total_pagado,
+        deuda=total_facturado - total_pagado,
+        facturas=[
+            FacturaResumen(
+                id=f.id,
+                numero=f.numero,
+                fecha=f.fecha,
+                contacto=f.contacto,
+                total=f.total,
+                monto_pagado=f.monto_pagado or D("0"),
+                estado=f.estado,
+            )
+            for f in facturas
+        ],
+    )
 
 
 @router.get("/{empresa_id}", response_model=EmpresaOut)

@@ -358,9 +358,6 @@ export default function CotizacionDetalle() {
                 {selectedCliente.email && (
                   <span className="flex items-center gap-1.5"><Mail size={12} className="text-gray-400" />{selectedCliente.email}</span>
                 )}
-                {selectedCliente.forma_pago && (
-                  <span className="flex items-center gap-1.5"><CreditCard size={12} className="text-gray-400" />{selectedCliente.forma_pago}</span>
-                )}
                 <button
                   type="button"
                   onClick={() => navigate('/clientes')}

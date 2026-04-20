@@ -85,6 +85,23 @@ export interface Cliente {
   created_at: string
 }
 
+export interface FacturaResumen {
+  id: number
+  numero: number
+  fecha: string
+  contacto: string | null
+  total: number
+  monto_pagado: number
+  estado: string
+}
+
+export interface EmpresaDeuda {
+  total_facturado: number
+  total_pagado: number
+  deuda: number
+  facturas: FacturaResumen[]
+}
+
 export interface SystemConfig {
   key: string
   value: string

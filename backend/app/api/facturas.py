@@ -145,7 +145,7 @@ def exportar_excel(
 
 @router.get("/", response_model=list[FacturaListOut])
 def listar_facturas(
-    estado: str | None = Query(None),
+    estado: list[str] | None = Query(None),
     cliente_id: int | None = Query(None),
     fecha_desde: date | None = Query(None),
     fecha_hasta: date | None = Query(None),
@@ -158,7 +158,7 @@ def listar_facturas(
         joinedload(Factura.empresa),
     )
     if estado:
-        q = q.filter(Factura.estado == estado)
+        q = q.filter(Factura.estado.in_(estado))
     if cliente_id:
         q = q.filter(Factura.cliente_id == cliente_id)
     if fecha_desde:

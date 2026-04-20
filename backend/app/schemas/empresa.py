@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from pydantic import BaseModel
 
@@ -49,3 +49,21 @@ class EmpresaOut(EmpresaBase):
     id: int
     created_at: datetime
     model_config = {"from_attributes": True}
+
+
+class FacturaResumen(BaseModel):
+    id: int
+    numero: int
+    fecha: date
+    contacto: str | None = None
+    total: Decimal
+    monto_pagado: Decimal
+    estado: str
+    model_config = {"from_attributes": True}
+
+
+class EmpresaDeudaOut(BaseModel):
+    total_facturado: Decimal
+    total_pagado: Decimal
+    deuda: Decimal
+    facturas: list[FacturaResumen]

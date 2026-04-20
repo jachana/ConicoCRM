@@ -17,6 +17,7 @@ import NotaVentas from './pages/NotaVentas';
 import NotaVentaDetalle from './pages/NotaVentaDetalle';
 import Facturas from './pages/Facturas';
 import FacturaDetalle from './pages/FacturaDetalle';
+import Pagos from './pages/Pagos';
 import Dashboard from './pages/Dashboard';
 import { useAuthStore } from './stores/auth';
 import AppLayout from './components/layout/AppLayout';
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
             { path: 'facturas', element: _jsx(Facturas, {}) },
             { path: 'facturas/nueva', element: _jsx(FacturaDetalle, {}) },
             { path: 'facturas/:id', element: _jsx(FacturaDetalle, {}) },
+            { path: 'pagos', element: _jsx(Pagos, {}) },
             { path: 'rrhh', element: _jsx(RRHH, {}) },
             { path: 'inventario', element: _jsx(Inventario, {}) },
         ],

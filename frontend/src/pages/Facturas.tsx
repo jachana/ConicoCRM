@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Plus, Download } from 'lucide-react';
@@ -20,17 +20,27 @@ const ESTADO_LABELS: Record<string, string> = {
 };
 
 export default function Facturas() {
-  const [estado, setEstado] = useState('');
+  const [estados, setEstados] = useState<string[]>([]);
+  const [estadoOpen, setEstadoOpen] = useState(false);
+  const estadoRef = useRef<HTMLDivElement>(null);
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
 
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (estadoRef.current && !estadoRef.current.contains(e.target as Node)) setEstadoOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
   const params = new URLSearchParams();
-  if (estado) params.set('estado', estado);
+  estados.forEach(e => params.append('estado', e));
   if (fechaDesde) params.set('fecha_desde', fechaDesde);
   if (fechaHasta) params.set('fecha_hasta', fechaHasta);
 
   const { data: facturas = [], isLoading } = useQuery<Factura[]>({
-    queryKey: ['facturas', estado, fechaDesde, fechaHasta],
+    queryKey: ['facturas', estados, fechaDesde, fechaHasta],
     queryFn: () =>
       api.get(`/api/facturas/?${params.toString()}`).then((r) => r.data),
   });
@@ -57,17 +67,45 @@ export default function Facturas() {
 
       {/* Filtros */}
       <div className="flex gap-3 mb-4">
-        <select
-          value={estado}
-          onChange={(e) => setEstado(e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-1.5 text-sm"
-        >
-          <option value="">Todos los estados</option>
-          <option value="emitida">Emitida</option>
-          <option value="parcial">Parcial</option>
-          <option value="pagada">Pagada</option>
-          <option value="anulada">Anulada</option>
-        </select>
+        <div ref={estadoRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setEstadoOpen(o => !o)}
+            className="flex items-center justify-between gap-2 px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white min-w-[150px]"
+          >
+            <span className="truncate">
+              {estados.length === 0 ? 'Todos los estados' : estados.map(e => ESTADO_LABELS[e] ?? e).join(', ')}
+            </span>
+            <svg className="h-4 w-4 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+            </svg>
+          </button>
+          {estadoOpen && (
+            <div className="absolute z-20 mt-1 w-full min-w-[160px] bg-white border border-gray-200 rounded-md shadow-lg py-1">
+              {[
+                { value: 'emitida', label: 'Emitida' },
+                { value: 'parcial', label: 'Parcial' },
+                { value: 'pagada', label: 'Pagada' },
+                { value: 'anulada', label: 'Anulada' },
+              ].map(opt => (
+                <label key={opt.value} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm text-gray-900">
+                  <input
+                    type="checkbox"
+                    checked={estados.includes(opt.value)}
+                    onChange={e => setEstados(prev => e.target.checked ? [...prev, opt.value] : prev.filter(v => v !== opt.value))}
+                    className="rounded border-gray-300"
+                  />
+                  {opt.label}
+                </label>
+              ))}
+              {estados.length > 0 && (
+                <button onClick={() => setEstados([])} className="w-full text-left px-3 py-1.5 text-xs text-gray-400 hover:text-gray-600 border-t border-gray-100 mt-1 pt-1.5">
+                  Limpiar
+                </button>
+              )}
+            </div>
+          )}
+        </div>
         <input
           type="date"
           value={fechaDesde}

@@ -128,7 +128,7 @@ def exportar_excel(
 
 @router.get("/", response_model=list[CotizacionListOut])
 def listar_cotizaciones(
-    estado: str | None = Query(None),
+    estado: list[str] | None = Query(None),
     vendedor_id: int | None = Query(None),
     cliente_id: int | None = Query(None),
     fecha_desde: date | None = Query(None),
@@ -142,7 +142,7 @@ def listar_cotizaciones(
         joinedload(Cotizacion.empresa),
     )
     if estado:
-        q = q.filter(Cotizacion.estado == estado)
+        q = q.filter(Cotizacion.estado.in_(estado))
     if vendedor_id:
         q = q.filter(Cotizacion.vendedor_id == vendedor_id)
     if cliente_id:

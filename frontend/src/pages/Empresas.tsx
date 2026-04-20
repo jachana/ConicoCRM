@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import type { Empresa } from '../types'
+import type { Empresa, EmpresaDeuda } from '../types'
 
 const PLAZO_OPTIONS = ['Al contado', '30 Dias', '60 Dias', '90 Dias', 'Especial']
 
@@ -41,6 +41,13 @@ export default function Empresas() {
   const [error, setError] = useState<string | null>(null)
   const [eliminandoId, setEliminandoId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deudaEmpresa, setDeudaEmpresa] = useState<Empresa | null>(null)
+
+  const { data: deudaData, isLoading: deudaLoading } = useQuery<EmpresaDeuda>({
+    queryKey: ['empresa-deuda', deudaEmpresa?.id],
+    queryFn: () => api.get(`/api/empresas/${deudaEmpresa!.id}/deuda`).then(r => r.data),
+    enabled: !!deudaEmpresa,
+  })
 
   function abrirCrear() {
     setEditando(null); setForm(EMPTY_FORM); setError(null); setModalOpen(true)
@@ -156,6 +163,7 @@ export default function Empresas() {
                     </span>
                   ) : (
                     <span className="inline-flex gap-3">
+                      <button onClick={() => setDeudaEmpresa(e)} className="text-xs text-emerald-600 hover:underline">Deuda</button>
                       <button onClick={() => abrirEditar(e)} className="text-xs text-blue-600 hover:underline">Editar</button>
                       <button onClick={() => { setEliminandoId(e.id); setDeleteError(null) }} className="text-xs text-red-500 hover:underline">Eliminar</button>
                     </span>
@@ -166,6 +174,88 @@ export default function Empresas() {
           </tbody>
         </table>
       </div>
+
+      {deudaEmpresa && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4" onClick={() => setDeudaEmpresa(null)}>
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto" onClick={ev => ev.stopPropagation()}>
+            <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{deudaEmpresa.nombre}</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Resumen de deuda — facturas activas</p>
+              </div>
+              <button onClick={() => setDeudaEmpresa(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none">&times;</button>
+            </div>
+
+            {deudaLoading ? (
+              <div className="px-6 py-8 text-center text-gray-400 text-sm">Cargando...</div>
+            ) : deudaData ? (
+              <div className="px-6 py-4">
+                <div className="grid grid-cols-3 gap-3 mb-5">
+                  {[
+                    { label: 'Total Facturado', value: deudaData.total_facturado, cls: 'text-gray-900 dark:text-white' },
+                    { label: 'Total Pagado', value: deudaData.total_pagado, cls: 'text-emerald-600 dark:text-emerald-400' },
+                    { label: 'Deuda Actual', value: deudaData.deuda, cls: deudaData.deuda > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400' },
+                  ].map(({ label, value, cls }) => (
+                    <div key={label} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+                      <p className={`text-base font-semibold ${cls}`}>
+                        ${Number(value).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {deudaData.facturas.length === 0 ? (
+                  <p className="text-sm text-center text-gray-400 py-4">Sin facturas registradas</p>
+                ) : (
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-medium">Nº FAC</th>
+                          <th className="text-left px-3 py-2 font-medium">Fecha</th>
+                          <th className="text-left px-3 py-2 font-medium">Contacto</th>
+                          <th className="text-right px-3 py-2 font-medium">Total</th>
+                          <th className="text-right px-3 py-2 font-medium">Pagado</th>
+                          <th className="text-right px-3 py-2 font-medium">Pendiente</th>
+                          <th className="text-center px-3 py-2 font-medium">Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {deudaData.facturas.map(f => {
+                          const pendiente = Number(f.total) - Number(f.monto_pagado)
+                          const estadoCls: Record<string, string> = {
+                            pagada: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                            parcial: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                            emitida: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                          }
+                          return (
+                            <tr key={f.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                              <td className="px-3 py-2 font-medium text-gray-900 dark:text-white">{f.numero}</td>
+                              <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{new Date(f.fecha + 'T00:00:00').toLocaleDateString('es-CL')}</td>
+                              <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{f.contacto ?? '—'}</td>
+                              <td className="px-3 py-2 text-right text-gray-900 dark:text-white">${Number(f.total).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                              <td className="px-3 py-2 text-right text-emerald-600 dark:text-emerald-400">${Number(f.monto_pagado).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                              <td className={`px-3 py-2 text-right font-medium ${pendiente > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`}>
+                                ${pendiente.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${estadoCls[f.estado] ?? 'bg-gray-100 text-gray-600'}`}>
+                                  {f.estado}
+                                </span>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
 
       {modalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
