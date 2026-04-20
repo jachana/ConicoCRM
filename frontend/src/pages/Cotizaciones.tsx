@@ -1,3 +1,4 @@
+import { openPdf } from '../lib/pdf'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -129,7 +130,7 @@ export default function Cotizaciones() {
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                     <Eye size={14} /> Ver
                   </button>
-                  <button onClick={() => window.open(`/api/cotizaciones/${c.id}/pdf`, '_blank')}
+                  <button onClick={() => openPdf(`/api/cotizaciones/${c.id}/pdf`)}
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-orange-600 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
                     <FileText size={14} /> PDF
                   </button>
@@ -184,7 +185,7 @@ export default function Cotizaciones() {
                           className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors" title="Ver/Editar">
                           <Eye size={15} />
                         </button>
-                        <button onClick={() => window.open(`/api/cotizaciones/${c.id}/pdf`, '_blank')}
+                        <button onClick={() => openPdf(`/api/cotizaciones/${c.id}/pdf`)}
                           className="p-1.5 text-gray-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded transition-colors" title="PDF">
                           <FileText size={15} />
                         </button>

@@ -1,3 +1,4 @@
+import { openPdf } from '../lib/pdf'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -324,7 +325,7 @@ export default function OrdenCompraDetalle() {
           </>
         )}
         {!isNew && (
-          <button onClick={() => window.open(`/api/ordenes-compra/${id}/pdf`, '_blank')} className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+          <button onClick={() => openPdf(`/api/ordenes-compra/${id}/pdf`)} className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
             <FileText size={16} /> Ver PDF
           </button>
         )}

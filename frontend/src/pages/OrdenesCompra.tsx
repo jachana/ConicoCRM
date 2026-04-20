@@ -1,3 +1,4 @@
+import { openPdf } from '../lib/pdf'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -65,7 +66,7 @@ export default function OrdenesCompra() {
   })
 
   function abrirPdf(id: number) {
-    window.open(`/api/ordenes-compra/${id}/pdf`, '_blank')
+    openPdf(`/api/ordenes-compra/${id}/pdf`)
   }
 
   async function exportarExcel() {

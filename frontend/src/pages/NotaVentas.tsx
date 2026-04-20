@@ -1,3 +1,4 @@
+import { openPdf } from '../lib/pdf'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -134,7 +135,7 @@ export default function NotaVentas() {
                         <Eye size={15} />
                       </button>
                       <button
-                        onClick={() => window.open(`/api/nota_ventas/${nv.id}/pdf`, '_blank')}
+                        onClick={() => openPdf(`/api/nota_ventas/${nv.id}/pdf`)}
                         className="p-1.5 text-gray-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded transition-colors"
                         title="PDF"
                       >

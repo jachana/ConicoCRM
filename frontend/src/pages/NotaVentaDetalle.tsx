@@ -1,3 +1,4 @@
+import { openPdf } from '../lib/pdf'
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -307,7 +308,7 @@ export default function NotaVentaDetalle() {
           {!isNew && (
             <>
               <button
-                onClick={() => window.open(`/api/nota_ventas/${id}/pdf`, '_blank')}
+                onClick={() => openPdf(`/api/nota_ventas/${id}/pdf`)}
                 className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <FileText size={15} />
