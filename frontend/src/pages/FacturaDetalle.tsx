@@ -28,17 +28,19 @@ function getValidTransitions(estado: string): string[] {
   return all[estado] ?? []
 }
 
-function fmtMoney(n: number) {
-  return `$ ${Math.round(n).toLocaleString('es-CL')}`
+function fmtMoney(n: number | string | null | undefined) {
+  return `$ ${Math.round(Number(n) || 0).toLocaleString('es-CL')}`
 }
 
 type LineaLocal = FacturaLinea & { _key: string }
 
 function calcLinea(l: LineaLocal): LineaLocal {
-  const total_neto = l.cantidad * l.valor_neto
+  const cantidad = Number(l.cantidad) || 0
+  const valor_neto = Number(l.valor_neto) || 0
+  const total_neto = cantidad * valor_neto
   const iva = Math.round(total_neto * 0.19 * 100) / 100
   const total = total_neto + iva
-  return { ...l, total_neto, iva, total }
+  return { ...l, cantidad, valor_neto, total_neto, iva, total }
 }
 
 interface PaymentModalProps {
@@ -192,9 +194,9 @@ export default function FacturaDetalle() {
     setLineas(prev => prev.map((l, i) => i !== idx ? l : calcLinea({ ...l, ...patch })))
   }
 
-  const totalNeto = lineas.reduce((s, l) => s + l.total_neto, 0)
-  const totalIva = lineas.reduce((s, l) => s + l.iva, 0)
-  const total = lineas.reduce((s, l) => s + l.total, 0)
+  const totalNeto = lineas.reduce((s, l) => s + (Number(l.total_neto) || 0), 0)
+  const totalIva = lineas.reduce((s, l) => s + (Number(l.iva) || 0), 0)
+  const total = lineas.reduce((s, l) => s + (Number(l.total) || 0), 0)
 
   async function handleSave() {
     if (!clienteId) { setError('Selecciona un cliente'); return }

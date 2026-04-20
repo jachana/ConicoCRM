@@ -34,14 +34,16 @@ function newLinea(orden: number): LineaLocal {
 }
 
 function calcLinea(l: LineaLocal): LineaLocal {
-  const total_neto = l.cantidad * l.valor_neto
+  const cantidad = Number(l.cantidad) || 0
+  const valor_neto = Number(l.valor_neto) || 0
+  const total_neto = cantidad * valor_neto
   const iva = Math.round(total_neto * 0.19 * 100) / 100
   const total = total_neto + iva
-  return { ...l, total_neto, iva, total }
+  return { ...l, cantidad, valor_neto, total_neto, iva, total }
 }
 
-function fmtMoney(n: number) {
-  return `$ ${Math.round(n).toLocaleString('es-CL')}`
+function fmtMoney(n: number | string | null | undefined) {
+  return `$ ${Math.round(Number(n) || 0).toLocaleString('es-CL')}`
 }
 
 export default function CotizacionDetalle() {
@@ -85,7 +87,7 @@ export default function CotizacionDetalle() {
       setNota(cotizacion.nota ?? '')
       setEmpresaId(cotizacion.empresa_id ?? '')
       setLineas(
-        (cotizacion.lineas ?? []).map((l, i) => ({
+        (cotizacion.lineas ?? []).map((l, i) => calcLinea({
           ...l,
           _key: `${l.id ?? i}`,
           producto_id: l.producto_id ?? null,
@@ -173,9 +175,9 @@ export default function CotizacionDetalle() {
     setLineas(prev => prev.filter((_, i) => i !== idx).map((l, i) => ({ ...l, orden: i + 1 })))
   }
 
-  const totalNeto = lineas.reduce((s, l) => s + l.total_neto, 0)
-  const totalIva = lineas.reduce((s, l) => s + l.iva, 0)
-  const total = lineas.reduce((s, l) => s + l.total, 0)
+  const totalNeto = lineas.reduce((s, l) => s + (Number(l.total_neto) || 0), 0)
+  const totalIva = lineas.reduce((s, l) => s + (Number(l.iva) || 0), 0)
+  const total = lineas.reduce((s, l) => s + (Number(l.total) || 0), 0)
 
   async function handleSave() {
     if (!clienteId) { setError('Selecciona un cliente'); return }
