@@ -5,7 +5,7 @@ echo "Running migrations..."
 alembic upgrade head
 
 echo "Running seed..."
-python scripts/seed_all.py
+python scripts/seed_all.py || echo "Seed warning: non-fatal errors (see above)"
 
 echo "Starting server..."
 exec "$@"

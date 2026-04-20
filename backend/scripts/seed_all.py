@@ -24,7 +24,11 @@ DATA_DIR = os.environ.get("DATA_SEED_DIR", "/data_seed")
 
 # ── Excel helpers ─────────────────────────────────────────────────────────────
 
+HAS_DATA_DIR = os.path.isdir(DATA_DIR)
+
 def xlsx_find(fragment):
+    if not HAS_DATA_DIR:
+        raise FileNotFoundError(f"DATA_DIR '{DATA_DIR}' not mounted")
     for f in os.listdir(DATA_DIR):
         if fragment.lower() in f.lower() and f.endswith(".xlsx"):
             return os.path.join(DATA_DIR, f)
@@ -123,11 +127,32 @@ def seed_users(db):
     print(f"  users: {len(users)} created")
     return users
 
+SECTORES = ["Minería", "Construcción", "Automotriz", "Industrial", "Agricultura", "Transporte", "Logística"]
+
+def _gen_empresas(db, n=30):
+    NOMBRES_EMP = ["Comin","Transporte","Minera","Constructora","Automotriz","Servicios","Comercial","Industrial"]
+    SUFIJOS = ["SpA","Ltda.","S.A.","y Cía."]
+    for _ in range(n):
+        nombre = f"{random.choice(NOMBRES_EMP)} {random.choice(APELLIDOS)} {random.choice(SUFIJOS)}"
+        db.add(Empresa(
+            nombre=nombre,
+            razon_social=nombre,
+            rut=gen_rut(),
+            forma_pago=random.choice(FORMAS_PAGO),
+            sector=random.choice(SECTORES),
+        ))
+    db.flush()
+    print(f"  empresas: {n} generated (no Excel)")
+
 def seed_empresas(db):
     if db.query(Empresa).count():
         print("  empresas: already present, skipping")
         return db.query(Empresa).all()
-    rows = xlsx_rows("Empresas", header_row=3)
+    try:
+        rows = xlsx_rows("Empresas", header_row=3)
+    except FileNotFoundError:
+        _gen_empresas(db)
+        return db.query(Empresa).all()
     created = 0
     for row in rows:
         rut = row.get("Nombre")          # Nombre col holds the RUT
@@ -135,11 +160,8 @@ def seed_empresas(db):
         if not nombre or not isinstance(nombre, str) or len(nombre.strip()) < 2:
             continue
         nota = row.get("Nota Cobranza") or row.get("Nota cobranza")
-        # Ubicación appears twice; take the second occurrence (index 13)
         ubicacion = None
-        vals = list(row.values())
-        keys = list(row.keys())
-        for k, v in zip(keys, vals):
+        for k, v in zip(row.keys(), row.values()):
             if "ubicaci" in k.lower() and v:
                 ubicacion = str(v)
         db.add(Empresa(
@@ -154,8 +176,30 @@ def seed_empresas(db):
         ))
         created += 1
     db.flush()
-    print(f"  empresas: {created} created")
+    print(f"  empresas: {created} created from Excel")
     return db.query(Empresa).all()
+
+PRODUCTOS_GEN = [
+    ("Aceite Motor 15W40 20L", "ACE001", "Balde", 45000, 32000),
+    ("Aceite Motor 5W30 4L", "ACE002", "Envase", 18000, 12000),
+    ("Grasa Multipropósito 18kg", "GRA001", "Tarro", 35000, 24000),
+    ("Lubricante Cadena 1L", "LUB001", "Envase", 8500, 5500),
+    ("Filtro de Aceite", "FIL001", "Unidad", 4500, 2800),
+    ("Detergente Industrial 25kg", "DET001", "Saco", 28000, 19000),
+    ("Aceite Hidráulico 68 20L", "HID001", "Balde", 42000, 29000),
+    ("Aceite Transmisión ATF 4L", "ATF001", "Envase", 16000, 10500),
+    ("Grasa Cálcica 18kg", "GRA002", "Tarro", 32000, 22000),
+    ("Refrigerante 5L", "REF001", "Envase", 12000, 7500),
+]
+
+def _gen_productos(db):
+    for nombre, sku, fmt, venta, costo in PRODUCTOS_GEN:
+        db.add(Producto(nombre=nombre, sku=sku, formato=fmt,
+                        precio_venta=Decimal(str(venta)),
+                        precio_costo=Decimal(str(costo)),
+                        stock_actual=random.randint(0, 50), stock_minimo=5))
+    db.flush()
+    print(f"  productos: {len(PRODUCTOS_GEN)} generated (no Excel)")
 
 def seed_productos(db):
     already = db.query(Producto).count()
@@ -164,7 +208,12 @@ def seed_productos(db):
         _update_stock(db)
         return db.query(Producto).all()
 
-    rows = xlsx_rows("precios", header_row=3)
+    try:
+        rows = xlsx_rows("precios", header_row=3)
+    except FileNotFoundError:
+        _gen_productos(db)
+        return db.query(Producto).all()
+
     created = 0
     for row in rows:
         nombre = row.get("Name")
