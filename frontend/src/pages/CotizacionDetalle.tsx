@@ -802,7 +802,7 @@ export default function CotizacionDetalle() {
             )}
             <div className="flex gap-2 justify-end">
               <button
-                onClick={() => { setSolicitudMargenModal(false); setSolicitudMargenError('') }}
+                onClick={() => { setSolicitudMargenModal(false); setSolicitudMargenError(''); setNotaSolicitud('') }}
                 className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 Cancelar
