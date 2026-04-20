@@ -63,7 +63,25 @@
       "Bash(git -C \"C:/Otros/Conico/backend\" commit -m \"feat: add aprobaciones API router\")",
       "Bash(git *)",
       "Bash(cd C:\\\\\\\\Otros\\\\\\\\Conico\\\\\\\\frontend)",
-      "Bash(npm list *)"
+      "Bash(npm list *)",
+      "Bash(python3 -c ' *)",
+      "Bash(grep \"\\\\.js$\")",
+      "Bash(python3 -c \"from backend.app.schemas.empresa import EmpresaDeudaBulkItem; from decimal import Decimal; item = EmpresaDeudaBulkItem\\(empresa_id=1, nombre='Test', plazo_credito='30 Dias', limite_credito=Decimal\\('1000000'\\), deuda_total=Decimal\\('50000'\\), deuda_vencida=Decimal\\('10000'\\)\\); print\\('Schema validation OK'\\); print\\(item.model_dump\\(\\)\\)\")",
+      "Bash(npx --prefix frontend tsc --noEmit)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(ls -d .worktrees)",
+      "Bash(ls -d worktrees)",
+      "Bash(git check-ignore *)",
+      "Bash(npx vitest *)",
+      "Bash(pytest tests/test_margin_gate.py -v)",
+      "Bash(pytest tests/test_margin_gate.py -k \"pdf or email\" -v)",
+      "Bash(sed -n '337,353p' backend/app/api/cotizaciones.py)",
+      "Bash(sed -n '369,385p' backend/app/api/cotizaciones.py)",
+      "Bash(cd C:\\\\\\\\Otros\\\\\\\\Conico\\\\\\\\.worktrees\\\\\\\\margin-gate\\\\\\\\backend)",
+      "Bash(pytest tests/test_margin_gate.py -q --tb=no)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(/c/Otros/Conico/frontend/node_modules/.bin/tsc --noEmit)",
+      "Bash(pytest tests/test_margin_gate.py -q)"
     ]
   }
 }
