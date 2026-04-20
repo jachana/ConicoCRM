@@ -309,12 +309,13 @@ def reemplazar_lineas(
     if not _can_edit(current_user, cot):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos")
 
+    nuevas_lineas = _calcular_lineas(db, lineas_data)
+    _check_lineas_invalidas(nuevas_lineas)
+
     for linea in list(cot.lineas):
         db.delete(linea)
     db.flush()
 
-    nuevas_lineas = _calcular_lineas(db, lineas_data)
-    _check_lineas_invalidas(nuevas_lineas)
     for linea in nuevas_lineas:
         linea.cotizacion_id = cotizacion_id
         db.add(linea)
