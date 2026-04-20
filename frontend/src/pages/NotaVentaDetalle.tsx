@@ -335,6 +335,7 @@ export default function NotaVentaDetalle() {
         nvId = Number(id)
       }
       qc.invalidateQueries({ queryKey: ['nota_ventas'] })
+      setSavedSnapshot(currentSnapshot)
       navigate(`/notas-venta/${nvId}`)
       return true
     } catch (err: any) {

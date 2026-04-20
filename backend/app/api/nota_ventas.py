@@ -108,7 +108,7 @@ def _check_lineas_invalidas(lineas: list[NotaVentaLinea]) -> None:
         errors.append("margen_negativo")
     if errors:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=" | ".join({
                 "linea_sin_item": "linea_sin_item: Hay líneas sin producto seleccionado",
                 "margen_negativo": "margen_negativo: Hay líneas con margen negativo",
@@ -308,6 +308,7 @@ def crear_nv_desde_cotizacion(
             total=cl.total,
             margen=cl.margen,
         ))
+    _check_lineas_invalidas(lineas)
     nv.lineas = lineas
     _recalcular_totales(nv)
 
@@ -426,7 +427,7 @@ def cambiar_estado(
     allowed = _TRANSITIONS.get(transition)
     if allowed is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Transición '{nv.estado}' → '{body.estado}' no permitida",
         )
     if allowed == "admin" and current_user.role not in ("admin", "subadmin"):

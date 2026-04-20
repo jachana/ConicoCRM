@@ -481,6 +481,7 @@ export default function CotizacionDetalle() {
         cotId = Number(id)
       }
       qc.invalidateQueries({ queryKey: ['cotizaciones'] })
+      setSavedSnapshot(currentSnapshot)
       navigate(`/cotizaciones/${cotId}`)
       return true
     } catch (err: any) {
