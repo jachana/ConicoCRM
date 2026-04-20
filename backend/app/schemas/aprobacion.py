@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class VendedorMinOut(BaseModel):
@@ -23,6 +23,14 @@ class AprobacionCreate(BaseModel):
     origen: str  # "cotizacion" | "directa"
     cotizacion_id: int | None = None
     nv_payload: dict | None = None
+
+    @model_validator(mode='after')
+    def check_origen_fields(self):
+        if self.origen == 'cotizacion' and not self.cotizacion_id:
+            raise ValueError('cotizacion_id requerido para origen cotizacion')
+        if self.origen == 'directa' and not self.nv_payload:
+            raise ValueError('nv_payload requerido para origen directa')
+        return self
 
 
 class AprobacionAccion(BaseModel):

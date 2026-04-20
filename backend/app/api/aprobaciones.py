@@ -115,64 +115,75 @@ def accionar_aprobacion(
         if cot.estado == "cerrada_fv":
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="La cotización ya fue convertida a NV")
 
-        numero = _asignar_numero_nv(db)
-        nv = NotaVenta(
-            numero=numero,
-            cotizacion_id=cot.id,
-            cliente_id=cot.cliente_id,
-            empresa_id=cot.empresa_id,
-            vendedor_id=cot.vendedor_id,
-            contacto=cot.contacto,
-            fecha=date.today(),
-            nota=cot.nota,
-            correo=cot.correo,
-        )
-        db.add(nv)
-        db.flush()
-        lineas = []
-        for cl in cot.lineas:
-            lineas.append(NotaVentaLinea(
-                nv_id=nv.id,
-                orden=cl.orden,
-                producto_id=cl.producto_id,
-                sku=cl.sku,
-                descripcion=cl.descripcion,
-                formato=cl.formato,
-                cantidad=cl.cantidad,
-                valor_neto=cl.valor_neto,
-                total_neto=cl.total_neto,
-                iva=cl.iva,
-                total=cl.total,
-                margen=cl.margen,
-            ))
-        nv.lineas = lineas
-        _recalcular_totales(nv)
-        cot.estado = "cerrada_fv"
-        _registrar_movimientos_salida(db, nv.id, nv.lineas, current_user.id)
+    try:
+        if a.origen == "cotizacion":
+            numero = _asignar_numero_nv(db)
+            nv = NotaVenta(
+                numero=numero,
+                cotizacion_id=cot.id,
+                cliente_id=cot.cliente_id,
+                empresa_id=cot.empresa_id,
+                vendedor_id=cot.vendedor_id,
+                contacto=cot.contacto,
+                fecha=date.today(),
+                nota=cot.nota,
+                correo=cot.correo,
+            )
+            db.add(nv)
+            db.flush()
+            lineas = []
+            for cl in cot.lineas:
+                lineas.append(NotaVentaLinea(
+                    nv_id=nv.id,
+                    orden=cl.orden,
+                    producto_id=cl.producto_id,
+                    sku=cl.sku,
+                    descripcion=cl.descripcion,
+                    formato=cl.formato,
+                    cantidad=cl.cantidad,
+                    valor_neto=cl.valor_neto,
+                    total_neto=cl.total_neto,
+                    iva=cl.iva,
+                    total=cl.total,
+                    margen=cl.margen,
+                ))
+            nv.lineas = lineas
+            _recalcular_totales(nv)
+            cot.estado = "cerrada_fv"
+            _registrar_movimientos_salida(db, nv.id, nv.lineas, current_user.id)
 
-    else:  # directa
-        payload_dict = json.loads(a.nv_payload)
-        body_nv = NotaVentaCreate.model_validate(payload_dict)
-        numero = _asignar_numero_nv(db)
-        nv = NotaVenta(
-            numero=numero,
-            cliente_id=body_nv.cliente_id,
-            vendedor_id=body_nv.vendedor_id or a.vendedor_id,
-            contacto=body_nv.contacto,
-            fecha=body_nv.fecha or date.today(),
-            nota=body_nv.nota,
-            correo=body_nv.correo,
-            empresa_id=body_nv.empresa_id,
-        )
-        db.add(nv)
-        db.flush()
-        nv.lineas = _calcular_lineas(db, body_nv.lineas)
-        for linea in nv.lineas:
-            linea.nv_id = nv.id
-        _recalcular_totales(nv)
-        _registrar_movimientos_salida(db, nv.id, nv.lineas, current_user.id)
+        else:  # directa
+            if not a.nv_payload:
+                raise HTTPException(status_code=400, detail="nv_payload no disponible en esta solicitud")
+            payload_dict = json.loads(a.nv_payload)
+            body_nv = NotaVentaCreate.model_validate(payload_dict)
+            numero = _asignar_numero_nv(db)
+            nv = NotaVenta(
+                numero=numero,
+                cliente_id=body_nv.cliente_id,
+                vendedor_id=body_nv.vendedor_id or a.vendedor_id,
+                contacto=body_nv.contacto,
+                fecha=body_nv.fecha or date.today(),
+                nota=body_nv.nota,
+                correo=body_nv.correo,
+                empresa_id=body_nv.empresa_id,
+            )
+            db.add(nv)
+            db.flush()
+            nv.lineas = _calcular_lineas(db, body_nv.lineas)
+            for linea in nv.lineas:
+                linea.nv_id = nv.id
+            _recalcular_totales(nv)
+            _registrar_movimientos_salida(db, nv.id, nv.lineas, current_user.id)
 
-    a.estado = "aprobada"
-    a.nv_id = nv.id
-    db.commit()
+        a.estado = "aprobada"
+        a.nv_id = nv.id
+        db.commit()
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Error al procesar la aprobación")
+
     return _load_aprobacion(db, a.id)
