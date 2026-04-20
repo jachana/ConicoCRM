@@ -73,3 +73,12 @@ class EmpresaCreditoOut(BaseModel):
     limite_credito: Decimal | None
     credito_usado: Decimal | None
     credito_disponible: Decimal | None
+
+
+class EmpresaDeudaBulkItem(BaseModel):
+    empresa_id: int
+    nombre: str
+    plazo_credito: str | None
+    limite_credito: Decimal | None
+    deuda_total: Decimal
+    deuda_vencida: Decimal

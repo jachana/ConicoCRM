@@ -11,7 +11,7 @@ from app.models.cliente import Cliente as ClienteModel
 from app.models.empresa import Empresa
 from app.models.factura import Factura
 from app.models.user import User
-from app.schemas.empresa import EmpresaCreate, EmpresaDeudaOut, EmpresaCreditoOut, EmpresaOut, EmpresaUpdate, FacturaResumen
+from app.schemas.empresa import EmpresaCreate, EmpresaDeudaOut, EmpresaCreditoOut, EmpresaOut, EmpresaUpdate, FacturaResumen, EmpresaDeudaBulkItem
 
 router = APIRouter()
 
