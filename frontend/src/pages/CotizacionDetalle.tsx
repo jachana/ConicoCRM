@@ -91,6 +91,8 @@ export default function CotizacionDetalle() {
     aprobacion_id: number | null
   } | null>(null)
 
+  const [revokeDialog, setRevokeDialog] = useState<{ pendingChange: () => void } | null>(null)
+
   const { data: cotizacion } = useQuery<Cotizacion>({
     queryKey: ['cotizacion', id],
     queryFn: () => api.get(`/api/cotizaciones/${id}`).then(r => r.data),
@@ -150,15 +152,17 @@ export default function CotizacionDetalle() {
   })
 
   function handleClienteChange(cid: number | '') {
-    setClienteId(cid)
-    if (cid) {
-      const c = clientes.find(cl => cl.id === cid)
-      if (c) {
-        setContacto(c.nombre)
-        setCorreo(c.email ?? '')
-        if (c.empresa_id) setEmpresaId(c.empresa_id)
+    withRevokeGuard(() => {
+      setClienteId(cid)
+      if (cid) {
+        const c = clientes.find(cl => cl.id === cid)
+        if (c) {
+          setContacto(c.nombre)
+          setCorreo(c.email ?? '')
+          if (c.empresa_id) setEmpresaId(c.empresa_id)
+        }
       }
-    }
+    })
   }
 
   const selectedCliente = clientes.find(c => c.id === clienteId) ?? null
@@ -223,6 +227,25 @@ export default function CotizacionDetalle() {
     setLineas(prev => prev.filter((_, i) => i !== idx).map((l, i) => ({ ...l, orden: i + 1 })))
   }
 
+  function withRevokeGuard(change: () => void) {
+    if (!isAdmin && marginStatus?.estado === 'aprobada') {
+      setRevokeDialog({ pendingChange: change })
+    } else {
+      change()
+    }
+  }
+
+  async function confirmRevoke() {
+    if (!revokeDialog || !marginStatus?.aprobacion_id) return
+    revokeDialog.pendingChange()
+    setRevokeDialog(null)
+    try {
+      await api.patch(`/api/aprobaciones_margen/${marginStatus.aprobacion_id}`, { accion: 'revocar' })
+    } catch {
+    }
+    setMarginStatus(prev => prev ? { ...prev, blocked: true, estado: 'revocada' } : prev)
+  }
+
   function handleMargenChange(idx: number, pctStr: string) {
     setLineas(prev => prev.map((l, i) => {
       if (i !== idx) return l
@@ -241,12 +264,12 @@ export default function CotizacionDetalle() {
   }
 
   function handleValorNetoChange(idx: number, val: string) {
-    setLineas(prev => prev.map((l, i) => {
+    withRevokeGuard(() => setLineas(prev => prev.map((l, i) => {
       if (i !== idx) return l
       const vn = Math.max(0, parseFloat(val) || 0)
       const newMargen = l._costo != null && vn > 0 ? (vn - l._costo) / vn : l.margen
       return calcLinea({ ...l, valor_neto: vn, margen: newMargen })
-    }))
+    })))
   }
 
   function handleResetPrecio(idx: number) {
@@ -549,7 +572,7 @@ export default function CotizacionDetalle() {
                 </td>
                 <td className="px-3 py-2">
                   <input type="number" min="1" value={linea.cantidad}
-                    onChange={e => updateLinea(idx, { cantidad: Math.max(1, parseInt(e.target.value) || 1) })}
+                    onChange={e => withRevokeGuard(() => updateLinea(idx, { cantidad: Math.max(1, parseInt(e.target.value) || 1) }))}
                     className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right ${linea._stock != null && linea.cantidad > linea._stock ? 'border-orange-400 dark:border-orange-500' : 'border-gray-200 dark:border-gray-700'}`} />
                 </td>
                 <td className="px-3 py-2">
@@ -622,6 +645,33 @@ export default function CotizacionDetalle() {
       {emailToast && (
         <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
           {emailToast.msg}
+        </div>
+      )}
+
+      {revokeDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 max-w-md w-full mx-4 shadow-xl">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+              Revocar aprobacion de margenes
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">
+              Esta cotizacion tiene aprobacion de margenes vigente. Modificarla revocara la aprobacion y bloqueara el PDF y email. Continuar?
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setRevokeDialog(null)}
+                className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmRevoke}
+                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
