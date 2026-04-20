@@ -8,6 +8,7 @@ from app.api.auth import get_current_user
 from app.database import get_db
 from app.models.aprobacion_margen import AprobacionMargen
 from app.models.cotizacion import Cotizacion
+from app.models.producto import Producto
 from app.models.user import User
 from app.schemas.aprobacion_margen import (
     AprobacionMargenAccion,
@@ -143,7 +144,6 @@ def accionar_solicitud_margen(
         linea.iva = round(linea.total_neto * Decimal("0.19"), 2)
         linea.total = linea.total_neto + linea.iva
         if linea.producto_id and nuevo_vn > 0:
-            from app.models.producto import Producto
             prod = db.get(Producto, linea.producto_id)
             if prod:
                 linea.margen = (nuevo_vn - prod.precio_costo) / nuevo_vn
