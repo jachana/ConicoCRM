@@ -1,5 +1,5 @@
 // frontend/src/pages/Aprobaciones.tsx
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronUp } from 'lucide-react'
@@ -134,8 +134,8 @@ export default function Aprobaciones() {
                 const isExpanded = expanded === key
                 const acting = actingKey === key
                 return (
-                  <>
-                    <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <React.Fragment key={key}>
+                    <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                           a.tipo === 'credito'
@@ -220,7 +220,7 @@ export default function Aprobaciones() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 )
               })}
             </tbody>
