@@ -75,6 +75,7 @@ export default function CotizacionDetalle() {
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number; above: boolean } | null>(null)
   const [marginOverrideIdx, setMarginOverrideIdx] = useState<number | null>(null)
   const [marginOverrideInput, setMarginOverrideInput] = useState('')
+  const [propuestas, setPropuestas] = useState<Record<number, { margenPropuesto: number; valorNetoPropuesto: number }>>({})
   const [focusedPrecioIdx, setFocusedPrecioIdx] = useState<number | null>(null)
   const [creditModal, setCreditModal] = useState<{
     mode: 'warning' | 'request'
@@ -119,6 +120,7 @@ export default function CotizacionDetalle() {
           _costo: (l.margen != null && Number(l.valor_neto) > 0) ? Number(l.valor_neto) * (1 - l.margen) : null,
         }))
       )
+      setPropuestas({})
     }
   }, [cotizacion])
 
@@ -252,6 +254,26 @@ export default function CotizacionDetalle() {
     const costo = prod.precio_costo ?? null
     const newMargen = vn > 0 && costo != null ? (vn - costo) / vn : linea.margen
     setLineas(prev => prev.map((l, i) => i !== idx ? l : calcLinea({ ...l, valor_neto: vn, margen: newMargen, _costo: costo })))
+  }
+
+  function handleMargenPropuesta(lineaId: number, pctStr: string) {
+    const linea = lineas.find(l => l.id === lineaId)
+    if (!linea) return
+    const pct = parseFloat(pctStr)
+    if (isNaN(pct)) {
+      setPropuestas(prev => { const next = { ...prev }; delete next[lineaId]; return next })
+      return
+    }
+    const newMargen = pct / 100
+    if (newMargen >= 1 || newMargen < 0) return
+    const costo = linea._costo != null
+      ? linea._costo
+      : (linea.margen != null && Number(linea.margen) < 1 && Number(linea.valor_neto) > 0
+          ? Number(linea.valor_neto) * (1 - Number(linea.margen))
+          : null)
+    if (costo == null || costo <= 0) return
+    const valorNetoPropuesto = Math.round(costo / (1 - newMargen))
+    setPropuestas(prev => ({ ...prev, [lineaId]: { margenPropuesto: newMargen, valorNetoPropuesto } }))
   }
 
   const totalNeto = lineas.reduce((s, l) => s + (Number(l.total_neto) || 0), 0)
@@ -570,9 +592,16 @@ export default function CotizacionDetalle() {
                         onChange={e => handleValorNetoChange(idx, e.target.value)}
                         className="w-28 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
                     ) : (
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {fmtMoney(linea.valor_neto)}
-                      </span>
+                      <div className="text-right">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {fmtMoney(linea.valor_neto)}
+                        </span>
+                        {linea.id != null && propuestas[linea.id] != null && (
+                          <div className="text-xs text-blue-600 dark:text-blue-400">
+                            → {fmtMoney(propuestas[linea.id].valorNetoPropuesto)}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </td>
@@ -586,6 +615,23 @@ export default function CotizacionDetalle() {
                         onChange={e => handleMargenChange(idx, e.target.value)}
                         placeholder="—"
                         className={`w-16 px-1.5 py-1.5 text-xs border rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 ${linea.margen !== null && Number(linea.margen) < 0.15 ? 'border-orange-400 dark:border-orange-500 text-orange-500' : 'border-gray-200 dark:border-gray-700 text-green-600 dark:text-green-400'}`}
+                      />
+                    ) : linea.id != null ? (
+                      <input
+                        type="number" step="0.1"
+                        value={linea.id != null && propuestas[linea.id] != null
+                          ? (propuestas[linea.id].margenPropuesto * 100).toFixed(1)
+                          : (linea.margen !== null ? (Number(linea.margen) * 100).toFixed(1) : '')}
+                        onChange={e => linea.id != null && handleMargenPropuesta(linea.id, e.target.value)}
+                        placeholder="—"
+                        className={`w-16 px-1.5 py-1.5 text-xs border-2 border-dashed rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white dark:bg-gray-800 ${
+                          linea.id != null && propuestas[linea.id] != null
+                            ? 'border-blue-400 text-blue-600 dark:text-blue-400'
+                            : linea.margen !== null && Number(linea.margen) < 0.15
+                            ? 'border-orange-300 text-orange-500'
+                            : 'border-gray-300 dark:border-gray-600 text-green-600 dark:text-green-400'
+                        }`}
+                        title="Proponer cambio de margen"
                       />
                     ) : (
                       <span className={`text-xs ${linea.margen !== null && Number(linea.margen) < 0.15 ? 'text-orange-500' : 'text-green-600 dark:text-green-400'}`}>
