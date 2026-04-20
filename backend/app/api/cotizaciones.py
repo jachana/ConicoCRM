@@ -90,7 +90,7 @@ def _can_edit(current_user: User, cotizacion: Cotizacion) -> bool:
     return cotizacion.vendedor_id == current_user.id
 
 
-def _check_lineas_invalidas(lineas) -> None:
+def _check_lineas_invalidas(lineas: list[CotizacionLinea]) -> None:
     errors = []
     if any(l.producto_id is None for l in lineas):
         errors.append("linea_sin_item")

@@ -91,3 +91,22 @@ def test_cot_update_lineas_blocked_empty_item(client, admin_token):
     ], headers={"Authorization": f"Bearer {admin_token}"})
     assert r2.status_code == 422
     assert "linea_sin_item" in r2.json()["detail"]
+
+
+def test_cot_save_blocked_both_errors(client, admin_token):
+    # One line with negative margin, one line with no item
+    prod_neg = _make_producto(client, admin_token, precio_venta=500, precio_costo=1000)
+    cid = _make_cliente(client, admin_token)
+    r = client.post("/api/cotizaciones/", json={
+        "cliente_id": cid,
+        "lineas": [
+            {"orden": 1, "descripcion": "Neg margin", "producto_id": prod_neg["id"],
+             "cantidad": 1, "valor_neto": 500},
+            {"orden": 2, "descripcion": "No item", "producto_id": None,
+             "cantidad": 1, "valor_neto": 1000},
+        ],
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 422
+    detail = r.json()["detail"]
+    assert "margen_negativo" in detail
+    assert "linea_sin_item" in detail
