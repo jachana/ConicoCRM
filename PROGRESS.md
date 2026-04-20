@@ -65,10 +65,20 @@
   - Cotización: advertencia no bloqueante si se excede el crédito al guardar
   - NV nueva: si excede el crédito, flujo de aprobación asíncrono (no se crea hasta que admin apruebe)
   - `AprobacionCredito`: modelo con origen (cotizacion/directa), payload JSON de la NV, estado (pendiente/aprobada/denegada)
-  - Admin aprueba → NV se crea automáticamente y vendedor es redirigido
-  - Admin deniega → vendedor ve error y permanece en el formulario
-  - `CreditWarningModal`: modo warning (cotización) y modo request (NV) con spinner de espera y polling cada 3s
-  - Página `/aprobaciones`: solo admin/subadmin; lista pendientes con Aprobar/Denegar por fila; badge en sidebar
+  - Admin aprueba → NV se crea automáticamente; admin deniega → vendedor ve error
+  - `CreditWarningModal`: sin polling — vendedor envía solicitud y ve banner de estado al volver
+  - Página `/aprobaciones`: lista unificada de solicitudes de crédito y margen con badge de tipo
+
+- [x] **Fase 11 — Solicitud de ajuste de márgenes**
+  - `AprobacionMargen`: modelo con `cotizacion_id`, snapshot JSON de líneas propuestas, estado pendiente/aprobada/denegada
+  - "Latest wins": nueva solicitud auto-deniega la pendiente anterior para la misma cotización
+  - API `/api/aprobaciones_margen/`: POST (vendedor), GET list (filtrable por cotizacion_id/estado), GET detail, PATCH (admin)
+  - En aprobación: aplica `valor_neto_propuesto` a cada línea, recalcula márgenes desde precio_costo, actualiza totales cotización
+  - Vendedor edita márgenes con input de borde punteado (propuesta local, no modifica datos guardados); precio propuesto se muestra inline
+  - Botón "Solicitar ajuste de márgenes" aparece cuando hay propuestas; abre modal con tabla resumen + nota
+  - Admins editan valor_neto y margen directamente; vendedores ven ambos campos como solo lectura (excepto propuesta)
+  - Banners en CotizacionDetalle para estado de solicitud de crédito y de margen
+  - 6 tests backend; 224/224 tests no-smoke pasan
 
 - [x] **Fase 9 — Dashboard configurable**
   - 8 widgets: ventas período, cotizaciones abiertas, top clientes, top productos, stock crítico, NV por cobrar, cotizaciones/ventas por vendedor
