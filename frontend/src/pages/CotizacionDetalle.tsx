@@ -75,6 +75,7 @@ export default function CotizacionDetalle() {
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number; above: boolean } | null>(null)
   const [marginOverrideIdx, setMarginOverrideIdx] = useState<number | null>(null)
   const [marginOverrideInput, setMarginOverrideInput] = useState('')
+  const [focusedPrecioIdx, setFocusedPrecioIdx] = useState<number | null>(null)
   const [creditModal, setCreditModal] = useState<{
     mode: 'warning' | 'request'
     credito: CreditoInfo
@@ -532,7 +533,10 @@ export default function CotizacionDetalle() {
                         <RotateCcw size={10} />
                       </button>
                     )}
-                    <input type="number" min="0" value={linea.valor_neto}
+                    <input type="text" inputMode="numeric" min="0"
+                      value={focusedPrecioIdx === idx ? String(linea.valor_neto) : Math.round(Number(linea.valor_neto) || 0).toLocaleString('es-CL')}
+                      onFocus={() => setFocusedPrecioIdx(idx)}
+                      onBlur={() => setFocusedPrecioIdx(null)}
                       onChange={e => handleValorNetoChange(idx, e.target.value)}
                       className="w-28 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
                   </div>
