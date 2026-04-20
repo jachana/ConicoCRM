@@ -11,7 +11,7 @@ from app.models.cliente import Cliente as ClienteModel
 from app.models.empresa import Empresa
 from app.models.factura import Factura
 from app.models.user import User
-from app.schemas.empresa import EmpresaCreate, EmpresaDeudaOut, EmpresaOut, EmpresaUpdate, FacturaResumen
+from app.schemas.empresa import EmpresaCreate, EmpresaDeudaOut, EmpresaCreditoOut, EmpresaOut, EmpresaUpdate, FacturaResumen
 
 router = APIRouter()
 
@@ -106,6 +106,36 @@ def deuda_empresa(
             )
             for f in facturas
         ],
+    )
+
+
+@router.get("/{empresa_id}/credito", response_model=EmpresaCreditoOut)
+def credito_empresa(
+    empresa_id: int,
+    perms: tuple[User, Session] = require_permission("empresas", "view"),
+):
+    _, db = perms
+    e = db.get(Empresa, empresa_id)
+    if not e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    if e.limite_credito is None:
+        return EmpresaCreditoOut(limite_credito=None, credito_usado=None, credito_disponible=None)
+    from decimal import Decimal as D
+    facturas = (
+        db.query(Factura)
+        .filter(Factura.empresa_id == empresa_id, Factura.estado != "anulada")
+        .all()
+    )
+    credito_usado = sum(
+        (f.total - (f.monto_pagado or D("0")) for f in facturas
+         if f.total - (f.monto_pagado or D("0")) > 0),
+        D("0"),
+    )
+    credito_disponible = e.limite_credito - credito_usado
+    return EmpresaCreditoOut(
+        limite_credito=e.limite_credito,
+        credito_usado=credito_usado,
+        credito_disponible=credito_disponible,
     )
 
 
