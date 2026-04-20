@@ -20,6 +20,8 @@ const ACTION_LABELS: Record<Action, string> = {
   view: 'Ver', create: 'Crear', edit: 'Editar', delete: 'Eliminar',
 }
 
+type ModalState = { mode: 'create' } | { mode: 'edit'; user: User }
+
 export default function Users() {
   const qc = useQueryClient()
   const { data: users = [], isLoading } = useQuery<User[]>({
@@ -30,6 +32,8 @@ export default function Users() {
   const [permissions, setPermissions] = useState<Permissions | null>(null)
   const [permissionsError, setPermissionsError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [modal, setModal] = useState<ModalState | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const savePermissions = useMutation({
     mutationFn: ({ userId, payload }: { userId: number; payload: Permissions }) =>
@@ -42,6 +46,36 @@ export default function Users() {
     },
     onError: () => {
       setSaveError('No se pudo guardar. Intenta de nuevo.')
+    },
+  })
+
+  const createUser = useMutation({
+    mutationFn: (body: { email: string; name: string; password: string; role: string }) =>
+      api.post('/api/users', body).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] })
+      setModal(null)
+      setFormError(null)
+    },
+    onError: (err: any) => {
+      if (err?.response?.status === 409) {
+        setFormError('Este email ya está registrado')
+      } else {
+        setFormError('No se pudo guardar. Intenta de nuevo.')
+      }
+    },
+  })
+
+  const updateUser = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: { name?: string; role?: string; is_active?: boolean; password?: string } }) =>
+      api.patch(`/api/users/${id}`, body).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] })
+      setModal(null)
+      setFormError(null)
+    },
+    onError: () => {
+      setFormError('No se pudo guardar. Intenta de nuevo.')
     },
   })
 
@@ -66,7 +100,15 @@ export default function Users() {
 
   return (
     <div className="p-4 md:p-6 max-w-5xl">
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Usuarios</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Usuarios</h1>
+        <button
+          onClick={() => { setModal({ mode: 'create' }); setFormError(null) }}
+          className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          Nuevo Usuario
+        </button>
+      </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
         <table className="w-full text-sm">
@@ -96,22 +138,155 @@ export default function Users() {
                   />
                 </td>
                 <td className="px-4 py-3">
-                  {u.role !== 'admin' && (
-                    <span className="inline-flex items-center gap-2">
-                      <button onClick={() => openPermissions(u)} className="text-xs text-blue-600 hover:underline">
-                        Permisos
-                      </button>
-                      {permissionsError === u.id.toString() && (
-                        <span className="text-xs text-red-500">Error al cargar</span>
-                      )}
-                    </span>
-                  )}
+                  <span className="inline-flex items-center gap-3">
+                    <button
+                      onClick={() => { setModal({ mode: 'edit', user: u }); setFormError(null) }}
+                      className="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white hover:underline"
+                    >
+                      Editar
+                    </button>
+                    {u.role !== 'admin' && (
+                      <>
+                        <button onClick={() => openPermissions(u)} className="text-xs text-blue-600 hover:underline">
+                          Permisos
+                        </button>
+                        {permissionsError === u.id.toString() && (
+                          <span className="text-xs text-red-500">Error al cargar</span>
+                        )}
+                      </>
+                    )}
+                  </span>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {modal?.mode === 'create' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md">
+            <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Nuevo Usuario</h2>
+            </div>
+            <form
+              className="px-6 py-4 flex flex-col gap-4"
+              onSubmit={e => {
+                e.preventDefault()
+                const fd = new FormData(e.currentTarget)
+                createUser.mutate({
+                  name: fd.get('name') as string,
+                  email: fd.get('email') as string,
+                  password: fd.get('password') as string,
+                  role: fd.get('role') as string,
+                })
+              }}
+            >
+              <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+                Nombre
+                <input name="name" required className="mt-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+                Email
+                <input name="email" type="email" required className="mt-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+                Contraseña
+                <input name="password" type="password" required className="mt-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+                Rol
+                <select name="role" required defaultValue="vendedor" className="mt-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="vendedor">Vendedor</option>
+                  <option value="subadmin">Subadmin</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </label>
+              {formError && <p className="text-xs text-red-500">{formError}</p>}
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setModal(null); setFormError(null) }}
+                  className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={createUser.isPending}
+                  className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                >
+                  {createUser.isPending ? 'Guardando...' : 'Crear Usuario'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {modal?.mode === 'edit' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md">
+            <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Editar Usuario</h2>
+              <p className="text-xs text-gray-500 mt-0.5">{modal.user.email}</p>
+            </div>
+            <form
+              className="px-6 py-4 flex flex-col gap-4"
+              onSubmit={e => {
+                e.preventDefault()
+                const fd = new FormData(e.currentTarget)
+                const password = fd.get('password') as string
+                const body: { name?: string; role?: string; is_active?: boolean; password?: string } = {
+                  name: fd.get('name') as string,
+                  role: fd.get('role') as string,
+                  is_active: fd.get('is_active') === 'on',
+                }
+                if (password) body.password = password
+                updateUser.mutate({ id: modal.user.id, body })
+              }}
+            >
+              <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+                Nombre
+                <input name="name" required defaultValue={modal.user.name} className="mt-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+                Rol
+                <select name="role" required defaultValue={modal.user.role} className="mt-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="vendedor">Vendedor</option>
+                  <option value="subadmin">Subadmin</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+                Nueva Contraseña
+                <input name="password" type="password" placeholder="Dejar vacío para no cambiar" className="mt-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400" />
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                <input name="is_active" type="checkbox" defaultChecked={modal.user.is_active} className="w-4 h-4 accent-blue-600" />
+                Usuario activo
+              </label>
+              {formError && <p className="text-xs text-red-500">{formError}</p>}
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setModal(null); setFormError(null) }}
+                  className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateUser.isPending}
+                  className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                >
+                  {updateUser.isPending ? 'Guardando...' : 'Guardar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {selectedUser && permissions && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
