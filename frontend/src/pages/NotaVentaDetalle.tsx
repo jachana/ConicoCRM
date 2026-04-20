@@ -90,8 +90,6 @@ export default function NotaVentaDetalle() {
   const [creditModal, setCreditModal] = useState<{
     credito: CreditoInfo
     aprobacionPayload?: AprobacionPayload
-    onApproved?: (nvId: number) => void
-    onDenied?: () => void
   } | null>(null)
 
   const [autocompleteIdx, setAutocompleteIdx] = useState<number | null>(null)
@@ -214,8 +212,6 @@ export default function NotaVentaDetalle() {
         setCreditModal({
           credito,
           aprobacionPayload,
-          onApproved: (nvId) => { setCreditModal(null); navigate(`/notas-venta/${nvId}`) },
-          onDenied: () => { setCreditModal(null); setError('Solicitud denegada por el administrador.') },
         })
       } else {
         onProceed()
@@ -597,8 +593,7 @@ export default function NotaVentaDetalle() {
           credito={creditModal.credito}
           saleTotal={total}
           aprobacionPayload={creditModal.aprobacionPayload}
-          onApproved={creditModal.onApproved}
-          onDenied={creditModal.onDenied}
+          onSubmitted={() => setCreditModal(null)}
           onCancel={() => setCreditModal(null)}
         />
       )}
