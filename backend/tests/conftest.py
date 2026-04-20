@@ -75,7 +75,7 @@ def client():
 
 
 @pytest.fixture
-def admin_user(setup_test_db):
+def admin_user():
     from app.models.user import User
     from app.core.security import get_password_hash
 
@@ -100,7 +100,7 @@ def admin_token(client, admin_user):
 
 
 @pytest.fixture
-def subadmin_user(setup_test_db):
+def subadmin_user():
     from app.models.user import User
     from app.core.security import get_password_hash
 
@@ -125,7 +125,7 @@ def subadmin_token(client, subadmin_user):
 
 
 @pytest.fixture
-def vendedor_user(setup_test_db):
+def vendedor_user():
     from app.models.user import User
     from app.core.security import get_password_hash
 

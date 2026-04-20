@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.api.auth import get_current_user
 from app.api.deps import require_permission
 from app.database import get_db
+from app.models.aprobacion_margen import AprobacionMargen
 from app.models.cotizacion import Cotizacion, CotizacionLinea
 from app.models.producto import Producto
 from app.models.system_config import SystemConfig
@@ -87,6 +88,53 @@ def _can_edit(current_user: User, cotizacion: Cotizacion) -> bool:
     if current_user.role in ("admin", "subadmin"):
         return True
     return cotizacion.vendedor_id == current_user.id
+
+
+def check_margin_approval_required(db: Session, cotizacion_id: int) -> bool:
+    deviation = (
+        db.query(CotizacionLinea)
+        .join(Producto, CotizacionLinea.producto_id == Producto.id)
+        .filter(
+            CotizacionLinea.cotizacion_id == cotizacion_id,
+            CotizacionLinea.producto_id.isnot(None),
+            CotizacionLinea.valor_neto != Producto.precio_venta,
+        )
+        .first()
+    )
+    if not deviation:
+        return False
+    approved = (
+        db.query(AprobacionMargen)
+        .filter(
+            AprobacionMargen.cotizacion_id == cotizacion_id,
+            AprobacionMargen.estado == "aprobada",
+        )
+        .first()
+    )
+    return approved is None
+
+
+@router.get("/{cotizacion_id}/margin-status")
+def margin_status(
+    cotizacion_id: int,
+    perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
+):
+    _, db = perms
+    cot = db.get(Cotizacion, cotizacion_id)
+    if not cot:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    blocked = check_margin_approval_required(db, cotizacion_id)
+    aprobacion = (
+        db.query(AprobacionMargen)
+        .filter(AprobacionMargen.cotizacion_id == cotizacion_id)
+        .order_by(AprobacionMargen.created_at.desc())
+        .first()
+    )
+    return {
+        "blocked": blocked,
+        "estado": aprobacion.estado if aprobacion else None,
+        "aprobacion_id": aprobacion.id if aprobacion else None,
+    }
 
 
 @router.get("/export/excel")
@@ -290,7 +338,7 @@ def generar_pdf(
     cotizacion_id: int,
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     cot = db.query(Cotizacion).options(
         joinedload(Cotizacion.cliente),
         joinedload(Cotizacion.vendedor),
@@ -298,6 +346,11 @@ def generar_pdf(
     ).filter(Cotizacion.id == cotizacion_id).first()
     if not cot:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    if current_user.role not in ("admin", "subadmin") and check_margin_approval_required(db, cotizacion_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Requiere aprobación de márgenes",
+        )
 
     config = _get_config_dict(db)
     pdf_bytes = generar_pdf_cotizacion(cot, config)
@@ -317,7 +370,7 @@ def enviar_email(
     cotizacion_id: int,
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     cot = db.query(Cotizacion).options(
         joinedload(Cotizacion.cliente),
         joinedload(Cotizacion.vendedor),
@@ -325,6 +378,11 @@ def enviar_email(
     ).filter(Cotizacion.id == cotizacion_id).first()
     if not cot:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    if current_user.role not in ("admin", "subadmin") and check_margin_approval_required(db, cotizacion_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Requiere aprobación de márgenes",
+        )
 
     config = _get_config_dict(db)
     try:
