@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import type { Empresa, EmpresaDeuda } from '../types'
+import type { Empresa, EmpresaDeuda, DeudaBulkItem } from '../types'
 
 const PLAZO_OPTIONS = ['Al contado', '30 Dias', '60 Dias', '90 Dias', 'Especial']
 
@@ -48,6 +48,46 @@ export default function Empresas() {
     queryFn: () => api.get(`/api/empresas/${deudaEmpresa!.id}/deuda`).then(r => r.data),
     enabled: !!deudaEmpresa,
   })
+
+  const { data: deudaBulk = [] } = useQuery<DeudaBulkItem[]>({
+    queryKey: ['empresas-deuda-bulk'],
+    queryFn: () => api.get('/api/empresas/deuda-bulk').then(r => r.data),
+  })
+
+  const deudaMap = new Map<number, DeudaBulkItem>(
+    deudaBulk.map(d => [d.empresa_id, d])
+  )
+
+  const [sortField, setSortField] = useState<'deuda_total' | 'deuda_vencida' | 'nombre'>('deuda_total')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [filterConDeuda, setFilterConDeuda] = useState(false)
+
+  const totalDeuda = deudaBulk.reduce((s, d) => s + Number(d.deuda_total), 0)
+  const totalVencida = deudaBulk.reduce((s, d) => s + Number(d.deuda_vencida), 0)
+  const empresasConDeuda = deudaBulk.filter(d => Number(d.deuda_total) > 0).length
+
+  function toggleSort(field: 'deuda_total' | 'deuda_vencida' | 'nombre') {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir('desc') }
+  }
+
+  const displayEmpresas = [...empresas]
+    .filter(e => !filterConDeuda || (deudaMap.get(e.id)?.deuda_total ?? 0) > 0)
+    .sort((a, b) => {
+      const da = deudaMap.get(a.id)
+      const db2 = deudaMap.get(b.id)
+      if (sortField === 'nombre') {
+        const cmp = a.nombre.localeCompare(b.nombre)
+        return sortDir === 'asc' ? cmp : -cmp
+      }
+      const va = Number(da?.[sortField] ?? 0)
+      const vb = Number(db2?.[sortField] ?? 0)
+      return sortDir === 'asc' ? va - vb : vb - va
+    })
+
+  function fmt(n: number) {
+    return '$' + n.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  }
 
   function abrirCrear() {
     setEditando(null); setForm(EMPTY_FORM); setError(null); setModalOpen(true)
@@ -117,60 +157,146 @@ export default function Empresas() {
         </div>
       </div>
 
-      <input
-        type="text"
-        placeholder="Buscar por nombre o RUT..."
-        value={busqueda}
-        onChange={e => setBusqueda(e.target.value)}
-        className="mb-4 w-full max-w-sm px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-      />
+      {/* Stats bar */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Deuda Total</p>
+          <p className="text-lg font-semibold text-red-500">{fmt(totalDeuda)}</p>
+          <p className="text-xs text-gray-400 mt-0.5">en {empresasConDeuda} empresa{empresasConDeuda !== 1 ? 's' : ''}</p>
+        </div>
+        <div className={`bg-white dark:bg-gray-900 rounded-xl border p-4 ${totalVencida > 0 ? 'border-red-300 dark:border-red-800' : 'border-gray-200 dark:border-gray-800'}`}>
+          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Deuda Vencida</p>
+          <p className={`text-lg font-semibold ${totalVencida > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`}>{fmt(totalVencida)}</p>
+          {totalVencida > 0 && <p className="text-xs text-red-400 mt-0.5">requiere atención</p>}
+        </div>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Empresas con Deuda</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-white">{empresasConDeuda} / {deudaBulk.length}</p>
+        </div>
+      </div>
+
+      {/* Search + filter */}
+      <div className="flex gap-3 mb-4 items-center">
+        <input
+          type="text"
+          placeholder="Buscar por nombre o RUT..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          className="w-full max-w-sm px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+        />
+        <button
+          onClick={() => setFilterConDeuda(f => !f)}
+          className={`px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap ${
+            filterConDeuda
+              ? 'bg-red-50 border-red-300 text-red-700 dark:bg-red-900/20 dark:border-red-700 dark:text-red-400'
+              : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+          }`}
+        >
+          {filterConDeuda ? '✕ Con Deuda' : 'Con Deuda'}
+        </button>
+      </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
             <tr>
-              <th className="text-left px-4 py-3 font-medium">Nombre</th>
+              <th
+                className="text-left px-4 py-3 font-medium cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
+                onClick={() => toggleSort('nombre')}
+              >
+                Nombre {sortField === 'nombre' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
+              </th>
               <th className="text-left px-4 py-3 font-medium">Razón Social</th>
               <th className="text-left px-4 py-3 font-medium">RUT</th>
               <th className="text-left px-4 py-3 font-medium">Forma Pago</th>
               <th className="text-left px-4 py-3 font-medium">Prioridad</th>
               <th className="text-left px-4 py-3 font-medium">Sector</th>
+              <th
+                className="text-right px-4 py-3 font-medium cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
+                onClick={() => toggleSort('deuda_total')}
+              >
+                Deuda {sortField === 'deuda_total' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
+              </th>
+              <th
+                className="text-right px-4 py-3 font-medium cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
+                onClick={() => toggleSort('deuda_vencida')}
+              >
+                Vencida {sortField === 'deuda_vencida' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
+              </th>
+              <th className="text-right px-4 py-3 font-medium">Lím. Crédito</th>
               <th className="text-left px-4 py-3 font-medium" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {empresas.length === 0 && (
+            {displayEmpresas.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-400">Sin empresas registradas</td>
+                <td colSpan={10} className="px-4 py-8 text-center text-gray-400">Sin empresas registradas</td>
               </tr>
             )}
-            {empresas.map(e => (
-              <tr key={e.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{e.nombre}</td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.razon_social ?? '—'}</td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.rut ?? '—'}</td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.forma_pago ?? '—'}</td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.prioridad ?? '—'}</td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.sector ?? '—'}</td>
-                <td className="px-4 py-3">
-                  {eliminandoId === e.id ? (
-                    <span className="inline-flex items-center gap-2 text-xs">
-                      {deleteError
-                        ? <span className="text-red-500">{deleteError}</span>
-                        : <span className="text-gray-600 dark:text-gray-400">¿Eliminar?</span>}
-                      <button onClick={() => eliminar.mutate(e.id)} disabled={eliminar.isPending} className="text-red-600 hover:underline font-medium disabled:opacity-50">Sí</button>
-                      <button onClick={() => { setEliminandoId(null); setDeleteError(null) }} className="text-gray-500 hover:underline">No</button>
-                    </span>
-                  ) : (
-                    <span className="inline-flex gap-3">
-                      <button onClick={() => setDeudaEmpresa(e)} className="text-xs text-emerald-600 hover:underline">Deuda</button>
-                      <button onClick={() => abrirEditar(e)} className="text-xs text-blue-600 hover:underline">Editar</button>
-                      <button onClick={() => { setEliminandoId(e.id); setDeleteError(null) }} className="text-xs text-red-500 hover:underline">Eliminar</button>
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {displayEmpresas.map(e => {
+              const deuda = deudaMap.get(e.id)
+              const deudaTotal = Number(deuda?.deuda_total ?? 0)
+              const deudaVencida = Number(deuda?.deuda_vencida ?? 0)
+              const hasDeuda = deudaTotal > 0
+              const rowCls = hasDeuda
+                ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors'
+                : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors opacity-60'
+              const plazo = deuda?.plazo_credito ?? e.plazo_credito
+              const isNumericPlazo = plazo && plazo !== 'Especial' && plazo !== 'Al contado'
+              return (
+                <tr key={e.id} className={rowCls}>
+                  <td className="px-4 py-3">
+                    <span className="font-medium text-gray-900 dark:text-white">{e.nombre}</span>
+                    {plazo && (
+                      <span className={`ml-2 inline-block px-1.5 py-0.5 rounded text-xs ${
+                        isNumericPlazo
+                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                          : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                      }`}>
+                        {plazo === '30 Dias' ? '30d' : plazo === '60 Dias' ? '60d' : plazo === '90 Dias' ? '90d' : plazo}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.razon_social ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.rut ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.forma_pago ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.prioridad ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.sector ?? '—'}</td>
+                  <td className="px-4 py-3 text-right">
+                    {hasDeuda
+                      ? <span className="font-medium text-red-500">{fmt(deudaTotal)}</span>
+                      : <span className="text-gray-400">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {deudaVencida > 0
+                      ? <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">{fmt(deudaVencida)}</span>
+                      : <span className="text-gray-400">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">
+                    {deuda?.limite_credito != null ? fmt(Number(deuda.limite_credito)) : (e.limite_credito != null ? fmt(Number(e.limite_credito)) : '—')}
+                  </td>
+                  <td className="px-4 py-3">
+                    {eliminandoId === e.id ? (
+                      <span className="inline-flex items-center gap-2 text-xs">
+                        {deleteError
+                          ? <span className="text-red-500">{deleteError}</span>
+                          : <span className="text-gray-600 dark:text-gray-400">¿Eliminar?</span>}
+                        <button onClick={() => eliminar.mutate(e.id)} disabled={eliminar.isPending} className="text-red-600 hover:underline font-medium disabled:opacity-50">Sí</button>
+                        <button onClick={() => { setEliminandoId(null); setDeleteError(null) }} className="text-gray-500 hover:underline">No</button>
+                      </span>
+                    ) : (
+                      <span className="inline-flex gap-3">
+                        {hasDeuda && (
+                          <button onClick={() => setDeudaEmpresa(e)} className="text-xs text-emerald-600 hover:underline">Deuda</button>
+                        )}
+                        <button onClick={() => abrirEditar(e)} className="text-xs text-blue-600 hover:underline">Editar</button>
+                        <button onClick={() => { setEliminandoId(e.id); setDeleteError(null) }} className="text-xs text-red-500 hover:underline">Eliminar</button>
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
