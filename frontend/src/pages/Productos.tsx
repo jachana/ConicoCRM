@@ -231,7 +231,15 @@ export default function Productos() {
                 {editando ? 'Editar producto' : 'Nuevo producto'}
               </h2>
             </div>
-            <form onSubmit={e => { e.preventDefault(); guardar.mutate(form) }} className="px-6 py-4 grid grid-cols-2 gap-4">
+            <form
+              onSubmit={e => {
+                e.preventDefault()
+                setFormDirty(true)
+                if (priceError) { setError(priceError); return }
+                guardar.mutate(form)
+              }}
+              className="px-6 py-4 grid grid-cols-2 gap-4"
+            >
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
                 <input type="text" required value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
@@ -310,7 +318,7 @@ export default function Productos() {
               {error && <p className="col-span-2 text-xs text-red-500">{error}</p>}
               <div className="col-span-2 flex justify-end gap-2 pt-2">
                 <button type="button" onClick={cerrarModal} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Cancelar</button>
-                <button type="submit" disabled={guardar.isPending}
+                <button type="submit" disabled={guardar.isPending || !!priceError}
                   className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors">
                   {guardar.isPending ? 'Guardando...' : 'Guardar'}
                 </button>
