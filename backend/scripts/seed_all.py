@@ -462,6 +462,8 @@ def main():
 
         users = seed_users(db)
         vendedores = [u for u in users if u.role == "vendedor"]
+        if not vendedores:
+            vendedores = users  # fallback: use any available user
 
         empresas = seed_empresas(db)
         productos = seed_productos(db)
