@@ -105,10 +105,21 @@ def accionar_solicitud_margen(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    a = _load(db, aprobacion_id)
+
+    if body.accion == "revocar":
+        if a.vendedor_id != current_user.id and current_user.role not in ("admin", "subadmin"):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos")
+        if a.estado != "aprobada":
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                detail="Solo se pueden revocar solicitudes aprobadas")
+        a.estado = "revocada"
+        db.commit()
+        return _load(db, a.id)
+
     if current_user.role not in ("admin", "subadmin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="Solo administradores pueden aprobar")
-    a = _load(db, aprobacion_id)
+                            detail="Solo administradores pueden aprobar o denegar")
     if a.estado != "pendiente":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail="La solicitud ya fue procesada")
@@ -120,7 +131,7 @@ def accionar_solicitud_margen(
 
     if body.accion != "aprobar":
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                            detail="Acción inválida")
+                            detail="Accion invalida")
 
     cot = (
         db.query(Cotizacion)
@@ -129,7 +140,7 @@ def accionar_solicitud_margen(
         .first()
     )
     if not cot:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotizacion no encontrada")
 
     lineas_data = json.loads(a.lineas_propuestas)
     lineas_by_id = {l.id: l for l in cot.lineas}
@@ -137,13 +148,14 @@ def accionar_solicitud_margen(
     for item in lineas_data:
         linea = lineas_by_id.get(item["linea_id"])
         if not linea:
-            continue  # line deleted after request — skip gracefully
+            continue
         nuevo_vn = Decimal(str(item["valor_neto_propuesto"]))
         linea.valor_neto = nuevo_vn
         linea.total_neto = linea.cantidad * nuevo_vn
         linea.iva = round(linea.total_neto * Decimal("0.19"), 2)
         linea.total = linea.total_neto + linea.iva
         if linea.producto_id and nuevo_vn > 0:
+            from app.models.producto import Producto
             prod = db.get(Producto, linea.producto_id)
             if prod:
                 linea.margen = (nuevo_vn - prod.precio_costo) / nuevo_vn
