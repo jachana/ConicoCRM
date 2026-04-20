@@ -215,8 +215,13 @@ export default function CotizacionDetalle() {
       const pct = parseFloat(pctStr)
       const newMargen = isNaN(pct) ? null : pct / 100
       const updates: Partial<LineaLocal> = { margen: newMargen }
-      if (newMargen !== null && newMargen < 1 && l._costo != null)
-        updates.valor_neto = Math.round(l._costo / (1 - newMargen))
+      const costo = l._costo != null
+        ? l._costo
+        : (l.margen != null && Number(l.margen) < 1 && Number(l.valor_neto) > 0
+            ? Number(l.valor_neto) * (1 - Number(l.margen))
+            : null)
+      if (newMargen !== null && newMargen < 1 && costo != null && costo > 0)
+        updates.valor_neto = Math.round(costo / (1 - newMargen))
       return calcLinea({ ...l, ...updates })
     }))
   }
@@ -535,13 +540,19 @@ export default function CotizacionDetalle() {
                 <td className="px-3 py-3 text-right text-gray-700 dark:text-gray-300 text-sm font-medium">{fmtMoney(linea.total_neto)}</td>
                 <td className="px-3 py-2">
                   <div className="flex items-center justify-end gap-0.5">
-                    <input
-                      type="number" step="0.1"
-                      value={linea.margen !== null ? linea.margen * 100 : ''}
-                      onChange={e => handleMargenChange(idx, e.target.value)}
-                      placeholder="—"
-                      className={`w-16 px-1.5 py-1.5 text-xs border rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 ${linea.margen !== null && linea.margen < 0.15 ? 'border-orange-400 dark:border-orange-500 text-orange-500' : 'border-gray-200 dark:border-gray-700 text-green-600 dark:text-green-400'}`}
-                    />
+                    {isAdmin ? (
+                      <input
+                        type="number" step="0.1"
+                        value={linea.margen !== null ? linea.margen * 100 : ''}
+                        onChange={e => handleMargenChange(idx, e.target.value)}
+                        placeholder="—"
+                        className={`w-16 px-1.5 py-1.5 text-xs border rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 ${linea.margen !== null && Number(linea.margen) < 0.15 ? 'border-orange-400 dark:border-orange-500 text-orange-500' : 'border-gray-200 dark:border-gray-700 text-green-600 dark:text-green-400'}`}
+                      />
+                    ) : (
+                      <span className={`text-xs ${linea.margen !== null && Number(linea.margen) < 0.15 ? 'text-orange-500' : 'text-green-600 dark:text-green-400'}`}>
+                        {linea.margen !== null ? `${(Number(linea.margen) * 100).toFixed(1)}` : '—'}
+                      </span>
+                    )}
                     <span className="text-xs text-gray-400">%</span>
                   </div>
                 </td>
