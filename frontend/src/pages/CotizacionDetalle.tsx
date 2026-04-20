@@ -12,6 +12,7 @@ type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string }
 const ESTADOS = [
   { value: 'no_definido', label: 'Sin definir' },
   { value: 'abierta', label: 'Abierta' },
+  { value: 'aprobada', label: 'Aprobada' },
   { value: 'cerrada_fv', label: 'Cerrada (FV)' },
   { value: 'rechazada', label: 'Rechazada' },
 ]

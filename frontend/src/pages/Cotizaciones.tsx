@@ -9,6 +9,7 @@ import type { Cotizacion } from '../types'
 const ESTADO_LABELS: Record<string, string> = {
   no_definido: 'Sin definir',
   abierta: 'Abierta',
+  aprobada: 'Aprobada',
   cerrada_fv: 'Cerrada (FV)',
   rechazada: 'Rechazada',
 }
@@ -16,6 +17,7 @@ const ESTADO_LABELS: Record<string, string> = {
 const ESTADO_COLORS: Record<string, string> = {
   no_definido: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
   abierta: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  aprobada: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
   cerrada_fv: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
   rechazada: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
 }
