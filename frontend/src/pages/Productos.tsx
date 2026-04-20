@@ -128,6 +128,14 @@ export default function Productos() {
 
   if (isLoading) return <div className="p-6 text-gray-500">Cargando...</div>
 
+  const costo = parseFloat(form.precio_costo)
+  const venta = parseFloat(form.precio_venta)
+  const margenVal = parseFloat(form.margen)
+  const priceError =
+    venta <= costo ? 'El precio de venta debe ser mayor al costo' :
+    margenVal <= 0 ? 'El margen debe ser mayor a 0%' :
+    null
+
   return (
     <div className="p-4 md:p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-4">
@@ -230,19 +238,71 @@ export default function Productos() {
                 <textarea rows={2} value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
-              {[
-                { key: 'precio_costo' as const, label: 'Precio costo ($)' },
-                { key: 'precio_venta' as const, label: 'Precio venta ($)' },
-                { key: 'stock_minimo' as const, label: 'Stock mínimo' },
-                { key: 'stock_actual' as const, label: 'Stock actual' },
-              ].map(({ key, label }) => (
-                <div key={key}>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-                  <input type="number" min="0" step={key.startsWith('precio') ? '0.01' : '1'} value={form[key]}
-                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+              {/* Triangle: Costo */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Precio costo ($)</label>
+                <input
+                  type="number" min="0" step="0.01"
+                  value={form.precio_costo}
+                  onChange={e => handleCostoChange(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              {/* Triangle: Venta */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Precio venta ($)</label>
+                <input
+                  type="number" min="0" step="0.01"
+                  value={form.precio_venta}
+                  onChange={e => handleVentaChange(e.target.value)}
+                  className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${
+                    venta <= costo ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                />
+                {venta <= costo && (
+                  <p className="mt-1 text-xs text-red-500">Debe ser mayor al costo</p>
+                )}
+              </div>
+
+              {/* Triangle: Margen */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Margen (%)</label>
+                <div className="relative">
+                  <input
+                    type="number" min="0" step="0.01"
+                    value={form.margen}
+                    onChange={e => handleMargenChange(e.target.value)}
+                    className={`w-full px-3 py-2 pr-7 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${
+                      margenVal <= 0 ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
                 </div>
-              ))}
+                {margenVal <= 0 && (
+                  <p className="mt-1 text-xs text-red-500">Debe ser mayor a 0%</p>
+                )}
+              </div>
+
+              {/* Stocks */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Stock mínimo</label>
+                <input
+                  type="number" min="0" step="1"
+                  value={form.stock_minimo}
+                  onChange={e => setForm(f => ({ ...f, stock_minimo: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Stock actual</label>
+                <input
+                  type="number" min="0" step="1"
+                  value={form.stock_actual}
+                  onChange={e => setForm(f => ({ ...f, stock_actual: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
               {error && <p className="col-span-2 text-xs text-red-500">{error}</p>}
               <div className="col-span-2 flex justify-end gap-2 pt-2">
                 <button type="button" onClick={cerrarModal} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Cancelar</button>
