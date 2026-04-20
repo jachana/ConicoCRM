@@ -67,3 +67,9 @@ class EmpresaDeudaOut(BaseModel):
     total_pagado: Decimal
     deuda: Decimal
     facturas: list[FacturaResumen]
+
+
+class EmpresaCreditoOut(BaseModel):
+    limite_credito: Decimal | None
+    credito_usado: Decimal | None
+    credito_disponible: Decimal | None
