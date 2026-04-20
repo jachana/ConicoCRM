@@ -1,5 +1,5 @@
 import { openPdf } from '../lib/pdf'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2, FileText, Mail, ArrowLeft, ExternalLink, Receipt } from 'lucide-react'
@@ -7,6 +7,7 @@ import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { NotaVenta, NotaVentaLinea, Cliente, User, Producto, Empresa } from '../types'
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
+import UnsavedChangesModal from '../components/UnsavedChangesModal'
 
 type LineaLocal = Omit<NotaVentaLinea, 'id'> & { id?: number; _key: string }
 
@@ -67,6 +68,35 @@ function fmtMoney(n: number | string | null | undefined) {
   return `$ ${Math.round(Number(n) || 0).toLocaleString('es-CL')}`
 }
 
+function getLineasErrors(lineas: LineaLocal[]): string[] {
+  const errors: string[] = []
+  if (lineas.some(l => l.producto_id === null || l.producto_id === undefined))
+    errors.push('Hay líneas sin producto seleccionado')
+  if (lineas.some(l => l.margen !== null && l.margen !== undefined && Number(l.margen) < 0))
+    errors.push('Hay líneas con margen negativo')
+  return errors
+}
+
+function nvSnapshot(nv: NotaVenta): string {
+  return JSON.stringify({
+    clienteId: nv.cliente_id,
+    vendedorId: nv.vendedor_id ?? '',
+    contacto: nv.contacto ?? '',
+    correo: nv.correo ?? '',
+    fecha: nv.fecha,
+    nota: nv.nota ?? '',
+    empresaId: nv.empresa_id ?? '',
+    lineas: (nv.lineas ?? []).map(l => ({
+      producto_id: l.producto_id ?? null,
+      cantidad: l.cantidad,
+      valor_neto: l.valor_neto,
+      descripcion: l.descripcion ?? '',
+      sku: l.sku ?? null,
+      formato: l.formato ?? null,
+    }))
+  })
+}
+
 export default function NotaVentaDetalle() {
   const { id } = useParams<{ id?: string }>()
   const isNew = !id || id === 'nueva'
@@ -91,6 +121,27 @@ export default function NotaVentaDetalle() {
     credito: CreditoInfo
     aprobacionPayload?: AprobacionPayload
   } | null>(null)
+
+  const [unsavedModal, setUnsavedModal] = useState(false)
+  const [pendingAction, setPendingAction] = useState<'pdf' | 'email' | null>(null)
+  const [modalSaving, setModalSaving] = useState(false)
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
+
+  const lineasErrors = useMemo(() => getLineasErrors(lineas), [lineas])
+
+  const currentSnapshot = useMemo(() => JSON.stringify({
+    clienteId, vendedorId, contacto, correo, fecha, nota, empresaId,
+    lineas: lineas.map(l => ({
+      producto_id: l.producto_id ?? null,
+      cantidad: l.cantidad,
+      valor_neto: l.valor_neto,
+      descripcion: l.descripcion ?? '',
+      sku: l.sku ?? null,
+      formato: l.formato ?? null,
+    }))
+  }), [clienteId, vendedorId, contacto, correo, fecha, nota, empresaId, lineas])
+
+  const isDirty = !isNew && savedSnapshot !== null && currentSnapshot !== savedSnapshot
 
   const [autocompleteIdx, setAutocompleteIdx] = useState<number | null>(null)
   const [autocompleteResults, setAutocompleteResults] = useState<Producto[]>([])
@@ -120,6 +171,7 @@ export default function NotaVentaDetalle() {
           margen: l.margen ?? null,
         }))
       )
+      setSavedSnapshot(nvSnapshot(nv))
     }
   }, [nv])
 
@@ -251,7 +303,7 @@ export default function NotaVentaDetalle() {
     checkCredit(total, doSave, aprobacionPayload)
   }
 
-  async function doSave() {
+  async function doSave(): Promise<boolean> {
     setSaving(true)
     setError('')
     try {
@@ -284,11 +336,52 @@ export default function NotaVentaDetalle() {
       }
       qc.invalidateQueries({ queryKey: ['nota_ventas'] })
       navigate(`/notas-venta/${nvId}`)
+      return true
     } catch (err: any) {
       setError(err?.response?.data?.detail || 'Error al guardar')
+      return false
     } finally {
       setSaving(false)
     }
+  }
+
+  async function handleSaveAndContinue() {
+    setModalSaving(true)
+    const ok = await doSave()
+    setModalSaving(false)
+    if (ok) {
+      setUnsavedModal(false)
+      if (pendingAction === 'pdf') openPdf(`/api/nota_ventas/${id}/pdf`)
+      else if (pendingAction === 'email') emailMut.mutate()
+      setPendingAction(null)
+    }
+  }
+
+  function handleDiscardAndContinue() {
+    if (nv) {
+      setClienteId(nv.cliente_id)
+      setVendedorId(nv.vendedor_id ?? '')
+      setContacto(nv.contacto ?? '')
+      setCorreo(nv.correo ?? '')
+      setFecha(nv.fecha)
+      setNota(nv.nota ?? '')
+      setEmpresaId(nv.empresa_id ?? '')
+      setLineas(
+        (nv.lineas ?? []).map((l, i) => ({
+          ...l,
+          _key: `${l.id ?? i}`,
+          producto_id: l.producto_id ?? null,
+          sku: l.sku ?? null,
+          formato: l.formato ?? null,
+          margen: l.margen ?? null,
+        }))
+      )
+      setSavedSnapshot(nvSnapshot(nv))
+    }
+    setUnsavedModal(false)
+    if (pendingAction === 'pdf') openPdf(`/api/nota_ventas/${id}/pdf`)
+    else if (pendingAction === 'email') emailMut.mutate()
+    setPendingAction(null)
   }
 
   const estadoMut = useMutation({
@@ -364,16 +457,27 @@ export default function NotaVentaDetalle() {
           {!isNew && (
             <>
               <button
-                onClick={() => openPdf(`/api/nota_ventas/${id}/pdf`)}
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                onClick={() => {
+                  if (lineasErrors.length > 0) return
+                  if (isDirty) { setPendingAction('pdf'); setUnsavedModal(true); return }
+                  openPdf(`/api/nota_ventas/${id}/pdf`)
+                }}
+                disabled={lineasErrors.length > 0}
+                title={lineasErrors.length > 0 ? lineasErrors.join(' | ') : undefined}
+                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FileText size={15} />
                 PDF
               </button>
               <button
-                onClick={() => emailMut.mutate()}
-                disabled={emailMut.isPending}
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                onClick={() => {
+                  if (lineasErrors.length > 0) return
+                  if (isDirty) { setPendingAction('email'); setUnsavedModal(true); return }
+                  emailMut.mutate()
+                }}
+                disabled={emailMut.isPending || lineasErrors.length > 0}
+                title={lineasErrors.length > 0 ? lineasErrors.join(' | ') : undefined}
+                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Mail size={15} />
                 {emailMut.isPending ? 'Enviando...' : 'Email'}
@@ -399,7 +503,8 @@ export default function NotaVentaDetalle() {
           )}
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || lineasErrors.length > 0}
+            title={lineasErrors.length > 0 ? lineasErrors.join(' | ') : undefined}
             className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
           >
             {saving ? 'Guardando...' : 'Guardar'}
@@ -597,6 +702,15 @@ export default function NotaVentaDetalle() {
           onCancel={() => setCreditModal(null)}
         />
       )}
+
+      <UnsavedChangesModal
+        open={unsavedModal}
+        saving={modalSaving}
+        onSaveAndContinue={handleSaveAndContinue}
+        onDiscardAndContinue={handleDiscardAndContinue}
+        onCancel={() => { setUnsavedModal(false); setPendingAction(null) }}
+        docType="nv"
+      />
     </div>
   )
 }
