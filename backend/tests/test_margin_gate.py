@@ -86,3 +86,72 @@ def test_margin_status_approved(client, admin_token):
     assert data["blocked"] is False
     assert data["estado"] == "aprobada"
     assert data["aprobacion_id"] == aprobacion_id
+
+
+# ── PDF gate ──────────────────────────────────────────────────────────────────
+
+def test_pdf_blocked_when_deviation(client, admin_token, vendedor_token):
+    """Non-admin with modified price → PDF 403."""
+    prod = _make_producto(client, admin_token, precio_venta=1000)
+    cid = _make_cliente(client, admin_token)
+    cot = _make_cotizacion(client, admin_token, cid, prod["id"], valor_neto=800)
+    r = client.get(f"/api/cotizaciones/{cot['id']}/pdf",
+                   headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert r.status_code == 403
+    assert "margen" in r.json()["detail"].lower()
+
+
+def test_pdf_allowed_at_catalog_price(client, admin_token, vendedor_token):
+    """Catalog price → PDF 200."""
+    prod = _make_producto(client, admin_token, precio_venta=1000)
+    cid = _make_cliente(client, admin_token)
+    cot = _make_cotizacion(client, admin_token, cid, prod["id"], valor_neto=1000)
+    r = client.get(f"/api/cotizaciones/{cot['id']}/pdf",
+                   headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert r.status_code == 200
+
+
+def test_pdf_allowed_after_approval(client, admin_token, vendedor_token):
+    """Approved aprobacion → PDF 200."""
+    prod = _make_producto(client, admin_token, precio_venta=1000)
+    cid = _make_cliente(client, admin_token)
+    cot = _make_cotizacion(client, admin_token, cid, prod["id"], valor_neto=800)
+    linea_id = cot["lineas"][0]["id"]
+    _approve(client, admin_token, cot["id"], linea_id, 800)
+    r = client.get(f"/api/cotizaciones/{cot['id']}/pdf",
+                   headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert r.status_code == 200
+
+
+def test_pdf_admin_bypasses_gate(client, admin_token):
+    """Admin can always generate PDF regardless of deviations."""
+    prod = _make_producto(client, admin_token, precio_venta=1000)
+    cid = _make_cliente(client, admin_token)
+    cot = _make_cotizacion(client, admin_token, cid, prod["id"], valor_neto=800)
+    r = client.get(f"/api/cotizaciones/{cot['id']}/pdf",
+                   headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+
+
+# ── Email gate ────────────────────────────────────────────────────────────────
+
+def test_email_blocked_when_deviation(client, admin_token, vendedor_token):
+    """Non-admin with modified price → email 403."""
+    prod = _make_producto(client, admin_token, precio_venta=1000)
+    cid = _make_cliente(client, admin_token)
+    cot = _make_cotizacion(client, admin_token, cid, prod["id"], valor_neto=800)
+    r = client.post(f"/api/cotizaciones/{cot['id']}/email",
+                    headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert r.status_code == 403
+    assert "margen" in r.json()["detail"].lower()
+
+
+def test_email_admin_bypasses_gate(client, admin_token):
+    """Admin can always send email regardless of deviations."""
+    prod = _make_producto(client, admin_token, precio_venta=1000)
+    cid = _make_cliente(client, admin_token)
+    cot = _make_cotizacion(client, admin_token, cid, prod["id"], valor_neto=800)
+    r = client.post(f"/api/cotizaciones/{cot['id']}/email",
+                    headers={"Authorization": f"Bearer {admin_token}"})
+    # 503 = email not configured in test env — that's fine, gate was passed
+    assert r.status_code in (200, 503)

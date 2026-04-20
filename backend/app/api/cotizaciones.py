@@ -338,7 +338,7 @@ def generar_pdf(
     cotizacion_id: int,
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     cot = db.query(Cotizacion).options(
         joinedload(Cotizacion.cliente),
         joinedload(Cotizacion.vendedor),
@@ -346,6 +346,11 @@ def generar_pdf(
     ).filter(Cotizacion.id == cotizacion_id).first()
     if not cot:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    if current_user.role not in ("admin", "subadmin") and check_margin_approval_required(db, cotizacion_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Requiere aprobacion de margen",
+        )
 
     config = _get_config_dict(db)
     pdf_bytes = generar_pdf_cotizacion(cot, config)
@@ -365,7 +370,7 @@ def enviar_email(
     cotizacion_id: int,
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     cot = db.query(Cotizacion).options(
         joinedload(Cotizacion.cliente),
         joinedload(Cotizacion.vendedor),
@@ -373,6 +378,11 @@ def enviar_email(
     ).filter(Cotizacion.id == cotizacion_id).first()
     if not cot:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    if current_user.role not in ("admin", "subadmin") and check_margin_approval_required(db, cotizacion_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Requiere aprobacion de margen",
+        )
 
     config = _get_config_dict(db)
     try:
