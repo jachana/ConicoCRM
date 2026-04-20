@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import type { Empresa, EmpresaDeuda, DeudaBulkItem } from '../types'
@@ -54,8 +54,9 @@ export default function Empresas() {
     queryFn: () => api.get('/api/empresas/deuda-bulk').then(r => r.data),
   })
 
-  const deudaMap = new Map<number, DeudaBulkItem>(
-    deudaBulk.map(d => [d.empresa_id, d])
+  const deudaMap = useMemo(
+    () => new Map<number, DeudaBulkItem>(deudaBulk.map(d => [d.empresa_id, d])),
+    [deudaBulk]
   )
 
   const [sortField, setSortField] = useState<'deuda_total' | 'deuda_vencida' | 'nombre'>('deuda_total')
@@ -121,13 +122,22 @@ export default function Empresas() {
       if (editando) return api.patch(`/api/empresas/${editando.id}`, payload).then(r => r.data)
       return api.post('/api/empresas/', payload).then(r => r.data)
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['empresas'] }); cerrarModal() },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['empresas'] })
+      qc.invalidateQueries({ queryKey: ['empresas-deuda-bulk'] })
+      cerrarModal()
+    },
     onError: (e: any) => setError(e?.response?.data?.detail ?? 'Error al guardar'),
   })
 
   const eliminar = useMutation({
     mutationFn: (id: number) => api.delete(`/api/empresas/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['empresas'] }); setEliminandoId(null); setDeleteError(null) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['empresas'] })
+      qc.invalidateQueries({ queryKey: ['empresas-deuda-bulk'] })
+      setEliminandoId(null)
+      setDeleteError(null)
+    },
     onError: (e: any) => setDeleteError(e?.response?.data?.detail ?? 'Error al eliminar'),
   })
 
