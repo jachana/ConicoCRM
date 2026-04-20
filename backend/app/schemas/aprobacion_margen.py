@@ -2,6 +2,8 @@ import json
 from datetime import datetime
 from pydantic import BaseModel, field_validator
 
+from app.schemas.aprobacion import VendedorMinOut  # noqa: F401
+
 
 class LineaPropuestaItem(BaseModel):
     linea_id: int
@@ -20,13 +22,6 @@ class AprobacionMargenCreate(BaseModel):
 
 class AprobacionMargenAccion(BaseModel):
     accion: str  # "aprobar" | "denegar"
-
-
-class VendedorMinOut(BaseModel):
-    id: int
-    name: str
-    email: str
-    model_config = {"from_attributes": True}
 
 
 class AprobacionMargenOut(BaseModel):
