@@ -14,3 +14,4 @@ from app.models.factura import Factura, FacturaLinea  # noqa: F401
 from app.models.movimiento_inventario import MovimientoInventario  # noqa: F401
 from app.models.pago import Pago  # noqa: F401
 from app.models.aprobacion_credito import AprobacionCredito  # noqa: F401
+from app.models.aprobacion_margen import AprobacionMargen  # noqa: F401
