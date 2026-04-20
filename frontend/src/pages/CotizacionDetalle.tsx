@@ -81,13 +81,20 @@ export default function CotizacionDetalle() {
     credito: CreditoInfo
     onConfirm?: () => void
     aprobacionPayload?: AprobacionPayload
-    onApproved?: (nvId: number) => void
-    onDenied?: () => void
   } | null>(null)
 
   const { data: cotizacion } = useQuery<Cotizacion>({
     queryKey: ['cotizacion', id],
     queryFn: () => api.get(`/api/cotizaciones/${id}`).then(r => r.data),
+    enabled: !isNew,
+  })
+
+  const { data: aprobacionCredito, refetch: refetchAprobacionCredito } = useQuery<{
+    id: number; estado: string; nv_id: number | null
+  } | null>({
+    queryKey: ['aprobacion-credito', id],
+    queryFn: () =>
+      api.get(`/api/aprobaciones/?cotizacion_id=${id}`).then(r => r.data[0] ?? null),
     enabled: !isNew,
   })
 
@@ -270,8 +277,6 @@ export default function CotizacionDetalle() {
             mode: 'request',
             credito,
             aprobacionPayload,
-            onApproved: (nvId) => { setCreditModal(null); navigate(`/notas-venta/${nvId}`) },
-            onDenied: () => { setCreditModal(null); setError('Solicitud denegada por el administrador.') },
           })
         }
       } else {
@@ -401,6 +406,30 @@ export default function CotizacionDetalle() {
       </div>
 
       {error && <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">{error}</div>}
+
+      {!isNew && aprobacionCredito && (
+        <div className={`mb-4 px-4 py-3 rounded-lg text-sm flex items-center justify-between gap-3 ${
+          aprobacionCredito.estado === 'pendiente'
+            ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
+            : aprobacionCredito.estado === 'aprobada'
+            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300'
+            : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400'
+        }`}>
+          <span>
+            {aprobacionCredito.estado === 'pendiente' && 'Solicitud de crédito enviada — pendiente de aprobación'}
+            {aprobacionCredito.estado === 'aprobada' && 'Solicitud de crédito aprobada'}
+            {aprobacionCredito.estado === 'denegada' && 'Solicitud de crédito denegada'}
+          </span>
+          {aprobacionCredito.estado === 'aprobada' && aprobacionCredito.nv_id && (
+            <button
+              onClick={() => navigate(`/notas-venta/${aprobacionCredito.nv_id}`)}
+              className="text-xs font-medium underline whitespace-nowrap"
+            >
+              Ver nota de venta →
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 mb-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -605,8 +634,7 @@ export default function CotizacionDetalle() {
           saleTotal={total}
           onConfirm={creditModal.onConfirm}
           aprobacionPayload={creditModal.aprobacionPayload}
-          onApproved={creditModal.onApproved}
-          onDenied={creditModal.onDenied}
+          onSubmitted={() => { setCreditModal(null); refetchAprobacionCredito() }}
           onCancel={() => setCreditModal(null)}
         />
       )}
