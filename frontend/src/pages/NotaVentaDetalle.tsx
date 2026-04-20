@@ -238,7 +238,7 @@ export default function NotaVentaDetalle() {
       valor_neto: l.valor_neto,
     }))
     const aprobacionPayload: AprobacionPayload = {
-      empresa_id: Number(empresaId) || 0,
+      empresa_id: Number(empresaId),
       total,
       origen: 'directa',
       nv_payload: {

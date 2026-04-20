@@ -21,14 +21,14 @@ interface AprobacionOut {
 
 export default function Aprobaciones() {
   const user = useAuthStore(s => s.user)
+  const isAdminUser = !!user && (user.role === 'admin' || user.role === 'subadmin')
   const queryClient = useQueryClient()
   const [actingId, setActingId] = useState<number | null>(null)
-
-  if (!user || user.role === 'vendedor') return <Navigate to="/" replace />
 
   const { data: aprobaciones = [], isLoading } = useQuery<AprobacionOut[]>({
     queryKey: ['aprobaciones-pendientes'],
     queryFn: () => api.get('/api/aprobaciones/?estado=pendiente').then(r => r.data),
+    enabled: isAdminUser,
   })
 
   const mutation = useMutation({
@@ -48,6 +48,8 @@ export default function Aprobaciones() {
 
   const formatTotal = (n: number) => `$ ${Math.round(n).toLocaleString('es-CL')}`
   const formatFecha = (s: string) => s.split('T')[0]
+
+  if (!isAdminUser) return <Navigate to="/" replace />
 
   return (
     <div className="p-4 md:p-6 max-w-6xl">
