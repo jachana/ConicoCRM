@@ -21,10 +21,10 @@ def list_users(db: Session = Depends(get_db), _: User = Depends(get_current_user
 
 @router.post("", response_model=UserOut, status_code=201)
 def create_user(body: UserCreate, db: Session = Depends(get_db), _: User = Depends(require_admin)):
-    if db.query(User).filter_by(email=body.email).first():
+    if db.query(User).filter_by(email=body.email.lower().strip()).first():
         raise HTTPException(status_code=409, detail="Email already registered")
     user = User(
-        email=body.email, name=body.name,
+        email=body.email.lower().strip(), name=body.name,
         hashed_password=get_password_hash(body.password), role=body.role,
     )
     db.add(user)
