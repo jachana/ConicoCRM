@@ -408,86 +408,79 @@ export default function CotizacionDetalle() {
       </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto mb-4">
-        <table className="w-full text-sm min-w-[900px]">
+        <table className="w-full text-sm min-w-[640px]">
           <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
             <tr>
-              <th className="px-3 py-3 font-medium text-center w-10">Nº</th>
-              <th className="px-3 py-3 font-medium w-24">SKU</th>
-              <th className="px-3 py-3 font-medium">Descripción</th>
-              <th className="px-3 py-3 font-medium w-28">Formato</th>
+              <th className="px-3 py-3 font-medium text-center w-8">#</th>
+              <th className="px-3 py-3 font-medium">Producto</th>
               <th className="px-3 py-3 font-medium text-right w-20">Cant.</th>
-              <th className="px-3 py-3 font-medium text-right w-28">Valor Neto</th>
-              <th className="px-3 py-3 font-medium text-right w-28">Total Neto</th>
-              <th className="px-3 py-3 font-medium text-right w-24">IVA</th>
-              <th className="px-3 py-3 font-medium text-right w-28">Total</th>
+              <th className="px-3 py-3 font-medium text-right w-32">Precio Unit.</th>
+              <th className="px-3 py-3 font-medium text-right w-32">Total Neto</th>
               <th className="px-3 py-3 font-medium text-right w-20">Margen</th>
-              <th className="px-3 py-3 w-10"></th>
+              <th className="px-3 py-3 w-8"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {lineas.map((linea, idx) => (
-              <tr key={linea._key}>
-                <td className="px-3 py-2 text-center text-gray-500 dark:text-gray-400">{idx + 1}</td>
-                <td className="px-3 py-2">
-                  <input type="text" value={linea.sku ?? ''} onChange={e => updateLinea(idx, { sku: e.target.value || null })}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="SKU" />
-                </td>
+              <tr key={linea._key} className="align-top">
+                <td className="px-3 py-3 text-center text-gray-400 text-xs">{idx + 1}</td>
                 <td className="px-3 py-2 relative">
                   <input type="text" value={linea.descripcion}
                     onChange={e => handleDescripcionChange(idx, e.target.value)}
                     onFocus={() => handleDescripcionFocus(idx, linea.descripcion)}
                     onBlur={() => setTimeout(() => { setAutocompleteIdx(null); setAutocompleteResults([]) }, 150)}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="Buscar en catálogo..." />
+                  {linea.producto_id && (
+                    <div className="mt-1 flex flex-wrap gap-x-3 text-[11px] text-gray-400 dark:text-gray-500 px-1">
+                      {linea.sku && <span>SKU: {linea.sku}</span>}
+                      {linea.formato && <span>{linea.formato}</span>}
+                      {linea._stock != null && (
+                        <span className={linea.cantidad > linea._stock ? 'text-orange-500' : ''}>
+                          Stock: {linea._stock}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {autocompleteIdx === idx && autocompleteResults.length > 0 && (
-                    <div className="absolute z-20 left-3 right-3 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                      {autocompleteResults.slice(0, 8).map(p => (
+                    <div className="absolute z-20 left-3 right-3 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden">
+                      {autocompleteResults.map(p => (
                         <button key={p.id} type="button" onMouseDown={() => selectProducto(idx, p)}
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
-                          <div className="font-medium text-gray-900 dark:text-white">{p.nombre}</div>
-                          <div className="text-gray-500">{p.sku ? `SKU: ${p.sku}` : ''}{p.formato ? ` · ${p.formato}` : ''} · $ {p.precio_venta.toLocaleString('es-CL')}</div>
+                          className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{p.nombre}</div>
+                          <div className="flex gap-3 mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                            {p.sku && <span>SKU: {p.sku}</span>}
+                            {p.formato && <span>{p.formato}</span>}
+                            <span className="ml-auto font-medium text-gray-700 dark:text-gray-300">{fmtMoney(p.precio_venta)}</span>
+                            <span className={p.stock_actual > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}>
+                              Stock: {p.stock_actual}
+                            </span>
+                          </div>
                         </button>
                       ))}
                     </div>
                   )}
                 </td>
                 <td className="px-3 py-2">
-                  <input type="text" value={linea.formato ?? ''} onChange={e => updateLinea(idx, { formato: e.target.value || null })}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="Formato" />
+                  <input type="number" min="1" value={linea.cantidad}
+                    onChange={e => updateLinea(idx, { cantidad: Math.max(1, parseInt(e.target.value) || 1) })}
+                    className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right ${linea._stock != null && linea.cantidad > linea._stock ? 'border-orange-400 dark:border-orange-500' : 'border-gray-200 dark:border-gray-700'}`} />
                 </td>
-                <td className="px-3 py-2">
-                  <div className="relative">
-                    <input type="number" min="1" value={linea.cantidad}
-                      onChange={e => updateLinea(idx, { cantidad: Math.max(1, parseInt(e.target.value) || 1) })}
-                      className={`w-full px-2 py-1 text-xs border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right ${linea._stock != null && linea.cantidad > linea._stock ? 'border-orange-400 dark:border-orange-500' : 'border-gray-200 dark:border-gray-700'}`} />
-                    {linea._stock != null && linea.cantidad > linea._stock && (
-                      <span className="absolute -top-5 right-0 text-[10px] text-orange-500 whitespace-nowrap">Stock: {linea._stock}</span>
-                    )}
-                  </div>
+                <td className="px-3 py-2 text-right text-gray-900 dark:text-white text-sm font-medium">
+                  {fmtMoney(linea.valor_neto)}
                 </td>
-                <td className="px-3 py-2">
-                  <input type="number" min="0" value={linea.valor_neto}
-                    onChange={e => updateLinea(idx, { valor_neto: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
-                </td>
-                <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300 text-xs font-medium">{fmtMoney(linea.total_neto)}</td>
-                <td className="px-3 py-2 text-right text-gray-500 dark:text-gray-400 text-xs">{fmtMoney(linea.iva)}</td>
-                <td className="px-3 py-2 text-right text-gray-900 dark:text-white text-xs font-medium">{fmtMoney(linea.total)}</td>
-                <td className="px-3 py-2 text-right text-xs">
+                <td className="px-3 py-3 text-right text-gray-700 dark:text-gray-300 text-sm font-medium">{fmtMoney(linea.total_neto)}</td>
+                <td className="px-3 py-3 text-right text-xs">
                   <div className="flex items-center justify-end gap-1">
                     {linea.margen !== null
                       ? <span className={linea.margen >= 0.15 ? 'text-green-600 dark:text-green-400' : 'text-orange-500'}>{(linea.margen * 100).toFixed(1)}%</span>
                       : <span className="text-gray-400">—</span>}
                     {isAdmin && (
-                      <button
-                        type="button"
+                      <button type="button"
                         onClick={() => { setMarginOverrideIdx(idx); setMarginOverrideInput(linea.margen !== null ? (linea.margen * 100).toFixed(1) : '') }}
-                        className="ml-1 p-0.5 text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
-                        title="Forzar margen"
-                      >
-                        <Pencil size={11} />
+                        className="p-0.5 text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                        title="Forzar margen">
+                        <Pencil size={10} />
                       </button>
                     )}
                   </div>
