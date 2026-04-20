@@ -1,3 +1,4 @@
+import React from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Users, Package, ShoppingCart,
@@ -8,6 +9,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useTheme } from './ThemeProvider'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
+import type { Module, Permissions } from '../../types'
 
 interface SidebarProps {
   collapsed: boolean
@@ -15,20 +17,20 @@ interface SidebarProps {
   onClose?: () => void
 }
 
-const NAV = [
-  { to: '/',               icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/cotizaciones',   icon: FileText,        label: 'Cotizaciones' },
-  { to: '/clientes',       icon: Users,           label: 'Clientes' },
-  { to: '/empresas',       icon: Building2,       label: 'Empresas' },
-  { to: '/catalogo',       icon: Package,         label: 'Catálogo' },
-  { to: '/notas-venta',    icon: ShoppingCart,    label: 'Notas de Venta' },
-  { to: '/facturas',       icon: Receipt,         label: 'Facturas' },
+const NAV: { to: string; icon: React.ElementType; label: string; module?: Module }[] = [
+  { to: '/',               icon: LayoutDashboard, label: 'Dashboard',         module: 'dashboard' },
+  { to: '/cotizaciones',   icon: FileText,        label: 'Cotizaciones',      module: 'cotizaciones' },
+  { to: '/clientes',       icon: Users,           label: 'Clientes',          module: 'clientes' },
+  { to: '/empresas',       icon: Building2,       label: 'Empresas',          module: 'empresas' },
+  { to: '/catalogo',       icon: Package,         label: 'Catálogo',          module: 'catalogo' },
+  { to: '/notas-venta',    icon: ShoppingCart,    label: 'Notas de Venta',    module: 'nota_venta' },
+  { to: '/facturas',       icon: Receipt,         label: 'Facturas',          module: 'facturas' },
   { to: '/pagos',          icon: CreditCard,      label: 'Pagos' },
-  { to: '/inventario',     icon: Warehouse,       label: 'Inventario' },
-  { to: '/ordenes-compra', icon: ShoppingCart,    label: 'Órdenes de Compra' },
-  { to: '/proveedores',    icon: Truck,           label: 'Proveedores' },
-  { to: '/rrhh',           icon: UserCog,         label: 'RRHH',     adminOnly: true },
-  { to: '/usuarios',       icon: Users,           label: 'Usuarios', adminOnly: true },
+  { to: '/inventario',     icon: Warehouse,       label: 'Inventario',        module: 'inventario' },
+  { to: '/ordenes-compra', icon: ShoppingCart,    label: 'Órdenes de Compra', module: 'ordenes_compra' },
+  { to: '/proveedores',    icon: Truck,           label: 'Proveedores',       module: 'proveedores' },
+  { to: '/rrhh',           icon: UserCog,         label: 'RRHH',              module: 'rrhh' },
+  { to: '/usuarios',       icon: Users,           label: 'Usuarios',          module: 'usuarios' },
 ]
 
 export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) {
@@ -45,6 +47,14 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
   const stockBajoCount = stockBajo.length
 
   const isAdminUser = !!user && (user.role === 'admin' || user.role === 'subadmin')
+
+  const { data: myPermissions } = useQuery<Permissions>({
+    queryKey: ['my-permissions'],
+    queryFn: () => api.get('/api/users/me/permissions').then(r => r.data),
+    enabled: !!user,
+    staleTime: 5 * 60_000,
+  })
+
   const { data: aprobacionesPendientes = [] } = useQuery<{ id: number }[]>({
     queryKey: ['aprobaciones-pendientes'],
     queryFn: () => api.get('/api/aprobaciones/?estado=pendiente').then(r => r.data),
@@ -84,7 +94,7 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
 
       {/* Nav links */}
       <nav className="flex-1 overflow-y-auto py-2 space-y-0.5">
-        {NAV.filter(item => !item.adminOnly || isAdminUser).map(({ to, icon: Icon, label }) => {
+        {NAV.filter(item => !item.module || myPermissions?.[item.module]?.view !== false).map(({ to, icon: Icon, label }) => {
           const badge = to === '/inventario' ? stockBajoCount : 0
           return (
             <NavLink

@@ -49,6 +49,10 @@ def update_user(user_id: int, body: UserUpdate, db: Session = Depends(get_db), _
     db.refresh(user)
     return user
 
+@router.get("/me/permissions")
+def get_my_permissions(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return get_user_permissions(db, current_user)
+
 @router.get("/{user_id}/permissions")
 def get_permissions(user_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)):
     user = db.get(User, user_id)
