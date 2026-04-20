@@ -4,10 +4,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 const EMPTY_FORM = {
     nombre: '', descripcion: '', precio_costo: '0', precio_venta: '0',
-    stock_minimo: '0', stock_actual: '0', proveedor_id: '',
+    margen: '0', stock_minimo: '0', stock_actual: '0', proveedor_id: '',
 };
 function formatPrecio(n) {
     return `$${Math.round(n)}`;
+}
+function calcMargen(costo, venta) {
+    const c = parseFloat(costo);
+    const v = parseFloat(venta);
+    if (!v || v <= 0)
+        return '0';
+    const m = ((v - c) / v) * 100;
+    return isNaN(m) ? '0' : m.toFixed(2);
 }
 export default function Productos() {
     const qc = useQueryClient();
@@ -30,11 +38,14 @@ export default function Productos() {
     }
     function abrirEditar(p) {
         setEditando(p);
+        const costo = String(p.precio_costo);
+        const venta = String(p.precio_venta);
         setForm({
             nombre: p.nombre,
             descripcion: p.descripcion ?? '',
-            precio_costo: String(p.precio_costo),
-            precio_venta: String(p.precio_venta),
+            precio_costo: costo,
+            precio_venta: venta,
+            margen: calcMargen(costo, venta),
             stock_minimo: String(p.stock_minimo),
             stock_actual: String(p.stock_actual),
             proveedor_id: p.proveedor_id ? String(p.proveedor_id) : '',

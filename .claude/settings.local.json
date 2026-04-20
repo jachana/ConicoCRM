@@ -49,7 +49,21 @@
       "Bash(sed -i 's/s + l\\\\.iva/s + \\(Number\\(l.iva\\) || 0\\)/g' NotaVentaDetalle.tsx FacturaDetalle.tsx OrdenCompraDetalle.tsx)",
       "Bash(sed -i 's/s + l\\\\.total\\\\b/s + \\(Number\\(l.total\\) || 0\\)/g' NotaVentaDetalle.tsx FacturaDetalle.tsx OrdenCompraDetalle.tsx)",
       "Bash(sed -i 's/s + l\\\\.total_neto/s + \\(Number\\(l.total_neto\\) || 0\\)/g' CotizacionDetalle.tsx)",
-      "Bash(DATABASE_URL=sqlite:///./test.db SECRET_KEY=dev python -m alembic upgrade head)"
+      "Bash(DATABASE_URL=sqlite:///./test.db SECRET_KEY=dev python -m alembic upgrade head)",
+      "Bash(grep -E \"\\\\.ts$\")",
+      "Bash(DATABASE_URL=sqlite:///./test.db SECRET_KEY=dev python -c \"from app.api.empresas import router; print\\('OK'\\)\")",
+      "Bash(xargs grep *)",
+      "Bash(timeout 10 uvicorn app.main:app --reload)",
+      "Bash(node -c frontend/src/components/CreditWarningModal.tsx)",
+      "Bash(cd C:\\\\\\\\Otros\\\\\\\\Conico\\\\\\\\backend)",
+      "Bash(alembic upgrade *)",
+      "Bash(docker compose *)",
+      "Bash(docker-compose ps *)",
+      "Bash(git -C \"C:/Otros/Conico/backend\" add app/api/aprobaciones.py)",
+      "Bash(git -C \"C:/Otros/Conico/backend\" commit -m \"feat: add aprobaciones API router\")",
+      "Bash(git *)",
+      "Bash(cd C:\\\\\\\\Otros\\\\\\\\Conico\\\\\\\\frontend)",
+      "Bash(npm list *)"
     ]
   }
 }
