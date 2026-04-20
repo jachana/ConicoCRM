@@ -138,6 +138,7 @@ export default function Productos() {
   const priceError =
     venta <= costo ? 'El precio de venta debe ser mayor al costo' :
     margenVal <= 0 ? 'El margen debe ser mayor a 0%' :
+    margenVal >= 100 ? 'El margen no puede ser 100% o más' :
     null
 
   return (
@@ -286,13 +287,15 @@ export default function Productos() {
                     value={form.margen}
                     onChange={e => handleMargenChange(e.target.value)}
                     className={`w-full px-3 py-2 pr-7 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${
-                      formDirty && margenVal <= 0 ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      formDirty && (margenVal <= 0 || margenVal >= 100) ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                   />
                   <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
                 </div>
-                {formDirty && margenVal <= 0 && (
-                  <p className="mt-1 text-xs text-red-500">Debe ser mayor a 0%</p>
+                {formDirty && (margenVal <= 0 || margenVal >= 100) && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {margenVal <= 0 ? 'Debe ser mayor a 0%' : 'No puede ser 100% o más'}
+                  </p>
                 )}
               </div>
 
