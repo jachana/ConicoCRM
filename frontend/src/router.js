@@ -1,5 +1,6 @@
 import { jsx as _jsx, Fragment as _Fragment } from "react/jsx-runtime";
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+import RouteError from './pages/RouteError';
 import Login from './pages/Login';
 import Users from './pages/Users';
 import Empresas from './pages/Empresas';
@@ -26,10 +27,11 @@ function RequireAuth({ children }) {
     return _jsx(_Fragment, { children: children });
 }
 export const router = createBrowserRouter([
-    { path: '/login', element: _jsx(Login, {}) },
+    { path: '/login', element: _jsx(Login, {}), errorElement: _jsx(RouteError, {}) },
     {
         path: '/',
         element: _jsx(RequireAuth, { children: _jsx(AppLayout, {}) }),
+        errorElement: _jsx(RouteError, {}),
         children: [
             { index: true, element: _jsx(Dashboard, {}) },
             { path: 'usuarios', element: _jsx(Users, {}) },

@@ -53,7 +53,7 @@ export default function Empresas() {
     });
     if (isLoading)
         return _jsx("div", { className: "p-6 text-gray-500", children: "Cargando..." });
-    return (_jsxs("div", { className: "p-6 max-w-6xl", children: [_jsxs("div", { className: "flex items-center justify-between mb-4", children: [_jsx("h1", { className: "text-xl font-semibold text-gray-900 dark:text-white", children: "Empresas" }), _jsxs("div", { className: "flex gap-2", children: [_jsx("button", { onClick: () => api.get('/api/empresas/export/excel', { responseType: 'blob' }).then(r => {
+    return (_jsxs("div", { className: "p-4 md:p-6 max-w-6xl", children: [_jsxs("div", { className: "flex items-center justify-between mb-4", children: [_jsx("h1", { className: "text-xl font-semibold text-gray-900 dark:text-white", children: "Empresas" }), _jsxs("div", { className: "flex gap-2", children: [_jsx("button", { onClick: () => api.get('/api/empresas/export/excel', { responseType: 'blob' }).then(r => {
                                     const url = URL.createObjectURL(r.data);
                                     const a = document.createElement('a');
                                     a.href = url;

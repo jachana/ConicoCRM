@@ -43,7 +43,12 @@
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('exports','none'\\), indent=2\\)\\)\")",
       "Bash(python3)",
       "Bash(file data_seed/*.xlsx)",
-      "Bash(grep -E \"\\\\.xlsx$\")"
+      "Bash(grep -E \"\\\\.xlsx$\")",
+      "Bash(sed -i 's/function fmtMoney\\(n: number\\) {/function fmtMoney\\(n: number | string | null | undefined\\) {/' NotaVentaDetalle.tsx FacturaDetalle.tsx OrdenCompraDetalle.tsx)",
+      "Bash(sed -i 's/s + l\\\\.total_neto/s + \\(Number\\(l.total_neto\\) || 0\\)/g' NotaVentaDetalle.tsx FacturaDetalle.tsx OrdenCompraDetalle.tsx)",
+      "Bash(sed -i 's/s + l\\\\.iva/s + \\(Number\\(l.iva\\) || 0\\)/g' NotaVentaDetalle.tsx FacturaDetalle.tsx OrdenCompraDetalle.tsx)",
+      "Bash(sed -i 's/s + l\\\\.total\\\\b/s + \\(Number\\(l.total\\) || 0\\)/g' NotaVentaDetalle.tsx FacturaDetalle.tsx OrdenCompraDetalle.tsx)",
+      "Bash(sed -i 's/s + l\\\\.total_neto/s + \\(Number\\(l.total_neto\\) || 0\\)/g' CotizacionDetalle.tsx)"
     ]
   }
 }

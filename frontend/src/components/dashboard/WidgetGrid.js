@@ -1,10 +1,8 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 // frontend/src/components/dashboard/WidgetGrid.tsx
-import GridLayout from 'react-grid-layout';
+import ReactGridLayout, { WidthProvider } from 'react-grid-layout/legacy';
 import Widget from './Widget';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const WidthProvider = GridLayout.WidthProvider;
-const ResponsiveGrid = WidthProvider(GridLayout);
+const ResponsiveGrid = WidthProvider(ReactGridLayout);
 export default function WidgetGrid({ widgets, editMode, onLayoutChange, onConfigure, onRemove, }) {
     const layout = widgets.map(w => ({
         i: w.id,
