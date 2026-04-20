@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from pydantic import BaseModel
 
 
@@ -7,6 +8,9 @@ class EmpresaBase(BaseModel):
     razon_social: str | None = None
     rut: str | None = None
     forma_pago: str | None = None
+    linea_credito: Decimal | None = None
+    limite_credito: Decimal | None = None
+    plazo_credito: str | None = None
     prioridad: str | None = None
     sector: str | None = None
     email: str | None = None
@@ -23,6 +27,9 @@ class EmpresaUpdate(BaseModel):
     razon_social: str | None = None
     rut: str | None = None
     forma_pago: str | None = None
+    linea_credito: Decimal | None = None
+    limite_credito: Decimal | None = None
+    plazo_credito: str | None = None
     prioridad: str | None = None
     sector: str | None = None
     email: str | None = None

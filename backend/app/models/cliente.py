@@ -18,7 +18,6 @@ class Cliente(Base):
         ForeignKey("empresas.id", ondelete="SET NULL"), nullable=True
     )
     recibe_correo: Mapped[bool] = mapped_column(Boolean, default=True)
-    forma_pago: Mapped[str | None] = mapped_column(String(100), nullable=True)
     despacho_o_retiro: Mapped[str | None] = mapped_column(String(20), nullable=True)
     comuna: Mapped[str | None] = mapped_column(String(100), nullable=True)
     ultimo_contacto: Mapped[date | None] = mapped_column(Date, nullable=True)

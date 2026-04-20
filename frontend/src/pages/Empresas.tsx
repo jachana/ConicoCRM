@@ -3,11 +3,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import type { Empresa } from '../types'
 
+const PLAZO_OPTIONS = ['Al contado', '30 Dias', '60 Dias', '90 Dias', 'Especial']
+
 type FormData = {
   nombre: string
   razon_social: string
   rut: string
   forma_pago: string
+  linea_credito: string
+  limite_credito: string
+  plazo_credito: string
   prioridad: string
   sector: string
   email: string
@@ -17,6 +22,7 @@ type FormData = {
 
 const EMPTY_FORM: FormData = {
   nombre: '', razon_social: '', rut: '', forma_pago: '',
+  linea_credito: '', limite_credito: '', plazo_credito: '',
   prioridad: '', sector: '', email: '', nota_cobranza: '', ubicacion: '',
 }
 
@@ -44,7 +50,11 @@ export default function Empresas() {
     setEditando(e)
     setForm({
       nombre: e.nombre, razon_social: e.razon_social ?? '', rut: e.rut ?? '',
-      forma_pago: e.forma_pago ?? '', prioridad: e.prioridad ?? '', sector: e.sector ?? '',
+      forma_pago: e.forma_pago ?? '',
+      linea_credito: e.linea_credito != null ? String(e.linea_credito) : '',
+      limite_credito: e.limite_credito != null ? String(e.limite_credito) : '',
+      plazo_credito: e.plazo_credito ?? '',
+      prioridad: e.prioridad ?? '', sector: e.sector ?? '',
       email: e.email ?? '', nota_cobranza: e.nota_cobranza ?? '', ubicacion: e.ubicacion ?? '',
     })
     setError(null); setModalOpen(true)
@@ -54,7 +64,13 @@ export default function Empresas() {
 
   const guardar = useMutation({
     mutationFn: (data: FormData) => {
-      const payload = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, v || null]))
+      const payload: Record<string, unknown> = Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [k, v || null])
+      )
+      if (data.linea_credito) payload.linea_credito = parseFloat(data.linea_credito)
+      else payload.linea_credito = null
+      if (data.limite_credito) payload.limite_credito = parseFloat(data.limite_credito)
+      else payload.limite_credito = null
       if (editando) return api.patch(`/api/empresas/${editando.id}`, payload).then(r => r.data)
       return api.post('/api/empresas/', payload).then(r => r.data)
     },
@@ -175,10 +191,28 @@ export default function Empresas() {
               ]) as { key: keyof FormData; label: string; placeholder?: string }[]).map(({ key, label, placeholder }) => (
                 <div key={key}>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-                  <input type="text" placeholder={placeholder} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                  <input type="text" placeholder={placeholder} value={form[key] as string} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
                     className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
               ))}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Línea de Crédito ($)</label>
+                <input type="number" min="0" step="0.01" value={form.linea_credito} onChange={e => setForm(f => ({ ...f, linea_credito: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Límite de Crédito ($)</label>
+                <input type="number" min="0" step="0.01" value={form.limite_credito} onChange={e => setForm(f => ({ ...f, limite_credito: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Plazo de Crédito</label>
+                <select value={form.plazo_credito} onChange={e => setForm(f => ({ ...f, plazo_credito: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                  <option value="">— Sin plazo —</option>
+                  {PLAZO_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Ubicación sede central</label>
                 <input type="text" value={form.ubicacion} onChange={e => setForm(f => ({ ...f, ubicacion: e.target.value }))}

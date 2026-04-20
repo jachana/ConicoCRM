@@ -48,7 +48,8 @@
       "Bash(sed -i 's/s + l\\\\.total_neto/s + \\(Number\\(l.total_neto\\) || 0\\)/g' NotaVentaDetalle.tsx FacturaDetalle.tsx OrdenCompraDetalle.tsx)",
       "Bash(sed -i 's/s + l\\\\.iva/s + \\(Number\\(l.iva\\) || 0\\)/g' NotaVentaDetalle.tsx FacturaDetalle.tsx OrdenCompraDetalle.tsx)",
       "Bash(sed -i 's/s + l\\\\.total\\\\b/s + \\(Number\\(l.total\\) || 0\\)/g' NotaVentaDetalle.tsx FacturaDetalle.tsx OrdenCompraDetalle.tsx)",
-      "Bash(sed -i 's/s + l\\\\.total_neto/s + \\(Number\\(l.total_neto\\) || 0\\)/g' CotizacionDetalle.tsx)"
+      "Bash(sed -i 's/s + l\\\\.total_neto/s + \\(Number\\(l.total_neto\\) || 0\\)/g' CotizacionDetalle.tsx)",
+      "Bash(DATABASE_URL=sqlite:///./test.db SECRET_KEY=dev python -m alembic upgrade head)"
     ]
   }
 }

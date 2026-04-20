@@ -12,7 +12,6 @@ class ClienteBase(BaseModel):
     notas: str | None = None
     empresa_id: int | None = None
     recibe_correo: bool = True
-    forma_pago: str | None = None
     despacho_o_retiro: str | None = None
     comuna: str | None = None
     ultimo_contacto: date | None = None
@@ -34,7 +33,6 @@ class ClienteUpdate(BaseModel):
     notas: str | None = None
     empresa_id: int | None = None
     recibe_correo: bool | None = None
-    forma_pago: str | None = None
     despacho_o_retiro: str | None = None
     comuna: str | None = None
     ultimo_contacto: date | None = None

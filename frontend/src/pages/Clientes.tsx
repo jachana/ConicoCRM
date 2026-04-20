@@ -6,14 +6,14 @@ import type { Cliente, Empresa } from '../types'
 type FormData = {
   nombre: string; rut: string; email: string; telefono: string
   direccion_despacho: string; notas: string; empresa_id: number | null
-  recibe_correo: boolean; forma_pago: string; despacho_o_retiro: string
+  recibe_correo: boolean; despacho_o_retiro: string
   comuna: string; ultimo_contacto: string; forma_captacion: string
   compromiso: string; es_nuevo: boolean
 }
 
 const EMPTY_FORM: FormData = {
   nombre: '', rut: '', email: '', telefono: '', direccion_despacho: '', notas: '',
-  empresa_id: null, recibe_correo: true, forma_pago: '', despacho_o_retiro: '',
+  empresa_id: null, recibe_correo: true, despacho_o_retiro: '',
   comuna: '', ultimo_contacto: '', forma_captacion: '', compromiso: '', es_nuevo: false,
 }
 
@@ -50,7 +50,7 @@ export default function Clientes() {
       nombre: c.nombre, rut: c.rut ?? '', email: c.email ?? '', telefono: c.telefono ?? '',
       direccion_despacho: c.direccion_despacho ?? '', notas: c.notas ?? '',
       empresa_id: c.empresa_id, recibe_correo: c.recibe_correo,
-      forma_pago: c.forma_pago ?? '', despacho_o_retiro: c.despacho_o_retiro ?? '',
+      despacho_o_retiro: c.despacho_o_retiro ?? '',
       comuna: c.comuna ?? '', ultimo_contacto: c.ultimo_contacto ?? '',
       forma_captacion: c.forma_captacion ?? '', compromiso: c.compromiso ?? '',
       es_nuevo: c.es_nuevo,
@@ -244,7 +244,6 @@ export default function Clientes() {
                 { key: 'rut', label: 'RUT', placeholder: '76.123.456-7' },
                 { key: 'email', label: 'Email', placeholder: 'contacto@empresa.cl' },
                 { key: 'telefono', label: 'Teléfono', placeholder: '+56 9 1234 5678' },
-                { key: 'forma_pago', label: 'Forma de Pago' },
                 { key: 'comuna', label: 'Comuna' },
               ]) as { key: keyof FormData; label: string; placeholder?: string }[]).map(({ key, label, placeholder }) => (
                 <div key={key}>

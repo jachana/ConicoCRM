@@ -40,6 +40,9 @@ export interface Empresa {
   razon_social: string | null
   rut: string | null
   forma_pago: string | null
+  linea_credito: number | null
+  limite_credito: number | null
+  plazo_credito: string | null
   prioridad: string | null
   sector: string | null
   email: string | null
@@ -73,7 +76,6 @@ export interface Cliente {
   empresa_id: number | null
   empresa: EmpresaRef | null
   recibe_correo: boolean
-  forma_pago: string | null
   despacho_o_retiro: string | null
   comuna: string | null
   ultimo_contacto: string | null
