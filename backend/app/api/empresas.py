@@ -55,6 +55,68 @@ def listar_empresas(
     return query.order_by(Empresa.nombre).all()
 
 
+@router.get("/deuda-bulk", response_model=list[EmpresaDeudaBulkItem])
+def deuda_bulk(
+    perms: tuple[User, Session] = require_permission("empresas", "view"),
+):
+    from datetime import date, timedelta
+    from decimal import Decimal as D
+
+    _, db = perms
+    today = date.today()
+
+    def _plazo_dias(plazo: str | None) -> int | None:
+        if plazo == "30 Dias":
+            return 30
+        if plazo == "60 Dias":
+            return 60
+        if plazo == "90 Dias":
+            return 90
+        if plazo == "Al contado":
+            return 0
+        return None
+
+    empresas = db.query(Empresa).order_by(Empresa.nombre).all()
+    result = []
+    for e in empresas:
+        facturas = (
+            db.query(Factura)
+            .filter(Factura.empresa_id == e.id, Factura.estado != "anulada")
+            .all()
+        )
+        deuda_total = D("0")
+        deuda_vencida = D("0")
+        dias = _plazo_dias(e.plazo_credito)
+
+        for f in facturas:
+            pendiente = f.total - (f.monto_pagado or D("0"))
+            if pendiente <= 0:
+                continue
+            deuda_total += pendiente
+
+            if f.fecha_vencimiento:
+                due_date = f.fecha_vencimiento
+            elif dias is not None:
+                due_date = f.fecha + timedelta(days=dias)
+            else:
+                continue
+
+            if due_date < today:
+                deuda_vencida += pendiente
+
+        result.append(
+            EmpresaDeudaBulkItem(
+                empresa_id=e.id,
+                nombre=e.nombre,
+                plazo_credito=e.plazo_credito,
+                limite_credito=e.limite_credito,
+                deuda_total=deuda_total,
+                deuda_vencida=deuda_vencida,
+            )
+        )
+    return result
+
+
 @router.post("/", response_model=EmpresaOut, status_code=status.HTTP_201_CREATED)
 def crear_empresa(
     body: EmpresaCreate,

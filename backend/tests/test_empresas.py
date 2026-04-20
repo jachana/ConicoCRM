@@ -221,7 +221,7 @@ def test_deuda_bulk_factura_anulada_no_cuenta(client, admin_token):
     f = _create_factura_bulk(client, admin_token, cid, emp["id"], total_neto=10000)
     # Anular la factura
     client.patch(
-        f"/api/facturas/{f['id']}",
+        f"/api/facturas/{f['id']}/estado",
         json={"estado": "anulada"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
