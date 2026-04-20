@@ -41,9 +41,10 @@ def _approve(client, token, cotizacion_id, linea_id, valor_neto):
     }, headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 201, r.text
     aprobacion_id = r.json()["id"]
-    client.patch(f"/api/aprobaciones_margen/{aprobacion_id}",
-                 json={"accion": "aprobar"},
-                 headers={"Authorization": f"Bearer {token}"})
+    r2 = client.patch(f"/api/aprobaciones_margen/{aprobacion_id}",
+                      json={"accion": "aprobar"},
+                      headers={"Authorization": f"Bearer {token}"})
+    assert r2.status_code == 200, r2.text
     return aprobacion_id
 
 
