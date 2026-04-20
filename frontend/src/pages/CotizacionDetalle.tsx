@@ -7,6 +7,7 @@ import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, CreditCard, 
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta } from '../types'
+import CreditWarningModal, { type CreditoInfo } from '../components/CreditWarningModal'
 
 type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string; _stock?: number | null }
 
@@ -74,6 +75,11 @@ export default function CotizacionDetalle() {
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number; above: boolean } | null>(null)
   const [marginOverrideIdx, setMarginOverrideIdx] = useState<number | null>(null)
   const [marginOverrideInput, setMarginOverrideInput] = useState('')
+  const [creditModal, setCreditModal] = useState<{
+    mode: 'warning' | 'block'
+    credito: CreditoInfo
+    onConfirm: () => void
+  } | null>(null)
 
   const { data: cotizacion } = useQuery<Cotizacion>({
     queryKey: ['cotizacion', id],
@@ -202,8 +208,33 @@ export default function CotizacionDetalle() {
   const totalIva = lineas.reduce((s, l) => s + (Number(l.iva) || 0), 0)
   const total = lineas.reduce((s, l) => s + (Number(l.total) || 0), 0)
 
+  async function checkCredit(saleTotal: number, mode: 'warning' | 'block', onProceed: () => void) {
+    if (!empresaId) { onProceed(); return }
+    const empresa = empresas.find(e => e.id === empresaId)
+    if (!empresa?.limite_credito) { onProceed(); return }
+    try {
+      const res = await api.get<CreditoInfo>(`/api/empresas/${empresaId}/credito`)
+      const credito = res.data
+      if (credito.credito_disponible !== null && Number(credito.credito_disponible) < saleTotal) {
+        setCreditModal({
+          mode,
+          credito,
+          onConfirm: () => { setCreditModal(null); onProceed() },
+        })
+      } else {
+        onProceed()
+      }
+    } catch {
+      onProceed()
+    }
+  }
+
   async function handleSave() {
     if (!clienteId) { setError('Selecciona un cliente'); return }
+    checkCredit(total, 'warning', doSave)
+  }
+
+  async function doSave() {
     setSaving(true)
     setError('')
     try {
@@ -298,7 +329,7 @@ export default function CotizacionDetalle() {
                 {emailMut.isPending ? 'Enviando...' : 'Email'}
               </button>
               <button
-                onClick={() => crearNvMut.mutate()}
+                onClick={() => checkCredit(total, 'block', () => crearNvMut.mutate())}
                 disabled={crearNvMut.isPending}
                 className="flex items-center gap-2 px-3 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 transition-colors"
               >
@@ -528,6 +559,17 @@ export default function CotizacionDetalle() {
         <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
           {emailToast.msg}
         </div>
+      )}
+
+      {creditModal && (
+        <CreditWarningModal
+          mode={creditModal.mode}
+          empresaNombre={empresas.find(e => e.id === empresaId)?.nombre ?? ''}
+          credito={creditModal.credito}
+          saleTotal={total}
+          onConfirm={creditModal.onConfirm}
+          onCancel={() => setCreditModal(null)}
+        />
       )}
 
       {autocompleteIdx !== null && autocompleteResults.length > 0 && dropdownRect && createPortal(
