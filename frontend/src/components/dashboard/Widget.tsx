@@ -93,13 +93,13 @@ function RenderTopClientes({ data, chart }: { data: TopClienteItem[]; chart: str
     <div className="overflow-auto h-full">
       <table className="w-full text-xs">
         <thead><tr className="border-b border-gray-200 dark:border-gray-700">
-          <th className="text-left py-1 px-2">Cliente</th>
-          <th className="text-right py-1 px-2">Total</th>
+          <th className="text-left py-1 px-2 text-gray-600 dark:text-gray-300">Cliente</th>
+          <th className="text-right py-1 px-2 text-gray-600 dark:text-gray-300">Total</th>
         </tr></thead>
         <tbody>{data.map((r, i) => (
           <tr key={i} className="border-b border-gray-100 dark:border-gray-800">
-            <td className="py-1 px-2 truncate max-w-[150px]">{r.nombre}</td>
-            <td className="py-1 px-2 text-right">{formatMoney(r.total)}</td>
+            <td className="py-1 px-2 truncate max-w-[150px] dark:text-gray-200">{r.nombre}</td>
+            <td className="py-1 px-2 text-right dark:text-gray-200">{formatMoney(r.total)}</td>
           </tr>
         ))}</tbody>
       </table>
@@ -113,15 +113,15 @@ function RenderTopProductos({ data, chart }: { data: TopProductoItem[]; chart: s
     <div className="overflow-auto h-full">
       <table className="w-full text-xs">
         <thead><tr className="border-b border-gray-200 dark:border-gray-700">
-          <th className="text-left py-1 px-2">Producto</th>
-          <th className="text-right py-1 px-2">Cant.</th>
-          <th className="text-right py-1 px-2">Total</th>
+          <th className="text-left py-1 px-2 text-gray-600 dark:text-gray-300">Producto</th>
+          <th className="text-right py-1 px-2 text-gray-600 dark:text-gray-300">Cant.</th>
+          <th className="text-right py-1 px-2 text-gray-600 dark:text-gray-300">Total</th>
         </tr></thead>
         <tbody>{data.map((r, i) => (
           <tr key={i} className="border-b border-gray-100 dark:border-gray-800">
-            <td className="py-1 px-2 truncate max-w-[120px]">{r.nombre}</td>
-            <td className="py-1 px-2 text-right">{r.cantidad}</td>
-            <td className="py-1 px-2 text-right">{formatMoney(r.total)}</td>
+            <td className="py-1 px-2 truncate max-w-[120px] dark:text-gray-200">{r.nombre}</td>
+            <td className="py-1 px-2 text-right dark:text-gray-200">{r.cantidad}</td>
+            <td className="py-1 px-2 text-right dark:text-gray-200">{formatMoney(r.total)}</td>
           </tr>
         ))}</tbody>
       </table>
@@ -134,15 +134,15 @@ function RenderStockCritico({ data }: { data: StockCriticoItem[] }) {
     <div className="overflow-auto h-full">
       <table className="w-full text-xs">
         <thead><tr className="border-b border-gray-200 dark:border-gray-700">
-          <th className="text-left py-1 px-2">Producto</th>
-          <th className="text-right py-1 px-2">Actual</th>
-          <th className="text-right py-1 px-2">Mínimo</th>
+          <th className="text-left py-1 px-2 text-gray-600 dark:text-gray-300">Producto</th>
+          <th className="text-right py-1 px-2 text-gray-600 dark:text-gray-300">Actual</th>
+          <th className="text-right py-1 px-2 text-gray-600 dark:text-gray-300">Mínimo</th>
         </tr></thead>
         <tbody>{data.map((r, i) => (
           <tr key={i} className="border-b border-gray-100 dark:border-gray-800">
-            <td className="py-1 px-2 truncate max-w-[130px]">{r.nombre}</td>
-            <td className="py-1 px-2 text-right text-red-600 font-medium">{r.stock_actual}</td>
-            <td className="py-1 px-2 text-right text-gray-500">{r.stock_minimo}</td>
+            <td className="py-1 px-2 truncate max-w-[130px] dark:text-gray-200">{r.nombre}</td>
+            <td className="py-1 px-2 text-right text-red-600 font-medium dark:text-gray-200">{r.stock_actual}</td>
+            <td className="py-1 px-2 text-right text-gray-500 dark:text-gray-400">{r.stock_minimo}</td>
           </tr>
         ))}</tbody>
       </table>
@@ -153,23 +153,23 @@ function RenderStockCritico({ data }: { data: StockCriticoItem[] }) {
 function RenderNVPorCobrar({ data, chart }: { data: NVPorCobrarOut; chart: string }) {
   if (chart === 'kpi') return (
     <div className="flex flex-col items-center justify-center h-full gap-1">
-      <span className="text-3xl font-bold text-orange-500">{formatMoney(data.total_monto)}</span>
-      <span className="text-xs text-gray-500">{data.count} NV por cobrar</span>
+      <span className="text-3xl font-bold text-orange-500 dark:text-orange-400">{formatMoney(data.total_monto)}</span>
+      <span className="text-xs text-gray-500 dark:text-gray-400">{data.count} NV por cobrar</span>
     </div>
   )
   return (
     <div className="overflow-auto h-full">
       <table className="w-full text-xs">
         <thead><tr className="border-b border-gray-200 dark:border-gray-700">
-          <th className="text-left py-1 px-2">NV</th>
-          <th className="text-left py-1 px-2">Cliente</th>
-          <th className="text-right py-1 px-2">Total</th>
+          <th className="text-left py-1 px-2 text-gray-600 dark:text-gray-300">NV</th>
+          <th className="text-left py-1 px-2 text-gray-600 dark:text-gray-300">Cliente</th>
+          <th className="text-right py-1 px-2 text-gray-600 dark:text-gray-300">Total</th>
         </tr></thead>
         <tbody>{data.items.map((r, i) => (
           <tr key={i} className="border-b border-gray-100 dark:border-gray-800">
-            <td className="py-1 px-2">#{r.numero}</td>
-            <td className="py-1 px-2 truncate max-w-[120px]">{r.cliente}</td>
-            <td className="py-1 px-2 text-right">{formatMoney(r.total)}</td>
+            <td className="py-1 px-2 dark:text-gray-200">#{r.numero}</td>
+            <td className="py-1 px-2 truncate max-w-[120px] dark:text-gray-200">{r.cliente}</td>
+            <td className="py-1 px-2 text-right dark:text-gray-200">{formatMoney(r.total)}</td>
           </tr>
         ))}</tbody>
       </table>
@@ -183,15 +183,15 @@ function RenderVendedorMetrica({ data, chart }: { data: VendedorMetricaItem[]; c
     <div className="overflow-auto h-full">
       <table className="w-full text-xs">
         <thead><tr className="border-b border-gray-200 dark:border-gray-700">
-          <th className="text-left py-1 px-2">Vendedor</th>
-          <th className="text-right py-1 px-2">Docs</th>
-          <th className="text-right py-1 px-2">Total</th>
+          <th className="text-left py-1 px-2 text-gray-600 dark:text-gray-300">Vendedor</th>
+          <th className="text-right py-1 px-2 text-gray-600 dark:text-gray-300">Docs</th>
+          <th className="text-right py-1 px-2 text-gray-600 dark:text-gray-300">Total</th>
         </tr></thead>
         <tbody>{data.map((r, i) => (
           <tr key={i} className="border-b border-gray-100 dark:border-gray-800">
-            <td className="py-1 px-2">{r.nombre}</td>
-            <td className="py-1 px-2 text-right">{r.count}</td>
-            <td className="py-1 px-2 text-right">{formatMoney(r.total)}</td>
+            <td className="py-1 px-2 dark:text-gray-200">{r.nombre}</td>
+            <td className="py-1 px-2 text-right dark:text-gray-200">{r.count}</td>
+            <td className="py-1 px-2 text-right dark:text-gray-200">{formatMoney(r.total)}</td>
           </tr>
         ))}</tbody>
       </table>

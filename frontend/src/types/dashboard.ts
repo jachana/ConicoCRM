@@ -42,6 +42,13 @@ export interface DashboardLayoutOut {
   updated_at?: string
 }
 
+export interface DashboardPreset {
+  slot: number
+  name: string
+  layout: LayoutPayload
+  updated_at?: string
+}
+
 // ── API response shapes ────────────────────────────────────────────────────
 
 export interface VentasPeriodoSerie {
