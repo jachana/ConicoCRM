@@ -349,7 +349,7 @@ def generar_pdf(
     if current_user.role not in ("admin", "subadmin") and check_margin_approval_required(db, cotizacion_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Requiere aprobacion de margen",
+            detail="Requiere aprobación de márgenes",
         )
 
     config = _get_config_dict(db)
@@ -381,7 +381,7 @@ def enviar_email(
     if current_user.role not in ("admin", "subadmin") and check_margin_approval_required(db, cotizacion_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Requiere aprobacion de margen",
+            detail="Requiere aprobación de márgenes",
         )
 
     config = _get_config_dict(db)

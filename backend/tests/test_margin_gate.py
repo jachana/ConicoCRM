@@ -98,7 +98,7 @@ def test_pdf_blocked_when_deviation(client, admin_token, vendedor_token):
     r = client.get(f"/api/cotizaciones/{cot['id']}/pdf",
                    headers={"Authorization": f"Bearer {vendedor_token}"})
     assert r.status_code == 403
-    assert "margen" in r.json()["detail"].lower()
+    assert "aprobaci" in r.json()["detail"].lower()
 
 
 def test_pdf_allowed_at_catalog_price(client, admin_token, vendedor_token):
@@ -143,7 +143,7 @@ def test_email_blocked_when_deviation(client, admin_token, vendedor_token):
     r = client.post(f"/api/cotizaciones/{cot['id']}/email",
                     headers={"Authorization": f"Bearer {vendedor_token}"})
     assert r.status_code == 403
-    assert "margen" in r.json()["detail"].lower()
+    assert "aprobaci" in r.json()["detail"].lower()
 
 
 def test_email_admin_bypasses_gate(client, admin_token):
