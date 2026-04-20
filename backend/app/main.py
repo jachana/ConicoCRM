@@ -17,6 +17,7 @@ from app.api import ordenes_compra
 from app.api import inventario
 from app.api import dashboard
 from app.api import pagos
+from app.api import aprobaciones
 
 app = FastAPI(title="Conico PMS")
 
@@ -45,3 +46,4 @@ app.include_router(ordenes_compra.router, prefix="/api/ordenes-compra", tags=["o
 app.include_router(inventario.router, prefix="/api/inventario", tags=["inventario"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(pagos.router, prefix="/api/pagos", tags=["pagos"])
+app.include_router(aprobaciones.router, prefix="/api/aprobaciones", tags=["aprobaciones"])
