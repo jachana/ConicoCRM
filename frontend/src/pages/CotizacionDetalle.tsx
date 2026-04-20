@@ -2,12 +2,12 @@ import { openPdf } from '../lib/pdf'
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, FileText, Mail, ArrowLeft } from 'lucide-react'
+import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, CreditCard, Pencil } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta } from '../types'
 
-type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string }
+type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string; _stock?: number | null }
 
 const ESTADOS = [
   { value: 'no_definido', label: 'Sin definir' },
@@ -70,6 +70,8 @@ export default function CotizacionDetalle() {
 
   const [autocompleteIdx, setAutocompleteIdx] = useState<number | null>(null)
   const [autocompleteResults, setAutocompleteResults] = useState<Producto[]>([])
+  const [marginOverrideIdx, setMarginOverrideIdx] = useState<number | null>(null)
+  const [marginOverrideInput, setMarginOverrideInput] = useState('')
 
   const { data: cotizacion } = useQuery<Cotizacion>({
     queryKey: ['cotizacion', id],
@@ -121,15 +123,17 @@ export default function CotizacionDetalle() {
     if (cid) {
       const c = clientes.find(cl => cl.id === cid)
       if (c) {
-        if (!contacto) setContacto(c.nombre)
-        if (!correo && c.email) setCorreo(c.email)
-        if (c.empresa_id && !empresaId) setEmpresaId(c.empresa_id)
+        setContacto(c.nombre)
+        setCorreo(c.email ?? '')
+        if (c.empresa_id) setEmpresaId(c.empresa_id)
       }
     }
   }
 
+  const selectedCliente = clientes.find(c => c.id === clienteId) ?? null
+
   const fetchAutocomplete = useCallback(async (q: string) => {
-    if (q.length < 2) { setAutocompleteResults([]); return }
+    if (q.length < 1) { setAutocompleteResults([]); return }
     try {
       const res = await api.get<Producto[]>(`/api/productos/buscar?q=${encodeURIComponent(q)}`)
       setAutocompleteResults(res.data)
@@ -157,6 +161,7 @@ export default function CotizacionDetalle() {
         margen: producto.precio_venta > 0
           ? (producto.precio_venta - producto.precio_costo) / producto.precio_venta
           : null,
+        _stock: producto.stock_actual,
       }
       return calcLinea(updated)
     }))
@@ -322,6 +327,24 @@ export default function CotizacionDetalle() {
                   {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
                 </select>
               </div>
+          {selectedCliente && (
+            <div className="sm:col-span-2 lg:col-span-3">
+              <div className="flex flex-wrap gap-x-6 gap-y-1.5 px-3 py-2.5 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300">
+                {selectedCliente.empresa && (
+                  <span className="flex items-center gap-1.5"><Building2 size={12} className="text-gray-400" />{selectedCliente.empresa.nombre}</span>
+                )}
+                {selectedCliente.telefono && (
+                  <span className="flex items-center gap-1.5"><Phone size={12} className="text-gray-400" />{selectedCliente.telefono}</span>
+                )}
+                {selectedCliente.email && (
+                  <span className="flex items-center gap-1.5"><Mail size={12} className="text-gray-400" />{selectedCliente.email}</span>
+                )}
+                {selectedCliente.forma_pago && (
+                  <span className="flex items-center gap-1.5"><CreditCard size={12} className="text-gray-400" />{selectedCliente.forma_pago}</span>
+                )}
+              </div>
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Contacto</label>
             <input type="text" value={contacto} onChange={e => setContacto(e.target.value)}
@@ -395,7 +418,7 @@ export default function CotizacionDetalle() {
                     onChange={e => handleDescripcionChange(idx, e.target.value)}
                     onBlur={() => setTimeout(() => { setAutocompleteIdx(null); setAutocompleteResults([]) }, 200)}
                     className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="Descripción del producto..." />
+                    placeholder="Buscar en catálogo..." />
                   {autocompleteIdx === idx && autocompleteResults.length > 0 && (
                     <div className="absolute z-20 left-3 right-3 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
                       {autocompleteResults.slice(0, 8).map(p => (
@@ -414,9 +437,14 @@ export default function CotizacionDetalle() {
                     placeholder="Formato" />
                 </td>
                 <td className="px-3 py-2">
-                  <input type="number" min="1" value={linea.cantidad}
-                    onChange={e => updateLinea(idx, { cantidad: Math.max(1, parseInt(e.target.value) || 1) })}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                  <div className="relative">
+                    <input type="number" min="1" value={linea.cantidad}
+                      onChange={e => updateLinea(idx, { cantidad: Math.max(1, parseInt(e.target.value) || 1) })}
+                      className={`w-full px-2 py-1 text-xs border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right ${linea._stock != null && linea.cantidad > linea._stock ? 'border-orange-400 dark:border-orange-500' : 'border-gray-200 dark:border-gray-700'}`} />
+                    {linea._stock != null && linea.cantidad > linea._stock && (
+                      <span className="absolute -top-5 right-0 text-[10px] text-orange-500 whitespace-nowrap">Stock: {linea._stock}</span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-3 py-2">
                   <input type="number" min="0" value={linea.valor_neto}
@@ -427,9 +455,21 @@ export default function CotizacionDetalle() {
                 <td className="px-3 py-2 text-right text-gray-500 dark:text-gray-400 text-xs">{fmtMoney(linea.iva)}</td>
                 <td className="px-3 py-2 text-right text-gray-900 dark:text-white text-xs font-medium">{fmtMoney(linea.total)}</td>
                 <td className="px-3 py-2 text-right text-xs">
-                  {linea.margen !== null
-                    ? <span className={linea.margen >= 0.15 ? 'text-green-600 dark:text-green-400' : 'text-orange-500'}>{(linea.margen * 100).toFixed(1)}%</span>
-                    : <span className="text-gray-400">—</span>}
+                  <div className="flex items-center justify-end gap-1">
+                    {linea.margen !== null
+                      ? <span className={linea.margen >= 0.15 ? 'text-green-600 dark:text-green-400' : 'text-orange-500'}>{(linea.margen * 100).toFixed(1)}%</span>
+                      : <span className="text-gray-400">—</span>}
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => { setMarginOverrideIdx(idx); setMarginOverrideInput(linea.margen !== null ? (linea.margen * 100).toFixed(1) : '') }}
+                        className="ml-1 p-0.5 text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                        title="Forzar margen"
+                      >
+                        <Pencil size={11} />
+                      </button>
+                    )}
+                  </div>
                 </td>
                 <td className="px-3 py-2">
                   <button onClick={() => removeLinea(idx)} className="p-1 text-gray-400 hover:text-red-500 transition-colors" disabled={lineas.length === 1}>
@@ -461,6 +501,40 @@ export default function CotizacionDetalle() {
           </div>
         </div>
       </div>
+
+      {marginOverrideIdx !== null && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 w-full max-w-xs">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-1">Forzar margen</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Línea {marginOverrideIdx + 1} · ingresa el margen deseado (%)</p>
+            <input
+              type="number"
+              step="0.1"
+              value={marginOverrideInput}
+              onChange={e => setMarginOverrideInput(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+              placeholder="Ej: 25.0"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setMarginOverrideIdx(null)}
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  const pct = parseFloat(marginOverrideInput)
+                  if (!isNaN(pct)) updateLinea(marginOverrideIdx, { margen: pct / 100 })
+                  setMarginOverrideIdx(null)
+                }}
+                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {emailToast && (
         <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
