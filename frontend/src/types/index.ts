@@ -51,6 +51,15 @@ export interface Empresa {
   created_at: string
 }
 
+export interface DeudaBulkItem {
+  empresa_id: number
+  nombre: string
+  plazo_credito: string | null
+  limite_credito: number | null
+  deuda_total: number
+  deuda_vencida: number
+}
+
 export interface Producto {
   id: number
   nombre: string
