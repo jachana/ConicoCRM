@@ -562,12 +562,18 @@ export default function CotizacionDetalle() {
                         <RotateCcw size={10} />
                       </button>
                     )}
-                    <input type="text" inputMode="numeric" min="0"
-                      value={focusedPrecioIdx === idx ? String(linea.valor_neto) : Math.round(Number(linea.valor_neto) || 0).toLocaleString('es-CL')}
-                      onFocus={() => setFocusedPrecioIdx(idx)}
-                      onBlur={() => setFocusedPrecioIdx(null)}
-                      onChange={e => handleValorNetoChange(idx, e.target.value)}
-                      className="w-28 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                    {isAdmin ? (
+                      <input type="text" inputMode="numeric" min="0"
+                        value={focusedPrecioIdx === idx ? String(linea.valor_neto) : Math.round(Number(linea.valor_neto) || 0).toLocaleString('es-CL')}
+                        onFocus={() => setFocusedPrecioIdx(idx)}
+                        onBlur={() => setFocusedPrecioIdx(null)}
+                        onChange={e => handleValorNetoChange(idx, e.target.value)}
+                        className="w-28 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                    ) : (
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {fmtMoney(linea.valor_neto)}
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td className="px-3 py-3 text-right text-gray-700 dark:text-gray-300 text-sm font-medium">{fmtMoney(linea.total_neto)}</td>
