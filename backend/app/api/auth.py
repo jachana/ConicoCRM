@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
-from app.schemas.auth import Token, RefreshRequest, VerifyAdminRequest
+from app.schemas.auth import Token, RefreshRequest
 from app.schemas.user import UserOut
 from app.core.security import verify_password, create_access_token, create_refresh_token, decode_token
 
@@ -49,15 +49,3 @@ def refresh(body: RefreshRequest, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserOut)
 def me(current_user: User = Depends(get_current_user)):
     return current_user
-
-
-@router.post("/verify-admin", status_code=status.HTTP_200_OK)
-def verify_admin(
-    body: VerifyAdminRequest,
-    current_user: User = Depends(get_current_user),
-):
-    if current_user.role not in ("admin", "subadmin"):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No autorizado")
-    if not verify_password(body.password, current_user.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Contraseña incorrecta")
-    return {"ok": True}
