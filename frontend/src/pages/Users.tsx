@@ -65,7 +65,7 @@ export default function Users() {
   if (isLoading) return <div className="p-6 text-gray-500">Cargando...</div>
 
   return (
-    <div className="p-6 max-w-5xl">
+    <div className="p-4 md:p-6 max-w-5xl">
       <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Usuarios</h1>
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">

@@ -267,7 +267,7 @@ export default function NotaVentaDetalle() {
   const validTransitions = !isNew && nv ? getValidTransitions(nv.estado, isAdmin) : []
 
   return (
-    <div className="p-6 max-w-6xl">
+    <div className="p-4 md:p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/notas-venta')}

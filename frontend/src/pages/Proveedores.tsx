@@ -70,7 +70,7 @@ export default function Proveedores() {
   if (isLoading) return <div className="p-6 text-gray-500">Cargando...</div>
 
   return (
-    <div className="p-6 max-w-5xl">
+    <div className="p-4 md:p-6 max-w-5xl">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Proveedores</h1>
         <div className="flex gap-2">

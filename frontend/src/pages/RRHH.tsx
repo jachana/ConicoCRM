@@ -132,7 +132,7 @@ export default function RRHH() {
   if (isLoading) return <div className="p-6 text-gray-500">Cargando...</div>
 
   return (
-    <div className="p-6 max-w-6xl">
+    <div className="p-4 md:p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">RRHH</h1>
         <button onClick={abrirCrear} className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">

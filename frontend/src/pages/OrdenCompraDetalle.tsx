@@ -172,7 +172,7 @@ export default function OrdenCompraDetalle() {
   void isReadonly
 
   return (
-    <div className="p-6 max-w-6xl">
+    <div className="p-4 md:p-6 max-w-6xl">
       {/* Toast */}
       {emailToast && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm text-white ${emailToast.ok ? 'bg-green-600' : 'bg-red-600'}`}>
