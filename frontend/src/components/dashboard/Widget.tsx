@@ -41,9 +41,9 @@ function buildParams(w: WidgetConfig) {
 
 function KpiCard({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-1">
-      <span className="text-3xl font-bold text-blue-500 dark:text-blue-400">{value}</span>
-      <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
+    <div className="flex flex-col items-center justify-center h-full gap-1 px-2">
+      <span className="text-3xl font-bold text-blue-500 dark:text-blue-400 w-full text-center break-all leading-tight">{value}</span>
+      <span className="text-xs text-gray-500 dark:text-gray-400 text-center">{label}</span>
     </div>
   )
 }
@@ -152,9 +152,9 @@ function RenderStockCritico({ data }: { data: StockCriticoItem[] }) {
 
 function RenderNVPorCobrar({ data, chart }: { data: NVPorCobrarOut; chart: string }) {
   if (chart === 'kpi') return (
-    <div className="flex flex-col items-center justify-center h-full gap-1">
-      <span className="text-3xl font-bold text-orange-500 dark:text-orange-400">{formatMoney(data.total_monto)}</span>
-      <span className="text-xs text-gray-500 dark:text-gray-400">{data.count} NV por cobrar</span>
+    <div className="flex flex-col items-center justify-center h-full gap-1 px-2">
+      <span className="text-3xl font-bold text-orange-500 dark:text-orange-400 w-full text-center break-all leading-tight">{formatMoney(data.total_monto)}</span>
+      <span className="text-xs text-gray-500 dark:text-gray-400 text-center">{data.count} NV por cobrar</span>
     </div>
   )
   return (
@@ -236,7 +236,7 @@ export default function Widget({ widget, editMode, onConfigure, onRemove }: Widg
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
         <span className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{def.label}</span>
         {editMode && (
-          <div className="flex gap-1 flex-shrink-0 ml-2">
+          <div className="flex gap-1 flex-shrink-0 ml-2 relative z-20">
             <button
               onClick={() => onConfigure(widget.id)}
               className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
