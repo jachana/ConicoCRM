@@ -29,9 +29,10 @@ from app.services.pdf import generar_pdf_factura
 router = APIRouter()
 
 _TRANSITIONS: dict[tuple[str, str], str] = {
-    ("emitida", "pagada"):  "admin",
-    ("emitida", "anulada"): "admin",
-    ("pagada",  "anulada"): "admin_only",
+    ("emitida",  "pagada"):  "admin",
+    ("emitida",  "anulada"): "admin",
+    ("pagada",   "anulada"): "admin_only",
+    ("parcial",  "anulada"): "admin_only",
 }
 
 _METODOS_PAGO = {"efectivo", "transferencia", "cheque", "debito", "credito", "deposito"}

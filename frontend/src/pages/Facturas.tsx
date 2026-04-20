@@ -7,8 +7,16 @@ import type { Factura } from '../types/index';
 
 const ESTADO_COLORS: Record<string, string> = {
   emitida:  'bg-blue-100 text-blue-800',
+  parcial:  'bg-amber-100 text-amber-800',
   pagada:   'bg-green-100 text-green-800',
   anulada:  'bg-red-100 text-red-800',
+};
+
+const ESTADO_LABELS: Record<string, string> = {
+  emitida: 'Emitida',
+  parcial: 'Parcial',
+  pagada:  'Pagada',
+  anulada: 'Anulada',
 };
 
 export default function Facturas() {
@@ -56,6 +64,7 @@ export default function Facturas() {
         >
           <option value="">Todos los estados</option>
           <option value="emitida">Emitida</option>
+          <option value="parcial">Parcial</option>
           <option value="pagada">Pagada</option>
           <option value="anulada">Anulada</option>
         </select>
@@ -110,7 +119,7 @@ export default function Facturas() {
                   </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[f.estado] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {f.estado}
+                      {ESTADO_LABELS[f.estado] ?? f.estado}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right font-medium text-gray-900">

@@ -2,26 +2,31 @@ import { openPdf } from '../lib/pdf'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FileText, Mail, ArrowLeft, ExternalLink, Pencil, X, Check } from 'lucide-react'
+import { FileText, Mail, ArrowLeft, ExternalLink, Pencil, X, Check, Plus, Trash2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
-import type { Factura, FacturaLinea, Cliente, User, Empresa } from '../types'
+import type { Factura, FacturaLinea, Cliente, User, Empresa, Pago } from '../types'
 
 const ESTADO_LABELS: Record<string, string> = {
   emitida: 'Emitida',
+  parcial: 'Parcial',
   pagada:  'Pagada',
   anulada: 'Anulada',
 }
 
 const ESTADO_COLORS: Record<string, string> = {
   emitida: 'bg-blue-100 text-blue-700',
+  parcial: 'bg-amber-100 text-amber-700',
   pagada:  'bg-green-100 text-green-700',
   anulada: 'bg-red-100 text-red-700',
 }
 
+const METODOS_PAGO = ['efectivo', 'transferencia', 'cheque', 'debito', 'credito', 'deposito']
+
 function getValidTransitions(estado: string): string[] {
   const all: Record<string, string[]> = {
-    emitida: ['pagada', 'anulada'],
+    emitida: ['anulada'],
+    parcial: ['anulada'],
     pagada:  ['anulada'],
     anulada: [],
   }
@@ -43,82 +48,6 @@ function calcLinea(l: LineaLocal): LineaLocal {
   return { ...l, cantidad, valor_neto, total_neto, iva, total }
 }
 
-interface PaymentModalProps {
-  onConfirm: (data: { fecha_pago: string; monto_pagado: number; metodo_pago: string }) => void
-  onCancel: () => void
-  totalSugerido: number
-}
-
-function PaymentModal({ onConfirm, onCancel, totalSugerido }: PaymentModalProps) {
-  const [fechaPago, setFechaPago] = useState(new Date().toISOString().split('T')[0])
-  const [montoPagado, setMontoPagado] = useState(totalSugerido)
-  const [metodoPago, setMetodoPago] = useState('transferencia')
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-6 w-full max-w-sm mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-white">Registrar pago</h2>
-          <button onClick={onCancel} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded">
-            <X size={16} />
-          </button>
-        </div>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fecha de pago</label>
-            <input
-              type="date"
-              value={fechaPago}
-              onChange={e => setFechaPago(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Monto pagado</label>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              value={montoPagado}
-              onChange={e => setMontoPagado(parseFloat(e.target.value) || 0)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Método de pago</label>
-            <select
-              value={metodoPago}
-              onChange={e => setMetodoPago(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="efectivo">Efectivo</option>
-              <option value="transferencia">Transferencia</option>
-              <option value="cheque">Cheque</option>
-              <option value="debito">Débito</option>
-              <option value="credito">Crédito</option>
-              <option value="deposito">Depósito</option>
-            </select>
-          </div>
-        </div>
-        <div className="flex gap-2 mt-5">
-          <button
-            onClick={onCancel}
-            className="flex-1 px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={() => onConfirm({ fecha_pago: fechaPago, monto_pagado: montoPagado, metodo_pago: metodoPago })}
-            className="flex-1 px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-1.5"
-          >
-            <Check size={14} />
-            Confirmar pago
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 export default function FacturaDetalle() {
   const { id } = useParams<{ id?: string }>()
@@ -134,7 +63,11 @@ export default function FacturaDetalle() {
   const [error, setError] = useState('')
   const [emailToast, setEmailToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const [showEstadoMenu, setShowEstadoMenu] = useState(false)
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showPagoModal, setShowPagoModal] = useState(false)
+  const [pagoFecha, setPagoFecha] = useState(new Date().toISOString().split('T')[0])
+  const [pagoMonto, setPagoMonto] = useState('')
+  const [pagoMetodo, setPagoMetodo] = useState('transferencia')
+  const [pagoNota, setPagoNota] = useState('')
 
   // Form fields
   const [clienteId, setClienteId] = useState<number | ''>('')
@@ -188,6 +121,37 @@ export default function FacturaDetalle() {
     queryKey: ['empresas'],
     queryFn: () => api.get('/api/empresas/').then(r => r.data),
     enabled: editing,
+  })
+
+  const { data: pagos = [] } = useQuery<Pago[]>({
+    queryKey: ['pagos', id],
+    queryFn: () => api.get(`/api/pagos/?factura_id=${id}`).then(r => r.data),
+    enabled: !!id,
+  })
+
+  const createPagoMut = useMutation({
+    mutationFn: (body: object) => api.post('/api/pagos/', body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['pagos', id] })
+      qc.invalidateQueries({ queryKey: ['factura', id] })
+      qc.invalidateQueries({ queryKey: ['facturas'] })
+      setShowPagoModal(false)
+      setPagoMonto('')
+      setPagoNota('')
+      setPagoFecha(new Date().toISOString().split('T')[0])
+      setPagoMetodo('transferencia')
+    },
+    onError: (err: any) => setError(err?.response?.data?.detail || 'Error al registrar pago'),
+  })
+
+  const deletePagoMut = useMutation({
+    mutationFn: (pagoId: number) => api.delete(`/api/pagos/${pagoId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['pagos', id] })
+      qc.invalidateQueries({ queryKey: ['factura', id] })
+      qc.invalidateQueries({ queryKey: ['facturas'] })
+    },
+    onError: (err: any) => setError(err?.response?.data?.detail || 'Error al eliminar pago'),
   })
 
   function updateLinea(idx: number, patch: Partial<LineaLocal>) {
@@ -261,18 +225,16 @@ export default function FacturaDetalle() {
   }
 
   const estadoMut = useMutation({
-    mutationFn: (payload: { estado: string; fecha_pago?: string; monto_pagado?: number; metodo_pago?: string }) =>
+    mutationFn: (payload: { estado: string }) =>
       api.patch(`/api/facturas/${id}/estado`, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['factura', id] })
       qc.invalidateQueries({ queryKey: ['facturas'] })
       setShowEstadoMenu(false)
-      setShowPaymentModal(false)
     },
     onError: (err: any) => {
       setError(err?.response?.data?.detail || 'Error al cambiar estado')
       setShowEstadoMenu(false)
-      setShowPaymentModal(false)
     },
   })
 
@@ -298,19 +260,6 @@ export default function FacturaDetalle() {
       setError(err?.response?.data?.detail || 'Error al eliminar factura')
     },
   })
-
-  function handleEstadoClick(nuevoEstado: string) {
-    if (nuevoEstado === 'pagada') {
-      setShowEstadoMenu(false)
-      setShowPaymentModal(true)
-    } else {
-      estadoMut.mutate({ estado: nuevoEstado })
-    }
-  }
-
-  function handlePaymentConfirm(data: { fecha_pago: string; monto_pagado: number; metodo_pago: string }) {
-    estadoMut.mutate({ estado: 'pagada', ...data })
-  }
 
   const validTransitions = factura ? getValidTransitions(factura.estado) : []
   const canDelete = factura?.estado === 'emitida'
@@ -357,7 +306,7 @@ export default function FacturaDetalle() {
               {showEstadoMenu && (
                 <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[160px]">
                   {validTransitions.map(t => (
-                    <button key={t} onClick={() => handleEstadoClick(t)}
+                    <button key={t} onClick={() => estadoMut.mutate({ estado: t })}
                       className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-gray-700 dark:text-gray-300">
                       → {ESTADO_LABELS[t] ?? t}
                     </button>
@@ -598,25 +547,69 @@ export default function FacturaDetalle() {
         )}
       </div>
 
-      {/* Payment info panel — visible when pagada */}
-      {factura.estado === 'pagada' && (
-        <div className="bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-200 dark:border-green-800 p-4 mb-5">
-          <h3 className="text-sm font-semibold text-green-800 dark:text-green-300 mb-2">Información de pago</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <span className="block text-xs font-medium text-green-700 dark:text-green-400 mb-0.5">Fecha de pago</span>
-              <span className="text-sm text-green-900 dark:text-green-200">{factura.fecha_pago ?? '—'}</span>
+      {/* Pagos section */}
+      {factura.estado !== 'anulada' && (
+        <div className="mb-5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Abonos / Pagos</h2>
+              {pagos.length > 0 && (
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Pagado: <span className="font-medium text-gray-700 dark:text-gray-200">{fmtMoney(pagos.reduce((s, p) => s + Number(p.monto), 0))}</span>
+                  {' · '}Saldo: <span className={`font-medium ${Number(factura.monto_pagado ?? 0) >= Number(factura.total) ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                    {fmtMoney(Number(factura.total) - Number(factura.monto_pagado ?? 0))}
+                  </span>
+                </span>
+              )}
             </div>
-            <div>
-              <span className="block text-xs font-medium text-green-700 dark:text-green-400 mb-0.5">Monto pagado</span>
-              <span className="text-sm text-green-900 dark:text-green-200 font-medium">
-                {factura.monto_pagado != null ? fmtMoney(factura.monto_pagado) : '—'}
-              </span>
-            </div>
-            <div>
-              <span className="block text-xs font-medium text-green-700 dark:text-green-400 mb-0.5">Método de pago</span>
-              <span className="text-sm text-green-900 dark:text-green-200 capitalize">{factura.metodo_pago ?? '—'}</span>
-            </div>
+            {factura.estado !== 'pagada' && (
+              <button
+                onClick={() => setShowPagoModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-brand-500 hover:bg-brand-400 text-gray-900 rounded-lg font-medium transition-colors"
+              >
+                <Plus size={12} />
+                Registrar abono
+              </button>
+            )}
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            {pagos.length === 0 ? (
+              <p className="px-4 py-5 text-sm text-gray-400 dark:text-gray-500 text-center">Sin pagos registrados</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
+                  <tr>
+                    <th className="px-4 py-2.5 font-medium text-left">Fecha</th>
+                    <th className="px-4 py-2.5 font-medium text-right">Monto</th>
+                    <th className="px-4 py-2.5 font-medium text-left">Método</th>
+                    <th className="px-4 py-2.5 font-medium text-left">Nota</th>
+                    <th className="px-4 py-2.5 font-medium text-left">Registrado por</th>
+                    {isAdmin && <th className="px-4 py-2.5 w-10" />}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {pagos.map(p => (
+                    <tr key={p.id}>
+                      <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300">{p.fecha}</td>
+                      <td className="px-4 py-2.5 text-right font-medium text-gray-900 dark:text-white">{fmtMoney(p.monto)}</td>
+                      <td className="px-4 py-2.5 text-gray-600 dark:text-gray-400 capitalize">{p.metodo_pago}</td>
+                      <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 text-xs max-w-[160px] truncate">{p.nota ?? '—'}</td>
+                      <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 text-xs">{p.registrado_por?.name ?? '—'}</td>
+                      {isAdmin && (
+                        <td className="px-4 py-2.5">
+                          <button
+                            onClick={() => { if (window.confirm('¿Eliminar este abono?')) deletePagoMut.mutate(p.id) }}
+                            className="p-1 text-red-400 hover:text-red-600 rounded transition-colors"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
@@ -757,13 +750,57 @@ export default function FacturaDetalle() {
         </div>
       )}
 
-      {/* Payment modal */}
-      {showPaymentModal && (
-        <PaymentModal
-          onConfirm={handlePaymentConfirm}
-          onCancel={() => setShowPaymentModal(false)}
-          totalSugerido={factura.total}
-        />
+      {/* Pago modal */}
+      {showPagoModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-5 w-full max-w-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-gray-900 dark:text-white">Registrar abono</h2>
+              <button onClick={() => setShowPagoModal(false)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
+                <input type="date" value={pagoFecha} onChange={e => setPagoFecha(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Monto (saldo: {fmtMoney(Number(factura.total) - Number(factura.monto_pagado ?? 0))})</label>
+                <input type="number" min="1" step="1" value={pagoMonto} onChange={e => setPagoMonto(e.target.value)}
+                  placeholder="0"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Método de pago</label>
+                <select value={pagoMetodo} onChange={e => setPagoMetodo(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                  {METODOS_PAGO.map(m => <option key={m} value={m} className="capitalize">{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Nota (opcional)</label>
+                <input type="text" value={pagoNota} onChange={e => setPagoNota(e.target.value)}
+                  placeholder="Referencia, número de transferencia..."
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setShowPagoModal(false)}
+                className="flex-1 px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                Cancelar
+              </button>
+              <button
+                disabled={!pagoMonto || createPagoMut.isPending}
+                onClick={() => createPagoMut.mutate({ factura_id: Number(id), fecha: pagoFecha, monto: Number(pagoMonto), metodo_pago: pagoMetodo, nota: pagoNota || null })}
+                className="flex-1 px-4 py-2 text-sm bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-gray-900 rounded-lg transition-colors font-medium flex items-center justify-center gap-1.5">
+                <Check size={14} />
+                {createPagoMut.isPending ? 'Registrando...' : 'Registrar'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

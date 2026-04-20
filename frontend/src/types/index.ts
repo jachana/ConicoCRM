@@ -272,6 +272,19 @@ export interface OrdenCompra {
   lineas?: OrdenCompraLinea[]
 }
 
+export interface Pago {
+  id: number
+  factura_id: number
+  fecha: string
+  monto: number
+  metodo_pago: string
+  nota: string | null
+  registrado_por_id: number | null
+  created_at: string
+  registrado_por: { id: number; name: string } | null
+  factura: { id: number; numero: number; total: number } | null
+}
+
 export interface MovimientoInventario {
   id: number
   producto_id: number
