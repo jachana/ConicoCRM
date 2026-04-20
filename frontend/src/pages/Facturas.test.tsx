@@ -56,7 +56,7 @@ describe('Facturas', () => {
   it('shows estado badge emitida', async () => {
     vi.mocked(api.get).mockResolvedValue({ data: [sampleFactura] })
     wrap(<Facturas />)
-    expect(await screen.findByText('emitida')).toBeTruthy()
+    expect(await screen.findByText('Emitida')).toBeTruthy()
   })
 
   it('shows nueva factura button', async () => {

@@ -27,8 +27,8 @@ const NAV = [
   { to: '/inventario',     icon: Warehouse,       label: 'Inventario' },
   { to: '/ordenes-compra', icon: ShoppingCart,    label: 'Órdenes de Compra' },
   { to: '/proveedores',    icon: Truck,           label: 'Proveedores' },
-  { to: '/rrhh',           icon: UserCog,         label: 'RRHH' },
-  { to: '/usuarios',       icon: Users,           label: 'Usuarios' },
+  { to: '/rrhh',           icon: UserCog,         label: 'RRHH',     adminOnly: true },
+  { to: '/usuarios',       icon: Users,           label: 'Usuarios', adminOnly: true },
 ]
 
 export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) {
@@ -84,7 +84,7 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
 
       {/* Nav links */}
       <nav className="flex-1 overflow-y-auto py-2 space-y-0.5">
-        {NAV.map(({ to, icon: Icon, label }) => {
+        {NAV.filter(item => !item.adminOnly || isAdminUser).map(({ to, icon: Icon, label }) => {
           const badge = to === '/inventario' ? stockBajoCount : 0
           return (
             <NavLink

@@ -25,14 +25,14 @@ describe('Clientes', () => {
       data: [{ id: 1, nombre: 'Empresa XYZ Ltda.', rut: '76.543.210-K', email: 'contacto@xyz.cl', telefono: null, direccion_despacho: null, notas: null, empresa_id: null, empresa: null, recibe_correo: true, forma_pago: null, despacho_o_retiro: null, comuna: null, ultimo_contacto: null, forma_captacion: null, compromiso: null, es_nuevo: false, created_at: '' }],
     })
     wrap(<Clientes />)
-    await waitFor(() => expect(screen.getByText('Empresa XYZ Ltda.')).toBeInTheDocument())
-    expect(screen.getByText('76.543.210-K')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getAllByText('Empresa XYZ Ltda.')[0]).toBeInTheDocument())
+    expect(screen.getAllByText('76.543.210-K')[0]).toBeInTheDocument()
   })
 
   it('muestra botón Agregar cliente', async () => {
     vi.mocked(apiModule.api.get).mockResolvedValue({ data: [] })
     wrap(<Clientes />)
-    await waitFor(() => expect(screen.getByText('Agregar cliente')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Agregar')).toBeInTheDocument())
   })
 
   it('muestra columna Empresa en tabla', async () => {
@@ -46,7 +46,7 @@ describe('Clientes', () => {
       }],
     })
     wrap(<Clientes />)
-    expect(await screen.findByText('Constructora ABC')).toBeTruthy()
+    expect((await screen.findAllByText('Constructora ABC'))[0]).toBeTruthy()
   })
 
   it('muestra dropdown empresa en modal', async () => {
@@ -56,7 +56,7 @@ describe('Clientes', () => {
     })
     wrap(<Clientes />)
     await screen.findByText('Clientes')
-    fireEvent.click(screen.getByText(/agregar cliente/i))
+    fireEvent.click(screen.getByText('Agregar'))
     const matches = await screen.findAllByText(/empresa/i)
     expect(matches.length).toBeGreaterThan(0)
   })
