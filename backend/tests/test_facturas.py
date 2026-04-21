@@ -329,3 +329,53 @@ def test_excel_export(client, admin_token):
     r = client.get("/api/facturas/export/excel", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
     assert "spreadsheetml" in r.headers["content-type"]
+
+
+def test_import_xml_bulk_empresa_not_found_returns_empresa_data(client, admin_token):
+    xml = b"""<?xml version="1.0" encoding="ISO-8859-1"?>
+<DTE xmlns="http://www.sii.cl/SiiDte" version="1.0">
+  <Documento ID="DTE-33-99999">
+    <Encabezado>
+      <IdDoc>
+        <TipoDTE>33</TipoDTE>
+        <Folio>99999</Folio>
+        <FchEmis>2024-01-15</FchEmis>
+      </IdDoc>
+      <Emisor><RUTEmisor>11111111-1</RUTEmisor></Emisor>
+      <Receptor>
+        <RUTRecep>99999999-9</RUTRecep>
+        <RznSocRecep>Empresa Fantasma S.A.</RznSocRecep>
+        <CorreoRecep>fantasma@test.cl</CorreoRecep>
+      </Receptor>
+      <Totales>
+        <MntNeto>1000</MntNeto>
+        <TasaIVA>19</TasaIVA>
+        <IVA>190</IVA>
+        <MntTotal>1190</MntTotal>
+      </Totales>
+      <Detalle>
+        <NroLinDet>1</NroLinDet>
+        <NmbItem>Item</NmbItem>
+        <QtyItem>1</QtyItem>
+        <PrcItem>1000</PrcItem>
+        <MontoItem>1000</MontoItem>
+      </Detalle>
+    </Encabezado>
+  </Documento>
+</DTE>"""
+    files = [("files", ("test.xml", xml, "application/xml"))]
+    resp = client.post(
+        "/api/facturas/import/xml/bulk",
+        files=files,
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["creadas"] == 0
+    assert len(data["errores"]) == 1
+    error = data["errores"][0]
+    assert "99999999-9" in error["message"]
+    assert error["empresa_data"] is not None
+    assert error["empresa_data"]["rut"] == "99999999-9"
+    assert error["empresa_data"]["nombre"] == "Empresa Fantasma S.A."
+    assert error["empresa_data"]["email"] == "fantasma@test.cl"

@@ -116,7 +116,14 @@ def _upsert_from_xml(db: Session, xml_bytes: bytes) -> tuple[Factura, str]:
     if empresa is None:
         raise HTTPException(
             status_code=422,
-            detail=f"Empresa con RUT {parsed['rut_receptor']} no encontrada en el sistema",
+            detail={
+                "message": f"Empresa con RUT {parsed['rut_receptor']} no encontrada en el sistema",
+                "empresa_data": {
+                    "rut": parsed["rut_receptor"],
+                    "nombre": parsed.get("nombre_receptor") or "",
+                    "email": parsed.get("correo_receptor") or "",
+                },
+            },
         )
 
     lineas_data = parsed["lineas"]
@@ -348,7 +355,17 @@ def import_xml_bulk(
             else:
                 actualizadas += 1
         except HTTPException as exc:
-            errores.append(ImportXMLError(filename=f.filename or "unknown", message=exc.detail))
+            if isinstance(exc.detail, dict):
+                errores.append(ImportXMLError(
+                    filename=f.filename or "unknown",
+                    message=exc.detail["message"],
+                    empresa_data=exc.detail.get("empresa_data"),
+                ))
+            else:
+                errores.append(ImportXMLError(
+                    filename=f.filename or "unknown",
+                    message=exc.detail,
+                ))
         except Exception as exc:
             errores.append(ImportXMLError(filename=f.filename or "unknown", message=str(exc)))
 
