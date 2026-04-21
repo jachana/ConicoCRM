@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class NotaCreditoLineaCreate(BaseModel):
-    orden: int = 0
+    orden: int | None = None
     descripcion: str
     cantidad: Decimal = Decimal("1")
     precio_unitario: Decimal = Decimal("0")
@@ -39,7 +39,7 @@ class NotaCreditoOut(BaseModel):
 
 
 class NotaDebitoLineaCreate(BaseModel):
-    orden: int = 0
+    orden: int | None = None
     descripcion: str
     cantidad: Decimal = Decimal("1")
     precio_unitario: Decimal = Decimal("0")

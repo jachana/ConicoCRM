@@ -34,29 +34,31 @@ def _next_numero(db: Session, key: str) -> int:
 
 
 def _calcular_lineas_nc(lineas_data) -> list[NotaCreditoLinea]:
-    return [
-        NotaCreditoLinea(
-            orden=data.orden or i,
+    lineas = []
+    for i, data in enumerate(lineas_data):
+        orden = data.orden if data.orden is not None else i
+        lineas.append(NotaCreditoLinea(
+            orden=orden,
             descripcion=data.descripcion,
             cantidad=data.cantidad,
             precio_unitario=data.precio_unitario,
             subtotal=data.cantidad * data.precio_unitario,
-        )
-        for i, data in enumerate(lineas_data)
-    ]
+        ))
+    return lineas
 
 
 def _calcular_lineas_nd(lineas_data) -> list[NotaDebitoLinea]:
-    return [
-        NotaDebitoLinea(
-            orden=data.orden or i,
+    lineas = []
+    for i, data in enumerate(lineas_data):
+        orden = data.orden if data.orden is not None else i
+        lineas.append(NotaDebitoLinea(
+            orden=orden,
             descripcion=data.descripcion,
             cantidad=data.cantidad,
             precio_unitario=data.precio_unitario,
             subtotal=data.cantidad * data.precio_unitario,
-        )
-        for i, data in enumerate(lineas_data)
-    ]
+        ))
+    return lineas
 
 
 def _recalcular_nc(nc: NotaCredito) -> None:
@@ -84,6 +86,9 @@ def emitir_factura(
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     if factura.dte_estado != "no_emitida":
         raise HTTPException(status_code=409, detail=f"Factura ya en estado DTE: {factura.dte_estado}")
+    existing = db.query(DteEmision).filter_by(factura_id=factura_id).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Ya existe una emisión para esta factura")
     emision = DteEmision(
         tipo="033",
         factura_id=factura.id,
@@ -156,6 +161,9 @@ def emitir_nc(
         raise HTTPException(status_code=404, detail="Nota de crédito no encontrada")
     if nc.dte_estado != "no_emitida":
         raise HTTPException(status_code=409, detail=f"NC ya en estado DTE: {nc.dte_estado}")
+    existing = db.query(DteEmision).filter_by(nota_credito_id=nc_id).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Ya existe una emisión para esta nota de crédito")
     emision = DteEmision(
         tipo="061",
         nota_credito_id=nc.id,
@@ -228,6 +236,9 @@ def emitir_nd(
         raise HTTPException(status_code=404, detail="Nota de débito no encontrada")
     if nd.dte_estado != "no_emitida":
         raise HTTPException(status_code=409, detail=f"ND ya en estado DTE: {nd.dte_estado}")
+    existing = db.query(DteEmision).filter_by(nota_debito_id=nd_id).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Ya existe una emisión para esta nota de débito")
     emision = DteEmision(
         tipo="056",
         nota_debito_id=nd.id,
@@ -252,7 +263,10 @@ async def webhook_lioren(request: Request):
     svc = get_dte_service()
     if not svc.validate_webhook_signature(body, signature):
         raise HTTPException(status_code=403, detail="Invalid webhook signature")
-    data = json.loads(body)
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
     track_id = data.get("track_id")
     if not track_id:
         return {"ok": True}
@@ -268,6 +282,9 @@ async def webhook_lioren(request: Request):
                 emision.aceptado_at = datetime.now(timezone.utc)
             _sync_dte_estado(db, emision, nuevo_estado)
             db.commit()
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()
     return {"ok": True}
