@@ -66,6 +66,7 @@ class RecordatorioCreate(BaseModel):
 class ImportXMLError(BaseModel):
     filename: str
     message: str
+    empresa_data: dict | None = None
 
 
 class ImportXMLResult(BaseModel):
