@@ -1611,17 +1611,17 @@ def exportar_margenes_pdf(
     vendedor_id = current_user.id if current_user.role == "vendedor" else None
     data = _get_margenes(date_from, date_to, db, vendedor_id)
 
-    por_producto = data["por_producto"][:20]
+    por_producto_full = data["por_producto"]
     por_factura = data["por_factura"]
 
-    all_pcts = [p["margen_pct"] for p in por_producto]
+    all_pcts = [p["margen_pct"] for p in por_producto_full]
     margen_promedio_pct = round(sum(all_pcts) / len(all_pcts), 2) if all_pcts else 0.0
-    mejor = por_producto[0] if por_producto else None
-    peor = por_producto[-1] if por_producto else None
+    mejor = por_producto_full[0] if por_producto_full else None
+    peor = por_producto_full[-1] if por_producto_full else None
 
     prod_rows = "".join(
         f"<tr><td>{p['nombre']}</td><td>{p['cantidad_vendida']}</td><td>{p['margen_pct']}%</td></tr>"
-        for p in por_producto
+        for p in por_producto_full[:20]
     )
     fac_rows = "".join(
         f"<tr><td>{f['numero']}</td><td>{_fmt(f['total'])}</td><td>{_fmt(f['margen_total'])}</td><td>{f['margen_pct']}%</td></tr>"
