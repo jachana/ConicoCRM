@@ -30,9 +30,9 @@ def test_process_emit_updates_estado_to_procesando():
     assert mock_emision.folio == 7
 
 
-def test_lioren_to_estado_mapping():
+def test_poll_maps_lioren_aceptado_to_aceptada():
     from app.tasks.dte import _lioren_to_estado
-    assert _lioren_to_estado("aceptado") == "aceptado"
-    assert _lioren_to_estado("rechazado") == "rechazado"
+    assert _lioren_to_estado("aceptado") == "aceptada"
+    assert _lioren_to_estado("rechazado") == "rechazada"
     assert _lioren_to_estado("procesando") == "procesando"
     assert _lioren_to_estado("unknown") == "procesando"

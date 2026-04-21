@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from celery.exceptions import MaxRetriesExceededError
 from sqlalchemy.orm import Session, joinedload
 
 from app.celery_app import celery_app
@@ -12,8 +13,10 @@ from app.services.dte_service import DteService, get_dte_service
 
 def _lioren_to_estado(lioren_estado: str) -> str:
     mapping = {
-        "aceptado": "aceptado",
-        "rechazado": "rechazado",
+        "aceptado": "aceptada",
+        "aceptada": "aceptada",
+        "rechazado": "rechazada",
+        "rechazada": "rechazada",
         "procesando": "procesando",
         "en_proceso": "procesando",
     }
@@ -73,6 +76,11 @@ def emit_dte(self, emision_id: int) -> None:
         svc = get_dte_service()
         _process_emit(db, emision, svc)
         db.commit()
+    except MaxRetriesExceededError:
+        emision.estado = "rechazada"
+        emision.respuesta_sii = {"error": "Max retries exceeded"}
+        _sync_dte_estado(db, emision, "rechazada")
+        db.commit()
     except Exception as exc:
         db.rollback()
         countdown = 60 * (2 ** self.request.retries)
@@ -103,7 +111,7 @@ def poll_dte_status() -> None:
                 if nuevo_estado != "procesando":
                     emision.estado = nuevo_estado
                     emision.respuesta_sii = result
-                    if nuevo_estado == "aceptado":
+                    if nuevo_estado == "aceptada":
                         emision.aceptado_at = datetime.now(timezone.utc)
                     _sync_dte_estado(db, emision, nuevo_estado)
                 else:

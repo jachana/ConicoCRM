@@ -274,14 +274,18 @@ async def webhook_lioren(request: Request):
     db = SessionLocal()
     try:
         emision = db.query(DteEmision).filter_by(track_id=track_id).first()
-        if emision:
-            nuevo_estado = _lioren_to_estado(data.get("estado", "procesando"))
-            emision.estado = nuevo_estado
-            emision.respuesta_sii = data
-            if nuevo_estado == "aceptado":
-                emision.aceptado_at = datetime.now(timezone.utc)
-            _sync_dte_estado(db, emision, nuevo_estado)
-            db.commit()
+        if not emision:
+            return {"ok": True}
+        # Don't overwrite terminal states
+        if emision.estado in ("aceptada", "rechazada"):
+            return {"ok": True}
+        nuevo_estado = _lioren_to_estado(data.get("estado", "procesando"))
+        emision.estado = nuevo_estado
+        emision.respuesta_sii = data
+        if nuevo_estado == "aceptada":
+            emision.aceptado_at = datetime.now(timezone.utc)
+        _sync_dte_estado(db, emision, nuevo_estado)
+        db.commit()
     except Exception:
         db.rollback()
         raise

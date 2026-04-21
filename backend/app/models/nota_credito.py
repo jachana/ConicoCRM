@@ -16,7 +16,7 @@ class NotaCredito(Base):
     monto_neto: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     monto_iva: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     monto_total: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
-    dte_estado: Mapped[str] = mapped_column(String(20), default="no_emitida")
+    dte_estado: Mapped[str] = mapped_column(String(20), default="no_emitida", server_default=text("'no_emitida'"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
