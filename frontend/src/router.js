@@ -15,13 +15,18 @@ import RRHH from './pages/RRHH';
 import Inventario from './pages/Inventario';
 import NotaVentas from './pages/NotaVentas';
 import NotaVentaDetalle from './pages/NotaVentaDetalle';
-import Facturas from './pages/Facturas';
 import FacturaDetalle from './pages/FacturaDetalle';
 import Pagos from './pages/Pagos';
 import Aprobaciones from './pages/Aprobaciones';
 import Dashboard from './pages/Dashboard';
 import Configuracion from './pages/Configuracion';
 import Cobranza from './pages/Cobranza';
+import NotasCredito from './pages/NotasCredito';
+import NotaCreditoDetalle from './pages/NotaCreditoDetalle';
+import NotaCreditoNueva from './pages/NotaCreditoNueva';
+import NotasDebito from './pages/NotasDebito';
+import NotaDebitoDetalle from './pages/NotaDebitoDetalle';
+import NotaDebitoNueva from './pages/NotaDebitoNueva';
 import { useAuthStore } from './stores/auth';
 import AppLayout from './components/layout/AppLayout';
 function RequireAuth({ children }) {
@@ -53,9 +58,14 @@ export const router = createBrowserRouter([
             { path: 'notas-venta', element: _jsx(NotaVentas, {}) },
             { path: 'notas-venta/nueva', element: _jsx(NotaVentaDetalle, {}) },
             { path: 'notas-venta/:id', element: _jsx(NotaVentaDetalle, {}) },
-            { path: 'facturas', element: _jsx(Facturas, {}) },
             { path: 'facturas/nueva', element: _jsx(FacturaDetalle, {}) },
             { path: 'facturas/:id', element: _jsx(FacturaDetalle, {}) },
+            { path: 'notas-credito', element: _jsx(NotasCredito, {}) },
+            { path: 'notas-credito/nueva', element: _jsx(NotaCreditoNueva, {}) },
+            { path: 'notas-credito/:id', element: _jsx(NotaCreditoDetalle, {}) },
+            { path: 'notas-debito', element: _jsx(NotasDebito, {}) },
+            { path: 'notas-debito/nueva', element: _jsx(NotaDebitoNueva, {}) },
+            { path: 'notas-debito/:id', element: _jsx(NotaDebitoDetalle, {}) },
             { path: 'pagos', element: _jsx(Pagos, {}) },
             { path: 'aprobaciones', element: _jsx(Aprobaciones, {}) },
             { path: 'rrhh', element: _jsx(RRHH, {}) },
