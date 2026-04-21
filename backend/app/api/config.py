@@ -16,6 +16,10 @@ INITIAL_CONFIG = {
     "empresa_rut": "82.638.800-5",
     "empresa_direccion": "",
     "empresa_logo_url": "",
+    "empresa_banco": "",
+    "empresa_tipo_cuenta": "",
+    "empresa_numero_cuenta": "",
+    "empresa_nombre_titular": "",
 }
 
 
