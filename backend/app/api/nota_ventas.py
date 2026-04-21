@@ -12,6 +12,8 @@ from app.api.auth import get_current_user
 from app.api.deps import require_permission
 from app.database import get_db
 from app.models.cotizacion import Cotizacion
+from app.models.empresa import Empresa
+from app.models.factura import Factura
 from app.models.nota_venta import NotaVenta, NotaVentaLinea
 from app.models.producto import Producto
 from app.models.system_config import SystemConfig
@@ -98,6 +100,33 @@ def _can_edit(current_user: User, nv: NotaVenta) -> bool:
     if current_user.role in ("admin", "subadmin"):
         return True
     return nv.vendedor_id == current_user.id
+
+
+def _check_credit_limit(db: Session, empresa_id: int | None, total: Decimal, current_user: User) -> None:
+    if current_user.role in ("admin", "subadmin"):
+        return
+    if not empresa_id:
+        return
+    empresa = db.get(Empresa, empresa_id)
+    if not empresa or empresa.limite_credito is None:
+        return
+    facturas = (
+        db.query(Factura)
+        .filter(Factura.empresa_id == empresa_id, Factura.estado != "anulada")
+        .all()
+    )
+    credito_usado = sum(
+        (f.total - (f.monto_pagado or Decimal("0"))
+         for f in facturas
+         if f.total - (f.monto_pagado or Decimal("0")) > 0),
+        Decimal("0"),
+    )
+    credito_disponible = empresa.limite_credito - credito_usado
+    if total > credito_disponible:
+        raise HTTPException(
+            status_code=402,
+            detail=f"Límite de crédito excedido. Disponible: {credito_disponible}, solicitado: {total}",
+        )
 
 
 def _check_lineas_invalidas(lineas: list[NotaVentaLinea]) -> None:
@@ -257,6 +286,7 @@ def crear_nv(
     for linea in nv.lineas:
         linea.nv_id = nv.id
     _recalcular_totales(nv)
+    _check_credit_limit(db, nv.empresa_id, nv.total, current_user)
     _registrar_movimientos_salida(db, nv.id, nv.lineas, current_user.id)
     db.commit()
     return _load_nv(db, nv.id)
