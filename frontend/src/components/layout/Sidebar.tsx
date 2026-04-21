@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Users, Package, ShoppingCart,
   Warehouse, Truck, UserCog, Building2, CreditCard,
-  ChevronLeft, ChevronRight, LogOut, Sun, Moon, X, ClipboardList, Settings, Banknote,
+  ChevronLeft, ChevronRight, LogOut, Sun, Moon, X, ClipboardList, Settings, Banknote, BarChart2,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth'
 import { useTheme } from './ThemeProvider'
@@ -28,6 +28,7 @@ const NAV: { to: string; icon: React.ElementType; label: string; module?: Module
   { to: '/notas-debito',   icon: FileText,        label: 'Notas de Débito' },
   { to: '/pagos',          icon: CreditCard,      label: 'Pagos' },
   { to: '/cobranza',      icon: Banknote,        label: 'Cobranza' },
+  { to: '/reportes',      icon: BarChart2,       label: 'Reportes' },
   { to: '/inventario',     icon: Warehouse,       label: 'Inventario',        module: 'inventario' },
   { to: '/ordenes-compra', icon: ShoppingCart,    label: 'Órdenes de Compra', module: 'ordenes_compra' },
   { to: '/proveedores',    icon: Truck,           label: 'Proveedores',       module: 'proveedores' },

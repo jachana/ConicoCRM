@@ -20,6 +20,7 @@ import Aprobaciones from './pages/Aprobaciones'
 import Dashboard from './pages/Dashboard'
 import Configuracion from './pages/Configuracion'
 import Cobranza from './pages/Cobranza'
+import Reportes from './pages/Reportes'
 import NotasCredito from './pages/NotasCredito'
 import NotaCreditoDetalle from './pages/NotaCreditoDetalle'
 import NotaCreditoNueva from './pages/NotaCreditoNueva'
@@ -71,6 +72,7 @@ export const router = createBrowserRouter([
       { path: 'rrhh', element: <RRHH /> },
       { path: 'inventario', element: <Inventario /> },
       { path: 'cobranza', element: <Cobranza /> },
+      { path: 'reportes', element: <Reportes /> },
     ],
   },
 ])
