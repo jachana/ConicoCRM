@@ -42,6 +42,8 @@ def parse_dte_xml(xml_content: str | bytes) -> dict:
 
     doc = _find(root, "Documento")
     if doc is None:
+        doc = root.find(f".//{{{_NS}}}Documento") or root.find(".//Documento")
+    if doc is None:
         raise ValueError("Elemento <Documento> no encontrado")
 
     encab = _find(doc, "Encabezado")

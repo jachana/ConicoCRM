@@ -110,7 +110,8 @@
       "Bash(node_modules/.bin/tsc --noEmit)",
       "Bash(/C/Otros/Conico/frontend/node_modules/.bin/tsc --noEmit)",
       "Bash(alembic current *)",
-      "Bash(cd C:\\\\\\\\Otros\\\\\\\\Conico)"
+      "Bash(cd C:\\\\\\\\Otros\\\\\\\\Conico)",
+      "PowerShell(Get-Content *)"
     ]
   }
 }
