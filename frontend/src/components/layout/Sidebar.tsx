@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Users, Package, ShoppingCart,
   Warehouse, Receipt, Truck, UserCog, Building2, CreditCard,
-  ChevronLeft, ChevronRight, LogOut, Sun, Moon, X, ClipboardList,
+  ChevronLeft, ChevronRight, LogOut, Sun, Moon, X, ClipboardList, Settings,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth'
 import { useTheme } from './ThemeProvider'
@@ -17,7 +17,7 @@ interface SidebarProps {
   onClose?: () => void
 }
 
-const NAV: { to: string; icon: React.ElementType; label: string; module?: Module }[] = [
+const NAV: { to: string; icon: React.ElementType; label: string; module?: Module; adminOnly?: boolean }[] = [
   { to: '/',               icon: LayoutDashboard, label: 'Dashboard',         module: 'dashboard' },
   { to: '/cotizaciones',   icon: FileText,        label: 'Cotizaciones',      module: 'cotizaciones' },
   { to: '/clientes',       icon: Users,           label: 'Clientes',          module: 'clientes' },
@@ -31,6 +31,7 @@ const NAV: { to: string; icon: React.ElementType; label: string; module?: Module
   { to: '/proveedores',    icon: Truck,           label: 'Proveedores',       module: 'proveedores' },
   { to: '/rrhh',           icon: UserCog,         label: 'RRHH',              module: 'rrhh' },
   { to: '/usuarios',       icon: Users,           label: 'Usuarios',          module: 'usuarios' },
+  { to: '/configuracion',  icon: Settings,        label: 'Configuración',     adminOnly: true },
 ]
 
 export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) {
@@ -94,7 +95,7 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
 
       {/* Nav links */}
       <nav className="flex-1 overflow-y-auto py-2 space-y-0.5">
-        {NAV.filter(item => !item.module || myPermissions?.[item.module]?.view !== false).map(({ to, icon: Icon, label }) => {
+        {NAV.filter(item => (!item.module || myPermissions?.[item.module]?.view !== false) && (!item.adminOnly || isAdminUser)).map(({ to, icon: Icon, label }) => {
           const badge = to === '/inventario' ? stockBajoCount : 0
           return (
             <NavLink

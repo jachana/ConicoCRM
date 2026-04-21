@@ -19,6 +19,7 @@ import FacturaDetalle from './pages/FacturaDetalle'
 import Pagos from './pages/Pagos'
 import Aprobaciones from './pages/Aprobaciones'
 import Dashboard from './pages/Dashboard'
+import Configuracion from './pages/Configuracion'
 import { useAuthStore } from './stores/auth'
 import AppLayout from './components/layout/AppLayout'
 
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Dashboard /> },
       { path: 'usuarios', element: <Users /> },
+      { path: 'configuracion', element: <Configuracion /> },
       { path: 'empresas', element: <Empresas /> },
       { path: 'proveedores', element: <Proveedores /> },
       { path: 'catalogo', element: <Productos /> },
