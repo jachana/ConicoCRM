@@ -12,5 +12,9 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     cors_origins: str = "http://localhost:15173"
+    redis_url: str = "redis://localhost:6379/0"
+    lioren_api_url: str = "https://api.lioren.cl/v1"
+    lioren_api_key: str = ""
+    lioren_webhook_secret: str = ""
 
 settings = Settings()
