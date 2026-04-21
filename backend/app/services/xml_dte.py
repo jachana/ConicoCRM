@@ -79,6 +79,7 @@ def parse_dte_xml(xml_content: str | bytes) -> dict:
     mnt_neto = _decimal(totales, "MntNeto")
     iva = _decimal(totales, "IVA")
     mnt_total = _decimal(totales, "MntTotal")
+    tasa_iva = _decimal(totales, "TasaIVA", default="19") / Decimal("100")
 
     apply_iva = tipo_dte == 33
     lineas = []
@@ -92,7 +93,7 @@ def parse_dte_xml(xml_content: str | bytes) -> dict:
         cantidad = int(float(qty_str))
         valor_neto = Decimal(prc_str)
         total_neto = Decimal(monto_str)
-        linea_iva = (total_neto * Decimal("0.19")).quantize(Decimal("1")) if apply_iva else Decimal("0")
+        linea_iva = (total_neto * tasa_iva).quantize(Decimal("1")) if apply_iva else Decimal("0")
         linea_total = total_neto + linea_iva
 
         lineas.append({
