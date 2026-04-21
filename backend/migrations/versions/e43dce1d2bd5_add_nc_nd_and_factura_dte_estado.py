@@ -30,7 +30,7 @@ def upgrade() -> None:
     sa.Column('monto_neto', sa.Numeric(precision=12, scale=2), nullable=False),
     sa.Column('monto_iva', sa.Numeric(precision=12, scale=2), nullable=False),
     sa.Column('monto_total', sa.Numeric(precision=12, scale=2), nullable=False),
-    sa.Column('dte_estado', sa.String(length=20), nullable=False),
+    sa.Column('dte_estado', sa.String(length=20), server_default=sa.text("'no_emitida'"), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.ForeignKeyConstraint(['cliente_id'], ['clientes.id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('id')
@@ -45,7 +45,7 @@ def upgrade() -> None:
     sa.Column('monto_neto', sa.Numeric(precision=12, scale=2), nullable=False),
     sa.Column('monto_iva', sa.Numeric(precision=12, scale=2), nullable=False),
     sa.Column('monto_total', sa.Numeric(precision=12, scale=2), nullable=False),
-    sa.Column('dte_estado', sa.String(length=20), nullable=False),
+    sa.Column('dte_estado', sa.String(length=20), server_default=sa.text("'no_emitida'"), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.ForeignKeyConstraint(['cliente_id'], ['clientes.id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('id')

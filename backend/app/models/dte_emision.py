@@ -23,9 +23,12 @@ class DteEmision(Base):
     factura_id: Mapped[int | None] = mapped_column(
         ForeignKey("facturas.id", ondelete="CASCADE"), nullable=True
     )
-    # FKs to notas_credito/notas_debito added in Task 3 migration (tables not yet created)
-    nota_credito_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    nota_debito_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    nota_credito_id: Mapped[int | None] = mapped_column(
+        ForeignKey("notas_credito.id", ondelete="CASCADE"), nullable=True
+    )
+    nota_debito_id: Mapped[int | None] = mapped_column(
+        ForeignKey("notas_debito.id", ondelete="CASCADE"), nullable=True
+    )
     monto_neto: Mapped[int] = mapped_column(Integer)
     monto_iva: Mapped[int] = mapped_column(Integer)
     monto_total: Mapped[int] = mapped_column(Integer)
