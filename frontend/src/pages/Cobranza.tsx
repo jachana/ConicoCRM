@@ -225,18 +225,10 @@ function ImportModal({ onClose }: { onClose: () => void }) {
     if (!files || files.length === 0) return
     setUploading(true)
     try {
-      if (files.length === 1) {
-        const form = new FormData()
-        form.append('file', files[0])
-        const r = await api.post('/api/facturas/import/xml', form)
-        setResult({ creadas: 1, actualizadas: 0, errores: [] })
-        if (r.data.origen === 'xml') setResult({ creadas: 0, actualizadas: 1, errores: [] })
-      } else {
-        const form = new FormData()
-        Array.from(files).forEach(f => form.append('files', f))
-        const r = await api.post('/api/facturas/import/xml/bulk', form)
-        setResult(r.data)
-      }
+      const form = new FormData()
+      Array.from(files).forEach(f => form.append('files', f))
+      const r = await api.post('/api/facturas/import/xml/bulk', form)
+      setResult(r.data)
       qc.invalidateQueries({ queryKey: ['cobranza-facturas'] })
       qc.invalidateQueries({ queryKey: ['cobranza-dashboard'] })
     } catch (e: any) {

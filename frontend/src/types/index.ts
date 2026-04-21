@@ -383,7 +383,7 @@ export interface RecordatorioItem {
   empresa_nombre: string | null;
   cliente_nombre: string | null;
   total: number;
-  monto_pagado: number;
+  monto_pagado: number | null;
   saldo: number;
   fecha_vencimiento: string | null;
   dias_vencida: number;
