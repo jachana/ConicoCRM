@@ -19,6 +19,8 @@ class Cotizacion(Base):
     fecha: Mapped[date] = mapped_column(Date, default=date.today)
     estado: Mapped[str] = mapped_column(String(20), default="no_definido")
     nota: Mapped[str | None] = mapped_column(Text, nullable=True)
+    terminos_pago: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    terminos_pago_estado: Mapped[str] = mapped_column(String(20), default="aprobado")
     correo: Mapped[str | None] = mapped_column(String(255), nullable=True)
     total_neto: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     total_iva: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
