@@ -16,10 +16,10 @@ const ESTADO_LABELS: Record<string, string> = {
 }
 
 const ESTADO_COLORS: Record<string, string> = {
-  emitida: 'bg-blue-100 text-blue-700',
-  parcial: 'bg-amber-100 text-amber-700',
-  pagada:  'bg-green-100 text-green-700',
-  anulada: 'bg-red-100 text-red-700',
+  emitida: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  parcial: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  pagada:  'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  anulada: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
 }
 
 const METODOS_PAGO = ['efectivo', 'transferencia', 'cheque', 'debito', 'credito', 'deposito']
@@ -306,7 +306,7 @@ export default function FacturaDetalle() {
           <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
             FAC-{String(factura.numero).padStart(5, '0')}
           </h1>
-          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${ESTADO_COLORS[factura.estado] ?? 'bg-gray-100 text-gray-700'}`}>
+          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${ESTADO_COLORS[factura.estado] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>
             {ESTADO_LABELS[factura.estado] ?? factura.estado}
           </span>
           <DteBadge estado={factura.dte_estado ?? 'no_emitida'} />

@@ -20,11 +20,11 @@ const ESTADO_LABELS: Record<string, string> = {
 }
 
 const ESTADO_COLORS: Record<string, string> = {
-  pendiente:  'bg-gray-100 text-gray-700',
-  despachada: 'bg-blue-100 text-blue-700',
-  entregada:  'bg-yellow-100 text-yellow-700',
-  pagada:     'bg-green-100 text-green-700',
-  cancelada:  'bg-red-100 text-red-700',
+  pendiente:  'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  despachada: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  entregada:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  pagada:     'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  cancelada:  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
 }
 
 function getValidTransitions(estado: string, isAdmin: boolean): string[] {

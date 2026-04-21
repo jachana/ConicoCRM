@@ -193,7 +193,7 @@ export default function OrdenCompraDetalle() {
         </h1>
         {orden && (
           <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${
-            { borrador: 'bg-gray-100 text-gray-600', enviada: 'bg-blue-100 text-blue-700', recibida_parcial: 'bg-yellow-100 text-yellow-700', recibida_completa: 'bg-green-100 text-green-700', cancelada: 'bg-red-100 text-red-700' }[estado] ?? ''
+            { borrador: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300', enviada: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300', recibida_parcial: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300', recibida_completa: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300', cancelada: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' }[estado] ?? ''
           }`}>
             { { borrador: 'Borrador', enviada: 'Enviada', recibida_parcial: 'Recibida parcial', recibida_completa: 'Recibida completa', cancelada: 'Cancelada' }[estado] }
           </span>
