@@ -16,7 +16,7 @@ class Factura(Base):
     nv_id: Mapped[int | None] = mapped_column(
         ForeignKey("nota_ventas.id", ondelete="SET NULL"), nullable=True
     )
-    cliente_id: Mapped[int] = mapped_column(ForeignKey("clientes.id", ondelete="RESTRICT"))
+    cliente_id: Mapped[int | None] = mapped_column(ForeignKey("clientes.id", ondelete="RESTRICT"), nullable=True)
     empresa_id: Mapped[int | None] = mapped_column(
         ForeignKey("empresas.id", ondelete="SET NULL"), nullable=True
     )
@@ -35,6 +35,9 @@ class Factura(Base):
     fecha_pago: Mapped[date | None] = mapped_column(Date, nullable=True)
     monto_pagado: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     metodo_pago: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    origen: Mapped[str] = mapped_column(String(10), default="manual")
+    xml_raw: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ultimo_recordatorio: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -47,7 +50,7 @@ class Factura(Base):
         server_default=text("CURRENT_TIMESTAMP"),
     )
 
-    cliente: Mapped["Cliente"] = relationship("Cliente")
+    cliente: Mapped["Cliente | None"] = relationship("Cliente")
     empresa: Mapped["Empresa | None"] = relationship("Empresa")
     vendedor: Mapped["User | None"] = relationship("User")
     cotizacion: Mapped["Cotizacion | None"] = relationship("Cotizacion")
