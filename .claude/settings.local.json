@@ -81,7 +81,18 @@
       "Bash(pytest tests/test_margin_gate.py -q --tb=no)",
       "Bash(./node_modules/.bin/tsc --noEmit)",
       "Bash(/c/Otros/Conico/frontend/node_modules/.bin/tsc --noEmit)",
-      "Bash(pytest tests/test_margin_gate.py -q)"
+      "Bash(pytest tests/test_margin_gate.py -q)",
+      "Bash(python3 *)",
+      "Bash(C:/Otros/Conico/frontend/node_modules/.bin/tsc *)",
+      "Bash(\"C:/Otros/Conico/frontend/node_modules/.bin/tsc\" --noEmit -p \"C:/Otros/Conico/.worktrees/feat/negative-margin-validation/frontend/tsconfig.json\")",
+      "Bash(\"C:/Otros/Conico/frontend/node_modules/.bin/tsc\" --noEmit -p \"C:/Otros/Conico/frontend/tsconfig.json\")",
+      "Bash(sed -n '93,108p' C:/Otros/Conico/.worktrees/feat/negative-margin-validation/backend/app/api/cotizaciones.py)",
+      "Bash(sed -n '103,117p' C:/Otros/Conico/.worktrees/feat/negative-margin-validation/backend/app/api/nota_ventas.py)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Bash(pg_isready -h localhost -p 15432)",
+      "Bash(pg_isready -h localhost -p 5432)",
+      "Bash(powershell.exe -Command \"Start-Process 'C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe'\")",
+      "Bash(pytest tests/test_cotizacion_terminos.py -v)"
     ]
   }
 }
