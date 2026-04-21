@@ -21,6 +21,7 @@ from app.api import aprobaciones
 from app.api import aprobaciones_margen
 from app.api import cobranza
 from app.api import dte
+from app.api import reportes
 
 app = FastAPI(title="Conico PMS")
 
@@ -53,3 +54,4 @@ app.include_router(aprobaciones.router, prefix="/api/aprobaciones", tags=["aprob
 app.include_router(aprobaciones_margen.router, prefix="/api/aprobaciones_margen", tags=["aprobaciones_margen"])
 app.include_router(cobranza.router, prefix="/api/cobranza", tags=["cobranza"])
 app.include_router(dte.router, prefix="/api/dte", tags=["dte"])
+app.include_router(reportes.router, prefix="/api/reportes", tags=["reportes"])
