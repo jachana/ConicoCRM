@@ -341,6 +341,7 @@ def crear_nv_desde_cotizacion(
     _check_lineas_invalidas(lineas)
     nv.lineas = lineas
     _recalcular_totales(nv)
+    _check_credit_limit(db, nv.empresa_id, nv.total, current_user)
 
     cot.estado = "cerrada_fv"
     _registrar_movimientos_salida(db, nv.id, nv.lineas, current_user.id)

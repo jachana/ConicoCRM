@@ -123,3 +123,72 @@ def test_no_limit_set_vendedor_can_create(client, vendedor_token, vendedor_user,
         headers={"Authorization": f"Bearer {vendedor_token}"},
     )
     assert resp.status_code == 201
+
+
+# ── from_cotizacion tests ─────────────────────────────────────────────────────
+
+def _make_cotizacion_with_product(db, cliente_id, vendedor_id, empresa_id, producto_id, linea_total):
+    """Create a cotizacion with one linea that has a producto_id."""
+    from app.models.cotizacion import Cotizacion, CotizacionLinea
+    cot = Cotizacion(
+        numero=random.randint(10000, 99999),
+        cliente_id=cliente_id,
+        vendedor_id=vendedor_id,
+        empresa_id=empresa_id,
+        fecha=date.today(),
+        total=Decimal(str(linea_total)),
+    )
+    db.add(cot)
+    db.flush()
+    total = Decimal(str(linea_total))
+    total_neto = (total / Decimal("1.19")).quantize(Decimal("0.01"))
+    iva = total - total_neto
+    linea = CotizacionLinea(
+        cotizacion_id=cot.id,
+        orden=1,
+        producto_id=producto_id,
+        descripcion="Test item",
+        cantidad=1,
+        valor_neto=total_neto,
+        total_neto=total_neto,
+        iva=iva,
+        total=total,
+    )
+    db.add(linea)
+    db.commit()
+    db.refresh(cot)
+    return cot
+
+
+def test_vendedor_blocked_from_cotizacion_over_limit(client, vendedor_token, vendedor_user, db):
+    """Vendedor cannot convert cotizacion to NV when it exceeds credito_disponible."""
+    cliente = _make_cliente(db)
+    empresa = _make_empresa(db, limite_credito=Decimal("100000"))
+    producto = _make_producto(db)
+    _make_factura(db, empresa.id, cliente.id, total=90000)
+    # Cotizacion total (with IVA) = 11900, disponible = 10000 → blocked
+    cot = _make_cotizacion_with_product(
+        db, cliente.id, vendedor_user.id, empresa.id, producto.id, linea_total=11900
+    )
+    resp = client.post(
+        f"/api/nota_ventas/from_cotizacion/{cot.id}",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert resp.status_code == 402
+    assert "crédito" in resp.json()["detail"].lower()
+
+
+def test_admin_bypasses_credit_from_cotizacion(client, admin_token, admin_user, db):
+    """Admin can convert cotizacion to NV even when over credit limit."""
+    cliente = _make_cliente(db)
+    empresa = _make_empresa(db, limite_credito=Decimal("1000"))
+    producto = _make_producto(db)
+    _make_factura(db, empresa.id, cliente.id, total=1000)
+    cot = _make_cotizacion_with_product(
+        db, cliente.id, admin_user.id, empresa.id, producto.id, linea_total=50000
+    )
+    resp = client.post(
+        f"/api/nota_ventas/from_cotizacion/{cot.id}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 201
