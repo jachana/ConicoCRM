@@ -124,3 +124,31 @@ def test_dte_report_returns_valid_structure(client, admin_token):
     data = r.json()
     assert "kpis" in data and "por_tipo" in data and "emisiones" in data
     assert "total_emitidos" in data["kpis"]
+
+
+def test_ventas_excel_export(client, admin_token):
+    r = client.get(
+        "/api/reportes/ventas/export/excel?date_from=2026-01-01&date_to=2026-12-31",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert "spreadsheetml" in r.headers["content-type"]
+    assert "ventas-" in r.headers["content-disposition"]
+
+
+def test_cobranza_excel_export(client, admin_token):
+    r = client.get(
+        "/api/reportes/cobranza/export/excel?date_from=2026-01-01&date_to=2026-12-31",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert "spreadsheetml" in r.headers["content-type"]
+
+
+def test_inventario_excel_export(client, admin_token):
+    r = client.get(
+        "/api/reportes/inventario/export/excel?date_from=2026-01-01&date_to=2026-12-31",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert "spreadsheetml" in r.headers["content-type"]

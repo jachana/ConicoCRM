@@ -3,8 +3,11 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 from decimal import Decimal
+from io import BytesIO
 
+import openpyxl
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -18,6 +21,20 @@ from app.models.producto import Producto
 from app.models.user import User
 
 router = APIRouter()
+
+EXCEL_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def _excel_response(wb: openpyxl.Workbook, tab: str, date_from: date, date_to: date) -> StreamingResponse:
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    filename = f"{tab}-{date_from}-{date_to}.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type=EXCEL_MIME,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 _ZERO = Decimal("0")
 
@@ -660,3 +677,441 @@ def reporte_dte(
         "por_tipo": por_tipo,
         "emisiones": emisiones_out,
     }
+
+
+# ---------------------------------------------------------------------------
+# Excel export helpers (shared data fetchers)
+# ---------------------------------------------------------------------------
+
+def _get_inventario(date_from: date, date_to: date, db: Session) -> dict:
+    """Return inventario data dict (same logic as reporte_inventario)."""
+    productos = db.query(Producto).all()
+    valor_total_stock = sum((p.precio_costo * p.stock_actual for p in productos), _ZERO)
+    bajo_minimo_list = [p for p in productos if p.stock_actual < p.stock_minimo]
+    num_sin_stock = sum(1 for p in productos if p.stock_actual <= 0)
+
+    date_to_dt_exclusive = date_to + timedelta(days=1)
+    movimientos = (
+        db.query(MovimientoInventario)
+        .options(joinedload(MovimientoInventario.producto))
+        .filter(
+            MovimientoInventario.tipo == "salida",
+            MovimientoInventario.created_at >= date_from,
+            MovimientoInventario.created_at < date_to_dt_exclusive,
+        )
+        .all()
+    )
+
+    top_map: dict[int, dict] = {}
+    for m in movimientos:
+        entry = top_map.setdefault(
+            m.producto_id,
+            {
+                "producto_id": m.producto_id,
+                "nombre": m.producto.nombre if m.producto else "",
+                "cantidad_vendida": 0,
+                "monto_total": _ZERO,
+            },
+        )
+        entry["cantidad_vendida"] += m.cantidad
+        precio = m.producto.precio_venta if m.producto else _ZERO
+        entry["monto_total"] += Decimal(str(m.cantidad)) * precio
+
+    top_vendidos = sorted(top_map.values(), key=lambda x: x["cantidad_vendida"], reverse=True)[:10]
+    for t in top_vendidos:
+        t["monto_total"] = float(t["monto_total"])
+
+    return {
+        "productos": productos,
+        "top_vendidos": top_vendidos,
+        "kpis": {
+            "valor_total_stock": float(valor_total_stock),
+            "num_bajo_minimo": len(bajo_minimo_list),
+            "num_sin_stock": num_sin_stock,
+        },
+    }
+
+
+def _get_margenes(date_from: date, date_to: date, db: Session, vendedor_id: int | None) -> dict:
+    """Return margenes data dict (same logic as reporte_margenes)."""
+    base_q = (
+        db.query(Factura)
+        .options(joinedload(Factura.lineas))
+        .filter(
+            Factura.fecha >= date_from,
+            Factura.fecha <= date_to,
+            Factura.estado != "anulada",
+        )
+    )
+    if vendedor_id is not None:
+        base_q = base_q.filter(Factura.vendedor_id == vendedor_id)
+
+    facturas: list[Factura] = base_q.all()
+
+    por_factura_list: list[dict] = []
+    prod_map: dict[int, dict] = {}
+
+    for f in facturas:
+        lineas_con_margen = [ln for ln in f.lineas if ln.margen is not None]
+        total_neto_f = sum((ln.valor_neto for ln in f.lineas), _ZERO)
+        margen_total = sum(
+            (ln.margen * ln.valor_neto for ln in lineas_con_margen), _ZERO
+        )
+        if total_neto_f > _ZERO:
+            margen_pct_f = float(margen_total / total_neto_f * 100)
+        else:
+            margen_pct_f = 0.0
+
+        por_factura_list.append(
+            {
+                "factura_id": f.id,
+                "numero": f.numero,
+                "total": float(f.total),
+                "margen_total": float(margen_total),
+                "margen_pct": round(margen_pct_f, 2),
+            }
+        )
+
+        for ln in f.lineas:
+            if ln.margen is None or ln.producto_id is None:
+                continue
+            key = ln.producto_id
+            entry = prod_map.setdefault(
+                key,
+                {
+                    "nombre": ln.descripcion,
+                    "cantidad_vendida": 0,
+                    "precio_venta_sum": _ZERO,
+                    "precio_venta_count": 0,
+                    "margen_pct_sum": Decimal("0"),
+                    "margen_pct_count": 0,
+                    "precio_costo_sum": _ZERO,
+                    "precio_costo_count": 0,
+                },
+            )
+            entry["cantidad_vendida"] += ln.cantidad
+            if ln.cantidad > 0:
+                entry["precio_venta_sum"] += ln.valor_neto / ln.cantidad
+                entry["precio_venta_count"] += 1
+            entry["margen_pct_sum"] += ln.margen * 100
+            entry["margen_pct_count"] += 1
+
+    por_producto: list[dict] = []
+    for entry in prod_map.values():
+        avg_venta = (
+            float(entry["precio_venta_sum"] / entry["precio_venta_count"])
+            if entry["precio_venta_count"] > 0
+            else 0.0
+        )
+        avg_margen = (
+            float(entry["margen_pct_sum"] / entry["margen_pct_count"])
+            if entry["margen_pct_count"] > 0
+            else 0.0
+        )
+        por_producto.append(
+            {
+                "nombre": entry["nombre"],
+                "cantidad_vendida": entry["cantidad_vendida"],
+                "precio_costo_promedio": 0.0,
+                "precio_venta_promedio": round(avg_venta, 2),
+                "margen_pct": round(avg_margen, 2),
+            }
+        )
+
+    return {"por_producto": por_producto, "por_factura": por_factura_list}
+
+
+# ---------------------------------------------------------------------------
+# GET /ventas/export/excel
+# ---------------------------------------------------------------------------
+
+@router.get("/ventas/export/excel")
+def exportar_ventas_excel(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    current_user, db = perms
+
+    base_q = (
+        db.query(Factura)
+        .options(joinedload(Factura.cliente), joinedload(Factura.vendedor))
+        .filter(
+            Factura.fecha >= date_from,
+            Factura.fecha <= date_to,
+            Factura.estado != "anulada",
+        )
+    )
+    if current_user.role == "vendedor":
+        base_q = base_q.filter(Factura.vendedor_id == current_user.id)
+
+    facturas = base_q.all()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Ventas"
+    ws.append(["Fecha", "Cliente", "Vendedor", "Total Neto", "IVA", "Total", "Estado"])
+    for f in facturas:
+        total_neto = round(float(f.total) / 1.19, 2)
+        iva = round(float(f.total) - total_neto, 2)
+        ws.append([
+            f.fecha.strftime("%d/%m/%Y") if f.fecha else "",
+            f.cliente.nombre if f.cliente else "",
+            f.vendedor.name if f.vendedor else "",
+            total_neto,
+            iva,
+            float(f.total),
+            f.estado,
+        ])
+
+    return _excel_response(wb, "ventas", date_from, date_to)
+
+
+# ---------------------------------------------------------------------------
+# GET /cobranza/export/excel
+# ---------------------------------------------------------------------------
+
+@router.get("/cobranza/export/excel")
+def exportar_cobranza_excel(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    _, db = perms
+
+    today = date.today()
+
+    facturas = (
+        db.query(Factura)
+        .options(joinedload(Factura.empresa))
+        .filter(
+            Factura.fecha >= date_from,
+            Factura.fecha <= date_to,
+            Factura.estado != "anulada",
+        )
+        .all()
+    )
+
+    factura_ids = [f.id for f in facturas]
+    pago_rows = (
+        db.query(Pago.factura_id, func.sum(Pago.monto))
+        .filter(Pago.factura_id.in_(factura_ids))
+        .group_by(Pago.factura_id)
+        .all()
+    ) if factura_ids else []
+    pago_map: dict[int, Decimal] = {fid: Decimal(str(m)) for fid, m in pago_rows}
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Cobranza"
+    ws.append(["Empresa", "N° Factura", "Fecha Vencimiento", "Total", "Pagado", "Saldo", "Días Vencida"])
+
+    for f in facturas:
+        pagado = pago_map.get(f.id, _ZERO)
+        saldo = f.total - pagado
+        if saldo <= _ZERO:
+            continue
+
+        venc = f.fecha_vencimiento
+        if venc is not None and venc < today:
+            dias_vencida = (today - venc).days
+        else:
+            dias_vencida = 0
+
+        ws.append([
+            f.empresa.nombre if f.empresa else "",
+            f.numero,
+            venc.strftime("%d/%m/%Y") if venc else "",
+            float(f.total),
+            float(pagado),
+            float(saldo),
+            dias_vencida,
+        ])
+
+    return _excel_response(wb, "cobranza", date_from, date_to)
+
+
+# ---------------------------------------------------------------------------
+# GET /inventario/export/excel
+# ---------------------------------------------------------------------------
+
+@router.get("/inventario/export/excel")
+def exportar_inventario_excel(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    _, db = perms
+
+    data = _get_inventario(date_from, date_to, db)
+    productos = data["productos"]
+    top_vendidos = data["top_vendidos"]
+
+    wb = openpyxl.Workbook()
+
+    # Sheet 1: Stock Actual
+    ws1 = wb.active
+    ws1.title = "Stock Actual"
+    ws1.append(["SKU", "Nombre", "Stock Actual", "Stock Mínimo", "Precio Costo", "Precio Venta", "Valor Stock"])
+    for p in productos:
+        ws1.append([
+            p.sku or "",
+            p.nombre,
+            p.stock_actual,
+            p.stock_minimo,
+            float(p.precio_costo),
+            float(p.precio_venta),
+            float(p.precio_costo * p.stock_actual),
+        ])
+
+    # Sheet 2: Top Vendidos
+    ws2 = wb.create_sheet("Top Vendidos")
+    ws2.append(["Nombre", "Cantidad Vendida", "Monto Total"])
+    for t in top_vendidos:
+        ws2.append([
+            t["nombre"],
+            t["cantidad_vendida"],
+            t["monto_total"],
+        ])
+
+    return _excel_response(wb, "inventario", date_from, date_to)
+
+
+# ---------------------------------------------------------------------------
+# GET /compras/export/excel
+# ---------------------------------------------------------------------------
+
+@router.get("/compras/export/excel")
+def exportar_compras_excel(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    _, db = perms
+
+    ocs: list[OrdenCompra] = (
+        db.query(OrdenCompra)
+        .options(joinedload(OrdenCompra.proveedor))
+        .filter(
+            OrdenCompra.fecha >= date_from,
+            OrdenCompra.fecha <= date_to,
+        )
+        .all()
+    )
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Compras"
+    ws.append(["N° OC", "Fecha", "Proveedor", "Estado", "Total Neto", "IVA", "Total"])
+
+    for oc in ocs:
+        total_neto = round(float(oc.total) / 1.19, 2)
+        iva = round(float(oc.total) - total_neto, 2)
+        ws.append([
+            oc.numero,
+            oc.fecha.strftime("%d/%m/%Y") if oc.fecha else "",
+            oc.proveedor.nombre if oc.proveedor else "",
+            oc.estado,
+            total_neto,
+            iva,
+            float(oc.total),
+        ])
+
+    return _excel_response(wb, "compras", date_from, date_to)
+
+
+# ---------------------------------------------------------------------------
+# GET /margenes/export/excel
+# ---------------------------------------------------------------------------
+
+@router.get("/margenes/export/excel")
+def exportar_margenes_excel(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    current_user, db = perms
+
+    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    data = _get_margenes(date_from, date_to, db, vendedor_id)
+    por_producto = data["por_producto"]
+    por_factura = data["por_factura"]
+
+    wb = openpyxl.Workbook()
+
+    # Sheet 1: Márgenes por Producto
+    ws1 = wb.active
+    ws1.title = "Márgenes por Producto"
+    ws1.append(["Nombre", "Cantidad Vendida", "Precio Costo Prom.", "Precio Venta Prom.", "Margen %"])
+    for p in por_producto:
+        ws1.append([
+            p["nombre"],
+            p["cantidad_vendida"],
+            p["precio_costo_promedio"],
+            p["precio_venta_promedio"],
+            p["margen_pct"],
+        ])
+
+    # Sheet 2: Márgenes por Factura
+    ws2 = wb.create_sheet("Márgenes por Factura")
+    ws2.append(["N° Factura", "Total", "Margen Total", "Margen %"])
+    for f in por_factura:
+        ws2.append([
+            f["numero"],
+            f["total"],
+            f["margen_total"],
+            f["margen_pct"],
+        ])
+
+    return _excel_response(wb, "margenes", date_from, date_to)
+
+
+# ---------------------------------------------------------------------------
+# GET /dte/export/excel
+# ---------------------------------------------------------------------------
+
+@router.get("/dte/export/excel")
+def exportar_dte_excel(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    _, db = perms
+
+    date_to_exclusive = date_to + timedelta(days=1)
+
+    emisiones: list[DteEmision] = (
+        db.query(DteEmision)
+        .filter(
+            DteEmision.created_at >= date_from,
+            DteEmision.created_at < date_to_exclusive,
+        )
+        .all()
+    )
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "DTE"
+    ws.append(["Tipo", "Folio", "TrackID", "Estado", "Monto Total", "Fecha Emisión", "Fecha Aceptación"])
+
+    for e in emisiones:
+        tipo_label = _DTE_LABELS.get(e.tipo, e.tipo)
+        fecha_emision = e.created_at.date().strftime("%d/%m/%Y") if e.created_at is not None else ""
+        fecha_aceptacion = e.aceptado_at.strftime("%d/%m/%Y") if e.aceptado_at is not None else ""
+        ws.append([
+            tipo_label,
+            e.folio,
+            e.track_id or "",
+            e.estado,
+            e.monto_total,
+            fecha_emision,
+            fecha_aceptacion,
+        ])
+
+    return _excel_response(wb, "dte", date_from, date_to)
