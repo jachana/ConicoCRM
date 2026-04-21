@@ -451,3 +451,53 @@ export interface NotaDebito {
   created_at: string
   lineas: NotaDebitoLinea[]
 }
+
+// ── Reportes ──────────────────────────────────────────────────────────────────
+export interface ReportesVentasKpis {
+  total_vendido: number
+  num_facturas: number
+  ticket_promedio: number
+  total_por_cobrar: number
+  variacion_vs_periodo_anterior: number
+}
+
+export interface ReportesVentas {
+  kpis: ReportesVentasKpis
+  ventas_diarias: { fecha: string; monto: number }[]
+  top_clientes: { cliente_id: number; nombre: string; total: number; num_facturas: number }[]
+  por_vendedor: { vendedor_id: number; nombre: string; total: number; num_facturas: number }[]
+}
+
+export interface ReportesCobranza {
+  kpis: { total_por_cobrar: number; total_vencido: number; proximas_a_vencer_7d: number }
+  aging: Record<'d_0_30' | 'd_31_60' | 'd_61_90' | 'd_90_plus', { count: number; monto: number }>
+  por_empresa: { empresa_id: number; nombre: string; saldo: number; dias_vencida: number }[]
+}
+
+export interface ReportesInventario {
+  kpis: { valor_total_stock: number; num_bajo_minimo: number; num_sin_stock: number }
+  bajo_minimo: { producto_id: number; nombre: string; sku: string; stock_actual: number; stock_minimo: number }[]
+  top_vendidos: { producto_id: number; nombre: string; cantidad_vendida: number; monto_total: number }[]
+}
+
+export interface ReportesCompras {
+  kpis: { total_comprado: number; num_oc_emitidas: number; num_oc_pendientes: number }
+  por_proveedor: { proveedor_id: number; nombre: string; total: number; num_oc: number }[]
+  por_estado: { estado: string; count: number; total: number }[]
+}
+
+export interface ReportesMargenes {
+  kpis: {
+    margen_promedio_pct: number
+    mejor_producto: { nombre: string; margen_pct: number } | null
+    peor_producto: { nombre: string; margen_pct: number } | null
+  }
+  por_producto: { producto_id: number; nombre: string; cantidad_vendida: number; precio_costo_promedio: number; precio_venta_promedio: number; margen_pct: number }[]
+  por_factura: { factura_id: number; numero: number; total: number; margen_total: number; margen_pct: number }[]
+}
+
+export interface ReportesDte {
+  kpis: { total_emitidos: number; aceptadas: number; rechazadas: number; pendientes: number }
+  por_tipo: { tipo: string; label: string; count: number; aceptadas: number }[]
+  emisiones: { id: number; tipo: string; folio: number | null; estado: string; monto_total: number; created_at: string | null; detalle_rechazo: string | null }[]
+}
