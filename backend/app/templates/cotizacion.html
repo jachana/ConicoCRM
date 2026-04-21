@@ -74,9 +74,9 @@
   <div class="cliente-nombre">{{ cotizacion.cliente.nombre if cotizacion.cliente else '' }}</div>
   <div class="cliente-grid">
     {% if cotizacion.empresa and cotizacion.empresa.rut %}
-    <div><strong>RUT:</strong> {{ cotizacion.empresa.rut }}</div>
+    <div><strong>RUT Cliente:</strong> {{ cotizacion.empresa.rut }}</div>
     {% elif cotizacion.cliente and cotizacion.cliente.rut %}
-    <div><strong>RUT:</strong> {{ cotizacion.cliente.rut }}</div>
+    <div><strong>RUT Cliente:</strong> {{ cotizacion.cliente.rut }}</div>
     {% endif %}
     {% if cotizacion.contacto %}
     <div><strong>Contacto:</strong> {{ cotizacion.contacto }}</div>
