@@ -50,6 +50,14 @@ function fmtMoney(n: number | string | null | undefined) {
   return `$ ${Math.round(Number(n) || 0).toLocaleString('es-CL')}`
 }
 
+function parseDias(plazo: string | null | undefined): number {
+  if (!plazo) return 0
+  const lower = plazo.toLowerCase()
+  if (lower.includes('contado')) return 0
+  const m = lower.match(/(\d+)/)
+  return m ? parseInt(m[1]) : 0
+}
+
 function getLineasErrors(lineas: LineaLocal[]): string[] {
   const errors: string[] = []
   if (lineas.some(l => l.producto_id === null || l.producto_id === undefined))
@@ -69,6 +77,7 @@ function cotizacionSnapshot(cot: Cotizacion): string {
     estado: cot.estado,
     nota: cot.nota ?? '',
     empresaId: cot.empresa_id ?? '',
+    terminosPago: cot.terminos_pago ?? '',
     lineas: (cot.lineas ?? []).map(l => ({
       producto_id: l.producto_id ?? null,
       cantidad: l.cantidad,
@@ -131,11 +140,14 @@ export default function CotizacionDetalle() {
   const [pendingAction, setPendingAction] = useState<'pdf' | 'email' | null>(null)
   const [modalSaving, setModalSaving] = useState(false)
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
+  const [terminosPago, setTerminosPago] = useState('')
+  const [terminosPagoEstado, setTerminosPagoEstado] = useState('aprobado')
 
   const lineasErrors = useMemo(() => getLineasErrors(lineas), [lineas])
 
   const currentSnapshot = useMemo(() => JSON.stringify({
     clienteId, vendedorId, contacto, correo, fecha, estado, nota, empresaId,
+    terminosPago,
     lineas: lineas.map(l => ({
       producto_id: l.producto_id ?? null,
       cantidad: l.cantidad,
@@ -144,7 +156,7 @@ export default function CotizacionDetalle() {
       sku: l.sku ?? null,
       formato: l.formato ?? null,
     }))
-  }), [clienteId, vendedorId, contacto, correo, fecha, estado, nota, empresaId, lineas])
+  }), [clienteId, vendedorId, contacto, correo, fecha, estado, nota, empresaId, terminosPago, lineas])
 
   const isDirty = !isNew && savedSnapshot !== null && currentSnapshot !== savedSnapshot
 
@@ -189,6 +201,8 @@ export default function CotizacionDetalle() {
       setEstado(cotizacion.estado)
       setNota(cotizacion.nota ?? '')
       setEmpresaId(cotizacion.empresa_id ?? '')
+      setTerminosPago(cotizacion.terminos_pago ?? '')
+      setTerminosPagoEstado(cotizacion.terminos_pago_estado ?? 'aprobado')
       setLineas(
         (cotizacion.lineas ?? []).map((l, i) => calcLinea({
           ...l,
@@ -221,6 +235,13 @@ export default function CotizacionDetalle() {
     queryFn: () => api.get('/api/empresas/').then(r => r.data),
   })
 
+  const selectedEmpresa = empresas.find(e => e.id === empresaId) ?? null
+  const terminosPagoNeedsApproval = !isAdmin
+    && !!terminosPago
+    && !!selectedEmpresa?.plazo_credito
+    && parseDias(terminosPago) > parseDias(selectedEmpresa.plazo_credito)
+  const tpBlocked = !isAdmin && (terminosPagoNeedsApproval || terminosPagoEstado === 'pendiente')
+
   const { data: productos = [] } = useQuery<Producto[]>({
     queryKey: ['productos'],
     queryFn: () => api.get('/api/productos/').then(r => r.data),
@@ -234,10 +255,22 @@ export default function CotizacionDetalle() {
         if (c) {
           setContacto(c.nombre)
           setCorreo(c.email ?? '')
-          if (c.empresa_id) setEmpresaId(c.empresa_id)
+          if (c.empresa_id) {
+            setEmpresaId(c.empresa_id)
+            const emp = empresas.find(e => e.id === c.empresa_id)
+            if (emp?.plazo_credito) setTerminosPago(emp.plazo_credito)
+          }
         }
       }
     })
+  }
+
+  function handleEmpresaChange(eid: number | '') {
+    setEmpresaId(eid)
+    if (eid) {
+      const emp = empresas.find(e => e.id === eid)
+      if (emp?.plazo_credito) setTerminosPago(emp.plazo_credito)
+    }
   }
 
   const selectedCliente = clientes.find(c => c.id === clienteId) ?? null
@@ -460,6 +493,7 @@ export default function CotizacionDetalle() {
         estado,
         nota: nota || null,
         empresa_id: empresaId || null,
+        terminos_pago: terminosPago || null,
       }
       const lineasPayload = lineas.map((l, i) => ({
         orden: i + 1,
@@ -514,6 +548,8 @@ export default function CotizacionDetalle() {
       setEstado(cotizacion.estado)
       setNota(cotizacion.nota ?? '')
       setEmpresaId(cotizacion.empresa_id ?? '')
+      setTerminosPago(cotizacion.terminos_pago ?? '')
+      setTerminosPagoEstado(cotizacion.terminos_pago_estado ?? 'aprobado')
       setLineas(
         (cotizacion.lineas ?? []).map((l, i) => calcLinea({
           ...l,
@@ -556,6 +592,17 @@ export default function CotizacionDetalle() {
     },
   })
 
+  const approveTerminosPagoMut = useMutation({
+    mutationFn: (estado: 'aprobado' | 'rechazado') =>
+      api.patch(`/api/cotizaciones/${id}`, { terminos_pago_estado: estado }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['cotizacion', id] })
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.detail || 'Error al actualizar términos de pago')
+    },
+  })
+
   return (
     <div className="p-4 md:p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
@@ -576,10 +623,11 @@ export default function CotizacionDetalle() {
                   if (isDirty) { setPendingAction('pdf'); setUnsavedModal(true); return }
                   openPdf(`/api/cotizaciones/${id}/pdf`)
                 }}
-                disabled={(!isAdmin && !!marginStatus?.blocked) || lineasErrors.length > 0}
+                disabled={(!isAdmin && !!marginStatus?.blocked) || tpBlocked || lineasErrors.length > 0}
                 title={
                   lineasErrors.length > 0 ? lineasErrors.join(' | ')
-                  : (!isAdmin && marginStatus?.blocked) ? 'Requiere aprobacion de margenes'
+                  : (!isAdmin && marginStatus?.blocked) ? 'Requiere aprobación de márgenes'
+                  : tpBlocked ? 'Requiere aprobación de términos de pago'
                   : undefined
                 }
                 className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -593,10 +641,11 @@ export default function CotizacionDetalle() {
                   if (isDirty) { setPendingAction('email'); setUnsavedModal(true); return }
                   emailMut.mutate()
                 }}
-                disabled={emailMut.isPending || (!isAdmin && !!marginStatus?.blocked) || lineasErrors.length > 0}
+                disabled={emailMut.isPending || (!isAdmin && !!marginStatus?.blocked) || tpBlocked || lineasErrors.length > 0}
                 title={
                   lineasErrors.length > 0 ? lineasErrors.join(' | ')
-                  : (!isAdmin && marginStatus?.blocked) ? 'Requiere aprobacion de margenes'
+                  : (!isAdmin && marginStatus?.blocked) ? 'Requiere aprobación de márgenes'
+                  : tpBlocked ? 'Requiere aprobación de términos de pago'
                   : undefined
                 }
                 className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -691,6 +740,40 @@ export default function CotizacionDetalle() {
         </div>
       )}
 
+      {!isAdmin && !isNew && tpBlocked && (
+        <div className="mb-4 px-4 py-3 rounded-lg text-sm border flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400">
+          {terminosPagoEstado === 'pendiente'
+            ? 'Términos de pago extendidos — pendiente de aprobación. PDF y email deshabilitados.'
+            : 'Los términos de pago requieren aprobación antes de generar PDF o enviar email.'}
+        </div>
+      )}
+      {!isAdmin && !isNew && terminosPagoEstado === 'rechazado' && (
+        <div className="mb-4 px-4 py-3 rounded-lg text-sm border flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400">
+          Términos de pago rechazados por el administrador. Actualiza los términos y guarda.
+        </div>
+      )}
+      {isAdmin && !isNew && cotizacion?.terminos_pago_estado === 'pendiente' && (
+        <div className="mb-4 px-4 py-3 rounded-lg text-sm bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 flex items-center justify-between gap-3">
+          <span>Términos de pago extendidos requieren aprobación: <strong>{cotizacion.terminos_pago}</strong></span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => approveTerminosPagoMut.mutate('aprobado')}
+              disabled={approveTerminosPagoMut.isPending}
+              className="px-3 py-1 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+            >
+              Aprobar
+            </button>
+            <button
+              onClick={() => approveTerminosPagoMut.mutate('rechazado')}
+              disabled={approveTerminosPagoMut.isPending}
+              className="px-3 py-1 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+            >
+              Rechazar
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 mb-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
@@ -710,7 +793,7 @@ export default function CotizacionDetalle() {
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Empresa</label>
                 <select
                   value={empresaId}
-                  onChange={e => setEmpresaId(e.target.value ? Number(e.target.value) : '')}
+                  onChange={e => handleEmpresaChange(e.target.value ? Number(e.target.value) : '')}
                   disabled={!!clienteId}
                   className={`w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${clienteId ? 'bg-gray-50 dark:bg-gray-800/50 cursor-default' : 'bg-white dark:bg-gray-800'}`}
                 >
@@ -768,6 +851,23 @@ export default function CotizacionDetalle() {
             <textarea value={nota} onChange={e => setNota(e.target.value)} rows={2}
               className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               placeholder="Notas internas o para el cliente..." />
+          </div>
+          <div className="sm:col-span-2 lg:col-span-3">
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+              Términos de Pago
+              {terminosPagoNeedsApproval && (
+                <span className="ml-2 px-1.5 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded font-medium">
+                  Requiere aprobación
+                </span>
+              )}
+            </label>
+            <input
+              type="text"
+              value={terminosPago}
+              onChange={e => setTerminosPago(e.target.value)}
+              placeholder="Ej: 30 Días, Al contado, 60 Días..."
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
         </div>
       </div>
