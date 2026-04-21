@@ -20,6 +20,7 @@ import Pagos from './pages/Pagos'
 import Aprobaciones from './pages/Aprobaciones'
 import Dashboard from './pages/Dashboard'
 import Configuracion from './pages/Configuracion'
+import Cobranza from './pages/Cobranza'
 import { useAuthStore } from './stores/auth'
 import AppLayout from './components/layout/AppLayout'
 
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
       { path: 'aprobaciones', element: <Aprobaciones /> },
       { path: 'rrhh', element: <RRHH /> },
       { path: 'inventario', element: <Inventario /> },
+      { path: 'cobranza', element: <Cobranza /> },
     ],
   },
 ])

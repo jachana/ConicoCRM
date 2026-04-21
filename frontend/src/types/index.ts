@@ -244,13 +244,16 @@ export interface Factura {
   numero: number;
   cotizacion_id: number | null;
   nv_id: number | null;
-  cliente_id: number;
+  cliente_id: number | null;
   vendedor_id: number | null;
   empresa_id: number | null;
   contacto: string | null;
   fecha: string;
   fecha_vencimiento: string | null;
   estado: string;
+  origen: string;
+  xml_raw: string | null;
+  ultimo_recordatorio: string | null;
   nota: string | null;
   correo: string | null;
   total_neto: number;
@@ -342,4 +345,54 @@ export interface StockBajoItem {
   sku: string | null
   stock_actual: number
   stock_minimo: number
+}
+
+export interface CobranzaConfig {
+  id: number;
+  empresa_id: number;
+  dias_frecuencia: number;
+}
+
+export interface AgingBucket {
+  count: number;
+  monto: number;
+}
+
+export interface CobranzaDashboard {
+  total_por_cobrar: number;
+  total_vencido: number;
+  proximas_a_vencer: number;
+  aging: {
+    d_0_30: AgingBucket;
+    d_31_60: AgingBucket;
+    d_61_90: AgingBucket;
+    d_90_plus: AgingBucket;
+  };
+  por_empresa: Array<{
+    empresa_id: number;
+    empresa_nombre: string;
+    total: number;
+    vencido: number;
+  }>;
+}
+
+export interface RecordatorioItem {
+  id: number;
+  numero: number;
+  empresa_id: number | null;
+  empresa_nombre: string | null;
+  cliente_nombre: string | null;
+  total: number;
+  monto_pagado: number;
+  saldo: number;
+  fecha_vencimiento: string | null;
+  dias_vencida: number;
+  ultimo_recordatorio: string | null;
+  correo_enviar: string | null;
+}
+
+export interface ImportXMLResult {
+  creadas: number;
+  actualizadas: number;
+  errores: Array<{ filename: string; message: string }>;
 }
