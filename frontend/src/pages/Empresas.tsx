@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import type { Empresa, EmpresaDeuda, DeudaBulkItem } from '../types'
 
@@ -62,6 +63,19 @@ export default function Empresas() {
   const [sortField, setSortField] = useState<'deuda_total' | 'deuda_vencida' | 'nombre'>('deuda_total')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [filterConDeuda, setFilterConDeuda] = useState(false)
+
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    if (searchParams.get('create') !== 'true') return
+    const rut = searchParams.get('rut') || ''
+    const nombre = searchParams.get('nombre') || ''
+    const email = searchParams.get('email') || ''
+    setForm({ ...EMPTY_FORM, rut, nombre, email })
+    setEditando(null)
+    setModalOpen(true)
+    setSearchParams({}, { replace: true })
+  }, [])
 
   const totalDeuda = deudaBulk.reduce((s, d) => s + Number(d.deuda_total), 0)
   const totalVencida = deudaBulk.reduce((s, d) => s + Number(d.deuda_vencida), 0)
