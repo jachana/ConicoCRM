@@ -395,7 +395,15 @@ export interface RecordatorioItem {
 export interface ImportXMLResult {
   creadas: number;
   actualizadas: number;
-  errores: Array<{ filename: string; message: string }>;
+  errores: Array<{
+    filename: string;
+    message: string;
+    empresa_data?: {
+      rut: string;
+      nombre: string;
+      email: string;
+    } | null;
+  }>;
 }
 
 export interface NotaCreditoLinea {

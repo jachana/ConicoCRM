@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import type { CobranzaDashboard, RecordatorioItem, Factura, ImportXMLResult } from '../types'
@@ -67,17 +68,17 @@ function DashboardTab() {
       {/* Aging */}
       <div>
         <h2 className="text-lg font-semibold mb-2">Aging</h2>
-        <table className="w-full text-sm border rounded overflow-hidden">
-          <thead className="bg-gray-50">
+        <table className="w-full text-sm border dark:border-gray-700 rounded overflow-hidden">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="text-left p-3 font-medium">Período</th>
-              <th className="text-right p-3 font-medium">Cantidad</th>
-              <th className="text-right p-3 font-medium">Monto</th>
+              <th className="text-left p-3 font-medium dark:text-gray-300">Período</th>
+              <th className="text-right p-3 font-medium dark:text-gray-300">Cantidad</th>
+              <th className="text-right p-3 font-medium dark:text-gray-300">Monto</th>
             </tr>
           </thead>
           <tbody>
             {agingRows.map(r => (
-              <tr key={r.label} className="border-t">
+              <tr key={r.label} className="border-t dark:border-gray-700 dark:text-gray-300">
                 <td className="p-3">{r.label}</td>
                 <td className="p-3 text-right">{r.count}</td>
                 <td className="p-3 text-right">{fmt(r.monto)}</td>
@@ -90,20 +91,20 @@ function DashboardTab() {
       {/* Por empresa */}
       <div>
         <h2 className="text-lg font-semibold mb-2">Por empresa</h2>
-        <table className="w-full text-sm border rounded overflow-hidden">
-          <thead className="bg-gray-50">
+        <table className="w-full text-sm border dark:border-gray-700 rounded overflow-hidden">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="text-left p-3 font-medium">Empresa</th>
-              <th className="text-right p-3 font-medium">Total pendiente</th>
-              <th className="text-right p-3 font-medium">Vencido</th>
+              <th className="text-left p-3 font-medium dark:text-gray-300">Empresa</th>
+              <th className="text-right p-3 font-medium dark:text-gray-300">Total pendiente</th>
+              <th className="text-right p-3 font-medium dark:text-gray-300">Vencido</th>
             </tr>
           </thead>
           <tbody>
             {data.por_empresa.map(e => (
-              <tr key={e.empresa_id} className="border-t">
+              <tr key={e.empresa_id} className="border-t dark:border-gray-700 dark:text-gray-300">
                 <td className="p-3">{e.empresa_nombre}</td>
                 <td className="p-3 text-right">{fmt(e.total)}</td>
-                <td className="p-3 text-right text-red-600">{fmt(e.vencido)}</td>
+                <td className="p-3 text-right text-red-600 dark:text-red-400">{fmt(e.vencido)}</td>
               </tr>
             ))}
           </tbody>
@@ -115,9 +116,9 @@ function DashboardTab() {
 
 function Card({ label, value, color }: { label: string; value: string; color: 'blue' | 'red' | 'yellow' }) {
   const colors = {
-    blue: 'bg-blue-50 border-blue-200 text-blue-700',
-    red: 'bg-red-50 border-red-200 text-red-700',
-    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+    blue: 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-300',
+    red: 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950/40 dark:border-red-800 dark:text-red-300',
+    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-950/40 dark:border-yellow-800 dark:text-yellow-300',
   }
   return (
     <div className={`rounded-lg border p-4 ${colors[color]}`}>
@@ -292,7 +293,17 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                 <div>
                   <p className="text-sm text-red-600 font-medium">{result.errores.length} error(es):</p>
                   {result.errores.map((e, i) => (
-                    <p key={i} className="text-xs text-red-500">{e.filename}: {e.message}</p>
+                    <div key={i} className="text-xs text-red-500 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span>{e.filename}: {e.message}</span>
+                      {e.empresa_data && (
+                        <Link
+                          to={`/empresas?create=true&rut=${encodeURIComponent(e.empresa_data.rut)}&nombre=${encodeURIComponent(e.empresa_data.nombre)}&email=${encodeURIComponent(e.empresa_data.email)}`}
+                          className="text-blue-500 underline whitespace-nowrap hover:text-blue-400"
+                        >
+                          Crear empresa →
+                        </Link>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
