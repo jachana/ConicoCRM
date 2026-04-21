@@ -5,20 +5,27 @@ Revises: d41219f91447
 Create Date: 2026-04-21 11:03:22.795947
 
 """
+from typing import Sequence, Union
+
 from alembic import op
 import sqlalchemy as sa
 
-revision = "194162efd82b"
-down_revision = "d41219f91447"
-branch_labels = None
-depends_on = None
+revision: str = "194162efd82b"
+down_revision: Union[str, Sequence[str], None] = "d41219f91447"
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
     op.add_column("facturas", sa.Column("origen", sa.String(10), nullable=False, server_default="manual"))
     op.add_column("facturas", sa.Column("xml_raw", sa.Text, nullable=True))
     op.add_column("facturas", sa.Column("ultimo_recordatorio", sa.Date, nullable=True))
-    op.alter_column("facturas", "cliente_id", nullable=True)
+    bind = op.get_bind()
+    if bind.dialect.name == "sqlite":
+        with op.batch_alter_table("facturas") as batch_op:
+            batch_op.alter_column("cliente_id", nullable=True)
+    else:
+        op.alter_column("facturas", "cliente_id", nullable=True)
     op.create_table(
         "cobranza_config",
         sa.Column("id", sa.Integer, primary_key=True),
@@ -42,7 +49,12 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_table("cobranza_config")
-    op.alter_column("facturas", "cliente_id", nullable=False)
+    bind = op.get_bind()
+    if bind.dialect.name == "sqlite":
+        with op.batch_alter_table("facturas") as batch_op:
+            batch_op.alter_column("cliente_id", nullable=False)
+    else:
+        op.alter_column("facturas", "cliente_id", nullable=False)
     op.drop_column("facturas", "ultimo_recordatorio")
     op.drop_column("facturas", "xml_raw")
     op.drop_column("facturas", "origen")
