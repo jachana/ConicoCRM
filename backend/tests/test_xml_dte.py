@@ -122,3 +122,8 @@ def test_unsupported_tipo_dte_raises():
 def test_invalid_xml_raises():
     with pytest.raises(ValueError):
         parse_dte_xml(b"not xml at all")
+
+
+def test_parse_accepts_str_input():
+    result = parse_dte_xml(SAMPLE_DTE_33.decode("iso-8859-1"))
+    assert result["numero"] == 12345

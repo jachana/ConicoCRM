@@ -87,12 +87,9 @@ def parse_dte_xml(xml_content: str | bytes) -> dict:
         nro_str = _text(det, "NroLinDet")
         descripcion = _text(det, "NmbItem") or ""
         qty_str = _text(det, "QtyItem") or "1"
-        prc_str = _text(det, "PrcItem") or "0"
-        monto_str = _text(det, "MontoItem") or "0"
-
-        cantidad = int(float(qty_str))
-        valor_neto = Decimal(prc_str)
-        total_neto = Decimal(monto_str)
+        cantidad = int(Decimal(qty_str))
+        valor_neto = _decimal(det, "PrcItem")
+        total_neto = _decimal(det, "MontoItem")
         linea_iva = (total_neto * tasa_iva).quantize(Decimal("1")) if apply_iva else Decimal("0")
         linea_total = total_neto + linea_iva
 
