@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import date
 from decimal import Decimal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CobranzaConfigOut(BaseModel):
@@ -12,7 +12,7 @@ class CobranzaConfigOut(BaseModel):
 
 
 class CobranzaConfigUpdate(BaseModel):
-    dias_frecuencia: int
+    dias_frecuencia: int = Field(..., ge=1)
 
 
 class AgingBucket(BaseModel):

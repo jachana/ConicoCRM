@@ -347,6 +347,8 @@ def import_xml_bulk(
                 creadas += 1
             else:
                 actualizadas += 1
+        except HTTPException as exc:
+            errores.append(ImportXMLError(filename=f.filename or "unknown", message=exc.detail))
         except Exception as exc:
             errores.append(ImportXMLError(filename=f.filename or "unknown", message=str(exc)))
 
@@ -515,7 +517,12 @@ def enviar_recordatorio(
 ):
     _, db = perms
     factura = _load_factura(db, factura_id)
-    _send_recordatorio(to=data.to, subject=data.subject, body=data.body)
+    try:
+        _send_recordatorio(to=data.to, subject=data.subject, body=data.body)
+    except EmailNotConfiguredError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Error al enviar recordatorio: {e}")
     factura.ultimo_recordatorio = date.today()
     db.commit()
     return {"detail": "Recordatorio enviado"}

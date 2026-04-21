@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 from decimal import Decimal
 import pytest
+from unittest.mock import patch
 from app.models.empresa import Empresa
 from app.models.factura import Factura
 
@@ -90,3 +91,25 @@ def test_config_update(client, admin_token, empresa_con_factura_vencida):
     )
     assert resp.status_code == 200
     assert resp.json()["dias_frecuencia"] == 14
+
+
+def test_enviar_recordatorio_stamps_ultimo_recordatorio(client, admin_token, db, empresa_con_factura_vencida):
+    from app.models.factura import Factura
+    fac = db.query(Factura).filter(Factura.numero == 9001).first()
+
+    with patch("app.api.facturas._send_recordatorio") as mock_send:
+        resp = client.post(
+            f"/api/facturas/{fac.id}/recordatorio",
+            json={
+                "to": "test@test.com",
+                "subject": "Recordatorio",
+                "body": "Hola",
+            },
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+
+    assert resp.status_code == 200
+    mock_send.assert_called_once_with(to="test@test.com", subject="Recordatorio", body="Hola")
+    db.refresh(fac)
+    from datetime import date
+    assert fac.ultimo_recordatorio == date.today()

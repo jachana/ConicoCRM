@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.api.deps import require_permission
 from app.models.cobranza_config import CobranzaConfig
 from app.models.empresa import Empresa
+from app.models.user import User
 from app.models.factura import Factura
 from app.schemas.cobranza import (
     AgingBucket,
@@ -33,7 +34,7 @@ def _get_or_create_config(db: Session, empresa_id: int) -> CobranzaConfig:
 
 
 @router.get("/dashboard", response_model=CobranzaDashboardOut)
-def dashboard(perms=require_permission("facturas", "view")):
+def dashboard(perms: tuple[User, Session] = require_permission("facturas", "view")):
     _, db = perms
     today = date.today()
 
@@ -108,7 +109,7 @@ def dashboard(perms=require_permission("facturas", "view")):
 
 
 @router.get("/recordatorios", response_model=list[RecordatorioItemOut])
-def recordatorios(perms=require_permission("facturas", "view")):
+def recordatorios(perms: tuple[User, Session] = require_permission("facturas", "view")):
     _, db = perms
     today = date.today()
 
@@ -169,7 +170,7 @@ def recordatorios(perms=require_permission("facturas", "view")):
 
 
 @router.get("/config/{empresa_id}", response_model=CobranzaConfigOut)
-def get_config(empresa_id: int, perms=require_permission("facturas", "view")):
+def get_config(empresa_id: int, perms: tuple[User, Session] = require_permission("facturas", "view")):
     _, db = perms
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if empresa is None:
@@ -181,11 +182,14 @@ def get_config(empresa_id: int, perms=require_permission("facturas", "view")):
 def update_config(
     empresa_id: int,
     data: CobranzaConfigUpdate,
-    perms=require_permission("facturas", "edit"),
+    perms: tuple[User, Session] = require_permission("facturas", "edit"),
 ):
     current_user, db = perms
     if current_user.role not in ("admin", "subadmin"):
         raise HTTPException(status_code=403, detail="Solo admin o subadmin")
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if empresa is None:
+        raise HTTPException(status_code=404, detail="Empresa no encontrada")
     config = _get_or_create_config(db, empresa_id)
     config.dias_frecuencia = data.dias_frecuencia
     db.commit()
