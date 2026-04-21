@@ -15,6 +15,7 @@ class ClienteBase(BaseModel):
     despacho_o_retiro: str | None = None
     comuna: str | None = None
     ultimo_contacto: date | None = None
+    forma_pago: str | None = None
     forma_captacion: str | None = None
     compromiso: str | None = None
     es_nuevo: bool = False
@@ -36,6 +37,7 @@ class ClienteUpdate(BaseModel):
     despacho_o_retiro: str | None = None
     comuna: str | None = None
     ultimo_contacto: date | None = None
+    forma_pago: str | None = None
     forma_captacion: str | None = None
     compromiso: str | None = None
     es_nuevo: bool | None = None

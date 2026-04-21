@@ -21,6 +21,7 @@ class Cliente(Base):
     despacho_o_retiro: Mapped[str | None] = mapped_column(String(20), nullable=True)
     comuna: Mapped[str | None] = mapped_column(String(100), nullable=True)
     ultimo_contacto: Mapped[date | None] = mapped_column(Date, nullable=True)
+    forma_pago: Mapped[str | None] = mapped_column(String(100), nullable=True)
     forma_captacion: Mapped[str | None] = mapped_column(String(100), nullable=True)
     compromiso: Mapped[str | None] = mapped_column(Text, nullable=True)
     es_nuevo: Mapped[bool] = mapped_column(Boolean, default=False)
