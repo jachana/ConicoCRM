@@ -404,6 +404,8 @@ def reporte_compras(
     # --- Por proveedor ---
     prov_map: dict[int, dict] = {}
     for oc in ocs:
+        if oc.proveedor_id is None:
+            continue
         pid = oc.proveedor_id
         entry = prov_map.setdefault(
             pid,
@@ -475,8 +477,8 @@ def reporte_margenes(
     por_factura_list: list[dict] = []
     all_factura_margen_pcts: list[float] = []
 
-    # --- Por producto (grouped by descripcion) ---
-    prod_map: dict[str, dict] = {}
+    # --- Por producto (grouped by producto_id) ---
+    prod_map: dict[int, dict] = {}
 
     for f in facturas:
         lineas_con_margen = [ln for ln in f.lineas if ln.margen is not None]
@@ -500,16 +502,18 @@ def reporte_margenes(
             }
         )
 
-        # Aggregate per producto (descripcion)
+        # Aggregate per producto (producto_id)
         for ln in f.lineas:
             if ln.margen is None:
                 continue
-            key = ln.descripcion
+            if ln.producto_id is None:
+                continue
+            key = ln.producto_id
             entry = prod_map.setdefault(
                 key,
                 {
                     "producto_id": ln.producto_id,
-                    "nombre": key,
+                    "nombre": ln.descripcion,
                     "cantidad_vendida": 0,
                     "precio_venta_sum": _ZERO,
                     "precio_venta_count": 0,
