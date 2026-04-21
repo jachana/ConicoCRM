@@ -1,6 +1,5 @@
 import hmac
 import hashlib
-from decimal import Decimal
 from datetime import date
 import httpx
 from sqlalchemy.orm import Session

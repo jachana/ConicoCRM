@@ -41,3 +41,4 @@ Thumbs.db
 
 uploads/*
 !uploads/.gitkeep
+resources/*

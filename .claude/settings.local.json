@@ -108,7 +108,9 @@
       "Bash(DATABASE_URL=\"postgresql://conico:conico@localhost:15432/conico\" SECRET_KEY=\"dummy\" alembic upgrade head)",
       "Bash(DATABASE_URL=\"sqlite:///./test.db\" SECRET_KEY=\"test\" python -c \"from app.main import app; routes = [r.path for r in app.routes]; print\\([r for r in routes if 'import' in r or 'cobranza' in r]\\)\")",
       "Bash(node_modules/.bin/tsc --noEmit)",
-      "Bash(/C/Otros/Conico/frontend/node_modules/.bin/tsc --noEmit)"
+      "Bash(/C/Otros/Conico/frontend/node_modules/.bin/tsc --noEmit)",
+      "Bash(alembic current *)",
+      "Bash(cd C:\\\\\\\\Otros\\\\\\\\Conico)"
     ]
   }
 }
