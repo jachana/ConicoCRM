@@ -37,6 +37,12 @@ def upgrade() -> None:
         sa.Column("emitido_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("aceptado_at", sa.DateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(["factura_id"], ["facturas.id"], ondelete="CASCADE"),
+        sa.CheckConstraint(
+            "(CASE WHEN factura_id IS NOT NULL THEN 1 ELSE 0 END) + "
+            "(CASE WHEN nota_credito_id IS NOT NULL THEN 1 ELSE 0 END) + "
+            "(CASE WHEN nota_debito_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
+            name="ck_dte_emision_one_document",
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_dte_emisiones_track_id", "dte_emisiones", ["track_id"])
