@@ -70,7 +70,20 @@ export default function Aprobaciones() {
     enabled: isAdminUser,
   })
 
-  const isLoading = loadingCredito || loadingMargen
+  const { data: terminosPendientes = [], isLoading: loadingTerminos } = useQuery<{
+    id: number
+    numero: number
+    terminos_pago: string | null
+    empresa?: { id: number; nombre: string } | null
+    vendedor?: { id: number; name: string; email: string } | null
+  }[]>({
+    queryKey: ['cotizaciones-terminos-pendientes'],
+    queryFn: () =>
+      api.get('/api/cotizaciones/?terminos_pago_estado=pendiente').then(r => r.data),
+    enabled: isAdminUser,
+  })
+
+  const isLoading = loadingCredito || loadingMargen || loadingTerminos
 
   const all: AnyAprobacion[] = [...creditos, ...margenes].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -91,6 +104,16 @@ export default function Aprobaciones() {
       api.patch(`/api/aprobaciones_margen/${id}`, { accion }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['aprobaciones-margen-pendientes'] })
+      setActingKey(null)
+    },
+    onError: () => setActingKey(null),
+  })
+
+  const terminosMutation = useMutation({
+    mutationFn: ({ id, accion }: { id: number; accion: 'aprobado' | 'rechazado' }) =>
+      api.patch(`/api/cotizaciones/${id}`, { terminos_pago_estado: accion }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cotizaciones-terminos-pendientes'] })
       setActingKey(null)
     },
     onError: () => setActingKey(null),
@@ -227,6 +250,58 @@ export default function Aprobaciones() {
           </table>
         )}
       </div>
+      {terminosPendientes.length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            Términos de Pago — Pendientes ({terminosPendientes.length})
+          </h2>
+          <div className="space-y-3">
+            {terminosPendientes.map(cot => {
+              const key = `terminos-${cot.id}`
+              return (
+                <div key={cot.id} className="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-800 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                        COT-{String(cot.numero).padStart(5, '0')}
+                        {cot.empresa && <span className="ml-2 text-gray-500 font-normal">— {cot.empresa.nombre}</span>}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Términos solicitados: <strong className="text-amber-700 dark:text-amber-400">{cot.terminos_pago}</strong>
+                      </div>
+                      {cot.vendedor && (
+                        <div className="text-xs text-gray-400 mt-0.5">Vendedor: {cot.vendedor.name}</div>
+                      )}
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        onClick={() => {
+                          setActingKey(key)
+                          terminosMutation.mutate({ id: cot.id, accion: 'aprobado' })
+                        }}
+                        disabled={actingKey === key}
+                        className="px-3 py-1 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                      >
+                        Aprobar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActingKey(key)
+                          terminosMutation.mutate({ id: cot.id, accion: 'rechazado' })
+                        }}
+                        disabled={actingKey === key}
+                        className="px-3 py-1 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                      >
+                        Rechazar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
