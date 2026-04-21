@@ -120,6 +120,7 @@ export default function NotaVentaDetalle() {
   const [creditModal, setCreditModal] = useState<{
     credito: CreditoInfo
     aprobacionPayload?: AprobacionPayload
+    adminOverride?: boolean
   } | null>(null)
 
   const [unsavedModal, setUnsavedModal] = useState(false)
@@ -263,7 +264,8 @@ export default function NotaVentaDetalle() {
       if (credito.credito_disponible !== null && Number(credito.credito_disponible) < saleTotal) {
         setCreditModal({
           credito,
-          aprobacionPayload,
+          aprobacionPayload: isAdmin ? undefined : aprobacionPayload,
+          adminOverride: isAdmin,
         })
       } else {
         onProceed()
@@ -694,10 +696,11 @@ export default function NotaVentaDetalle() {
 
       {creditModal && (
         <CreditWarningModal
-          mode="request"
+          mode={creditModal.adminOverride ? 'warning' : 'request'}
           empresaNombre={empresas.find(e => e.id === empresaId)?.nombre ?? ''}
           credito={creditModal.credito}
           saleTotal={total}
+          onConfirm={creditModal.adminOverride ? () => { setCreditModal(null); doSave() } : undefined}
           aprobacionPayload={creditModal.aprobacionPayload}
           onSubmitted={() => setCreditModal(null)}
           onCancel={() => setCreditModal(null)}
