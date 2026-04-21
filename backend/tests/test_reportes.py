@@ -154,3 +154,13 @@ def test_inventario_excel_export(client, admin_token):
     assert r.status_code == 200
     assert "spreadsheetml" in r.headers["content-type"]
     assert "inventario-" in r.headers["content-disposition"]
+
+
+def test_ventas_pdf_export(client, admin_token):
+    r = client.get(
+        "/api/reportes/ventas/export/pdf?date_from=2026-01-01&date_to=2026-12-31",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "application/pdf"
+    assert "ventas-" in r.headers["content-disposition"]

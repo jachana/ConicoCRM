@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
+from weasyprint import HTML
 
 from app.api.deps import require_permission
 from app.models.dte_emision import DteEmision
@@ -1115,3 +1116,573 @@ def exportar_dte_excel(
         ])
 
     return _excel_response(wb, "dte", date_from, date_to)
+
+
+# ---------------------------------------------------------------------------
+# Data helpers for ventas, cobranza, compras, dte (used by PDF + future use)
+# ---------------------------------------------------------------------------
+
+def _get_ventas(date_from: date, date_to: date, db: Session, vendedor_id: int | None) -> dict:
+    """Return ventas data dict."""
+    base_q = (
+        db.query(Factura)
+        .options(joinedload(Factura.cliente), joinedload(Factura.vendedor))
+        .filter(
+            Factura.fecha >= date_from,
+            Factura.fecha <= date_to,
+            Factura.estado != "anulada",
+        )
+    )
+    if vendedor_id is not None:
+        base_q = base_q.filter(Factura.vendedor_id == vendedor_id)
+
+    facturas = base_q.all()
+    factura_ids = [f.id for f in facturas]
+    total_vendido = sum((f.total for f in facturas), _ZERO)
+    num_facturas = len(facturas)
+    ticket_promedio = (total_vendido / num_facturas) if num_facturas else _ZERO
+    total_pagado = _sum_pagos_for_ids(db, factura_ids)
+    total_por_cobrar = max(total_vendido - total_pagado, _ZERO)
+
+    duration_days = (date_to - date_from).days + 1
+    prev_to = date_from - timedelta(days=1)
+    prev_from = prev_to - timedelta(days=duration_days - 1)
+    prev_q = db.query(func.sum(Factura.total)).filter(
+        Factura.fecha >= prev_from,
+        Factura.fecha <= prev_to,
+        Factura.estado != "anulada",
+    )
+    if vendedor_id is not None:
+        prev_q = prev_q.filter(Factura.vendedor_id == vendedor_id)
+    prev_total_raw = prev_q.scalar()
+    prev_total = Decimal(str(prev_total_raw)) if prev_total_raw else _ZERO
+    variacion = (
+        float(((total_vendido - prev_total) / prev_total) * 100) if prev_total != _ZERO else 0.0
+    )
+
+    cliente_map: dict[int, dict] = {}
+    for f in facturas:
+        if f.cliente_id is None:
+            continue
+        entry = cliente_map.setdefault(
+            f.cliente_id,
+            {"nombre": f.cliente.nombre if f.cliente else "", "total": _ZERO, "num_facturas": 0},
+        )
+        entry["total"] += f.total
+        entry["num_facturas"] += 1
+    top_clientes = sorted(cliente_map.values(), key=lambda x: x["total"], reverse=True)[:10]
+    for c in top_clientes:
+        c["total"] = float(c["total"])
+
+    vendedor_map: dict[int, dict] = {}
+    for f in facturas:
+        if f.vendedor_id is None:
+            continue
+        entry = vendedor_map.setdefault(
+            f.vendedor_id,
+            {"nombre": f.vendedor.name if f.vendedor else "", "total": _ZERO, "num_facturas": 0},
+        )
+        entry["total"] += f.total
+        entry["num_facturas"] += 1
+    por_vendedor = sorted(vendedor_map.values(), key=lambda x: x["total"], reverse=True)
+    for v in por_vendedor:
+        v["total"] = float(v["total"])
+
+    return {
+        "kpis": {
+            "total_vendido": float(total_vendido),
+            "num_facturas": num_facturas,
+            "ticket_promedio": float(ticket_promedio),
+            "total_por_cobrar": float(total_por_cobrar),
+            "variacion_vs_periodo_anterior": round(variacion, 2),
+        },
+        "top_clientes": top_clientes,
+        "por_vendedor": por_vendedor,
+    }
+
+
+def _get_cobranza(date_from: date, date_to: date, db: Session) -> dict:
+    """Return cobranza data dict."""
+    today = date.today()
+    facturas = (
+        db.query(Factura)
+        .options(joinedload(Factura.empresa))
+        .filter(
+            Factura.fecha >= date_from,
+            Factura.fecha <= date_to,
+            Factura.estado != "anulada",
+        )
+        .all()
+    )
+    factura_ids = [f.id for f in facturas]
+    pago_rows = (
+        db.query(Pago.factura_id, func.sum(Pago.monto))
+        .filter(Pago.factura_id.in_(factura_ids))
+        .group_by(Pago.factura_id)
+        .all()
+    ) if factura_ids else []
+    pago_map: dict[int, Decimal] = {fid: Decimal(str(m)) for fid, m in pago_rows}
+
+    total_por_cobrar = _ZERO
+    total_vencido = _ZERO
+    proximas_a_vencer_7d = _ZERO
+    buckets: dict[str, dict] = {
+        "d_0_30": {"label": "0-30d", "count": 0, "monto": _ZERO},
+        "d_31_60": {"label": "31-60d", "count": 0, "monto": _ZERO},
+        "d_61_90": {"label": "61-90d", "count": 0, "monto": _ZERO},
+        "d_90_plus": {"label": "90+d", "count": 0, "monto": _ZERO},
+    }
+    empresa_map: dict[int, dict] = {}
+
+    for f in facturas:
+        saldo = f.total - pago_map.get(f.id, _ZERO)
+        if saldo <= _ZERO:
+            continue
+        total_por_cobrar += saldo
+        venc = f.fecha_vencimiento
+        if venc is not None and venc < today:
+            total_vencido += saldo
+            dias_vencida = (today - venc).days
+            if dias_vencida <= 30:
+                buckets["d_0_30"]["count"] += 1
+                buckets["d_0_30"]["monto"] += saldo
+            elif dias_vencida <= 60:
+                buckets["d_31_60"]["count"] += 1
+                buckets["d_31_60"]["monto"] += saldo
+            elif dias_vencida <= 90:
+                buckets["d_61_90"]["count"] += 1
+                buckets["d_61_90"]["monto"] += saldo
+            else:
+                buckets["d_90_plus"]["count"] += 1
+                buckets["d_90_plus"]["monto"] += saldo
+        else:
+            dias_vencida = 0
+            if venc is not None and 0 <= (venc - today).days <= 7:
+                proximas_a_vencer_7d += saldo
+
+        emp_id = f.empresa_id
+        if emp_id is not None:
+            if emp_id not in empresa_map:
+                empresa_map[emp_id] = {
+                    "nombre": f.empresa.nombre if f.empresa else "",
+                    "saldo": _ZERO,
+                    "dias_vencida": dias_vencida,
+                }
+            else:
+                empresa_map[emp_id]["dias_vencida"] = max(
+                    empresa_map[emp_id]["dias_vencida"], dias_vencida
+                )
+            empresa_map[emp_id]["saldo"] += saldo
+
+    por_empresa = sorted(
+        [
+            {"nombre": v["nombre"], "saldo": float(v["saldo"]), "dias_vencida": v["dias_vencida"]}
+            for v in empresa_map.values()
+        ],
+        key=lambda x: x["saldo"],
+        reverse=True,
+    )
+
+    return {
+        "kpis": {
+            "total_por_cobrar": float(total_por_cobrar),
+            "total_vencido": float(total_vencido),
+            "proximas_a_vencer_7d": float(proximas_a_vencer_7d),
+        },
+        "buckets": buckets,
+        "por_empresa": por_empresa,
+    }
+
+
+def _get_compras(date_from: date, date_to: date, db: Session) -> dict:
+    """Return compras data dict."""
+    ocs: list[OrdenCompra] = (
+        db.query(OrdenCompra)
+        .options(joinedload(OrdenCompra.proveedor))
+        .filter(
+            OrdenCompra.fecha >= date_from,
+            OrdenCompra.fecha <= date_to,
+        )
+        .all()
+    )
+    total_comprado = sum((oc.total for oc in ocs), _ZERO)
+    num_oc_emitidas = len(ocs)
+    num_oc_pendientes = sum(1 for oc in ocs if oc.estado in _OC_PENDING_ESTADOS)
+
+    prov_map: dict[int, dict] = {}
+    for oc in ocs:
+        if oc.proveedor_id is None:
+            continue
+        entry = prov_map.setdefault(
+            oc.proveedor_id,
+            {"nombre": oc.proveedor.nombre if oc.proveedor else "", "total": _ZERO, "num_oc": 0},
+        )
+        entry["total"] += oc.total
+        entry["num_oc"] += 1
+    por_proveedor = sorted(prov_map.values(), key=lambda x: x["total"], reverse=True)
+    for p in por_proveedor:
+        p["total"] = float(p["total"])
+
+    estado_map: dict[str, dict] = {}
+    for oc in ocs:
+        entry = estado_map.setdefault(
+            oc.estado, {"estado": oc.estado, "count": 0, "total": _ZERO}
+        )
+        entry["count"] += 1
+        entry["total"] += oc.total
+    por_estado = sorted(estado_map.values(), key=lambda x: x["count"], reverse=True)
+    for e in por_estado:
+        e["total"] = float(e["total"])
+
+    return {
+        "kpis": {
+            "total_comprado": float(total_comprado),
+            "num_oc_emitidas": num_oc_emitidas,
+            "num_oc_pendientes": num_oc_pendientes,
+        },
+        "por_proveedor": por_proveedor,
+        "por_estado": por_estado,
+    }
+
+
+def _get_dte(date_from: date, date_to: date, db: Session) -> dict:
+    """Return DTE data dict."""
+    date_to_exclusive = date_to + timedelta(days=1)
+    emisiones: list[DteEmision] = (
+        db.query(DteEmision)
+        .filter(
+            DteEmision.created_at >= date_from,
+            DteEmision.created_at < date_to_exclusive,
+        )
+        .all()
+    )
+    total_emitidos = len(emisiones)
+    aceptadas = sum(1 for e in emisiones if e.estado == "aceptada")
+    rechazadas = sum(1 for e in emisiones if e.estado == "rechazada")
+    pendientes = sum(1 for e in emisiones if e.estado in _DTE_PENDING_ESTADOS)
+
+    emisiones_out = [
+        {
+            "tipo": _DTE_LABELS.get(e.tipo, e.tipo),
+            "folio": e.folio,
+            "estado": e.estado,
+            "monto_total": e.monto_total,
+            "fecha": e.created_at.date().isoformat() if e.created_at else "",
+        }
+        for e in emisiones
+    ]
+
+    return {
+        "kpis": {
+            "total_emitidos": total_emitidos,
+            "aceptadas": aceptadas,
+            "rechazadas": rechazadas,
+            "pendientes": pendientes,
+        },
+        "emisiones": emisiones_out,
+    }
+
+
+# ---------------------------------------------------------------------------
+# PDF export utilities
+# ---------------------------------------------------------------------------
+
+_PDF_STYLE = """
+<style>
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #1f2937; margin: 2cm; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .period { color: #6b7280; font-size: 11px; margin-bottom: 20px; }
+  .kpis { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .kpi { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; min-width: 120px; }
+  .kpi-label { font-size: 10px; color: #6b7280; text-transform: uppercase; }
+  .kpi-value { font-size: 16px; font-weight: 700; margin-top: 2px; }
+  h2 { font-size: 13px; margin: 20px 0 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th { background: #f9fafb; text-align: left; padding: 6px 8px; border-bottom: 2px solid #e5e7eb; }
+  td { padding: 5px 8px; border-bottom: 1px solid #f3f4f6; }
+</style>
+"""
+
+
+def _fmt(n: float | int) -> str:
+    return "$" + f"{int(n):,}".replace(",", ".")
+
+
+def _pdf_response(html: str, tab: str, date_from: date, date_to: date) -> StreamingResponse:
+    pdf_bytes = HTML(string=html).write_pdf()
+    filename = f"{tab}-{date_from}-{date_to}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /ventas/export/pdf
+# ---------------------------------------------------------------------------
+
+@router.get("/ventas/export/pdf")
+def exportar_ventas_pdf(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    current_user, db = perms
+    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    data = _get_ventas(date_from, date_to, db, vendedor_id)
+    kpis = data["kpis"]
+
+    clientes_rows = "".join(
+        f"<tr><td>{c['nombre']}</td><td>{c['num_facturas']}</td><td>{_fmt(c['total'])}</td></tr>"
+        for c in data["top_clientes"]
+    )
+    vendedor_rows = "".join(
+        f"<tr><td>{v['nombre']}</td><td>{v['num_facturas']}</td><td>{_fmt(v['total'])}</td></tr>"
+        for v in data["por_vendedor"]
+    )
+
+    html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">{_PDF_STYLE}</head><body>
+<h1>Reporte de Ventas</h1>
+<div class="period">{date_from} — {date_to}</div>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-label">Total Vendido</div><div class="kpi-value">{_fmt(kpis['total_vendido'])}</div></div>
+  <div class="kpi"><div class="kpi-label">N° Facturas</div><div class="kpi-value">{kpis['num_facturas']}</div></div>
+  <div class="kpi"><div class="kpi-label">Ticket Promedio</div><div class="kpi-value">{_fmt(kpis['ticket_promedio'])}</div></div>
+  <div class="kpi"><div class="kpi-label">Por Cobrar</div><div class="kpi-value">{_fmt(kpis['total_por_cobrar'])}</div></div>
+  <div class="kpi"><div class="kpi-label">Variación</div><div class="kpi-value">{kpis['variacion_vs_periodo_anterior']}%</div></div>
+</div>
+<h2>Top Clientes</h2>
+<table><thead><tr><th>Nombre</th><th>Facturas</th><th>Total</th></tr></thead>
+<tbody>{clientes_rows}</tbody></table>
+<h2>Por Vendedor</h2>
+<table><thead><tr><th>Vendedor</th><th>Facturas</th><th>Total</th></tr></thead>
+<tbody>{vendedor_rows}</tbody></table>
+</body></html>"""
+
+    return _pdf_response(html, "ventas", date_from, date_to)
+
+
+# ---------------------------------------------------------------------------
+# GET /cobranza/export/pdf
+# ---------------------------------------------------------------------------
+
+@router.get("/cobranza/export/pdf")
+def exportar_cobranza_pdf(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    _, db = perms
+    data = _get_cobranza(date_from, date_to, db)
+    kpis = data["kpis"]
+    buckets = data["buckets"]
+
+    aging_rows = "".join(
+        f"<tr><td>{v['label']}</td><td>{v['count']}</td><td>{_fmt(float(v['monto']))}</td></tr>"
+        for v in buckets.values()
+    )
+    empresa_rows = "".join(
+        f"<tr><td>{e['nombre']}</td><td>{_fmt(e['saldo'])}</td><td>{e['dias_vencida']}</td></tr>"
+        for e in data["por_empresa"]
+    )
+
+    html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">{_PDF_STYLE}</head><body>
+<h1>Reporte de Cobranza</h1>
+<div class="period">{date_from} — {date_to}</div>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-label">Por Cobrar</div><div class="kpi-value">{_fmt(kpis['total_por_cobrar'])}</div></div>
+  <div class="kpi"><div class="kpi-label">Vencido</div><div class="kpi-value">{_fmt(kpis['total_vencido'])}</div></div>
+  <div class="kpi"><div class="kpi-label">Vence en 7d</div><div class="kpi-value">{_fmt(kpis['proximas_a_vencer_7d'])}</div></div>
+</div>
+<h2>Aging</h2>
+<table><thead><tr><th>Tramo</th><th>Facturas</th><th>Monto</th></tr></thead>
+<tbody>{aging_rows}</tbody></table>
+<h2>Por Empresa</h2>
+<table><thead><tr><th>Empresa</th><th>Saldo</th><th>Días vencida</th></tr></thead>
+<tbody>{empresa_rows}</tbody></table>
+</body></html>"""
+
+    return _pdf_response(html, "cobranza", date_from, date_to)
+
+
+# ---------------------------------------------------------------------------
+# GET /inventario/export/pdf
+# ---------------------------------------------------------------------------
+
+@router.get("/inventario/export/pdf")
+def exportar_inventario_pdf(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    _, db = perms
+    data = _get_inventario(date_from, date_to, db)
+    kpis = data["kpis"]
+
+    productos = data["productos"]
+    bajo_minimo = [p for p in productos if p.stock_actual < p.stock_minimo]
+    bajo_rows = "".join(
+        f"<tr><td>{p.sku or ''}</td><td>{p.nombre}</td><td>{p.stock_actual}</td><td>{p.stock_minimo}</td></tr>"
+        for p in bajo_minimo
+    )
+    top_rows = "".join(
+        f"<tr><td>{t['nombre']}</td><td>{t['cantidad_vendida']}</td><td>{_fmt(t['monto_total'])}</td></tr>"
+        for t in data["top_vendidos"]
+    )
+
+    html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">{_PDF_STYLE}</head><body>
+<h1>Reporte de Inventario</h1>
+<div class="period">{date_from} — {date_to}</div>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-label">Valor Stock</div><div class="kpi-value">{_fmt(kpis['valor_total_stock'])}</div></div>
+  <div class="kpi"><div class="kpi-label">Bajo Mínimo</div><div class="kpi-value">{kpis['num_bajo_minimo']}</div></div>
+  <div class="kpi"><div class="kpi-label">Sin Stock</div><div class="kpi-value">{kpis['num_sin_stock']}</div></div>
+</div>
+<h2>Bajo Mínimo</h2>
+<table><thead><tr><th>SKU</th><th>Nombre</th><th>Stock Actual</th><th>Stock Mínimo</th></tr></thead>
+<tbody>{bajo_rows}</tbody></table>
+<h2>Top Vendidos</h2>
+<table><thead><tr><th>Nombre</th><th>Cantidad</th><th>Monto</th></tr></thead>
+<tbody>{top_rows}</tbody></table>
+</body></html>"""
+
+    return _pdf_response(html, "inventario", date_from, date_to)
+
+
+# ---------------------------------------------------------------------------
+# GET /compras/export/pdf
+# ---------------------------------------------------------------------------
+
+@router.get("/compras/export/pdf")
+def exportar_compras_pdf(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    _, db = perms
+    data = _get_compras(date_from, date_to, db)
+    kpis = data["kpis"]
+
+    prov_rows = "".join(
+        f"<tr><td>{p['nombre']}</td><td>{p['num_oc']}</td><td>{_fmt(p['total'])}</td></tr>"
+        for p in data["por_proveedor"]
+    )
+    estado_rows = "".join(
+        f"<tr><td>{e['estado']}</td><td>{e['count']}</td><td>{_fmt(e['total'])}</td></tr>"
+        for e in data["por_estado"]
+    )
+
+    html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">{_PDF_STYLE}</head><body>
+<h1>Reporte de Compras</h1>
+<div class="period">{date_from} — {date_to}</div>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-label">Total Comprado</div><div class="kpi-value">{_fmt(kpis['total_comprado'])}</div></div>
+  <div class="kpi"><div class="kpi-label">N° OC Emitidas</div><div class="kpi-value">{kpis['num_oc_emitidas']}</div></div>
+  <div class="kpi"><div class="kpi-label">OC Pendientes</div><div class="kpi-value">{kpis['num_oc_pendientes']}</div></div>
+</div>
+<h2>Por Proveedor</h2>
+<table><thead><tr><th>Proveedor</th><th>N° OC</th><th>Total</th></tr></thead>
+<tbody>{prov_rows}</tbody></table>
+<h2>Por Estado</h2>
+<table><thead><tr><th>Estado</th><th>Count</th><th>Total</th></tr></thead>
+<tbody>{estado_rows}</tbody></table>
+</body></html>"""
+
+    return _pdf_response(html, "compras", date_from, date_to)
+
+
+# ---------------------------------------------------------------------------
+# GET /margenes/export/pdf
+# ---------------------------------------------------------------------------
+
+@router.get("/margenes/export/pdf")
+def exportar_margenes_pdf(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    current_user, db = perms
+    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    data = _get_margenes(date_from, date_to, db, vendedor_id)
+
+    por_producto = data["por_producto"][:20]
+    por_factura = data["por_factura"]
+
+    all_pcts = [p["margen_pct"] for p in por_producto]
+    margen_promedio_pct = round(sum(all_pcts) / len(all_pcts), 2) if all_pcts else 0.0
+    mejor = por_producto[0] if por_producto else None
+    peor = por_producto[-1] if por_producto else None
+
+    prod_rows = "".join(
+        f"<tr><td>{p['nombre']}</td><td>{p['cantidad_vendida']}</td><td>{p['margen_pct']}%</td></tr>"
+        for p in por_producto
+    )
+    fac_rows = "".join(
+        f"<tr><td>{f['numero']}</td><td>{_fmt(f['total'])}</td><td>{_fmt(f['margen_total'])}</td><td>{f['margen_pct']}%</td></tr>"
+        for f in por_factura
+    )
+
+    mejor_txt = f"{mejor['nombre']} ({mejor['margen_pct']}%)" if mejor else "—"
+    peor_txt = f"{peor['nombre']} ({peor['margen_pct']}%)" if peor else "—"
+
+    html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">{_PDF_STYLE}</head><body>
+<h1>Reporte de Márgenes</h1>
+<div class="period">{date_from} — {date_to}</div>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-label">Margen Promedio</div><div class="kpi-value">{margen_promedio_pct}%</div></div>
+  <div class="kpi"><div class="kpi-label">Mejor Producto</div><div class="kpi-value">{mejor_txt}</div></div>
+  <div class="kpi"><div class="kpi-label">Peor Producto</div><div class="kpi-value">{peor_txt}</div></div>
+</div>
+<h2>Por Producto (Top 20)</h2>
+<table><thead><tr><th>Nombre</th><th>Cantidad</th><th>Margen %</th></tr></thead>
+<tbody>{prod_rows}</tbody></table>
+<h2>Por Factura</h2>
+<table><thead><tr><th>N° Factura</th><th>Total</th><th>Margen</th><th>%</th></tr></thead>
+<tbody>{fac_rows}</tbody></table>
+</body></html>"""
+
+    return _pdf_response(html, "margenes", date_from, date_to)
+
+
+# ---------------------------------------------------------------------------
+# GET /dte/export/pdf
+# ---------------------------------------------------------------------------
+
+@router.get("/dte/export/pdf")
+def exportar_dte_pdf(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    _, db = perms
+    data = _get_dte(date_from, date_to, db)
+    kpis = data["kpis"]
+
+    emision_rows = "".join(
+        f"<tr><td>{e['tipo']}</td><td>{e['folio']}</td><td>{e['estado']}</td>"
+        f"<td>{_fmt(e['monto_total'] or 0)}</td><td>{e['fecha']}</td></tr>"
+        for e in data["emisiones"]
+    )
+
+    html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">{_PDF_STYLE}</head><body>
+<h1>Reporte DTE</h1>
+<div class="period">{date_from} — {date_to}</div>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-label">Total Emitidos</div><div class="kpi-value">{kpis['total_emitidos']}</div></div>
+  <div class="kpi"><div class="kpi-label">Aceptadas</div><div class="kpi-value">{kpis['aceptadas']}</div></div>
+  <div class="kpi"><div class="kpi-label">Rechazadas</div><div class="kpi-value">{kpis['rechazadas']}</div></div>
+  <div class="kpi"><div class="kpi-label">Pendientes</div><div class="kpi-value">{kpis['pendientes']}</div></div>
+</div>
+<h2>Emisiones</h2>
+<table><thead><tr><th>Tipo</th><th>Folio</th><th>Estado</th><th>Monto</th><th>Fecha</th></tr></thead>
+<tbody>{emision_rows}</tbody></table>
+</body></html>"""
+
+    return _pdf_response(html, "dte", date_from, date_to)
