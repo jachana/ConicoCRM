@@ -236,14 +236,14 @@ export default function CotizacionDetalle() {
   })
 
   const selectedEmpresa = empresas.find(e => e.id === empresaId) ?? null
+  const empresaPlazo = selectedEmpresa?.plazo_credito ?? 'Al contado'
+  const empresaLimitDias = parseDias(selectedEmpresa?.plazo_credito)
   const terminosPagoNeedsApproval = !isAdmin
     && !!terminosPago
-    && !!selectedEmpresa?.plazo_credito
-    && parseDias(terminosPago) > parseDias(selectedEmpresa.plazo_credito)
+    && parseDias(terminosPago) > empresaLimitDias
   const adminTerminosWarning = isAdmin
     && !!terminosPago
-    && !!selectedEmpresa?.plazo_credito
-    && parseDias(terminosPago) > parseDias(selectedEmpresa.plazo_credito)
+    && parseDias(terminosPago) > empresaLimitDias
   const tpBlocked = !isAdmin && (terminosPagoNeedsApproval || terminosPagoEstado === 'pendiente')
 
   const { data: productos = [] } = useQuery<Producto[]>({
@@ -262,7 +262,7 @@ export default function CotizacionDetalle() {
           if (c.empresa_id) {
             setEmpresaId(c.empresa_id)
             const emp = empresas.find(e => e.id === c.empresa_id)
-            if (emp?.plazo_credito) setTerminosPago(emp.plazo_credito)
+            setTerminosPago(emp?.plazo_credito ?? 'Al contado')
           }
         }
       }
@@ -274,7 +274,7 @@ export default function CotizacionDetalle() {
       setEmpresaId(eid)
       if (eid) {
         const emp = empresas.find(e => e.id === eid)
-        if (emp?.plazo_credito) setTerminosPago(emp.plazo_credito)
+        setTerminosPago(emp?.plazo_credito ?? 'Al contado')
       }
     })
   }
@@ -884,7 +884,7 @@ export default function CotizacionDetalle() {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0">
                   <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                 </svg>
-                Plazo supera el límite de la empresa ({selectedEmpresa?.plazo_credito})
+                Plazo supera el límite de la empresa ({empresaPlazo})
               </p>
             )}
           </div>
