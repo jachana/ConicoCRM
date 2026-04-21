@@ -142,6 +142,8 @@ export interface Cotizacion {
   fecha: string
   estado: 'no_definido' | 'abierta' | 'cerrada_fv' | 'rechazada'
   nota: string | null
+  terminos_pago: string | null
+  terminos_pago_estado: string
   correo: string | null
   total_neto: number
   total_iva: number
