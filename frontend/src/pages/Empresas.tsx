@@ -409,15 +409,15 @@ export default function Empresas() {
               </div>
               {(([
                 { key: 'razon_social', label: 'Razón Social' },
-                { key: 'rut', label: 'RUT', placeholder: '76.123.456-7' },
+                { key: 'rut', label: 'RUT *', placeholder: '76.123.456-7', required: true },
                 { key: 'forma_pago', label: 'Forma de Pago' },
                 { key: 'prioridad', label: 'Prioridad' },
                 { key: 'sector', label: 'Sector' },
                 { key: 'email', label: 'Email' },
-              ]) as { key: keyof FormData; label: string; placeholder?: string }[]).map(({ key, label, placeholder }) => (
+              ]) as { key: keyof FormData; label: string; placeholder?: string; required?: boolean }[]).map(({ key, label, placeholder, required }) => (
                 <div key={key}>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-                  <input type="text" placeholder={placeholder} value={form[key] as string} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                  <input type="text" placeholder={placeholder} required={required} value={form[key] as string} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
                     className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
               ))}

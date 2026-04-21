@@ -276,9 +276,8 @@ def crear_cotizacion(
     # Auto-populate terminos_pago from empresa.plazo_credito if not provided
     if not cotizacion.terminos_pago and cotizacion.empresa_id:
         empresa = db.get(Empresa, cotizacion.empresa_id)
-        if empresa and empresa.plazo_credito:
-            cotizacion.terminos_pago = empresa.plazo_credito
-            cotizacion.terminos_pago_estado = _calc_terminos_estado(cotizacion.terminos_pago, cotizacion.empresa_id, db, current_user)
+        cotizacion.terminos_pago = (empresa.plazo_credito if empresa and empresa.plazo_credito else "Al contado")
+        cotizacion.terminos_pago_estado = _calc_terminos_estado(cotizacion.terminos_pago, cotizacion.empresa_id, db, current_user)
     db.add(cotizacion)
     db.flush()
 

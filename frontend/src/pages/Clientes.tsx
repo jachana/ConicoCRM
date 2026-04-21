@@ -241,14 +241,14 @@ export default function Clientes() {
               </div>
 
               {(([
-                { key: 'rut', label: 'RUT', placeholder: '76.123.456-7' },
+                { key: 'rut', label: 'RUT *', placeholder: '76.123.456-7', required: true },
                 { key: 'email', label: 'Email', placeholder: 'contacto@empresa.cl' },
                 { key: 'telefono', label: 'Teléfono', placeholder: '+56 9 1234 5678' },
                 { key: 'comuna', label: 'Comuna' },
-              ]) as { key: keyof FormData; label: string; placeholder?: string }[]).map(({ key, label, placeholder }) => (
+              ]) as { key: keyof FormData; label: string; placeholder?: string; required?: boolean }[]).map(({ key, label, placeholder, required }) => (
                 <div key={key}>
                   <label className={LABEL_CLS}>{label}</label>
-                  <input type="text" placeholder={placeholder} value={form[key] as string}
+                  <input type="text" placeholder={placeholder} required={required} value={form[key] as string}
                     onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} className={INPUT_CLS} />
                 </div>
               ))}

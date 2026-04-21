@@ -92,7 +92,23 @@
       "Bash(pg_isready -h localhost -p 15432)",
       "Bash(pg_isready -h localhost -p 5432)",
       "Bash(powershell.exe -Command \"Start-Process 'C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe'\")",
-      "Bash(pytest tests/test_cotizacion_terminos.py -v)"
+      "Bash(pytest tests/test_cotizacion_terminos.py -v)",
+      "Bash(pytest tests/test_nv_credit_limit.py -v --tb=short -q)",
+      "Bash(pytest -q --tb=short)",
+      "Bash(pytest tests/test_nv_credit_limit.py -v)",
+      "Bash(pytest tests/test_nv_credit_limit.py::test_vendedor_blocked_from_cotizacion_over_limit tests/test_nv_credit_limit.py::test_admin_bypasses_credit_from_cotizacion -v --tb=short)",
+      "Bash(pytest tests/test_nv_credit_limit.py -v --tb=short)",
+      "Bash(pytest tests/test_nv_credit_limit.py -q --tb=short)",
+      "Bash(xargs ls *)",
+      "Bash(alembic heads *)",
+      "Bash(DATABASE_URL=\"postgresql://conico:conico@localhost:15432/conico\" SECRET_KEY=\"temp-secret-key\" alembic upgrade head)",
+      "Bash(alembic downgrade *)",
+      "Bash(docker port conico-db-1 *)",
+      "Bash(DATABASE_URL=\"postgresql://conico:conico@localhost:15432/conico\" SECRET_KEY=\"dummy\" alembic downgrade -1)",
+      "Bash(DATABASE_URL=\"postgresql://conico:conico@localhost:15432/conico\" SECRET_KEY=\"dummy\" alembic upgrade head)",
+      "Bash(DATABASE_URL=\"sqlite:///./test.db\" SECRET_KEY=\"test\" python -c \"from app.main import app; routes = [r.path for r in app.routes]; print\\([r for r in routes if 'import' in r or 'cobranza' in r]\\)\")",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(/C/Otros/Conico/frontend/node_modules/.bin/tsc --noEmit)"
     ]
   }
 }
