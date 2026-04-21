@@ -6,10 +6,9 @@ from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_permission
-from app.models.empresa import Empresa
 from app.models.factura import Factura
 from app.models.movimiento_inventario import MovimientoInventario
 from app.models.pago import Pago
@@ -52,6 +51,7 @@ def reporte_ventas(
 
     base_q = (
         db.query(Factura)
+        .options(joinedload(Factura.cliente), joinedload(Factura.vendedor))
         .filter(
             Factura.fecha >= date_from,
             Factura.fecha <= date_to,
@@ -174,6 +174,7 @@ def reporte_cobranza(
 
     facturas = (
         db.query(Factura)
+        .options(joinedload(Factura.empresa))
         .filter(
             Factura.fecha >= date_from,
             Factura.fecha <= date_to,
@@ -303,7 +304,7 @@ def reporte_inventario(
     )
     bajo_minimo_list = [
         p for p in productos
-        if p.stock_minimo is not None and p.stock_actual < p.stock_minimo
+        if p.stock_actual < p.stock_minimo
     ]
     num_sin_stock = sum(1 for p in productos if p.stock_actual <= 0)
 
@@ -323,6 +324,7 @@ def reporte_inventario(
 
     movimientos = (
         db.query(MovimientoInventario)
+        .options(joinedload(MovimientoInventario.producto))
         .filter(
             MovimientoInventario.tipo == "salida",
             MovimientoInventario.created_at >= date_from,
