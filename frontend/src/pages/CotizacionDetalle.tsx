@@ -266,11 +266,13 @@ export default function CotizacionDetalle() {
   }
 
   function handleEmpresaChange(eid: number | '') {
-    setEmpresaId(eid)
-    if (eid) {
-      const emp = empresas.find(e => e.id === eid)
-      if (emp?.plazo_credito) setTerminosPago(emp.plazo_credito)
-    }
+    withRevokeGuard(() => {
+      setEmpresaId(eid)
+      if (eid) {
+        const emp = empresas.find(e => e.id === eid)
+        if (emp?.plazo_credito) setTerminosPago(emp.plazo_credito)
+      }
+    })
   }
 
   const selectedCliente = clientes.find(c => c.id === clienteId) ?? null
