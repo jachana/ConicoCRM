@@ -77,6 +77,7 @@ def parse_dte_xml(xml_content: str | bytes) -> dict:
     rut_receptor = _text(receptor, "RUTRecep")
     if not rut_receptor:
         raise ValueError("RUTRecep no encontrado")
+    nombre_receptor = _text(receptor, "RznSocRecep")
 
     mnt_neto = _decimal(totales, "MntNeto")
     iva = _decimal(totales, "IVA")
@@ -111,6 +112,7 @@ def parse_dte_xml(xml_content: str | bytes) -> dict:
         "fecha": date.fromisoformat(fecha_str),
         "fecha_vencimiento": date.fromisoformat(fch_venc_str) if fch_venc_str else None,
         "rut_receptor": rut_receptor,
+        "nombre_receptor": nombre_receptor,
         "correo_receptor": _text(receptor, "CorreoRecep"),
         "total_neto": mnt_neto,
         "total_iva": iva,

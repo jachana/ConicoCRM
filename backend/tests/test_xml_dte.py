@@ -127,3 +127,16 @@ def test_invalid_xml_raises():
 def test_parse_accepts_str_input():
     result = parse_dte_xml(SAMPLE_DTE_33.decode("iso-8859-1"))
     assert result["numero"] == 12345
+
+
+def test_parse_dte33_nombre_receptor():
+    result = parse_dte_xml(SAMPLE_DTE_33)
+    assert result["nombre_receptor"] == "Cliente Empresa Ltda."
+
+
+def test_parse_dte_nombre_receptor_absent():
+    xml = SAMPLE_DTE_33.replace(
+        b"<RznSocRecep>Cliente Empresa Ltda.</RznSocRecep>", b""
+    )
+    result = parse_dte_xml(xml)
+    assert result["nombre_receptor"] is None
