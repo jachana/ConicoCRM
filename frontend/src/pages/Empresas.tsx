@@ -75,6 +75,7 @@ export default function Empresas() {
     setEditando(null)
     setModalOpen(true)
     setSearchParams({}, { replace: true })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const totalDeuda = deudaBulk.reduce((s, d) => s + Number(d.deuda_total), 0)

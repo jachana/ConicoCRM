@@ -111,7 +111,12 @@
       "Bash(/C/Otros/Conico/frontend/node_modules/.bin/tsc --noEmit)",
       "Bash(alembic current *)",
       "Bash(cd C:\\\\\\\\Otros\\\\\\\\Conico)",
-      "PowerShell(Get-Content *)"
+      "PowerShell(Get-Content *)",
+      "Bash(grep -E \"\\\\.\\(py|ts\\)$\")",
+      "Bash(C:/Users/jacha/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh *)"
     ]
+  },
+  "env": {
+    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "1"
   }
 }

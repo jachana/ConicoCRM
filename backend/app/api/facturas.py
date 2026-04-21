@@ -330,7 +330,12 @@ def import_xml(
     if current_user.role not in ("admin", "subadmin"):
         raise HTTPException(status_code=403, detail="Solo admin o subadmin pueden importar facturas")
     xml_bytes = file.file.read()
-    factura, _ = _upsert_from_xml(db, xml_bytes)
+    try:
+        factura, _ = _upsert_from_xml(db, xml_bytes)
+    except HTTPException as exc:
+        if isinstance(exc.detail, dict):
+            raise HTTPException(status_code=exc.status_code, detail=exc.detail["message"])
+        raise
     return _load_factura(db, factura.id)
 
 
