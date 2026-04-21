@@ -164,3 +164,43 @@ def test_ventas_pdf_export(client, admin_token):
     assert r.status_code == 200
     assert r.headers["content-type"] == "application/pdf"
     assert "ventas-" in r.headers["content-disposition"]
+
+
+def test_compras_excel_export(client, admin_token):
+    r = client.get(
+        "/api/reportes/compras/export/excel?date_from=2026-01-01&date_to=2026-12-31",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert "spreadsheetml" in r.headers["content-type"]
+    assert "compras-" in r.headers["content-disposition"]
+
+
+def test_margenes_excel_export(client, admin_token):
+    r = client.get(
+        "/api/reportes/margenes/export/excel?date_from=2026-01-01&date_to=2026-12-31",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert "spreadsheetml" in r.headers["content-type"]
+    assert "margenes-" in r.headers["content-disposition"]
+
+
+def test_dte_excel_export(client, admin_token):
+    r = client.get(
+        "/api/reportes/dte/export/excel?date_from=2026-01-01&date_to=2026-12-31",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert "spreadsheetml" in r.headers["content-type"]
+    assert "dte-" in r.headers["content-disposition"]
+
+
+def test_cobranza_pdf_export(client, admin_token):
+    r = client.get(
+        "/api/reportes/cobranza/export/pdf?date_from=2026-01-01&date_to=2026-12-31",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "application/pdf"
+    assert "cobranza-" in r.headers["content-disposition"]

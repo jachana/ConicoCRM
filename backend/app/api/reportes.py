@@ -1367,7 +1367,7 @@ def _get_dte(date_from: date, date_to: date, db: Session) -> dict:
             "folio": e.folio,
             "estado": e.estado,
             "monto_total": e.monto_total,
-            "fecha": e.created_at.date().isoformat() if e.created_at else "",
+            "created_at": e.created_at.date().isoformat() if e.created_at else None,
         }
         for e in emisiones
     ]
@@ -1667,7 +1667,7 @@ def exportar_dte_pdf(
 
     emision_rows = "".join(
         f"<tr><td>{e['tipo']}</td><td>{e['folio']}</td><td>{e['estado']}</td>"
-        f"<td>{_fmt(e['monto_total'] or 0)}</td><td>{e['fecha']}</td></tr>"
+        f"<td>{_fmt(e['monto_total'] or 0)}</td><td>{e.get('created_at') or ''}</td></tr>"
         for e in data["emisiones"]
     )
 
