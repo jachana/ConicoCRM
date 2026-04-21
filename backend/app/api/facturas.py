@@ -4,7 +4,7 @@ from decimal import Decimal
 from io import BytesIO
 
 import openpyxl
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 
@@ -23,8 +23,11 @@ from app.schemas.factura import (
     FacturaOut,
     FacturaUpdate,
 )
+from app.models.empresa import Empresa
+from app.schemas.cobranza import ImportXMLError, ImportXMLResult
 from app.services.email import EmailNotConfiguredError, enviar_factura
 from app.services.pdf import generar_pdf_factura
+from app.services.xml_dte import parse_dte_xml
 
 router = APIRouter()
 
@@ -103,6 +106,59 @@ def _load_factura(db: Session, factura_id: int) -> Factura:
     if not factura:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Factura no encontrada")
     return factura
+
+
+def _upsert_from_xml(db: Session, xml_bytes: bytes) -> tuple[Factura, str]:
+    parsed = parse_dte_xml(xml_bytes)
+
+    empresa = db.query(Empresa).filter(Empresa.rut == parsed["rut_receptor"]).first()
+    if empresa is None:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Empresa con RUT {parsed['rut_receptor']} no encontrada en el sistema",
+        )
+
+    lineas_data = parsed["lineas"]
+    existing = db.query(Factura).filter(Factura.numero == parsed["numero"]).first()
+
+    factura_fields = {
+        "numero": parsed["numero"],
+        "fecha": parsed["fecha"],
+        "fecha_vencimiento": parsed["fecha_vencimiento"],
+        "total_neto": parsed["total_neto"],
+        "total_iva": parsed["total_iva"],
+        "total": parsed["total"],
+        "empresa_id": empresa.id,
+        "cliente_id": None,
+        "correo": parsed.get("correo_receptor"),
+        "origen": "xml",
+        "xml_raw": xml_bytes.decode("utf-8", errors="replace"),
+    }
+
+    if existing:
+        for key, val in factura_fields.items():
+            setattr(existing, key, val)
+        for linea in list(existing.lineas):
+            db.delete(linea)
+        db.flush()
+        factura = existing
+        accion = "actualizada"
+    else:
+        factura = Factura(**factura_fields, estado="emitida", monto_pagado=Decimal("0"))
+        db.add(factura)
+        db.flush()
+        accion = "creada"
+
+    for linea_data in lineas_data:
+        db.add(FacturaLinea(factura_id=factura.id, **linea_data))
+
+    config_row = db.query(SystemConfig).filter(SystemConfig.key == "factura_last_id").first()
+    if config_row and int(config_row.value or "0") < factura.numero:
+        config_row.value = str(factura.numero)
+
+    db.commit()
+    db.refresh(factura)
+    return factura, accion
 
 
 @router.get("/export/excel")
@@ -255,6 +311,45 @@ def crear_factura_desde_nv(
     _recalcular_totales(factura)
     db.commit()
     return _load_factura(db, factura.id)
+
+
+@router.post("/import/xml", response_model=FacturaOut, status_code=status.HTTP_201_CREATED)
+def import_xml(
+    file: UploadFile = File(...),
+    perms: tuple[User, Session] = require_permission("facturas", "create"),
+):
+    current_user, db = perms
+    if current_user.role not in ("admin", "subadmin"):
+        raise HTTPException(status_code=403, detail="Solo admin o subadmin pueden importar facturas")
+    xml_bytes = file.file.read()
+    factura, _ = _upsert_from_xml(db, xml_bytes)
+    return _load_factura(db, factura.id)
+
+
+@router.post("/import/xml/bulk", response_model=ImportXMLResult)
+def import_xml_bulk(
+    files: list[UploadFile] = File(...),
+    perms: tuple[User, Session] = require_permission("facturas", "create"),
+):
+    current_user, db = perms
+    if current_user.role not in ("admin", "subadmin"):
+        raise HTTPException(status_code=403, detail="Solo admin o subadmin pueden importar facturas")
+
+    creadas = actualizadas = 0
+    errores: list[ImportXMLError] = []
+
+    for f in files:
+        try:
+            xml_bytes = f.file.read()
+            _, accion = _upsert_from_xml(db, xml_bytes)
+            if accion == "creada":
+                creadas += 1
+            else:
+                actualizadas += 1
+        except Exception as exc:
+            errores.append(ImportXMLError(filename=f.filename or "unknown", message=str(exc)))
+
+    return ImportXMLResult(creadas=creadas, actualizadas=actualizadas, errores=errores)
 
 
 @router.get("/{factura_id}", response_model=FacturaOut)

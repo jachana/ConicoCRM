@@ -41,6 +41,7 @@ def setup_test_db():
     import app.models.dashboard_layout  # noqa: F401
     import app.models.aprobacion_credito  # noqa: F401
     import app.models.aprobacion_margen  # noqa: F401
+    import app.models.cobranza_config  # noqa: F401
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)

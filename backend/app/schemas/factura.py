@@ -86,7 +86,7 @@ class FacturaOut(BaseModel):
     numero: int
     cotizacion_id: int | None = None
     nv_id: int | None = None
-    cliente_id: int
+    cliente_id: int | None = None
     vendedor_id: int | None = None
     empresa_id: int | None = None
     contacto: str | None = None
@@ -101,6 +101,7 @@ class FacturaOut(BaseModel):
     fecha_pago: date | None = None
     monto_pagado: Decimal | None = None
     metodo_pago: str | None = None
+    origen: str = "manual"
     created_at: datetime
     updated_at: datetime
     cliente: ClienteMinOut | None = None
@@ -117,7 +118,7 @@ class FacturaListOut(BaseModel):
     numero: int
     cotizacion_id: int | None = None
     nv_id: int | None = None
-    cliente_id: int
+    cliente_id: int | None = None
     vendedor_id: int | None = None
     empresa_id: int | None = None
     contacto: str | None = None
