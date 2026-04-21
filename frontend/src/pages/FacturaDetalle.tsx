@@ -6,6 +6,7 @@ import { FileText, Mail, ArrowLeft, ExternalLink, Pencil, X, Check, Plus, Trash2
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { Factura, FacturaLinea, Cliente, User, Empresa, Pago } from '../types'
+import DteBadge from '../components/DteBadge'
 
 const ESTADO_LABELS: Record<string, string> = {
   emitida: 'Emitida',
@@ -64,6 +65,8 @@ export default function FacturaDetalle() {
   const [emailToast, setEmailToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const [showEstadoMenu, setShowEstadoMenu] = useState(false)
   const [showPagoModal, setShowPagoModal] = useState(false)
+  const [emitirOpen, setEmitirOpen] = useState(false)
+  const [emitiendo, setEmitiendo] = useState(false)
   const [pagoFecha, setPagoFecha] = useState(new Date().toISOString().split('T')[0])
   const [pagoMonto, setPagoMonto] = useState('')
   const [pagoMetodo, setPagoMetodo] = useState('transferencia')
@@ -264,6 +267,19 @@ export default function FacturaDetalle() {
   const validTransitions = factura ? getValidTransitions(factura.estado) : []
   const canDelete = factura?.estado === 'emitida'
 
+  async function handleEmitirDte() {
+    setEmitiendo(true)
+    try {
+      await api.post(`/api/dte/facturas/${factura!.id}/emitir`)
+      setEmitirOpen(false)
+      window.location.reload()
+    } catch {
+      alert('Error al emitir DTE. Intente de nuevo.')
+    } finally {
+      setEmitiendo(false)
+    }
+  }
+
   if (!factura) {
     return (
       <div className="p-6">
@@ -293,6 +309,15 @@ export default function FacturaDetalle() {
           <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${ESTADO_COLORS[factura.estado] ?? 'bg-gray-100 text-gray-700'}`}>
             {ESTADO_LABELS[factura.estado] ?? factura.estado}
           </span>
+          <DteBadge estado={factura.dte_estado ?? 'no_emitida'} />
+          {(factura.dte_estado === 'no_emitida' || !factura.dte_estado) && (
+            <button
+              onClick={() => setEmitirOpen(true)}
+              className="px-3 py-1.5 text-xs font-medium bg-brand-500 hover:bg-brand-400 text-gray-900 rounded-lg"
+            >
+              Emitir DTE
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {validTransitions.length > 0 && (
@@ -747,6 +772,34 @@ export default function FacturaDetalle() {
       {emailToast && (
         <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
           {emailToast.msg}
+        </div>
+      )}
+
+      {/* DTE emitir modal */}
+      {emitirOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-[#111827] border border-white/10 rounded-2xl p-6 w-full max-w-sm">
+            <h3 className="text-white font-semibold mb-2">¿Emitir Factura Electrónica?</h3>
+            <p className="text-gray-400 text-sm mb-1">Esta acción enviará el documento al SII via Lioren.</p>
+            <p className="text-gray-300 text-sm mb-4">
+              <span className="font-medium">Total:</span> ${Number(factura.total).toLocaleString('es-CL')}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEmitirOpen(false)}
+                className="flex-1 py-2 text-sm text-gray-400 hover:text-white border border-white/10 rounded-lg"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEmitirDte}
+                disabled={emitiendo}
+                className="flex-1 py-2 text-sm font-semibold bg-brand-500 hover:bg-brand-400 text-gray-900 rounded-lg disabled:opacity-50"
+              >
+                {emitiendo ? 'Enviando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

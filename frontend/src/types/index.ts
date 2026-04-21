@@ -251,6 +251,7 @@ export interface Factura {
   fecha: string;
   fecha_vencimiento: string | null;
   estado: string;
+  dte_estado: string;
   origen: string;
   xml_raw: string | null;
   ultimo_recordatorio: string | null;
