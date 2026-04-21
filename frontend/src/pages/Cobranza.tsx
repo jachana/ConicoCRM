@@ -193,7 +193,7 @@ function FacturasTab() {
                 <td className="p-3">{fmtDate(f.fecha_vencimiento)}</td>
                 <td className="p-3">{f.empresa?.nombre ?? '—'}</td>
                 <td className="p-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[f.estado] ?? ''}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[f.estado] ?? 'bg-gray-100 text-gray-600'}`}>
                     {f.estado}
                   </span>
                 </td>
@@ -205,6 +205,13 @@ function FacturasTab() {
                 <td className="p-3 text-right">{fmt(f.total)}</td>
               </tr>
             ))}
+            {facturas.length === 0 && (
+              <tr>
+                <td colSpan={7} className="p-6 text-center text-gray-400 text-sm">
+                  No hay facturas
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       )}
@@ -219,6 +226,15 @@ function ImportModal({ onClose }: { onClose: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [result, setResult] = useState<ImportXMLResult | null>(null)
   const [uploading, setUploading] = useState(false)
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (inputRef.current && e.dataTransfer.files.length > 0) {
+      const dt = new DataTransfer()
+      Array.from(e.dataTransfer.files).forEach(f => dt.items.add(f))
+      inputRef.current.files = dt.files
+    }
+  }
 
   const handleUpload = async () => {
     const files = inputRef.current?.files
@@ -248,6 +264,8 @@ function ImportModal({ onClose }: { onClose: () => void }) {
             <div
               className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 mb-4"
               onClick={() => inputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
             >
               <p className="text-gray-500 text-sm">Arrastra archivos XML aquí o haz clic para seleccionar</p>
               <p className="text-gray-400 text-xs mt-1">Se pueden seleccionar múltiples archivos</p>
