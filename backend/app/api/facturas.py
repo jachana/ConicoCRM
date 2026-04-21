@@ -24,8 +24,9 @@ from app.schemas.factura import (
     FacturaUpdate,
 )
 from app.models.empresa import Empresa
-from app.schemas.cobranza import ImportXMLError, ImportXMLResult
+from app.schemas.cobranza import ImportXMLError, ImportXMLResult, RecordatorioCreate
 from app.services.email import EmailNotConfiguredError, enviar_factura
+from app.services.email import enviar_recordatorio as _send_recordatorio
 from app.services.pdf import generar_pdf_factura
 from app.services.xml_dte import parse_dte_xml
 
@@ -504,3 +505,17 @@ def enviar_email(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Error al enviar email: {e}")
     return {"detail": "Email enviado correctamente"}
+
+
+@router.post("/{factura_id}/recordatorio")
+def enviar_recordatorio(
+    factura_id: int,
+    data: RecordatorioCreate,
+    perms: tuple[User, Session] = require_permission("facturas", "edit"),
+):
+    _, db = perms
+    factura = _load_factura(db, factura_id)
+    _send_recordatorio(to=data.to, subject=data.subject, body=data.body)
+    factura.ultimo_recordatorio = date.today()
+    db.commit()
+    return {"detail": "Recordatorio enviado"}

@@ -178,3 +178,21 @@ def enviar_factura(factura, pdf_bytes: bytes) -> None:
         server.starttls()
         server.login(cfg["user"], cfg["password"])
         server.sendmail(cfg["from"], to_addr, msg.as_string())
+
+
+def enviar_recordatorio(to: str, subject: str, body: str) -> None:
+    cfg = _get_smtp_config()
+    if not to:
+        raise ValueError("Dirección de destino vacía")
+
+    msg = MIMEMultipart()
+    msg["From"] = cfg["from"]
+    msg["To"] = to
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain", "utf-8"))
+
+    with smtplib.SMTP(cfg["host"], cfg["port"]) as server:
+        server.ehlo()
+        server.starttls()
+        server.login(cfg["user"], cfg["password"])
+        server.sendmail(cfg["from"], to, msg.as_string())
