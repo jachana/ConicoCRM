@@ -111,6 +111,7 @@ def test_margenes_returns_valid_structure(client, admin_token):
     data = r.json()
     assert "kpis" in data and "por_producto" in data and "por_factura" in data
     assert "margen_promedio_pct" in data["kpis"]
+    assert "mejor_producto" in data["kpis"] and "peor_producto" in data["kpis"]
 
 
 def test_dte_report_returns_valid_structure(client, admin_token):
