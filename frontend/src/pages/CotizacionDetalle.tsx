@@ -160,6 +160,19 @@ export default function CotizacionDetalle() {
 
   const isDirty = !isNew && savedSnapshot !== null && currentSnapshot !== savedSnapshot
 
+  const savedParsed = useMemo(() => (savedSnapshot && !isNew) ? JSON.parse(savedSnapshot) : null, [savedSnapshot, isNew])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const df = (field: string, val: any) => savedParsed !== null && savedParsed[field] !== val
+  const lineaDirty = (idx: number) => {
+    if (!savedParsed) return false
+    const saved = (savedParsed.lineas ?? []) as Array<{ producto_id: number | null; cantidad: number; valor_neto: number; descripcion: string; sku: string | null; formato: string | null }>
+    if (idx >= saved.length) return true
+    const s = saved[idx], c = lineas[idx]
+    return s.producto_id !== (c.producto_id ?? null) || s.cantidad !== c.cantidad ||
+      s.valor_neto !== c.valor_neto || s.descripcion !== (c.descripcion ?? '') ||
+      s.sku !== (c.sku ?? null) || s.formato !== (c.formato ?? null)
+  }
+
   const { data: cotizacion } = useQuery<Cotizacion>({
     queryKey: ['cotizacion', id],
     queryFn: () => api.get(`/api/cotizaciones/${id}`).then(r => r.data),
@@ -787,7 +800,7 @@ export default function CotizacionDetalle() {
             <select
               value={clienteId}
               onChange={e => handleClienteChange(e.target.value ? Number(e.target.value) : '')}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('clienteId', clienteId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
             >
               <option value="">Seleccionar cliente...</option>
               {clientes.map(c => (
@@ -801,7 +814,7 @@ export default function CotizacionDetalle() {
                   value={empresaId}
                   onChange={e => handleEmpresaChange(e.target.value ? Number(e.target.value) : '')}
                   disabled={!!clienteId}
-                  className={`w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${clienteId ? 'bg-gray-50 dark:bg-gray-800/50 cursor-default' : 'bg-white dark:bg-gray-800'}`}
+                  className={`w-full px-3 py-1.5 text-sm border rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${df('empresaId', empresaId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600'} ${clienteId ? 'bg-gray-50 dark:bg-gray-800/50 cursor-default' : 'bg-white dark:bg-gray-800'}`}
                 >
                   <option value="">— Sin empresa —</option>
                   {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
@@ -834,12 +847,12 @@ export default function CotizacionDetalle() {
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
             <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('fecha', fecha) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`} />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Estado</label>
             <select value={estado} onChange={e => setEstado(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('estado', estado) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}>
               {ESTADOS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
             </select>
           </div>
@@ -847,7 +860,7 @@ export default function CotizacionDetalle() {
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Encargado</label>
               <select value={vendedorId} onChange={e => setVendedorId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('vendedorId', vendedorId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}>
                 {usuarios.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
@@ -855,7 +868,7 @@ export default function CotizacionDetalle() {
           <div className="sm:col-span-2 lg:col-span-3">
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Nota / Observaciones</label>
             <textarea value={nota} onChange={e => setNota(e.target.value)} rows={2}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${df('nota', nota) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
               placeholder="Notas internas o para el cliente..." />
           </div>
           <div className="sm:col-span-2 lg:col-span-3">
@@ -870,7 +883,7 @@ export default function CotizacionDetalle() {
             <select
               value={terminosPago}
               onChange={e => setTerminosPago(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('terminosPago', terminosPago) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
             >
               <option value="">— Seleccionar —</option>
               <option value="Al contado">Al contado</option>
@@ -906,7 +919,7 @@ export default function CotizacionDetalle() {
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {lineas.map((linea, idx) => (
-              <tr key={linea._key} className="align-top">
+              <tr key={linea._key} className={`align-top ${lineaDirty(idx) ? 'bg-amber-50 dark:bg-amber-900/10' : ''}`}>
                 <td className="px-3 py-3 text-center text-gray-400 text-xs">{idx + 1}</td>
                 <td className="px-3 py-2 relative">
                   <input type="text" value={linea.descripcion}
