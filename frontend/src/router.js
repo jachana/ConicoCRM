@@ -20,6 +20,8 @@ import FacturaDetalle from './pages/FacturaDetalle';
 import Pagos from './pages/Pagos';
 import Aprobaciones from './pages/Aprobaciones';
 import Dashboard from './pages/Dashboard';
+import Configuracion from './pages/Configuracion';
+import Cobranza from './pages/Cobranza';
 import { useAuthStore } from './stores/auth';
 import AppLayout from './components/layout/AppLayout';
 function RequireAuth({ children }) {
@@ -37,6 +39,7 @@ export const router = createBrowserRouter([
         children: [
             { index: true, element: _jsx(Dashboard, {}) },
             { path: 'usuarios', element: _jsx(Users, {}) },
+            { path: 'configuracion', element: _jsx(Configuracion, {}) },
             { path: 'empresas', element: _jsx(Empresas, {}) },
             { path: 'proveedores', element: _jsx(Proveedores, {}) },
             { path: 'catalogo', element: _jsx(Productos, {}) },
@@ -57,6 +60,7 @@ export const router = createBrowserRouter([
             { path: 'aprobaciones', element: _jsx(Aprobaciones, {}) },
             { path: 'rrhh', element: _jsx(RRHH, {}) },
             { path: 'inventario', element: _jsx(Inventario, {}) },
+            { path: 'cobranza', element: _jsx(Cobranza, {}) },
         ],
     },
 ]);
