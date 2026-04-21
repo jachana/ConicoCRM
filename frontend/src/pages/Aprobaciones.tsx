@@ -83,7 +83,7 @@ export default function Aprobaciones() {
     enabled: isAdminUser,
   })
 
-  const isLoading = loadingCredito || loadingMargen || loadingTerminos
+  const isLoading = loadingCredito || loadingMargen
 
   const all: AnyAprobacion[] = [...creditos, ...margenes].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()

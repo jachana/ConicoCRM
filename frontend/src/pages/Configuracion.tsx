@@ -23,8 +23,6 @@ export default function Configuracion() {
   const user = useAuthStore(s => s.user)
   const qc = useQueryClient()
 
-  if (!user || user.role !== 'admin') return <Navigate to="/" replace />
-
   const { data: config = [], isLoading } = useQuery<SystemConfig[]>({
     queryKey: ['config'],
     queryFn: () => api.get('/api/config/').then(r => r.data),
@@ -61,6 +59,8 @@ export default function Configuracion() {
       setTimeout(() => setToast(null), 3000)
     },
   })
+
+  if (!user || user.role !== 'admin') return <Navigate to="/" replace />
 
   function handleSave() {
     saveMut.mutate(form)
