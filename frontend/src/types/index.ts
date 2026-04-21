@@ -476,7 +476,7 @@ export interface ReportesCobranza {
 
 export interface ReportesInventario {
   kpis: { valor_total_stock: number; num_bajo_minimo: number; num_sin_stock: number }
-  bajo_minimo: { producto_id: number; nombre: string; sku: string; stock_actual: number; stock_minimo: number }[]
+  bajo_minimo: { producto_id: number; nombre: string; sku: string | null; stock_actual: number; stock_minimo: number }[]
   top_vendidos: { producto_id: number; nombre: string; cantidad_vendida: number; monto_total: number }[]
 }
 
