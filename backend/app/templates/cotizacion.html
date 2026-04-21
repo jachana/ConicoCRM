@@ -39,6 +39,15 @@
   .nota-label { font-weight: bold; color: #2563eb; margin-bottom: 4px; }
 
   .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 9px; color: #aaa; text-align: center; }
+
+  .terminos-pago { margin-top: 8px; font-size: 10px; color: #555; }
+  .terminos-pago span { font-weight: 600; color: #333; }
+
+  .banking-section { margin-top: 20px; padding: 12px; border: 1px solid #e9ecef; border-radius: 4px; background: #f8f9fa; }
+  .banking-title { font-size: 10px; font-weight: bold; text-transform: uppercase; color: #888; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .banking-grid { display: grid; grid-template-columns: 140px 1fr; gap: 3px 8px; font-size: 10px; color: #555; }
+  .banking-grid .label { color: #888; }
+  .banking-grid .value { font-weight: 600; color: #333; }
 </style>
 </head>
 <body>
@@ -64,7 +73,9 @@
 <div class="cliente-block">
   <div class="cliente-nombre">{{ cotizacion.cliente.nombre if cotizacion.cliente else '' }}</div>
   <div class="cliente-grid">
-    {% if cotizacion.cliente and cotizacion.cliente.rut %}
+    {% if cotizacion.empresa and cotizacion.empresa.rut %}
+    <div><strong>RUT:</strong> {{ cotizacion.empresa.rut }}</div>
+    {% elif cotizacion.cliente and cotizacion.cliente.rut %}
     <div><strong>RUT:</strong> {{ cotizacion.cliente.rut }}</div>
     {% endif %}
     {% if cotizacion.contacto %}
@@ -126,11 +137,48 @@
   </table>
 </div>
 
+{% if cotizacion.terminos_pago %}
+<div class="totales">
+  <div class="terminos-pago" style="width:260px; padding: 4px 8px;">
+    Términos de pago: <span>{{ cotizacion.terminos_pago }}</span>
+  </div>
+</div>
+{% endif %}
+
 <!-- NOTA -->
 {% if cotizacion.nota %}
 <div class="nota-block">
   <div class="nota-label">Observaciones</div>
   <div>{{ cotizacion.nota }}</div>
+</div>
+{% endif %}
+
+<!-- DATOS BANCARIOS -->
+{% if config.empresa_banco or config.empresa_numero_cuenta %}
+<div class="banking-section">
+  <div class="banking-title">Datos para Transferencia / Cheque</div>
+  <div class="banking-grid">
+    {% if config.empresa_banco %}
+    <div class="label">Banco</div>
+    <div class="value">{{ config.empresa_banco }}</div>
+    {% endif %}
+    {% if config.empresa_tipo_cuenta %}
+    <div class="label">Tipo de cuenta</div>
+    <div class="value">{{ config.empresa_tipo_cuenta }}</div>
+    {% endif %}
+    {% if config.empresa_numero_cuenta %}
+    <div class="label">N° de cuenta</div>
+    <div class="value">{{ config.empresa_numero_cuenta }}</div>
+    {% endif %}
+    {% if config.empresa_nombre_titular %}
+    <div class="label">Titular</div>
+    <div class="value">{{ config.empresa_nombre_titular }}</div>
+    {% endif %}
+    {% if config.empresa_rut %}
+    <div class="label">RUT</div>
+    <div class="value">{{ config.empresa_rut }}</div>
+    {% endif %}
+  </div>
 </div>
 {% endif %}
 
