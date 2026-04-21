@@ -88,7 +88,7 @@ export default function FacturaDetalle() {
 
   useEffect(() => {
     if (factura) {
-      setClienteId(factura.cliente_id)
+      setClienteId(factura.cliente_id ?? '')
       setVendedorId(factura.vendedor_id ?? '')
       setContacto(factura.contacto ?? '')
       setCorreo(factura.correo ?? '')
@@ -204,7 +204,7 @@ export default function FacturaDetalle() {
   function handleCancelEdit() {
     // Reset to server data
     if (factura) {
-      setClienteId(factura.cliente_id)
+      setClienteId(factura.cliente_id ?? '')
       setVendedorId(factura.vendedor_id ?? '')
       setContacto(factura.contacto ?? '')
       setCorreo(factura.correo ?? '')
