@@ -21,6 +21,12 @@ import Aprobaciones from './pages/Aprobaciones'
 import Dashboard from './pages/Dashboard'
 import Configuracion from './pages/Configuracion'
 import Cobranza from './pages/Cobranza'
+import NotasCredito from './pages/NotasCredito'
+import NotaCreditoDetalle from './pages/NotaCreditoDetalle'
+import NotaCreditoNueva from './pages/NotaCreditoNueva'
+import NotasDebito from './pages/NotasDebito'
+import NotaDebitoDetalle from './pages/NotaDebitoDetalle'
+import NotaDebitoNueva from './pages/NotaDebitoNueva'
 import { useAuthStore } from './stores/auth'
 import AppLayout from './components/layout/AppLayout'
 
@@ -56,6 +62,12 @@ export const router = createBrowserRouter([
       { path: 'facturas', element: <Facturas /> },
       { path: 'facturas/nueva', element: <FacturaDetalle /> },
       { path: 'facturas/:id', element: <FacturaDetalle /> },
+      { path: 'notas-credito', element: <NotasCredito /> },
+      { path: 'notas-credito/nueva', element: <NotaCreditoNueva /> },
+      { path: 'notas-credito/:id', element: <NotaCreditoDetalle /> },
+      { path: 'notas-debito', element: <NotasDebito /> },
+      { path: 'notas-debito/nueva', element: <NotaDebitoNueva /> },
+      { path: 'notas-debito/:id', element: <NotaDebitoDetalle /> },
       { path: 'pagos', element: <Pagos /> },
       { path: 'aprobaciones', element: <Aprobaciones /> },
       { path: 'rrhh', element: <RRHH /> },

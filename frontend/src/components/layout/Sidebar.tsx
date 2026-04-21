@@ -25,6 +25,8 @@ const NAV: { to: string; icon: React.ElementType; label: string; module?: Module
   { to: '/catalogo',       icon: Package,         label: 'Catálogo',          module: 'catalogo' },
   { to: '/notas-venta',    icon: ShoppingCart,    label: 'Notas de Venta',    module: 'nota_venta' },
   { to: '/facturas',       icon: Receipt,         label: 'Facturas',          module: 'facturas' },
+  { to: '/notas-credito',  icon: FileText,        label: 'Notas de Crédito' },
+  { to: '/notas-debito',   icon: FileText,        label: 'Notas de Débito' },
   { to: '/pagos',          icon: CreditCard,      label: 'Pagos' },
   { to: '/cobranza',      icon: Banknote,        label: 'Cobranza' },
   { to: '/inventario',     icon: Warehouse,       label: 'Inventario',        module: 'inventario' },
