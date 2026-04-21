@@ -1,0 +1,451 @@
+import { useState, useRef } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { api } from '../lib/api'
+import type { CobranzaDashboard, RecordatorioItem, Factura, ImportXMLResult } from '../types'
+
+type Tab = 'dashboard' | 'facturas' | 'recordatorios'
+
+const fmt = (n: number) =>
+  n.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
+
+const fmtDate = (s: string | null) =>
+  s ? new Date(s + 'T00:00:00').toLocaleDateString('es-CL') : '—'
+
+export default function Cobranza() {
+  const [tab, setTab] = useState<Tab>('dashboard')
+
+  const tabClass = (t: Tab) =>
+    `px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+      tab === t
+        ? 'border-blue-600 text-blue-600'
+        : 'border-transparent text-gray-500 hover:text-gray-700'
+    }`
+
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Cobranza</h1>
+      <div className="flex gap-0 border-b mb-6">
+        <button className={tabClass('dashboard')} onClick={() => setTab('dashboard')}>Dashboard</button>
+        <button className={tabClass('facturas')} onClick={() => setTab('facturas')}>Facturas</button>
+        <button className={tabClass('recordatorios')} onClick={() => setTab('recordatorios')}>Recordatorios</button>
+      </div>
+      {tab === 'dashboard' && <DashboardTab />}
+      {tab === 'facturas' && <FacturasTab />}
+      {tab === 'recordatorios' && <RecordatoriosTab />}
+    </div>
+  )
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
+function DashboardTab() {
+  const { data, isLoading, error } = useQuery<CobranzaDashboard>({
+    queryKey: ['cobranza-dashboard'],
+    queryFn: () => api.get('/api/cobranza/dashboard').then(r => r.data),
+  })
+
+  if (isLoading) return <p className="text-gray-500">Cargando…</p>
+  if (error || !data) return <p className="text-red-600">Error al cargar dashboard</p>
+
+  const aging = data.aging
+  const agingRows = [
+    { label: '0 – 30 días', ...aging.d_0_30 },
+    { label: '31 – 60 días', ...aging.d_31_60 },
+    { label: '61 – 90 días', ...aging.d_61_90 },
+    { label: '90+ días', ...aging.d_90_plus },
+  ]
+
+  return (
+    <div className="space-y-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card label="Total por cobrar" value={fmt(data.total_por_cobrar)} color="blue" />
+        <Card label="Total vencido" value={fmt(data.total_vencido)} color="red" />
+        <Card label="Próximas a vencer (≤7 días)" value={fmt(data.proximas_a_vencer)} color="yellow" />
+      </div>
+
+      {/* Aging */}
+      <div>
+        <h2 className="text-lg font-semibold mb-2">Aging</h2>
+        <table className="w-full text-sm border rounded overflow-hidden">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left p-3 font-medium">Período</th>
+              <th className="text-right p-3 font-medium">Cantidad</th>
+              <th className="text-right p-3 font-medium">Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            {agingRows.map(r => (
+              <tr key={r.label} className="border-t">
+                <td className="p-3">{r.label}</td>
+                <td className="p-3 text-right">{r.count}</td>
+                <td className="p-3 text-right">{fmt(r.monto)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Por empresa */}
+      <div>
+        <h2 className="text-lg font-semibold mb-2">Por empresa</h2>
+        <table className="w-full text-sm border rounded overflow-hidden">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left p-3 font-medium">Empresa</th>
+              <th className="text-right p-3 font-medium">Total pendiente</th>
+              <th className="text-right p-3 font-medium">Vencido</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.por_empresa.map(e => (
+              <tr key={e.empresa_id} className="border-t">
+                <td className="p-3">{e.empresa_nombre}</td>
+                <td className="p-3 text-right">{fmt(e.total)}</td>
+                <td className="p-3 text-right text-red-600">{fmt(e.vencido)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function Card({ label, value, color }: { label: string; value: string; color: 'blue' | 'red' | 'yellow' }) {
+  const colors = {
+    blue: 'bg-blue-50 border-blue-200 text-blue-700',
+    red: 'bg-red-50 border-red-200 text-red-700',
+    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+  }
+  return (
+    <div className={`rounded-lg border p-4 ${colors[color]}`}>
+      <p className="text-xs font-medium opacity-70 mb-1">{label}</p>
+      <p className="text-2xl font-bold">{value}</p>
+    </div>
+  )
+}
+
+// ─── Facturas ─────────────────────────────────────────────────────────────────
+
+function FacturasTab() {
+  const [estado, setEstado] = useState('')
+  const [showImport, setShowImport] = useState(false)
+
+  const { data: facturas = [], isLoading } = useQuery<Factura[]>({
+    queryKey: ['cobranza-facturas', estado],
+    queryFn: () =>
+      api.get('/api/facturas/', { params: estado ? { estado } : {} }).then(r => r.data),
+  })
+
+  const ESTADO_COLORS: Record<string, string> = {
+    emitida: 'bg-blue-100 text-blue-700',
+    parcial: 'bg-yellow-100 text-yellow-700',
+    pagada: 'bg-green-100 text-green-700',
+    anulada: 'bg-gray-100 text-gray-500',
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-2">
+          <select
+            className="border rounded px-3 py-1.5 text-sm"
+            value={estado}
+            onChange={e => setEstado(e.target.value)}
+          >
+            <option value="">Todos los estados</option>
+            <option value="emitida">Emitida</option>
+            <option value="parcial">Parcial</option>
+            <option value="pagada">Pagada</option>
+            <option value="anulada">Anulada</option>
+          </select>
+        </div>
+        <button
+          className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
+          onClick={() => setShowImport(true)}
+        >
+          Importar XML
+        </button>
+      </div>
+
+      {isLoading ? (
+        <p className="text-gray-500 text-sm">Cargando…</p>
+      ) : (
+        <table className="w-full text-sm border rounded overflow-hidden">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left p-3 font-medium">N°</th>
+              <th className="text-left p-3 font-medium">Fecha</th>
+              <th className="text-left p-3 font-medium">Vencimiento</th>
+              <th className="text-left p-3 font-medium">Empresa</th>
+              <th className="text-left p-3 font-medium">Estado</th>
+              <th className="text-left p-3 font-medium">Origen</th>
+              <th className="text-right p-3 font-medium">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {facturas.map(f => (
+              <tr key={f.id} className="border-t hover:bg-gray-50">
+                <td className="p-3">{f.numero.toString().padStart(5, '0')}</td>
+                <td className="p-3">{fmtDate(f.fecha)}</td>
+                <td className="p-3">{fmtDate(f.fecha_vencimiento)}</td>
+                <td className="p-3">{f.empresa?.nombre ?? '—'}</td>
+                <td className="p-3">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[f.estado] ?? ''}`}>
+                    {f.estado}
+                  </span>
+                </td>
+                <td className="p-3">
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">
+                    {f.origen}
+                  </span>
+                </td>
+                <td className="p-3 text-right">{fmt(f.total)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {showImport && <ImportModal onClose={() => setShowImport(false)} />}
+    </div>
+  )
+}
+
+function ImportModal({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [result, setResult] = useState<ImportXMLResult | null>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handleUpload = async () => {
+    const files = inputRef.current?.files
+    if (!files || files.length === 0) return
+    setUploading(true)
+    try {
+      if (files.length === 1) {
+        const form = new FormData()
+        form.append('file', files[0])
+        const r = await api.post('/api/facturas/import/xml', form)
+        setResult({ creadas: 1, actualizadas: 0, errores: [] })
+        if (r.data.origen === 'xml') setResult({ creadas: 0, actualizadas: 1, errores: [] })
+      } else {
+        const form = new FormData()
+        Array.from(files).forEach(f => form.append('files', f))
+        const r = await api.post('/api/facturas/import/xml/bulk', form)
+        setResult(r.data)
+      }
+      qc.invalidateQueries({ queryKey: ['cobranza-facturas'] })
+      qc.invalidateQueries({ queryKey: ['cobranza-dashboard'] })
+    } catch (e: any) {
+      setResult({ creadas: 0, actualizadas: 0, errores: [{ filename: 'upload', message: e.message }] })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+        <h2 className="text-lg font-semibold mb-4">Importar XML DTE</h2>
+
+        {!result ? (
+          <>
+            <div
+              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 mb-4"
+              onClick={() => inputRef.current?.click()}
+            >
+              <p className="text-gray-500 text-sm">Arrastra archivos XML aquí o haz clic para seleccionar</p>
+              <p className="text-gray-400 text-xs mt-1">Se pueden seleccionar múltiples archivos</p>
+            </div>
+            <input ref={inputRef} type="file" accept=".xml" multiple className="hidden" />
+            <div className="flex justify-end gap-2">
+              <button className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded" onClick={onClose}>
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                onClick={handleUpload}
+                disabled={uploading}
+              >
+                {uploading ? 'Importando…' : 'Importar'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="space-y-2 mb-4">
+              <p className="text-sm text-green-700">✓ {result.creadas} creadas, {result.actualizadas} actualizadas</p>
+              {result.errores.length > 0 && (
+                <div>
+                  <p className="text-sm text-red-600 font-medium">{result.errores.length} error(es):</p>
+                  {result.errores.map((e, i) => (
+                    <p key={i} className="text-xs text-red-500">{e.filename}: {e.message}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end">
+              <button className="px-4 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200" onClick={onClose}>
+                Cerrar
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Recordatorios ────────────────────────────────────────────────────────────
+
+function RecordatoriosTab() {
+  const qc = useQueryClient()
+  const [modalItem, setModalItem] = useState<RecordatorioItem | null>(null)
+
+  const { data: items = [], isLoading } = useQuery<RecordatorioItem[]>({
+    queryKey: ['cobranza-recordatorios'],
+    queryFn: () => api.get('/api/cobranza/recordatorios').then(r => r.data),
+  })
+
+  const enviarMut = useMutation({
+    mutationFn: ({ id, to, subject, body }: { id: number; to: string; subject: string; body: string }) =>
+      api.post(`/api/facturas/${id}/recordatorio`, { to, subject, body }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['cobranza-recordatorios'] })
+      setModalItem(null)
+    },
+  })
+
+  if (isLoading) return <p className="text-gray-500 text-sm">Cargando…</p>
+
+  if (items.length === 0)
+    return <p className="text-gray-500 text-sm">No hay facturas pendientes de recordatorio.</p>
+
+  return (
+    <div>
+      <table className="w-full text-sm border rounded overflow-hidden">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="text-left p-3 font-medium">N°</th>
+            <th className="text-left p-3 font-medium">Empresa</th>
+            <th className="text-right p-3 font-medium">Saldo</th>
+            <th className="text-right p-3 font-medium">Días vencida</th>
+            <th className="text-left p-3 font-medium">Último recordatorio</th>
+            <th className="p-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map(item => (
+            <tr key={item.id} className="border-t hover:bg-gray-50">
+              <td className="p-3">{item.numero.toString().padStart(5, '0')}</td>
+              <td className="p-3">{item.empresa_nombre ?? item.cliente_nombre ?? '—'}</td>
+              <td className="p-3 text-right">{fmt(item.saldo)}</td>
+              <td className="p-3 text-right text-red-600 font-medium">{item.dias_vencida}</td>
+              <td className="p-3">{item.ultimo_recordatorio ? fmtDate(item.ultimo_recordatorio) : 'Nunca'}</td>
+              <td className="p-3 text-right">
+                <button
+                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                  onClick={() => setModalItem(item)}
+                >
+                  Enviar
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {modalItem && (
+        <RecordatorioModal
+          item={modalItem}
+          onClose={() => setModalItem(null)}
+          onSend={(to, subject, body) =>
+            enviarMut.mutate({ id: modalItem.id, to, subject, body })
+          }
+          sending={enviarMut.isPending}
+          error={enviarMut.error ? String(enviarMut.error) : null}
+        />
+      )}
+    </div>
+  )
+}
+
+function RecordatorioModal({
+  item,
+  onClose,
+  onSend,
+  sending,
+  error,
+}: {
+  item: RecordatorioItem
+  onClose: () => void
+  onSend: (to: string, subject: string, body: string) => void
+  sending: boolean
+  error: string | null
+}) {
+  const numStr = item.numero.toString().padStart(5, '0')
+  const [to, setTo] = useState(item.correo_enviar ?? '')
+  const [subject, setSubject] = useState(`Recordatorio de pago — Factura N°${numStr}`)
+  const [body, setBody] = useState(
+    `Estimado/a ${item.empresa_nombre ?? item.cliente_nombre ?? 'cliente'},\n\n` +
+    `Le recordamos que la factura N°${numStr} por un monto de $${Math.round(item.total).toLocaleString('es-CL')} ` +
+    `con fecha de vencimiento ${item.fecha_vencimiento ? fmtDate(item.fecha_vencimiento) : 'no especificada'} ` +
+    `se encuentra pendiente de pago.\n\n` +
+    `Han transcurrido ${item.dias_vencida} día(s) desde su vencimiento.\n\n` +
+    `Le rogamos proceder con el pago a la brevedad posible.\n\n` +
+    `Saludos,\nConico`
+  )
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+        <h2 className="text-lg font-semibold mb-4">Enviar recordatorio — Factura N°{numStr}</h2>
+
+        <div className="space-y-3 mb-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Para</label>
+            <input
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={to}
+              onChange={e => setTo(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Asunto</label>
+            <input
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Mensaje</label>
+            <textarea
+              className="w-full border rounded px-3 py-2 text-sm h-40 resize-none"
+              value={body}
+              onChange={e => setBody(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+
+        <div className="flex justify-end gap-2">
+          <button className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded" onClick={onClose}>
+            Cancelar
+          </button>
+          <button
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            onClick={() => onSend(to, subject, body)}
+            disabled={sending || !to}
+          >
+            {sending ? 'Enviando…' : 'Enviar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
