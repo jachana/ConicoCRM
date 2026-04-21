@@ -143,6 +143,7 @@ def test_cobranza_excel_export(client, admin_token):
     )
     assert r.status_code == 200
     assert "spreadsheetml" in r.headers["content-type"]
+    assert "cobranza-" in r.headers["content-disposition"]
 
 
 def test_inventario_excel_export(client, admin_token):
@@ -152,3 +153,4 @@ def test_inventario_excel_export(client, admin_token):
     )
     assert r.status_code == 200
     assert "spreadsheetml" in r.headers["content-type"]
+    assert "inventario-" in r.headers["content-disposition"]
