@@ -397,3 +397,49 @@ export interface ImportXMLResult {
   actualizadas: number;
   errores: Array<{ filename: string; message: string }>;
 }
+
+export interface NotaCreditoLinea {
+  id: number
+  orden: number
+  descripcion: string
+  cantidad: string
+  precio_unitario: string
+  subtotal: string
+}
+
+export interface NotaCredito {
+  id: number
+  numero: number
+  fecha: string
+  cliente_id: number
+  razon: string
+  monto_neto: string
+  monto_iva: string
+  monto_total: string
+  dte_estado: string
+  created_at: string
+  lineas: NotaCreditoLinea[]
+}
+
+export interface NotaDebitoLinea {
+  id: number
+  orden: number
+  descripcion: string
+  cantidad: string
+  precio_unitario: string
+  subtotal: string
+}
+
+export interface NotaDebito {
+  id: number
+  numero: number
+  fecha: string
+  cliente_id: number
+  razon: string
+  monto_neto: string
+  monto_iva: string
+  monto_total: string
+  dte_estado: string
+  created_at: string
+  lineas: NotaDebitoLinea[]
+}
