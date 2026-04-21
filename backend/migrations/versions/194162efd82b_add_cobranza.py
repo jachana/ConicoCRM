@@ -35,7 +35,6 @@ def upgrade() -> None:
             sa.ForeignKey("empresas.id", ondelete="CASCADE"),
             nullable=False,
             unique=True,
-            index=True,
         ),
         sa.Column("dias_frecuencia", sa.Integer, nullable=False, server_default="7"),
         sa.Column(
@@ -45,9 +44,11 @@ def upgrade() -> None:
             nullable=False,
         ),
     )
+    op.create_index("ix_cobranza_config_empresa_id", "cobranza_config", ["empresa_id"])
 
 
 def downgrade() -> None:
+    op.drop_index("ix_cobranza_config_empresa_id", table_name="cobranza_config")
     op.drop_table("cobranza_config")
     bind = op.get_bind()
     if bind.dialect.name == "sqlite":

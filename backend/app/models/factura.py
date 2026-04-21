@@ -16,7 +16,7 @@ class Factura(Base):
     nv_id: Mapped[int | None] = mapped_column(
         ForeignKey("nota_ventas.id", ondelete="SET NULL"), nullable=True
     )
-    cliente_id: Mapped[int | None] = mapped_column(ForeignKey("clientes.id", ondelete="RESTRICT"), nullable=True)
+    cliente_id: Mapped[int | None] = mapped_column(ForeignKey("clientes.id", ondelete="SET NULL"), nullable=True)
     empresa_id: Mapped[int | None] = mapped_column(
         ForeignKey("empresas.id", ondelete="SET NULL"), nullable=True
     )
