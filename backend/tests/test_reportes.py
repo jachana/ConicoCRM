@@ -85,3 +85,41 @@ def test_requires_auth(client):
     for path in ("/api/reportes/ventas", "/api/reportes/cobranza", "/api/reportes/inventario"):
         r = client.get(path, params={"date_from": "2026-01-01", "date_to": "2026-04-30"})
         assert r.status_code == 401, f"Expected 401 for {path}, got {r.status_code}"
+
+
+def test_compras_returns_valid_structure(client, admin_token):
+    r = client.get(
+        "/api/reportes/compras",
+        params={"date_from": "2026-01-01", "date_to": "2026-12-31"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert "kpis" in data and "por_proveedor" in data and "por_estado" in data
+    assert "total_comprado" in data["kpis"]
+    assert "num_oc_emitidas" in data["kpis"]
+    assert "num_oc_pendientes" in data["kpis"]
+
+
+def test_margenes_returns_valid_structure(client, admin_token):
+    r = client.get(
+        "/api/reportes/margenes",
+        params={"date_from": "2026-01-01", "date_to": "2026-12-31"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert "kpis" in data and "por_producto" in data and "por_factura" in data
+    assert "margen_promedio_pct" in data["kpis"]
+
+
+def test_dte_report_returns_valid_structure(client, admin_token):
+    r = client.get(
+        "/api/reportes/dte",
+        params={"date_from": "2026-01-01", "date_to": "2026-12-31"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert "kpis" in data and "por_tipo" in data and "emisiones" in data
+    assert "total_emitidos" in data["kpis"]

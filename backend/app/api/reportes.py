@@ -9,8 +9,10 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_permission
-from app.models.factura import Factura
+from app.models.dte_emision import DteEmision
+from app.models.factura import Factura, FacturaLinea
 from app.models.movimiento_inventario import MovimientoInventario
+from app.models.orden_compra import OrdenCompra
 from app.models.pago import Pago
 from app.models.producto import Producto
 from app.models.user import User
@@ -360,4 +362,297 @@ def reporte_inventario(
         },
         "bajo_minimo": bajo_minimo_out,
         "top_vendidos": top_vendidos,
+    }
+
+
+# ---------------------------------------------------------------------------
+# GET /compras
+# ---------------------------------------------------------------------------
+
+_OC_PENDING_ESTADOS = {"borrador", "enviada", "pendiente"}
+
+_DTE_LABELS: dict[str, str] = {
+    "033": "Factura",
+    "061": "Nota Crédito",
+    "056": "Nota Débito",
+}
+
+
+@router.get("/compras")
+def reporte_compras(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    _, db = perms
+
+    ocs: list[OrdenCompra] = (
+        db.query(OrdenCompra)
+        .options(joinedload(OrdenCompra.proveedor))
+        .filter(
+            OrdenCompra.fecha >= date_from,
+            OrdenCompra.fecha <= date_to,
+        )
+        .all()
+    )
+
+    total_comprado = sum((oc.total for oc in ocs), _ZERO)
+    num_oc_emitidas = len(ocs)
+    num_oc_pendientes = sum(1 for oc in ocs if oc.estado in _OC_PENDING_ESTADOS)
+
+    # --- Por proveedor ---
+    prov_map: dict[int, dict] = {}
+    for oc in ocs:
+        pid = oc.proveedor_id
+        entry = prov_map.setdefault(
+            pid,
+            {
+                "proveedor_id": pid,
+                "nombre": oc.proveedor.nombre if oc.proveedor else "",
+                "total": _ZERO,
+                "num_oc": 0,
+            },
+        )
+        entry["total"] += oc.total
+        entry["num_oc"] += 1
+    por_proveedor = sorted(prov_map.values(), key=lambda x: x["total"], reverse=True)
+    for p in por_proveedor:
+        p["total"] = float(p["total"])
+
+    # --- Por estado ---
+    estado_map: dict[str, dict] = {}
+    for oc in ocs:
+        entry = estado_map.setdefault(
+            oc.estado,
+            {"estado": oc.estado, "count": 0, "total": _ZERO},
+        )
+        entry["count"] += 1
+        entry["total"] += oc.total
+    por_estado = sorted(estado_map.values(), key=lambda x: x["count"], reverse=True)
+    for e in por_estado:
+        e["total"] = float(e["total"])
+
+    return {
+        "kpis": {
+            "total_comprado": float(total_comprado),
+            "num_oc_emitidas": num_oc_emitidas,
+            "num_oc_pendientes": num_oc_pendientes,
+        },
+        "por_proveedor": por_proveedor,
+        "por_estado": por_estado,
+    }
+
+
+# ---------------------------------------------------------------------------
+# GET /margenes
+# ---------------------------------------------------------------------------
+
+@router.get("/margenes")
+def reporte_margenes(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    current_user, db = perms
+
+    base_q = (
+        db.query(Factura)
+        .options(joinedload(Factura.lineas))
+        .filter(
+            Factura.fecha >= date_from,
+            Factura.fecha <= date_to,
+            Factura.estado != "anulada",
+        )
+    )
+    if current_user.role == "vendedor":
+        base_q = base_q.filter(Factura.vendedor_id == current_user.id)
+
+    facturas: list[Factura] = base_q.all()
+
+    # --- Por factura ---
+    por_factura_list: list[dict] = []
+    all_factura_margen_pcts: list[float] = []
+
+    # --- Por producto (grouped by descripcion) ---
+    prod_map: dict[str, dict] = {}
+
+    for f in facturas:
+        lineas_con_margen = [ln for ln in f.lineas if ln.margen is not None]
+        total_neto_f = sum((ln.valor_neto for ln in f.lineas), _ZERO)
+        margen_total = sum(
+            (ln.margen * ln.valor_neto for ln in lineas_con_margen), _ZERO
+        )
+        if total_neto_f > _ZERO:
+            margen_pct_f = float(margen_total / total_neto_f * 100)
+        else:
+            margen_pct_f = 0.0
+
+        all_factura_margen_pcts.append(margen_pct_f)
+        por_factura_list.append(
+            {
+                "factura_id": f.id,
+                "numero": f.numero,
+                "total": float(f.total),
+                "margen_total": float(margen_total),
+                "margen_pct": round(margen_pct_f, 2),
+            }
+        )
+
+        # Aggregate per producto (descripcion)
+        for ln in f.lineas:
+            if ln.margen is None:
+                continue
+            key = ln.descripcion
+            entry = prod_map.setdefault(
+                key,
+                {
+                    "producto_id": ln.producto_id,
+                    "nombre": key,
+                    "cantidad_vendida": 0,
+                    "precio_venta_sum": _ZERO,
+                    "precio_venta_count": 0,
+                    "margen_pct_sum": Decimal("0"),
+                    "margen_pct_count": 0,
+                },
+            )
+            entry["cantidad_vendida"] += ln.cantidad
+            if ln.cantidad > 0:
+                entry["precio_venta_sum"] += ln.valor_neto / ln.cantidad
+                entry["precio_venta_count"] += 1
+            entry["margen_pct_sum"] += ln.margen * 100
+            entry["margen_pct_count"] += 1
+
+    # Flatten por_producto
+    por_producto: list[dict] = []
+    for entry in prod_map.values():
+        avg_venta = (
+            float(entry["precio_venta_sum"] / entry["precio_venta_count"])
+            if entry["precio_venta_count"] > 0
+            else 0.0
+        )
+        avg_margen = (
+            float(entry["margen_pct_sum"] / entry["margen_pct_count"])
+            if entry["margen_pct_count"] > 0
+            else 0.0
+        )
+        por_producto.append(
+            {
+                "producto_id": entry["producto_id"],
+                "nombre": entry["nombre"],
+                "cantidad_vendida": entry["cantidad_vendida"],
+                "precio_costo_promedio": 0.0,
+                "precio_venta_promedio": round(avg_venta, 2),
+                "margen_pct": round(avg_margen, 2),
+            }
+        )
+    por_producto.sort(key=lambda x: x["margen_pct"], reverse=True)
+
+    # --- KPIs ---
+    margen_promedio_pct = (
+        sum(all_factura_margen_pcts) / len(all_factura_margen_pcts)
+        if all_factura_margen_pcts
+        else 0.0
+    )
+    mejor_producto = por_producto[0] if por_producto else None
+    peor_producto = por_producto[-1] if por_producto else None
+
+    kpis: dict = {
+        "margen_promedio_pct": round(margen_promedio_pct, 2),
+        "mejor_producto": (
+            {"nombre": mejor_producto["nombre"], "margen_pct": mejor_producto["margen_pct"]}
+            if mejor_producto
+            else None
+        ),
+        "peor_producto": (
+            {"nombre": peor_producto["nombre"], "margen_pct": peor_producto["margen_pct"]}
+            if peor_producto
+            else None
+        ),
+    }
+
+    return {
+        "kpis": kpis,
+        "por_producto": por_producto,
+        "por_factura": por_factura_list,
+    }
+
+
+# ---------------------------------------------------------------------------
+# GET /dte
+# ---------------------------------------------------------------------------
+
+_DTE_PENDING_ESTADOS = {"pendiente", "procesando"}
+
+
+@router.get("/dte")
+def reporte_dte(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    _, db = perms
+
+    date_to_exclusive = date_to + timedelta(days=1)
+
+    emisiones: list[DteEmision] = (
+        db.query(DteEmision)
+        .filter(
+            DteEmision.created_at >= date_from,
+            DteEmision.created_at < date_to_exclusive,
+        )
+        .all()
+    )
+
+    total_emitidos = len(emisiones)
+    aceptadas = sum(1 for e in emisiones if e.estado == "aceptada")
+    rechazadas = sum(1 for e in emisiones if e.estado == "rechazada")
+    pendientes = sum(1 for e in emisiones if e.estado in _DTE_PENDING_ESTADOS)
+
+    # --- Por tipo ---
+    tipo_map: dict[str, dict] = {}
+    for e in emisiones:
+        entry = tipo_map.setdefault(
+            e.tipo,
+            {
+                "tipo": e.tipo,
+                "label": _DTE_LABELS.get(e.tipo, e.tipo),
+                "count": 0,
+                "aceptadas": 0,
+            },
+        )
+        entry["count"] += 1
+        if e.estado == "aceptada":
+            entry["aceptadas"] += 1
+    por_tipo = sorted(tipo_map.values(), key=lambda x: x["count"], reverse=True)
+
+    # --- Emisiones list ---
+    emisiones_out: list[dict] = []
+    for e in emisiones:
+        detalle_rechazo: str | None = None
+        if e.estado == "rechazada" and e.respuesta_sii is not None:
+            detalle_rechazo = e.respuesta_sii.get("detalle")
+        emisiones_out.append(
+            {
+                "id": e.id,
+                "tipo": e.tipo,
+                "folio": e.folio,
+                "estado": e.estado,
+                "monto_total": e.monto_total,
+                "created_at": e.created_at.date().isoformat(),
+                "detalle_rechazo": detalle_rechazo,
+            }
+        )
+
+    return {
+        "kpis": {
+            "total_emitidos": total_emitidos,
+            "aceptadas": aceptadas,
+            "rechazadas": rechazadas,
+            "pendientes": pendientes,
+        },
+        "por_tipo": por_tipo,
+        "emisiones": emisiones_out,
     }
