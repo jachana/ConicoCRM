@@ -391,7 +391,7 @@ export default function Empresas() {
                                 ${pendiente.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                               </td>
                               <td className="px-3 py-2 text-center">
-                                <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${estadoCls[f.estado] ?? 'bg-gray-100 text-gray-600'}`}>
+                                <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${estadoCls[f.estado] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                                   {f.estado}
                                 </span>
                               </td>

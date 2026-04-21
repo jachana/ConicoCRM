@@ -141,10 +141,10 @@ function FacturasTab() {
   })
 
   const ESTADO_COLORS: Record<string, string> = {
-    emitida: 'bg-blue-100 text-blue-700',
-    parcial: 'bg-yellow-100 text-yellow-700',
-    pagada: 'bg-green-100 text-green-700',
-    anulada: 'bg-gray-100 text-gray-500',
+    emitida: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    parcial: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+    pagada: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+    anulada: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
   }
 
   return (
@@ -152,7 +152,7 @@ function FacturasTab() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex gap-2">
           <select
-            className="border rounded px-3 py-1.5 text-sm"
+            className="border rounded px-3 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
             value={estado}
             onChange={e => setEstado(e.target.value)}
           >
@@ -174,36 +174,36 @@ function FacturasTab() {
       {isLoading ? (
         <p className="text-gray-500 text-sm">Cargando…</p>
       ) : (
-        <table className="w-full text-sm border rounded overflow-hidden">
-          <thead className="bg-gray-50">
+        <table className="w-full text-sm border dark:border-gray-700 rounded overflow-hidden">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="text-left p-3 font-medium">N°</th>
-              <th className="text-left p-3 font-medium">Fecha</th>
-              <th className="text-left p-3 font-medium">Vencimiento</th>
-              <th className="text-left p-3 font-medium">Empresa</th>
-              <th className="text-left p-3 font-medium">Estado</th>
-              <th className="text-left p-3 font-medium">Origen</th>
-              <th className="text-right p-3 font-medium">Total</th>
+              <th className="text-left p-3 font-medium text-gray-600 dark:text-gray-400">N°</th>
+              <th className="text-left p-3 font-medium text-gray-600 dark:text-gray-400">Fecha</th>
+              <th className="text-left p-3 font-medium text-gray-600 dark:text-gray-400">Vencimiento</th>
+              <th className="text-left p-3 font-medium text-gray-600 dark:text-gray-400">Empresa</th>
+              <th className="text-left p-3 font-medium text-gray-600 dark:text-gray-400">Estado</th>
+              <th className="text-left p-3 font-medium text-gray-600 dark:text-gray-400">Origen</th>
+              <th className="text-right p-3 font-medium text-gray-600 dark:text-gray-400">Total</th>
             </tr>
           </thead>
           <tbody>
             {facturas.map(f => (
-              <tr key={f.id} className="border-t hover:bg-gray-50">
-                <td className="p-3">{f.numero.toString().padStart(5, '0')}</td>
-                <td className="p-3">{fmtDate(f.fecha)}</td>
-                <td className="p-3">{fmtDate(f.fecha_vencimiento)}</td>
-                <td className="p-3">{f.empresa?.nombre ?? '—'}</td>
+              <tr key={f.id} className="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <td className="p-3 text-gray-900 dark:text-white">{f.numero.toString().padStart(5, '0')}</td>
+                <td className="p-3 text-gray-900 dark:text-white">{fmtDate(f.fecha)}</td>
+                <td className="p-3 text-gray-900 dark:text-white">{fmtDate(f.fecha_vencimiento)}</td>
+                <td className="p-3 text-gray-900 dark:text-white">{f.empresa?.nombre ?? '—'}</td>
                 <td className="p-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[f.estado] ?? 'bg-gray-100 text-gray-600'}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[f.estado] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                     {f.estado}
                   </span>
                 </td>
                 <td className="p-3">
-                  <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                     {f.origen}
                   </span>
                 </td>
-                <td className="p-3 text-right">{fmt(f.total)}</td>
+                <td className="p-3 text-right text-gray-900 dark:text-white">{fmt(f.total)}</td>
               </tr>
             ))}
             {facturas.length === 0 && (
@@ -257,23 +257,23 @@ function ImportModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-        <h2 className="text-lg font-semibold mb-4">Importar XML DTE</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Importar XML DTE</h2>
 
         {!result ? (
           <>
             <div
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 mb-4"
+              className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 mb-4"
               onClick={() => inputRef.current?.click()}
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
             >
-              <p className="text-gray-500 text-sm">Arrastra archivos XML aquí o haz clic para seleccionar</p>
-              <p className="text-gray-400 text-xs mt-1">Se pueden seleccionar múltiples archivos</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Arrastra archivos XML aquí o haz clic para seleccionar</p>
+              <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">Se pueden seleccionar múltiples archivos</p>
             </div>
             <input ref={inputRef} type="file" accept=".xml" multiple className="hidden" />
             <div className="flex justify-end gap-2">
-              <button className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded" onClick={onClose}>
+              <button className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onClick={onClose}>
                 Cancelar
               </button>
               <button
@@ -309,7 +309,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               )}
             </div>
             <div className="flex justify-end">
-              <button className="px-4 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200" onClick={onClose}>
+              <button className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded" onClick={onClose}>
                 Cerrar
               </button>
             </div>
@@ -347,25 +347,25 @@ function RecordatoriosTab() {
 
   return (
     <div>
-      <table className="w-full text-sm border rounded overflow-hidden">
-        <thead className="bg-gray-50">
+      <table className="w-full text-sm border dark:border-gray-700 rounded overflow-hidden">
+        <thead className="bg-gray-50 dark:bg-gray-800">
           <tr>
-            <th className="text-left p-3 font-medium">N°</th>
-            <th className="text-left p-3 font-medium">Empresa</th>
-            <th className="text-right p-3 font-medium">Saldo</th>
-            <th className="text-right p-3 font-medium">Días vencida</th>
-            <th className="text-left p-3 font-medium">Último recordatorio</th>
+            <th className="text-left p-3 font-medium text-gray-600 dark:text-gray-400">N°</th>
+            <th className="text-left p-3 font-medium text-gray-600 dark:text-gray-400">Empresa</th>
+            <th className="text-right p-3 font-medium text-gray-600 dark:text-gray-400">Saldo</th>
+            <th className="text-right p-3 font-medium text-gray-600 dark:text-gray-400">Días vencida</th>
+            <th className="text-left p-3 font-medium text-gray-600 dark:text-gray-400">Último recordatorio</th>
             <th className="p-3"></th>
           </tr>
         </thead>
         <tbody>
           {items.map(item => (
-            <tr key={item.id} className="border-t hover:bg-gray-50">
-              <td className="p-3">{item.numero.toString().padStart(5, '0')}</td>
-              <td className="p-3">{item.empresa_nombre ?? item.cliente_nombre ?? '—'}</td>
-              <td className="p-3 text-right">{fmt(item.saldo)}</td>
-              <td className="p-3 text-right text-red-600 font-medium">{item.dias_vencida}</td>
-              <td className="p-3">{item.ultimo_recordatorio ? fmtDate(item.ultimo_recordatorio) : 'Nunca'}</td>
+            <tr key={item.id} className="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td className="p-3 text-gray-900 dark:text-white">{item.numero.toString().padStart(5, '0')}</td>
+              <td className="p-3 text-gray-900 dark:text-white">{item.empresa_nombre ?? item.cliente_nombre ?? '—'}</td>
+              <td className="p-3 text-right text-gray-900 dark:text-white">{fmt(item.saldo)}</td>
+              <td className="p-3 text-right text-red-600 dark:text-red-400 font-medium">{item.dias_vencida}</td>
+              <td className="p-3 text-gray-900 dark:text-white">{item.ultimo_recordatorio ? fmtDate(item.ultimo_recordatorio) : 'Nunca'}</td>
               <td className="p-3 text-right">
                 <button
                   className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -422,40 +422,40 @@ function RecordatorioModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
-        <h2 className="text-lg font-semibold mb-4">Enviar recordatorio — Factura N°{numStr}</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Enviar recordatorio — Factura N°{numStr}</h2>
 
         <div className="space-y-3 mb-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Para</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Para</label>
             <input
-              className="w-full border rounded px-3 py-2 text-sm"
+              className="w-full border rounded px-3 py-2 text-sm dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
               value={to}
               onChange={e => setTo(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Asunto</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Asunto</label>
             <input
-              className="w-full border rounded px-3 py-2 text-sm"
+              className="w-full border rounded px-3 py-2 text-sm dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
               value={subject}
               onChange={e => setSubject(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Mensaje</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Mensaje</label>
             <textarea
-              className="w-full border rounded px-3 py-2 text-sm h-40 resize-none"
+              className="w-full border rounded px-3 py-2 text-sm h-40 resize-none dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
               value={body}
               onChange={e => setBody(e.target.value)}
             />
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400 mb-3">{error}</p>}
 
         <div className="flex justify-end gap-2">
-          <button className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded" onClick={onClose}>
+          <button className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" onClick={onClose}>
             Cancelar
           </button>
           <button
