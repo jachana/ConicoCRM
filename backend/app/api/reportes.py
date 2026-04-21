@@ -70,13 +70,6 @@ def reporte_ventas(
     ticket_promedio = (total_vendido / num_facturas) if num_facturas else _ZERO
 
     total_pagado = _sum_pagos_for_ids(db, factura_ids)
-    # Also add monto_pagado stored directly on factura for legacy/bulk payments
-    total_monto_pagado_directo = sum(
-        (f.monto_pagado for f in facturas if f.monto_pagado is not None), _ZERO
-    )
-    # Use pago table as primary source; fall back to monto_pagado on factura
-    # The Pago table is the canonical record for partial payments.
-    # total_por_cobrar = total - sum of all Pago rows for these facturas
     total_por_cobrar = total_vendido - total_pagado
     if total_por_cobrar < _ZERO:
         total_por_cobrar = _ZERO
@@ -214,9 +207,6 @@ def reporte_cobranza(
 
     for f in facturas:
         saldo = f.total - pago_map.get(f.id, _ZERO)
-        # Also subtract monto_pagado stored on the factura if no Pago rows
-        if f.id not in pago_map and f.monto_pagado:
-            saldo = f.total - f.monto_pagado
 
         if saldo <= _ZERO:
             continue
