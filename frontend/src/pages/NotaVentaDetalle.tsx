@@ -611,7 +611,7 @@ export default function NotaVentaDetalle() {
               placeholder="Notas internas o para el cliente..." />
           </div>
           {/* Despacho */}
-          <div className="space-y-2">
+          <div className="sm:col-span-2 lg:col-span-3 space-y-2">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -626,7 +626,7 @@ export default function NotaVentaDetalle() {
             </label>
             {!retiroEnConico && (
               <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                   Dirección de despacho <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -634,7 +634,7 @@ export default function NotaVentaDetalle() {
                   value={direccionDespacho}
                   onChange={e => setDireccionDespacho(e.target.value)}
                   placeholder="Calle, número, ciudad"
-                  className={`w-full border rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('direccionDespacho', direccionDespacho) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600'}`}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('direccionDespacho', direccionDespacho) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
                 />
               </div>
             )}
