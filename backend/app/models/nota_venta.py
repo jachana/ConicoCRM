@@ -1,6 +1,6 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, String, Text, text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -24,6 +24,9 @@ class NotaVenta(Base):
     fecha: Mapped[date] = mapped_column(Date, default=date.today)
     estado: Mapped[str] = mapped_column(String(20), default="pendiente")
     nota: Mapped[str | None] = mapped_column(Text, nullable=True)
+    direccion_despacho: Mapped[str | None] = mapped_column(Text, nullable=True)
+    retiro_en_conico: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
+    terminos_pago: Mapped[str | None] = mapped_column(String(255), nullable=True)
     correo: Mapped[str | None] = mapped_column(String(255), nullable=True)
     total_neto: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     total_iva: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))

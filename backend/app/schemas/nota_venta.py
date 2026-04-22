@@ -32,6 +32,9 @@ class NotaVentaCreate(BaseModel):
     correo: str | None = None
     empresa_id: int | None = None
     lineas: list[NotaVentaLineaCreate] = []
+    direccion_despacho: str | None = None
+    retiro_en_conico: bool = False
+    terminos_pago: str | None = None
 
 
 class NotaVentaUpdate(BaseModel):
@@ -42,6 +45,9 @@ class NotaVentaUpdate(BaseModel):
     nota: str | None = None
     correo: str | None = None
     empresa_id: int | None = None
+    direccion_despacho: str | None = None
+    retiro_en_conico: bool | None = None
+    terminos_pago: str | None = None
 
 
 class EstadoCambio(BaseModel):
@@ -93,6 +99,9 @@ class NotaVentaOut(BaseModel):
     empresa: EmpresaRef | None = None
     cotizacion: CotizacionRef | None = None
     lineas: list[NotaVentaLineaOut] = []
+    direccion_despacho: str | None = None
+    retiro_en_conico: bool = False
+    terminos_pago: str | None = None
     model_config = {"from_attributes": True}
 
 
@@ -116,4 +125,7 @@ class NotaVentaListOut(BaseModel):
     cliente: ClienteMinOut | None = None
     vendedor: VendedorMinOut | None = None
     empresa: EmpresaRef | None = None
+    direccion_despacho: str | None = None
+    retiro_en_conico: bool = False
+    terminos_pago: str | None = None
     model_config = {"from_attributes": True}

@@ -145,6 +145,14 @@ def _check_lineas_invalidas(lineas: list[NotaVentaLinea]) -> None:
         )
 
 
+def _validate_despacho(retiro: bool, direccion: str | None) -> None:
+    if not retiro and not (direccion and direccion.strip()):
+        raise HTTPException(
+            status_code=422,
+            detail="Debe indicar dirección de despacho o marcar retiro en Conico.",
+        )
+
+
 def _registrar_movimientos_salida(db: Session, nv_id: int, lineas: list, usuario_id: int | None) -> None:
     for linea in lineas:
         if linea.producto_id and linea.cantidad > 0:
@@ -263,6 +271,7 @@ def crear_nv(
     perms: tuple[User, Session] = require_permission("nota_venta", "create"),
 ):
     current_user, db = perms
+    _validate_despacho(body.retiro_en_conico, body.direccion_despacho)
     numero = _asignar_numero_nv(db)
     vendedor_id = (
         body.vendedor_id
@@ -278,6 +287,9 @@ def crear_nv(
         nota=body.nota,
         correo=body.correo,
         empresa_id=body.empresa_id,
+        direccion_despacho=body.direccion_despacho,
+        retiro_en_conico=body.retiro_en_conico,
+        terminos_pago=body.terminos_pago,
     )
     db.add(nv)
     db.flush()
@@ -370,6 +382,9 @@ def actualizar_nv(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nota de venta no encontrada")
     if not _can_edit(current_user, nv):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos para editar esta NV")
+    nuevo_retiro = body.retiro_en_conico if body.retiro_en_conico is not None else nv.retiro_en_conico
+    nueva_dir = body.direccion_despacho if body.direccion_despacho is not None else nv.direccion_despacho
+    _validate_despacho(nuevo_retiro, nueva_dir)
     updates = body.model_dump(exclude_unset=True)
     if "vendedor_id" in updates and current_user.role not in ("admin", "subadmin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin/subadmin puede reasignar el encargado")

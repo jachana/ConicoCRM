@@ -34,7 +34,7 @@ def _make_cotizacion(client, token, cliente_id):
 
 
 def _create_nv(client, token, cliente_id, **extra):
-    payload = {"cliente_id": cliente_id, **extra}
+    payload = {"cliente_id": cliente_id, "retiro_en_conico": True, **extra}
     return client.post("/api/nota_ventas/", json=payload,
                        headers={"Authorization": f"Bearer {token}"})
 

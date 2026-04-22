@@ -53,6 +53,7 @@ def _nv_payload(cliente_id, empresa_id, producto_id, valor_neto):
         "cliente_id": cliente_id,
         "empresa_id": empresa_id,
         "fecha": str(date.today()),
+        "retiro_en_conico": True,
         "lineas": [{
             "orden": 1,
             "producto_id": producto_id,
