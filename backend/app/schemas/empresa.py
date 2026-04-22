@@ -82,3 +82,30 @@ class EmpresaDeudaBulkItem(BaseModel):
     limite_credito: Decimal | None
     deuda_total: Decimal
     deuda_vencida: Decimal
+
+
+class EmpresaListItem(EmpresaOut):
+    ultima_compra: date | None = None
+
+
+class EmpresaFacturaDetailItem(BaseModel):
+    id: int
+    numero: int
+    fecha: date
+    estado: str
+    contacto: str | None = None
+    total: Decimal
+    monto_pagado: Decimal
+    pendiente: Decimal
+    model_config = {"from_attributes": True}
+
+
+class EmpresaProductoLineOut(BaseModel):
+    fecha: date
+    factura_id: int
+    factura_numero: int
+    sku: str | None
+    descripcion: str
+    cantidad: Decimal
+    precio_unit: Decimal
+    total_neto: Decimal
