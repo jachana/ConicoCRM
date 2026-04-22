@@ -29,6 +29,32 @@ from app.services.pdf import generar_pdf_cotizacion
 
 router = APIRouter()
 
+_ESTADO_LABELS: dict[str, str] = {
+    "no_definido": "Sin definir", "abierta": "Abierta", "aprobada": "Aprobada",
+    "cerrada_fv": "Cerrada (FV)", "rechazada": "Rechazada",
+}
+
+_COT_EXPORT_COLUMNS: dict[str, tuple] = {
+    "numero":         ("Nº COT",      lambda c, l: c.numero),
+    "fecha":          ("Fecha",        lambda c, l: c.fecha.strftime("%d/%m/%Y") if c.fecha else ""),
+    "estado":         ("Estado",       lambda c, l: _ESTADO_LABELS.get(c.estado, c.estado)),
+    "cliente_nombre": ("Cliente",      lambda c, l: c.cliente.nombre if c.cliente else ""),
+    "empresa_nombre": ("Empresa",      lambda c, l: c.empresa.nombre if c.empresa else ""),
+    "encargado":      ("Encargado",    lambda c, l: c.vendedor.name if c.vendedor else ""),
+    "contacto":       ("Contacto",     lambda c, l: c.contacto or ""),
+    "sku":            ("SKU",          lambda c, l: l.sku or ""),
+    "descripcion":    ("Descripción",  lambda c, l: l.descripcion),
+    "formato":        ("Formato",      lambda c, l: l.formato or ""),
+    "cantidad":       ("Cantidad",     lambda c, l: l.cantidad),
+    "precio_unit":    ("Precio Unit.", lambda c, l: float(l.valor_neto)),
+    "total_neto":     ("Total Neto",   lambda c, l: float(l.total_neto)),
+    "margen":         ("Margen %",     lambda c, l: round(float(l.margen) * 100, 2) if l.margen is not None else ""),
+}
+_COT_DEFAULT_COLUMNS = [
+    "numero", "fecha", "cliente_nombre", "empresa_nombre",
+    "sku", "descripcion", "cantidad", "precio_unit", "total_neto", "margen",
+]
+
 
 def _get_config_dict(db: Session) -> dict:
     rows = db.query(SystemConfig).all()
@@ -193,6 +219,7 @@ def exportar_excel(
     monto_min: Decimal | None = Query(None),
     monto_max: Decimal | None = Query(None),
     producto_id: list[int] | None = Query(None),
+    columns: list[str] | None = Query(None),
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
     _, db = perms
@@ -227,59 +254,26 @@ def exportar_excel(
         ).distinct()
     cotizaciones = q.order_by(Cotizacion.numero.desc()).all()
 
-    ESTADO_LABELS = {
-        "no_definido": "Sin definir", "abierta": "Abierta", "aprobada": "Aprobada",
-        "cerrada_fv": "Cerrada (FV)", "rechazada": "Rechazada",
-    }
+    col_keys = [k for k in (columns or _COT_DEFAULT_COLUMNS) if k in _COT_EXPORT_COLUMNS]
+    if not col_keys:
+        col_keys = _COT_DEFAULT_COLUMNS
 
     wb = openpyxl.Workbook()
-
-    # Sheet 1: Resumen
     ws = wb.active
-    ws.title = "Resumen"
-    ws.append(["Nº COT", "Fecha", "Cliente", "Empresa", "Encargado", "Estado",
-               "Total Neto", "IVA", "Total", "Margen %"])
-    for c in cotizaciones:
-        mt = c.margen_total
-        ws.append([
-            c.numero,
-            c.fecha.strftime("%d/%m/%Y") if c.fecha else "",
-            c.cliente.nombre if c.cliente else "",
-            c.empresa.nombre if c.empresa else "",
-            c.vendedor.name if c.vendedor else "",
-            ESTADO_LABELS.get(c.estado, c.estado),
-            float(c.total_neto),
-            float(c.total_iva),
-            float(c.total),
-            round(float(mt) * 100, 2) if mt is not None else "",
-        ])
-
-    # Sheet 2: Detalle por línea
-    wd = wb.create_sheet("Detalle")
-    wd.append(["Nº COT", "Fecha", "Cliente", "SKU", "Descripción", "Formato",
-               "Cantidad", "Precio Unit. Neto", "Total Neto", "Margen %"])
+    ws.title = "Cotizaciones"
+    ws.append([_COT_EXPORT_COLUMNS[k][0] for k in col_keys])
     for c in cotizaciones:
         for l in c.lineas:
-            wd.append([
-                c.numero,
-                c.fecha.strftime("%d/%m/%Y") if c.fecha else "",
-                c.cliente.nombre if c.cliente else "",
-                l.sku or "",
-                l.descripcion,
-                l.formato or "",
-                l.cantidad,
-                float(l.valor_neto),
-                float(l.total_neto),
-                round(float(l.margen) * 100, 2) if l.margen is not None else "",
-            ])
+            ws.append([_COT_EXPORT_COLUMNS[k][1](c, l) for k in col_keys])
 
+    today = date.today().strftime("%Y-%m-%d")
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
     return StreamingResponse(
         buf,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=cotizaciones.xlsx"},
+        headers={"Content-Disposition": f"attachment; filename=cotizaciones-{today}.xlsx"},
     )
 
 
