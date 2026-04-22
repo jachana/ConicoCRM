@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import type { Cliente, Empresa } from '../types'
 
@@ -24,6 +24,13 @@ const READONLY_CLS = "w-full px-3 py-2 text-sm border border-gray-200 dark:borde
 export default function Clientes() {
   const qc = useQueryClient()
   const [busqueda, setBusqueda] = useState('')
+  const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
+    return () => clearTimeout(t)
+  }, [busqueda])
+
   const [modalOpen, setModalOpen] = useState(false)
   const [editando, setEditando] = useState<Cliente | null>(null)
   const [form, setForm] = useState<FormData>(EMPTY_FORM)
@@ -32,8 +39,9 @@ export default function Clientes() {
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const { data: clientes = [], isLoading } = useQuery<Cliente[]>({
-    queryKey: ['clientes', busqueda],
-    queryFn: () => api.get(`/api/clientes/?q=${encodeURIComponent(busqueda)}`).then(r => r.data),
+    queryKey: ['clientes', debouncedBusqueda],
+    queryFn: () => api.get(`/api/clientes/?q=${encodeURIComponent(debouncedBusqueda)}`).then(r => r.data),
+    placeholderData: keepPreviousData,
   })
 
   const { data: empresas = [] } = useQuery<Empresa[]>({

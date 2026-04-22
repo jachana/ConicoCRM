@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import type { Empresa, EmpresaDeuda, DeudaBulkItem } from '../types'
@@ -30,10 +30,17 @@ const EMPTY_FORM: FormData = {
 export default function Empresas() {
   const qc = useQueryClient()
   const [busqueda, setBusqueda] = useState('')
+  const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
+    return () => clearTimeout(t)
+  }, [busqueda])
 
   const { data: empresas = [], isLoading } = useQuery<Empresa[]>({
-    queryKey: ['empresas', busqueda],
-    queryFn: () => api.get(`/api/empresas/?q=${encodeURIComponent(busqueda)}`).then(r => r.data),
+    queryKey: ['empresas', debouncedBusqueda],
+    queryFn: () => api.get(`/api/empresas/?q=${encodeURIComponent(debouncedBusqueda)}`).then(r => r.data),
+    placeholderData: keepPreviousData,
   })
 
   const [modalOpen, setModalOpen] = useState(false)
