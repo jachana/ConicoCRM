@@ -25,7 +25,7 @@ class NotaVenta(Base):
     estado: Mapped[str] = mapped_column(String(20), default="pendiente")
     nota: Mapped[str | None] = mapped_column(Text, nullable=True)
     direccion_despacho: Mapped[str | None] = mapped_column(Text, nullable=True)
-    retiro_en_conico: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
+    retiro_en_conico: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
     terminos_pago: Mapped[str | None] = mapped_column(String(255), nullable=True)
     correo: Mapped[str | None] = mapped_column(String(255), nullable=True)
     total_neto: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
