@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Download, Mail, MessageCircle } from 'lucide-react'
 import { api } from '../lib/api'
 import type { GenericColDef } from '../types'
@@ -34,12 +34,16 @@ export default function EmpresaExportPanel<T>({
   const [exportError, setExportError] = useState<string | null>(null)
 
   function toggleKey(key: string) {
-    setVisibleKeys(prev => {
-      const next = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
-      localStorage.setItem(storageKey, JSON.stringify(next))
-      return next
-    })
+    setVisibleKeys(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    )
   }
+
+  // Persist visible keys to localStorage whenever they change
+  // (outside state updater to avoid double-writes in StrictMode)
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(visibleKeys))
+  }, [storageKey, visibleKeys])
 
   const visibleCols = useMemo(() => colDefs.filter(c => visibleKeys.includes(c.key)), [colDefs, visibleKeys])
   const displayRows = useMemo(() => rows.slice(0, PREVIEW_CAP), [rows])
@@ -65,7 +69,7 @@ export default function EmpresaExportPanel<T>({
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      setTimeout(() => URL.revokeObjectURL(a.href), 100)
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000)
     } catch (err) {
       setExportError(err instanceof Error ? err.message : 'Error al exportar')
     } finally {
