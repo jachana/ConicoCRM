@@ -39,6 +39,9 @@ Thumbs.db
 # Claude local settings (permissions, personal config)
 .claude/settings.local.json
 
+# Superpowers plugin session artifacts
+.superpowers/
+
 uploads/*
 !uploads/.gitkeep
 resources/*

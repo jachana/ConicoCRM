@@ -233,3 +233,153 @@ def test_deuda_bulk_factura_anulada_no_cuenta(client, admin_token):
 def test_deuda_bulk_sin_auth(client):
     r = client.get("/api/empresas/deuda-bulk")
     assert r.status_code == 401
+
+
+# ── Export endpoints ──────────────────────────────────────────────────────────
+
+def _setup_empresa_con_factura(client, admin_token):
+    """Create empresa + cliente + factura with one line item. Returns (empresa_id, factura_id)."""
+    emp = client.post(
+        "/api/empresas/",
+        json={"nombre": "Emp Export", "rut": "76.555.555-5"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    ).json()
+    cid = _create_cliente_bulk(client, admin_token, emp["id"])
+    f = _create_factura_bulk(client, admin_token, cid, emp["id"], total_neto=50000)
+    return emp["id"], f["id"]
+
+
+def test_export_facturas_xlsx_200(client, admin_token):
+    eid, _ = _setup_empresa_con_factura(client, admin_token)
+    r = client.get(
+        f"/api/empresas/{eid}/export/facturas?format=xlsx",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert "spreadsheetml" in r.headers.get("content-type", "")
+
+
+def test_export_facturas_csv_200(client, admin_token):
+    eid, _ = _setup_empresa_con_factura(client, admin_token)
+    r = client.get(
+        f"/api/empresas/{eid}/export/facturas?format=csv",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert "text/csv" in r.headers.get("content-type", "")
+    lines = r.content.decode("utf-8-sig").strip().splitlines()
+    assert len(lines) >= 2  # header + at least one data row
+
+
+def test_export_facturas_pdf_200(client, admin_token):
+    eid, _ = _setup_empresa_con_factura(client, admin_token)
+    r = client.get(
+        f"/api/empresas/{eid}/export/facturas?format=pdf",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert "pdf" in r.headers.get("content-type", "")
+
+
+def test_export_facturas_columns_filter(client, admin_token):
+    from io import BytesIO
+    import openpyxl
+    eid, _ = _setup_empresa_con_factura(client, admin_token)
+    r = client.get(
+        f"/api/empresas/{eid}/export/facturas?format=xlsx&columns=numero&columns=total",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    wb = openpyxl.load_workbook(BytesIO(r.content))
+    ws = wb.active
+    headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
+    assert headers == ["Nº", "Total"]
+
+
+def test_export_facturas_404_empresa_inexistente(client, admin_token):
+    r = client.get(
+        "/api/empresas/99999/export/facturas",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 404
+
+
+def test_export_facturas_400_formato_invalido(client, admin_token):
+    eid, _ = _setup_empresa_con_factura(client, admin_token)
+    r = client.get(
+        f"/api/empresas/{eid}/export/facturas?format=docx",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 400
+
+
+def test_export_facturas_501_send_to(client, admin_token):
+    eid, _ = _setup_empresa_con_factura(client, admin_token)
+    r = client.get(
+        f"/api/empresas/{eid}/export/facturas?send_to=email",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 501
+
+
+def test_export_productos_xlsx_200(client, admin_token):
+    eid, _ = _setup_empresa_con_factura(client, admin_token)
+    r = client.get(
+        f"/api/empresas/{eid}/export/productos?format=xlsx",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert "spreadsheetml" in r.headers.get("content-type", "")
+
+
+def test_export_productos_csv_200(client, admin_token):
+    eid, _ = _setup_empresa_con_factura(client, admin_token)
+    r = client.get(
+        f"/api/empresas/{eid}/export/productos?format=csv",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert "text/csv" in r.headers.get("content-type", "")
+    lines = r.content.decode("utf-8-sig").strip().splitlines()
+    assert len(lines) >= 2
+
+
+def test_export_productos_columns_filter(client, admin_token):
+    from io import BytesIO
+    import openpyxl
+    eid, _ = _setup_empresa_con_factura(client, admin_token)
+    r = client.get(
+        f"/api/empresas/{eid}/export/productos?format=xlsx&columns=sku&columns=descripcion",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    wb = openpyxl.load_workbook(BytesIO(r.content))
+    ws = wb.active
+    headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
+    assert headers == ["SKU", "Descripción"]
+
+
+def test_export_productos_404_empresa_inexistente(client, admin_token):
+    r = client.get(
+        "/api/empresas/99999/export/productos",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 404
+
+
+def test_export_productos_400_formato_invalido(client, admin_token):
+    eid, _ = _setup_empresa_con_factura(client, admin_token)
+    r = client.get(
+        f"/api/empresas/{eid}/export/productos?format=docx",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 400
+
+
+def test_export_productos_501_send_to(client, admin_token):
+    eid, _ = _setup_empresa_con_factura(client, admin_token)
+    r = client.get(
+        f"/api/empresas/{eid}/export/productos?send_to=whatsapp",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 501

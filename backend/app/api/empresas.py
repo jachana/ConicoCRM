@@ -1,6 +1,7 @@
 import csv
 import html as _html
 import io as _io
+from collections.abc import Callable
 from datetime import date
 from decimal import Decimal
 
@@ -449,14 +450,14 @@ def exportar_facturas_empresa(
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
     if send_to:
-        raise HTTPException(status_code=501, detail="Envío por email/WhatsApp pendiente de implementación")
+        raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Envío por email/WhatsApp pendiente de implementación")
     if format not in ("xlsx", "csv", "pdf"):
-        raise HTTPException(status_code=400, detail="format debe ser xlsx, csv o pdf")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="format debe ser xlsx, csv o pdf")
 
     _, db = perms
     e = db.get(Empresa, empresa_id)
     if not e:
-        raise HTTPException(status_code=404, detail="Empresa no encontrada")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
 
     query = db.query(Factura).filter(Factura.empresa_id == empresa_id)
     if estado:
@@ -471,7 +472,7 @@ def exportar_facturas_empresa(
         query = query.filter(Factura.total <= monto_max)
     facturas = query.order_by(Factura.fecha.desc()).all()
 
-    ALL_COLS: dict[str, tuple[str, callable]] = {
+    ALL_COLS: dict[str, tuple[str, Callable]] = {
         "numero":       ("Nº",        lambda f: f.numero),
         "fecha":        ("Fecha",     lambda f: str(f.fecha)),
         "estado":       ("Estado",    lambda f: f.estado),
@@ -506,14 +507,14 @@ def exportar_productos_empresa(
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
     if send_to:
-        raise HTTPException(status_code=501, detail="Envío por email/WhatsApp pendiente de implementación")
+        raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Envío por email/WhatsApp pendiente de implementación")
     if format not in ("xlsx", "csv", "pdf"):
-        raise HTTPException(status_code=400, detail="format debe ser xlsx, csv o pdf")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="format debe ser xlsx, csv o pdf")
 
     _, db = perms
     e = db.get(Empresa, empresa_id)
     if not e:
-        raise HTTPException(status_code=404, detail="Empresa no encontrada")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
 
     query = (
         db.query(FacturaLinea, Factura.fecha, Factura.id, Factura.numero)
@@ -529,7 +530,7 @@ def exportar_productos_empresa(
         query = query.filter(Factura.fecha <= fecha_hasta)
     rows = query.order_by(Factura.fecha.desc()).all()
 
-    ALL_COLS: dict[str, tuple[str, callable]] = {
+    ALL_COLS: dict[str, tuple[str, Callable]] = {
         "fecha":          ("Fecha",       lambda r: str(r[1])),
         "factura_numero": ("Nº Factura",  lambda r: r[3]),
         "sku":            ("SKU",         lambda r: r[0].sku or ""),
