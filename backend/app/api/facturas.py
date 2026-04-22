@@ -6,7 +6,7 @@ from io import BytesIO
 import openpyxl
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import require_permission
 from app.database import get_db
@@ -211,8 +211,13 @@ def exportar_excel(
 def listar_facturas(
     estado: list[str] | None = Query(None),
     cliente_id: int | None = Query(None),
+    empresa_id: int | None = Query(None),
+    vendedor_id: int | None = Query(None),
     fecha_desde: date | None = Query(None),
     fecha_hasta: date | None = Query(None),
+    monto_min: Decimal | None = Query(None),
+    monto_max: Decimal | None = Query(None),
+    producto_id: list[int] | None = Query(None),
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _, db = perms
@@ -220,16 +225,28 @@ def listar_facturas(
         joinedload(Factura.cliente),
         joinedload(Factura.vendedor),
         joinedload(Factura.empresa),
-        joinedload(Factura.lineas),
+        selectinload(Factura.lineas),
     )
     if estado:
         q = q.filter(Factura.estado.in_(estado))
     if cliente_id:
         q = q.filter(Factura.cliente_id == cliente_id)
+    if empresa_id:
+        q = q.filter(Factura.empresa_id == empresa_id)
+    if vendedor_id:
+        q = q.filter(Factura.vendedor_id == vendedor_id)
     if fecha_desde:
         q = q.filter(Factura.fecha >= fecha_desde)
     if fecha_hasta:
         q = q.filter(Factura.fecha <= fecha_hasta)
+    if monto_min is not None:
+        q = q.filter(Factura.total >= monto_min)
+    if monto_max is not None:
+        q = q.filter(Factura.total <= monto_max)
+    if producto_id:
+        q = q.join(FacturaLinea, FacturaLinea.factura_id == Factura.id).filter(
+            FacturaLinea.producto_id.in_(producto_id)
+        ).distinct()
     return q.order_by(Factura.numero.desc()).all()
 
 

@@ -348,6 +348,78 @@ def test_lista_includes_lineas_and_margen_total(client, admin_token):
     assert found["margen_total"] is not None
 
 
+def _create_empresa(client, admin_token, nombre="Empresa Test"):
+    r = client.post(
+        "/api/empresas/",
+        json={"nombre": nombre, "rut": f"99.{abs(hash(nombre)) % 999:03d}.000-0"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def test_filter_facturas_by_empresa(client, admin_token):
+    emp = _create_empresa(client, admin_token, "EmpresaFiltroTest")
+    cli_id = _create_cliente(client, admin_token)
+    r = client.post(
+        "/api/facturas/",
+        json={"cliente_id": cli_id, "empresa_id": emp["id"],
+              "lineas": [{"orden": 0, "descripcion": "X", "cantidad": 1, "valor_neto": 100}]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201
+    fac_id = r.json()["id"]
+
+    r = client.get(f"/api/facturas/?empresa_id={emp['id']}",
+                   headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    ids = [f["id"] for f in r.json()]
+    assert fac_id in ids
+
+
+def test_filter_facturas_by_monto(client, admin_token):
+    cli_id = _create_cliente(client, admin_token)
+    r = client.post(
+        "/api/facturas/",
+        json={"cliente_id": cli_id,
+              "lineas": [{"orden": 0, "descripcion": "BigItem", "cantidad": 1, "valor_neto": 50000}]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201
+    fac_id = r.json()["id"]
+
+    r = client.get("/api/facturas/?monto_min=40000",
+                   headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    ids = [f["id"] for f in r.json()]
+    assert fac_id in ids
+
+    r = client.get("/api/facturas/?monto_max=100",
+                   headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert fac_id not in [f["id"] for f in r.json()]
+
+
+def test_filter_facturas_by_producto(client, admin_token):
+    prod = _create_producto(client, admin_token)
+    cli_id = _create_cliente(client, admin_token)
+    r = client.post(
+        "/api/facturas/",
+        json={"cliente_id": cli_id,
+              "lineas": [{"orden": 0, "producto_id": prod["id"], "descripcion": prod["nombre"],
+                          "cantidad": 1, "valor_neto": 200}]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201
+    fac_id = r.json()["id"]
+
+    r = client.get(f"/api/facturas/?producto_id={prod['id']}",
+                   headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    ids = [f["id"] for f in r.json()]
+    assert fac_id in ids
+
+
 def test_import_xml_bulk_empresa_not_found_returns_empresa_data(client, admin_token):
     xml = b"""<?xml version="1.0" encoding="ISO-8859-1"?>
 <DTE xmlns="http://www.sii.cl/SiiDte" version="1.0">
