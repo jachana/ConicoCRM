@@ -435,6 +435,123 @@ def productos_empresa(
     ]
 
 
+@router.get("/{empresa_id}/export/facturas")
+def exportar_facturas_empresa(
+    empresa_id: int,
+    format: str = Query("xlsx"),
+    estado: list[str] = Query(default=[]),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    monto_min: Decimal | None = Query(None),
+    monto_max: Decimal | None = Query(None),
+    columns: list[str] = Query(default=[]),
+    send_to: str | None = Query(None),
+    perms: tuple[User, Session] = require_permission("empresas", "view"),
+):
+    if send_to:
+        raise HTTPException(status_code=501, detail="Envío por email/WhatsApp pendiente de implementación")
+    if format not in ("xlsx", "csv", "pdf"):
+        raise HTTPException(status_code=400, detail="format debe ser xlsx, csv o pdf")
+
+    _, db = perms
+    e = db.get(Empresa, empresa_id)
+    if not e:
+        raise HTTPException(status_code=404, detail="Empresa no encontrada")
+
+    query = db.query(Factura).filter(Factura.empresa_id == empresa_id)
+    if estado:
+        query = query.filter(Factura.estado.in_(estado))
+    if fecha_desde:
+        query = query.filter(Factura.fecha >= fecha_desde)
+    if fecha_hasta:
+        query = query.filter(Factura.fecha <= fecha_hasta)
+    if monto_min is not None:
+        query = query.filter(Factura.total >= monto_min)
+    if monto_max is not None:
+        query = query.filter(Factura.total <= monto_max)
+    facturas = query.order_by(Factura.fecha.desc()).all()
+
+    ALL_COLS: dict[str, tuple[str, callable]] = {
+        "numero":       ("Nº",        lambda f: f.numero),
+        "fecha":        ("Fecha",     lambda f: str(f.fecha)),
+        "estado":       ("Estado",    lambda f: f.estado),
+        "contacto":     ("Contacto",  lambda f: f.contacto or ""),
+        "total":        ("Total",     lambda f: float(f.total)),
+        "monto_pagado": ("Pagado",    lambda f: float(f.monto_pagado or Decimal("0"))),
+        "pendiente":    ("Pendiente", lambda f: float(f.total - (f.monto_pagado or Decimal("0")))),
+    }
+    selected = [k for k in (columns or list(ALL_COLS.keys())) if k in ALL_COLS]
+    if not selected:
+        selected = list(ALL_COLS.keys())
+
+    headers = [ALL_COLS[k][0] for k in selected]
+    data_rows = [[ALL_COLS[k][1](f) for k in selected] for f in facturas]
+
+    if format == "csv":
+        return _export_csv(headers, data_rows)
+    if format == "pdf":
+        return _export_pdf(f"Facturas — {e.nombre}", headers, data_rows)
+    return _export_xlsx(headers, data_rows)
+
+
+@router.get("/{empresa_id}/export/productos")
+def exportar_productos_empresa(
+    empresa_id: int,
+    format: str = Query("xlsx"),
+    q: str = Query(""),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    columns: list[str] = Query(default=[]),
+    send_to: str | None = Query(None),
+    perms: tuple[User, Session] = require_permission("empresas", "view"),
+):
+    if send_to:
+        raise HTTPException(status_code=501, detail="Envío por email/WhatsApp pendiente de implementación")
+    if format not in ("xlsx", "csv", "pdf"):
+        raise HTTPException(status_code=400, detail="format debe ser xlsx, csv o pdf")
+
+    _, db = perms
+    e = db.get(Empresa, empresa_id)
+    if not e:
+        raise HTTPException(status_code=404, detail="Empresa no encontrada")
+
+    query = (
+        db.query(FacturaLinea, Factura.fecha, Factura.id, Factura.numero)
+        .join(Factura, Factura.id == FacturaLinea.factura_id)
+        .filter(Factura.empresa_id == empresa_id, Factura.estado != "anulada")
+    )
+    if q:
+        like = f"%{q}%"
+        query = query.filter(FacturaLinea.descripcion.ilike(like) | FacturaLinea.sku.ilike(like))
+    if fecha_desde:
+        query = query.filter(Factura.fecha >= fecha_desde)
+    if fecha_hasta:
+        query = query.filter(Factura.fecha <= fecha_hasta)
+    rows = query.order_by(Factura.fecha.desc()).all()
+
+    ALL_COLS: dict[str, tuple[str, callable]] = {
+        "fecha":          ("Fecha",       lambda r: str(r[1])),
+        "factura_numero": ("Nº Factura",  lambda r: r[3]),
+        "sku":            ("SKU",         lambda r: r[0].sku or ""),
+        "descripcion":    ("Descripción", lambda r: r[0].descripcion),
+        "cantidad":       ("Cantidad",    lambda r: float(r[0].cantidad)),
+        "precio_unit":    ("Precio Unit", lambda r: float(r[0].valor_neto)),
+        "total_neto":     ("Total",       lambda r: float(r[0].total_neto)),
+    }
+    selected = [k for k in (columns or list(ALL_COLS.keys())) if k in ALL_COLS]
+    if not selected:
+        selected = list(ALL_COLS.keys())
+
+    headers = [ALL_COLS[k][0] for k in selected]
+    data_rows = [[ALL_COLS[k][1](r) for k in selected] for r in rows]
+
+    if format == "csv":
+        return _export_csv(headers, data_rows)
+    if format == "pdf":
+        return _export_pdf(f"Productos — {e.nombre}", headers, data_rows)
+    return _export_xlsx(headers, data_rows)
+
+
 @router.get("/{empresa_id}", response_model=EmpresaOut)
 def obtener_empresa(
     empresa_id: int,
