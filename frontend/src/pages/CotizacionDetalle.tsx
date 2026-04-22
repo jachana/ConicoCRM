@@ -312,13 +312,15 @@ export default function CotizacionDetalle() {
     if (empresaId && !clienteId) {
       setClienteModalOpen(true)
     }
-  }, [empresaId])
+  }, [empresaId, clienteId])
 
   function handleClienteSelect(cliente: Cliente) {
-    setClienteId(cliente.id)
-    setContacto(cliente.nombre)
-    setCorreo(cliente.email ?? correo)
-    setClienteModalOpen(false)
+    withRevokeGuard(() => {
+      setClienteId(cliente.id)
+      setContacto(cliente.nombre)
+      setCorreo(cliente.email ?? '')
+      setClienteModalOpen(false)
+    })
   }
 
   const selectedCliente = clientes.find(c => c.id === clienteId) ?? null
