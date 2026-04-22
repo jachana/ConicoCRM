@@ -2,7 +2,7 @@ import { openPdf } from '../lib/pdf'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Plus, FileText, Mail, Trash2, Eye, ChevronDown, X } from 'lucide-react'
+import { Plus, FileText, Mail, Trash2, Eye, ChevronDown, X, Download } from 'lucide-react'
 import { api } from '../lib/api'
 import type { Cotizacion } from '../types'
 import ExportPreviewPanel from '../components/ExportPreviewPanel'
@@ -143,6 +143,8 @@ export default function Cotizaciones() {
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState('')
   const [emailToast, setEmailToast] = useState<{ msg: string; ok: boolean } | null>(null)
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
 
   // Close popovers on outside click
   useEffect(() => {
@@ -265,6 +267,13 @@ export default function Cotizaciones() {
       <div className="flex items-center justify-between mb-5 gap-2">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Cotizaciones</h1>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="flex items-center gap-2 px-3 md:px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition-colors"
+          >
+            <Download size={16} />
+            <span className="hidden sm:inline">Exportar</span>
+          </button>
           <button onClick={() => navigate('/cotizaciones/nueva')}
             className="flex items-center gap-2 px-3 md:px-4 py-2 bg-brand-500 hover:bg-brand-400 text-gray-900 text-sm font-semibold rounded-lg transition-colors">
             <Plus size={16} />
@@ -574,6 +583,63 @@ export default function Cotizaciones() {
       {emailToast && (
         <div className={`fixed bottom-20 md:bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
           {emailToast.msg}
+        </div>
+      )}
+
+      {/* Export modal */}
+      {showExportModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowDiscardConfirm(true)}
+        >
+          <div
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+              <h2 className="text-base font-semibold text-gray-900 dark:text-white">Exportar cotizaciones</h2>
+              <button
+                onClick={() => setShowDiscardConfirm(true)}
+                className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto">
+              <ExportPreviewPanel
+                lines={flatLines}
+                availableColumns={COTIZACION_COLUMN_DEFS}
+                isLoading={isLoading}
+                exportBaseUrl={exportBaseUrl}
+                storageKey="cotizaciones-preview-cols"
+                filename={exportFilename}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Discard confirmation */}
+      {showDiscardConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-2">¿Descartar exportación?</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Volverás a la lista de cotizaciones.</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowDiscardConfirm(false)}
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { setShowDiscardConfirm(false); setShowExportModal(false) }}
+                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Descartar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
