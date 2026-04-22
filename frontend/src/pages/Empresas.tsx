@@ -2,7 +2,9 @@ import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
-import type { Empresa, EmpresaDeuda, DeudaBulkItem } from '../types'
+import type { Empresa, EmpresaListItem, DeudaBulkItem } from '../types'
+import EmpresaFilters from '../components/EmpresaFilters'
+import EmpresaDetailModal from '../components/EmpresaDetailModal'
 
 const PLAZO_OPTIONS = ['Al contado', '30 Dias', '60 Dias', '90 Dias', 'Especial']
 
@@ -37,9 +39,19 @@ export default function Empresas() {
     return () => clearTimeout(t)
   }, [busqueda])
 
-  const { data: empresas = [], isLoading } = useQuery<Empresa[]>({
-    queryKey: ['empresas', debouncedBusqueda],
-    queryFn: () => api.get(`/api/empresas/?q=${encodeURIComponent(debouncedBusqueda)}`).then(r => r.data),
+  const [sector, setSector] = useState<string | null>(null)
+  const [productoIds, setProductoIds] = useState<number[]>([])
+  const [productoNombres, setProductoNombres] = useState<string[]>([])
+  const [detalleEmpresa, setDetalleEmpresa] = useState<EmpresaListItem | null>(null)
+
+  const { data: empresas = [], isLoading } = useQuery<EmpresaListItem[]>({
+    queryKey: ['empresas', debouncedBusqueda, sector, productoIds],
+    queryFn: () => {
+      const params = new URLSearchParams({ q: debouncedBusqueda })
+      if (sector) params.set('sector', sector)
+      productoIds.forEach(id => params.append('producto_ids', String(id)))
+      return api.get(`/api/empresas/?${params.toString()}`).then(r => r.data)
+    },
     placeholderData: keepPreviousData,
   })
 
@@ -49,14 +61,6 @@ export default function Empresas() {
   const [error, setError] = useState<string | null>(null)
   const [eliminandoId, setEliminandoId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [deudaEmpresa, setDeudaEmpresa] = useState<Empresa | null>(null)
-
-  const { data: deudaData, isLoading: deudaLoading } = useQuery<EmpresaDeuda>({
-    queryKey: ['empresa-deuda', deudaEmpresa?.id],
-    queryFn: () => api.get(`/api/empresas/${deudaEmpresa!.id}/deuda`).then(r => r.data),
-    enabled: !!deudaEmpresa,
-  })
-
   const { data: deudaBulk = [] } = useQuery<DeudaBulkItem[]>({
     queryKey: ['empresas-deuda-bulk'],
     queryFn: () => api.get('/api/empresas/deuda-bulk').then(r => r.data),
@@ -67,7 +71,8 @@ export default function Empresas() {
     [deudaBulk]
   )
 
-  const [sortField, setSortField] = useState<'deuda_total' | 'deuda_vencida' | 'nombre'>('deuda_total')
+  type SortField = 'nombre' | 'rut' | 'sector' | 'forma_pago' | 'prioridad' | 'ultima_compra' | 'deuda_total' | 'deuda_vencida'
+  const [sortField, setSortField] = useState<SortField>('deuda_total')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [filterConDeuda, setFilterConDeuda] = useState(false)
 
@@ -89,7 +94,7 @@ export default function Empresas() {
   const totalVencida = deudaBulk.reduce((s, d) => s + Number(d.deuda_vencida), 0)
   const empresasConDeuda = deudaBulk.filter(d => Number(d.deuda_total) > 0).length
 
-  function toggleSort(field: 'deuda_total' | 'deuda_vencida' | 'nombre') {
+  function toggleSort(field: SortField) {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortField(field); setSortDir('desc') }
   }
@@ -99,13 +104,21 @@ export default function Empresas() {
     .sort((a, b) => {
       const da = deudaMap.get(a.id)
       const db2 = deudaMap.get(b.id)
-      if (sortField === 'nombre') {
-        const cmp = a.nombre.localeCompare(b.nombre)
-        return sortDir === 'asc' ? cmp : -cmp
+      let cmp = 0
+      if (sortField === 'deuda_total') {
+        cmp = Number(da?.deuda_total ?? 0) - Number(db2?.deuda_total ?? 0)
+      } else if (sortField === 'deuda_vencida') {
+        cmp = Number(da?.deuda_vencida ?? 0) - Number(db2?.deuda_vencida ?? 0)
+      } else if (sortField === 'ultima_compra') {
+        const ta = a.ultima_compra ? new Date(a.ultima_compra).getTime() : 0
+        const tb = b.ultima_compra ? new Date(b.ultima_compra).getTime() : 0
+        cmp = ta - tb
+      } else {
+        const va = String((a as unknown as Record<string, unknown>)[sortField] ?? '')
+        const vb = String((b as unknown as Record<string, unknown>)[sortField] ?? '')
+        cmp = va.localeCompare(vb, 'es-CL')
       }
-      const va = Number(da?.[sortField] ?? 0)
-      const vb = Number(db2?.[sortField] ?? 0)
-      return sortDir === 'asc' ? va - vb : vb - va
+      return sortDir === 'asc' ? cmp : -cmp
     })
 
   function fmt(n: number) {
@@ -190,122 +203,91 @@ export default function Empresas() {
       </div>
 
       {/* Stats bar */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Deuda Total</p>
-          <p className="text-lg font-semibold text-red-500">{fmt(totalDeuda)}</p>
-          <p className="text-xs text-gray-400 mt-0.5">en {empresasConDeuda} empresa{empresasConDeuda !== 1 ? 's' : ''}</p>
+      <div className="flex gap-3 flex-wrap mb-4">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 px-4 py-3 text-sm">
+          <span className="text-gray-500 dark:text-gray-400">Deuda Total</span>
+          <span className="text-red-500 font-bold ml-2">{fmt(totalDeuda)}</span>
         </div>
-        <div className={`bg-white dark:bg-gray-900 rounded-xl border p-4 ${totalVencida > 0 ? 'border-red-300 dark:border-red-800' : 'border-gray-200 dark:border-gray-800'}`}>
-          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Deuda Vencida</p>
-          <p className={`text-lg font-semibold ${totalVencida > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`}>{fmt(totalVencida)}</p>
-          {totalVencida > 0 && <p className="text-xs text-red-400 mt-0.5">requiere atención</p>}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 px-4 py-3 text-sm">
+          <span className="text-gray-500 dark:text-gray-400">Deuda Vencida</span>
+          <span className={`font-bold ml-2 ${totalVencida > 0 ? 'text-orange-500' : 'text-gray-400'}`}>{fmt(totalVencida)}</span>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Empresas con Deuda</p>
-          <p className="text-lg font-semibold text-gray-900 dark:text-white">{empresasConDeuda} / {deudaBulk.length}</p>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 px-4 py-3 text-sm">
+          <span className="text-gray-500 dark:text-gray-400">Con Deuda</span>
+          <span className="font-bold ml-2 text-gray-900 dark:text-white">{empresasConDeuda}</span>
         </div>
       </div>
 
-      {/* Search + filter */}
-      <div className="flex gap-3 mb-4 items-center">
-        <input
-          type="text"
-          placeholder="Buscar por nombre o RUT..."
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-          className="w-full max-w-sm px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-        />
-        <button
-          onClick={() => setFilterConDeuda(f => !f)}
-          className={`px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap ${
-            filterConDeuda
-              ? 'bg-red-50 border-red-300 text-red-700 dark:bg-red-900/20 dark:border-red-700 dark:text-red-400'
-              : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-          }`}
-        >
-          {filterConDeuda ? '✕ Con Deuda' : 'Con Deuda'}
-        </button>
-      </div>
+      <EmpresaFilters
+        busqueda={busqueda}
+        onBusquedaChange={setBusqueda}
+        sector={sector}
+        onSectorChange={setSector}
+        productoIds={productoIds}
+        productoNombres={productoNombres}
+        onProductosChange={(ids, nombres) => { setProductoIds(ids); setProductoNombres(nombres) }}
+        filterConDeuda={filterConDeuda}
+        onFilterConDeudaChange={setFilterConDeuda}
+        totalCount={displayEmpresas.length}
+      />
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
         <table className="w-full text-sm min-w-[900px]">
           <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
             <tr>
-              <th
-                className="text-left px-4 py-3 font-medium cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
-                onClick={() => toggleSort('nombre')}
-              >
-                Nombre {sortField === 'nombre' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
-              </th>
-              <th className="text-left px-4 py-3 font-medium">Razón Social</th>
-              <th className="text-left px-4 py-3 font-medium">RUT</th>
-              <th className="text-left px-4 py-3 font-medium">Forma Pago</th>
-              <th className="text-left px-4 py-3 font-medium">Prioridad</th>
-              <th className="text-left px-4 py-3 font-medium">Sector</th>
-              <th
-                className="text-right px-4 py-3 font-medium cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
-                onClick={() => toggleSort('deuda_total')}
-              >
-                Deuda {sortField === 'deuda_total' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
-              </th>
-              <th
-                className="text-right px-4 py-3 font-medium cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
-                onClick={() => toggleSort('deuda_vencida')}
-              >
-                Vencida {sortField === 'deuda_vencida' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
-              </th>
-              <th className="text-right px-4 py-3 font-medium">Lím. Crédito</th>
-              <th className="text-left px-4 py-3 font-medium" />
+              {([
+                { field: 'nombre' as SortField,        label: 'Nombre' },
+                { field: 'rut' as SortField,           label: 'RUT' },
+                { field: 'sector' as SortField,        label: 'Sector' },
+                { field: 'forma_pago' as SortField,    label: 'Forma Pago' },
+                { field: 'prioridad' as SortField,     label: 'Prioridad' },
+                { field: 'ultima_compra' as SortField, label: 'Última Compra' },
+                { field: 'deuda_total' as SortField,   label: 'Deuda' },
+                { field: 'deuda_vencida' as SortField, label: 'Vencida' },
+              ]).map(({ field, label }) => (
+                <th key={field} onClick={() => toggleSort(field)}
+                  className="text-left px-4 py-3 font-medium whitespace-nowrap cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none">
+                  {label}
+                  {sortField === field
+                    ? <span className="text-sky-400 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                    : <span className="text-gray-400 ml-1">↕</span>}
+                </th>
+              ))}
+              <th className="text-left px-4 py-3 font-medium">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {displayEmpresas.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-gray-400">Sin empresas registradas</td>
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">Sin empresas registradas</td>
               </tr>
             )}
             {displayEmpresas.map(e => {
-              const deuda = deudaMap.get(e.id)
-              const deudaTotal = Number(deuda?.deuda_total ?? 0)
-              const deudaVencida = Number(deuda?.deuda_vencida ?? 0)
-              const hasDeuda = deudaTotal > 0
-              const rowCls = hasDeuda
-                ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors'
-                : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors opacity-60'
-              const plazo = deuda?.plazo_credito ?? e.plazo_credito
-              const isNumericPlazo = plazo && plazo !== 'Especial' && plazo !== 'Al contado'
+              const d = deudaMap.get(e.id)
+              const deudaTotal = Number(d?.deuda_total ?? 0)
+              const deudaVencida = Number(d?.deuda_vencida ?? 0)
               return (
-                <tr key={e.id} className={rowCls}>
-                  <td className="px-4 py-3">
-                    <span className="font-medium text-gray-900 dark:text-white">{e.nombre}</span>
-                    {plazo && (
-                      <span className={`ml-2 inline-block px-1.5 py-0.5 rounded text-xs ${
-                        isNumericPlazo
-                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-                          : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                      }`}>
-                        {plazo === '30 Dias' ? '30d' : plazo === '60 Dias' ? '60d' : plazo === '90 Dias' ? '90d' : plazo}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.razon_social ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.rut ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.forma_pago ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.prioridad ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{e.sector ?? '—'}</td>
-                  <td className="px-4 py-3 text-right">
-                    {hasDeuda
-                      ? <span className="font-medium text-red-500">{fmt(deudaTotal)}</span>
+                <tr key={e.id}
+                  className={`border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${deudaTotal === 0 ? 'opacity-60' : ''}`}>
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{e.nombre}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm">{e.rut ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm">{e.sector ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm">{e.forma_pago ?? '—'}</td>
+                  <td className="px-4 py-3 text-sm">
+                    {e.prioridad
+                      ? <span className={`px-2 py-0.5 rounded text-xs font-medium ${e.prioridad === 'Alta' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}`}>{e.prioridad}</span>
                       : <span className="text-gray-400">—</span>}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    {deudaVencida > 0
-                      ? <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">{fmt(deudaVencida)}</span>
+                  <td className="px-4 py-3 text-sky-500 dark:text-sky-400 text-sm whitespace-nowrap">
+                    {e.ultima_compra
+                      ? new Date(e.ultima_compra + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
                       : <span className="text-gray-400">—</span>}
                   </td>
-                  <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">
-                    {deuda?.limite_credito != null ? fmt(Number(deuda.limite_credito)) : (e.limite_credito != null ? fmt(Number(e.limite_credito)) : '—')}
+                  <td className={`px-4 py-3 font-semibold text-sm ${deudaTotal > 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {deudaTotal > 0 ? fmt(deudaTotal) : '—'}
+                  </td>
+                  <td className={`px-4 py-3 text-sm ${deudaVencida > 0 ? 'text-orange-500' : 'text-gray-400'}`}>
+                    {deudaVencida > 0 ? fmt(deudaVencida) : '—'}
                   </td>
                   <td className="px-4 py-3">
                     {eliminandoId === e.id ? (
@@ -317,10 +299,11 @@ export default function Empresas() {
                         <button onClick={() => { setEliminandoId(null); setDeleteError(null) }} className="text-gray-500 hover:underline">No</button>
                       </span>
                     ) : (
-                      <span className="inline-flex gap-3">
-                        {hasDeuda && (
-                          <button onClick={() => setDeudaEmpresa(e)} className="text-xs text-emerald-600 hover:underline">Deuda</button>
-                        )}
+                      <span className="inline-flex gap-2">
+                        <button onClick={() => setDetalleEmpresa(e)}
+                          className="px-2.5 py-1 bg-sky-700 hover:bg-sky-600 text-white text-xs font-medium rounded-lg transition-colors">
+                          Ver
+                        </button>
                         <button onClick={() => abrirEditar(e)} className="text-xs text-blue-600 hover:underline">Editar</button>
                         <button onClick={() => { setEliminandoId(e.id); setDeleteError(null) }} className="text-xs text-red-500 hover:underline">Eliminar</button>
                       </span>
@@ -333,87 +316,14 @@ export default function Empresas() {
         </table>
       </div>
 
-      {deudaEmpresa && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4" onClick={() => setDeudaEmpresa(null)}>
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto" onClick={ev => ev.stopPropagation()}>
-            <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{deudaEmpresa.nombre}</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Resumen de deuda — facturas activas</p>
-              </div>
-              <button onClick={() => setDeudaEmpresa(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none">&times;</button>
-            </div>
-
-            {deudaLoading ? (
-              <div className="px-6 py-8 text-center text-gray-400 text-sm">Cargando...</div>
-            ) : deudaData ? (
-              <div className="px-6 py-4">
-                <div className="grid grid-cols-3 gap-3 mb-5">
-                  {[
-                    { label: 'Total Facturado', value: deudaData.total_facturado, cls: 'text-gray-900 dark:text-white' },
-                    { label: 'Total Pagado', value: deudaData.total_pagado, cls: 'text-emerald-600 dark:text-emerald-400' },
-                    { label: 'Deuda Actual', value: deudaData.deuda, cls: deudaData.deuda > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400' },
-                  ].map(({ label, value, cls }) => (
-                    <div key={label} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</p>
-                      <p className={`text-base font-semibold ${cls}`}>
-                        ${Number(value).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {deudaData.facturas.length === 0 ? (
-                  <p className="text-sm text-center text-gray-400 py-4">Sin facturas registradas</p>
-                ) : (
-                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                        <tr>
-                          <th className="text-left px-3 py-2 font-medium">Nº FAC</th>
-                          <th className="text-left px-3 py-2 font-medium">Fecha</th>
-                          <th className="text-left px-3 py-2 font-medium">Contacto</th>
-                          <th className="text-right px-3 py-2 font-medium">Total</th>
-                          <th className="text-right px-3 py-2 font-medium">Pagado</th>
-                          <th className="text-right px-3 py-2 font-medium">Pendiente</th>
-                          <th className="text-center px-3 py-2 font-medium">Estado</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                        {deudaData.facturas.map(f => {
-                          const pendiente = Number(f.total) - Number(f.monto_pagado)
-                          const estadoCls: Record<string, string> = {
-                            pagada: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-                            parcial: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-                            emitida: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-                          }
-                          return (
-                            <tr key={f.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                              <td className="px-3 py-2 font-medium text-gray-900 dark:text-white">{f.numero}</td>
-                              <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{new Date(f.fecha + 'T00:00:00').toLocaleDateString('es-CL')}</td>
-                              <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{f.contacto ?? '—'}</td>
-                              <td className="px-3 py-2 text-right text-gray-900 dark:text-white">${Number(f.total).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                              <td className="px-3 py-2 text-right text-emerald-600 dark:text-emerald-400">${Number(f.monto_pagado).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                              <td className={`px-3 py-2 text-right font-medium ${pendiente > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`}>
-                                ${pendiente.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                              </td>
-                              <td className="px-3 py-2 text-center">
-                                <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${estadoCls[f.estado] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-                                  {f.estado}
-                                </span>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      )}
+      <EmpresaDetailModal
+        empresa={detalleEmpresa}
+        onClose={() => setDetalleEmpresa(null)}
+        onEdit={(e) => {
+          setDetalleEmpresa(null)
+          abrirEditar(e)
+        }}
+      />
 
       {modalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
