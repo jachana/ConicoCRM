@@ -286,7 +286,7 @@ export default function CotizacionDetalle() {
             setEmpresaId(c.empresa_id)
             const emp = empresas.find(e => e.id === c.empresa_id)
             const sinCredito = emp != null && (emp.linea_credito == null || emp.linea_credito <= 0)
-            setTerminosPago(sinCredito ? 'Al contado' : (emp?.plazo_credito ?? 'Al contado'))
+            setTerminosPago(sinCredito ? 'al_contado' : (emp?.plazo_credito ?? 'al_contado'))
           }
         }
       }
@@ -299,7 +299,9 @@ export default function CotizacionDetalle() {
       if (eid) {
         const emp = empresas.find(e => e.id === eid)
         const sinCredito = emp != null && (emp.linea_credito == null || emp.linea_credito <= 0)
-        setTerminosPago(sinCredito ? 'Al contado' : (emp?.plazo_credito ?? 'Al contado'))
+        setTerminosPago(sinCredito ? 'al_contado' : (emp?.plazo_credito ?? 'al_contado'))
+      } else {
+        setTerminosPago('')
       }
     })
   }
@@ -524,7 +526,7 @@ export default function CotizacionDetalle() {
         estado,
         nota: nota || null,
         empresa_id: empresaId || null,
-        terminos_pago: empresaSinCredito ? 'Al contado' : (terminosPago || null),
+        terminos_pago: empresaSinCredito ? 'al_contado' : (terminosPago || null),
         validez_dias: validezDias,
       }
       const lineasPayload = lineas.map((l, i) => ({
@@ -899,11 +901,11 @@ export default function CotizacionDetalle() {
             {empresaSinCredito ? (
               <>
                 <select
-                  value="Al contado"
+                  value="al_contado"
                   disabled
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 cursor-not-allowed"
                 >
-                  <option value="Al contado">Al contado</option>
+                  <option value="al_contado">Al contado</option>
                 </select>
                 <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                   Esta empresa no tiene línea de crédito.
