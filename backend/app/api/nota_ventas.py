@@ -330,6 +330,7 @@ def crear_nv_desde_cotizacion(
         fecha=date.today(),
         nota=cot.nota,
         correo=cot.correo,
+        retiro_en_conico=True,  # default until user sets dispatch address
     )
     db.add(nv)
     db.flush()
