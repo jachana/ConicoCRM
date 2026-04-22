@@ -65,7 +65,8 @@ def _get_config_dict(db: Session) -> dict:
 def _calcular_lineas(db: Session, lineas_data: list[CotizacionLineaCreate]) -> list[CotizacionLinea]:
     lineas = []
     for data in lineas_data:
-        total_neto = data.cantidad * data.valor_neto
+        descuento = data.descuento if hasattr(data, 'descuento') else Decimal("0")
+        total_neto = data.cantidad * data.valor_neto * (1 - descuento / 100)
         iva = total_neto * Decimal("0.19")
         total = total_neto + iva
 
@@ -83,6 +84,7 @@ def _calcular_lineas(db: Session, lineas_data: list[CotizacionLineaCreate]) -> l
             formato=data.formato,
             cantidad=data.cantidad,
             valor_neto=data.valor_neto,
+            descuento=descuento,
             total_neto=total_neto,
             iva=iva,
             total=total,
@@ -346,6 +348,7 @@ def crear_cotizacion(
         terminos_pago_estado=_calc_terminos_estado(
             body.terminos_pago, body.empresa_id, db, current_user
         ),
+        validez_dias=body.validez_dias,
     )
     # Auto-populate terminos_pago from empresa.plazo_credito if not provided
     if not cotizacion.terminos_pago and cotizacion.empresa_id:

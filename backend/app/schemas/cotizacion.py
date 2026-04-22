@@ -12,10 +12,12 @@ class CotizacionLineaCreate(BaseModel):
     formato: str | None = None
     cantidad: int = 1
     valor_neto: Decimal = Decimal("0")
+    descuento: Decimal = Decimal("0")
 
 
 class CotizacionLineaOut(CotizacionLineaCreate):
     id: int
+    descuento: Decimal = Decimal("0")
     total_neto: Decimal
     iva: Decimal
     total: Decimal
@@ -33,6 +35,7 @@ class CotizacionCreate(BaseModel):
     correo: str | None = None
     empresa_id: int | None = None
     terminos_pago: str | None = None
+    validez_dias: int = 5
     lineas: list[CotizacionLineaCreate] = []
 
 
@@ -47,6 +50,7 @@ class CotizacionUpdate(BaseModel):
     empresa_id: int | None = None
     terminos_pago: str | None = None
     terminos_pago_estado: str | None = None
+    validez_dias: int | None = None
 
 
 class ClienteMinOut(BaseModel):
@@ -76,6 +80,7 @@ class CotizacionOut(BaseModel):
     nota: str | None = None
     terminos_pago: str | None = None
     terminos_pago_estado: str = "aprobado"
+    validez_dias: int = 5
     correo: str | None = None
     total_neto: Decimal
     total_iva: Decimal
@@ -100,6 +105,7 @@ class CotizacionListOut(BaseModel):
     correo: str | None = None
     terminos_pago: str | None = None
     terminos_pago_estado: str = "aprobado"
+    validez_dias: int = 5
     total_neto: Decimal
     total_iva: Decimal
     total: Decimal
