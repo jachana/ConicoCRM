@@ -319,6 +319,63 @@ def credito_empresa(
     )
 
 
+@router.get("/{empresa_id}/facturas", response_model=list[EmpresaFacturaDetailItem])
+def facturas_empresa(
+    empresa_id: int,
+    estado: list[str] = Query(default=[]),
+    fecha_desde: str | None = Query(None),
+    fecha_hasta: str | None = Query(None),
+    monto_min: float | None = Query(None),
+    monto_max: float | None = Query(None),
+    sort_by: str = Query("fecha"),
+    sort_dir: str = Query("desc"),
+    perms: tuple[User, Session] = require_permission("empresas", "view"),
+):
+    from datetime import date as _date
+    from decimal import Decimal as _D
+
+    _, db = perms
+    e = db.get(Empresa, empresa_id)
+    if not e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+
+    query = db.query(Factura).filter(Factura.empresa_id == empresa_id)
+    if estado:
+        query = query.filter(Factura.estado.in_(estado))
+    if fecha_desde:
+        query = query.filter(Factura.fecha >= _date.fromisoformat(fecha_desde))
+    if fecha_hasta:
+        query = query.filter(Factura.fecha <= _date.fromisoformat(fecha_hasta))
+    if monto_min is not None:
+        query = query.filter(Factura.total >= monto_min)
+    if monto_max is not None:
+        query = query.filter(Factura.total <= monto_max)
+
+    sort_col = {
+        "fecha": Factura.fecha,
+        "numero": Factura.numero,
+        "total": Factura.total,
+        "estado": Factura.estado,
+        "pendiente": Factura.total,
+    }.get(sort_by, Factura.fecha)
+    query = query.order_by(sort_col.desc() if sort_dir == "desc" else sort_col.asc())
+
+    facturas = query.all()
+    return [
+        EmpresaFacturaDetailItem(
+            id=f.id,
+            numero=f.numero,
+            fecha=f.fecha,
+            estado=f.estado,
+            contacto=f.contacto,
+            total=f.total,
+            monto_pagado=f.monto_pagado or _D("0"),
+            pendiente=f.total - (f.monto_pagado or _D("0")),
+        )
+        for f in facturas
+    ]
+
+
 @router.get("/{empresa_id}", response_model=EmpresaOut)
 def obtener_empresa(
     empresa_id: int,
