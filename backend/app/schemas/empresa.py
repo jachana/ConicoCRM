@@ -101,10 +101,11 @@ class EmpresaFacturaDetailItem(BaseModel):
 
 
 class EmpresaProductoLineOut(BaseModel):
+    model_config = {"from_attributes": True}
     fecha: date
     factura_id: int
     factura_numero: int
-    sku: str | None
+    sku: str | None = None
     descripcion: str
     cantidad: Decimal
     precio_unit: Decimal
