@@ -1,6 +1,8 @@
 import csv
 import html as _html
 import io as _io
+from datetime import date
+from decimal import Decimal
 
 import openpyxl
 from fastapi import APIRouter, HTTPException, Query, status
@@ -323,17 +325,14 @@ def credito_empresa(
 def facturas_empresa(
     empresa_id: int,
     estado: list[str] = Query(default=[]),
-    fecha_desde: str | None = Query(None),
-    fecha_hasta: str | None = Query(None),
-    monto_min: float | None = Query(None),
-    monto_max: float | None = Query(None),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    monto_min: Decimal | None = Query(None),
+    monto_max: Decimal | None = Query(None),
     sort_by: str = Query("fecha"),
-    sort_dir: str = Query("desc"),
+    sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
-    from datetime import date as _date
-    from decimal import Decimal as _D
-
     _, db = perms
     e = db.get(Empresa, empresa_id)
     if not e:
@@ -343,9 +342,9 @@ def facturas_empresa(
     if estado:
         query = query.filter(Factura.estado.in_(estado))
     if fecha_desde:
-        query = query.filter(Factura.fecha >= _date.fromisoformat(fecha_desde))
+        query = query.filter(Factura.fecha >= fecha_desde)
     if fecha_hasta:
-        query = query.filter(Factura.fecha <= _date.fromisoformat(fecha_hasta))
+        query = query.filter(Factura.fecha <= fecha_hasta)
     if monto_min is not None:
         query = query.filter(Factura.total >= monto_min)
     if monto_max is not None:
@@ -369,8 +368,8 @@ def facturas_empresa(
             estado=f.estado,
             contacto=f.contacto,
             total=f.total,
-            monto_pagado=f.monto_pagado or _D("0"),
-            pendiente=f.total - (f.monto_pagado or _D("0")),
+            monto_pagado=f.monto_pagado or Decimal("0"),
+            pendiente=f.total - (f.monto_pagado or Decimal("0")),
         )
         for f in facturas
     ]
