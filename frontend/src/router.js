@@ -16,11 +16,13 @@ import Inventario from './pages/Inventario';
 import NotaVentas from './pages/NotaVentas';
 import NotaVentaDetalle from './pages/NotaVentaDetalle';
 import FacturaDetalle from './pages/FacturaDetalle';
+import Facturas from './pages/Facturas';
 import Pagos from './pages/Pagos';
 import Aprobaciones from './pages/Aprobaciones';
 import Dashboard from './pages/Dashboard';
 import Configuracion from './pages/Configuracion';
 import Cobranza from './pages/Cobranza';
+import Reportes from './pages/Reportes';
 import NotasCredito from './pages/NotasCredito';
 import NotaCreditoDetalle from './pages/NotaCreditoDetalle';
 import NotaCreditoNueva from './pages/NotaCreditoNueva';
@@ -58,6 +60,7 @@ export const router = createBrowserRouter([
             { path: 'notas-venta', element: _jsx(NotaVentas, {}) },
             { path: 'notas-venta/nueva', element: _jsx(NotaVentaDetalle, {}) },
             { path: 'notas-venta/:id', element: _jsx(NotaVentaDetalle, {}) },
+            { path: 'facturas', element: _jsx(Facturas, {}) },
             { path: 'facturas/nueva', element: _jsx(FacturaDetalle, {}) },
             { path: 'facturas/:id', element: _jsx(FacturaDetalle, {}) },
             { path: 'notas-credito', element: _jsx(NotasCredito, {}) },
@@ -71,6 +74,7 @@ export const router = createBrowserRouter([
             { path: 'rrhh', element: _jsx(RRHH, {}) },
             { path: 'inventario', element: _jsx(Inventario, {}) },
             { path: 'cobranza', element: _jsx(Cobranza, {}) },
+            { path: 'reportes', element: _jsx(Reportes, {}) },
         ],
     },
 ]);

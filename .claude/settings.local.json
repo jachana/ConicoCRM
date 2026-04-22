@@ -117,7 +117,15 @@
       "PowerShell(Get-Content *)",
       "Bash(grep -E \"\\\\.\\(py|ts\\)$\")",
       "Bash(C:/Users/jacha/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh *)",
-      "Bash(pytest tests/test_reportes.py -v)"
+      "Bash(pytest tests/test_reportes.py -v)",
+      "Bash(pytest tests/test_cotizacion_list_lineas.py -v)",
+      "Bash(pytest tests/test_cotizacion_list_lineas.py::test_list_cotizaciones_includes_lineas -v -s)",
+      "Bash(pytest tests/test_cotizacion_list_lineas.py::test_list_cotizaciones_includes_lineas -v)",
+      "Bash(pytest tests/ -v --tb=short)",
+      "Bash(pytest tests/ -x --tb=short)",
+      "Bash(pytest tests/test_cotizacion_list_lineas.py tests/test_cotizacion_create.py -v --tb=short)",
+      "Bash(pytest tests/test_cotizacion_list_lineas.py tests/test_cotizacion_terminos.py -v --tb=short)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }
