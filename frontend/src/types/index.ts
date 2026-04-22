@@ -140,7 +140,7 @@ export interface Cotizacion {
   empresa?: EmpresaRef | null
   contacto: string | null
   fecha: string
-  estado: 'no_definido' | 'abierta' | 'cerrada_fv' | 'rechazada'
+  estado: 'no_definido' | 'abierta' | 'aprobada' | 'cerrada_fv' | 'rechazada'
   nota: string | null
   terminos_pago: string | null
   terminos_pago_estado: string
@@ -148,6 +148,7 @@ export interface Cotizacion {
   total_neto: number
   total_iva: number
   total: number
+  margen_total?: number | null
   created_at: string
   updated_at: string
   cliente?: { id: number; nombre: string; rut: string | null; email: string | null; telefono: string | null }

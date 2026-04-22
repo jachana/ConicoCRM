@@ -6,7 +6,7 @@ import re
 import openpyxl
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.auth import get_current_user
 from app.api.deps import require_permission
@@ -184,31 +184,95 @@ def margin_status(
 
 @router.get("/export/excel")
 def exportar_excel(
+    estado: list[str] | None = Query(None),
+    vendedor_id: int | None = Query(None),
+    empresa_id: int | None = Query(None),
+    cliente_id: int | None = Query(None),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    monto_min: Decimal | None = Query(None),
+    monto_max: Decimal | None = Query(None),
+    producto_id: int | None = Query(None),
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
     _, db = perms
-    cotizaciones = (
+    q = (
         db.query(Cotizacion)
-        .options(joinedload(Cotizacion.cliente), joinedload(Cotizacion.vendedor))
-        .order_by(Cotizacion.numero.desc())
-        .all()
+        .options(
+            joinedload(Cotizacion.cliente),
+            joinedload(Cotizacion.vendedor),
+            joinedload(Cotizacion.empresa),
+            selectinload(Cotizacion.lineas).joinedload(CotizacionLinea.producto),
+        )
     )
+    if estado:
+        q = q.filter(Cotizacion.estado.in_(estado))
+    if vendedor_id:
+        q = q.filter(Cotizacion.vendedor_id == vendedor_id)
+    if empresa_id:
+        q = q.filter(Cotizacion.empresa_id == empresa_id)
+    if cliente_id:
+        q = q.filter(Cotizacion.cliente_id == cliente_id)
+    if fecha_desde:
+        q = q.filter(Cotizacion.fecha >= fecha_desde)
+    if fecha_hasta:
+        q = q.filter(Cotizacion.fecha <= fecha_hasta)
+    if monto_min is not None:
+        q = q.filter(Cotizacion.total >= monto_min)
+    if monto_max is not None:
+        q = q.filter(Cotizacion.total <= monto_max)
+    if producto_id:
+        q = q.join(CotizacionLinea, CotizacionLinea.cotizacion_id == Cotizacion.id).filter(
+            CotizacionLinea.producto_id == producto_id
+        ).distinct()
+    cotizaciones = q.order_by(Cotizacion.numero.desc()).all()
+
+    ESTADO_LABELS = {
+        "no_definido": "Sin definir", "abierta": "Abierta", "aprobada": "Aprobada",
+        "cerrada_fv": "Cerrada (FV)", "rechazada": "Rechazada",
+    }
+
     wb = openpyxl.Workbook()
+
+    # Sheet 1: Resumen
     ws = wb.active
-    ws.title = "Cotizaciones"
-    ws.append(["Nº COT", "Fecha", "Cliente", "Contacto", "Total Neto", "IVA", "Total", "Estado", "Encargado"])
+    ws.title = "Resumen"
+    ws.append(["Nº COT", "Fecha", "Cliente", "Empresa", "Encargado", "Estado",
+               "Total Neto", "IVA", "Total", "Margen %"])
     for c in cotizaciones:
+        mt = c.margen_total
         ws.append([
             c.numero,
             c.fecha.strftime("%d/%m/%Y") if c.fecha else "",
             c.cliente.nombre if c.cliente else "",
-            c.contacto or "",
+            c.empresa.nombre if c.empresa else "",
+            c.vendedor.name if c.vendedor else "",
+            ESTADO_LABELS.get(c.estado, c.estado),
             float(c.total_neto),
             float(c.total_iva),
             float(c.total),
-            c.estado,
-            c.vendedor.name if c.vendedor else "",
+            round(float(mt) * 100, 2) if mt is not None else "",
         ])
+
+    # Sheet 2: Detalle por línea
+    wd = wb.create_sheet("Detalle")
+    wd.append(["Nº COT", "Fecha", "Cliente", "SKU", "Descripción", "Formato",
+               "Cantidad", "Precio Unit. Neto", "Total Neto", "Margen %"])
+    for c in cotizaciones:
+        for l in c.lineas:
+            wd.append([
+                c.numero,
+                c.fecha.strftime("%d/%m/%Y") if c.fecha else "",
+                c.cliente.nombre if c.cliente else "",
+                l.sku or "",
+                l.descripcion,
+                l.formato or "",
+                l.cantidad,
+                float(l.valor_neto),
+                float(l.total_neto),
+                round(float(l.margen) * 100, 2) if l.margen is not None else "",
+            ])
+
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
@@ -223,9 +287,13 @@ def exportar_excel(
 def listar_cotizaciones(
     estado: list[str] | None = Query(None),
     vendedor_id: int | None = Query(None),
+    empresa_id: int | None = Query(None),
     cliente_id: int | None = Query(None),
     fecha_desde: date | None = Query(None),
     fecha_hasta: date | None = Query(None),
+    monto_min: Decimal | None = Query(None),
+    monto_max: Decimal | None = Query(None),
+    producto_id: int | None = Query(None),
     terminos_pago_estado: str | None = Query(None),
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
@@ -234,17 +302,28 @@ def listar_cotizaciones(
         joinedload(Cotizacion.cliente),
         joinedload(Cotizacion.vendedor),
         joinedload(Cotizacion.empresa),
+        selectinload(Cotizacion.lineas),
     )
     if estado:
         q = q.filter(Cotizacion.estado.in_(estado))
     if vendedor_id:
         q = q.filter(Cotizacion.vendedor_id == vendedor_id)
+    if empresa_id:
+        q = q.filter(Cotizacion.empresa_id == empresa_id)
     if cliente_id:
         q = q.filter(Cotizacion.cliente_id == cliente_id)
     if fecha_desde:
         q = q.filter(Cotizacion.fecha >= fecha_desde)
     if fecha_hasta:
         q = q.filter(Cotizacion.fecha <= fecha_hasta)
+    if monto_min is not None:
+        q = q.filter(Cotizacion.total >= monto_min)
+    if monto_max is not None:
+        q = q.filter(Cotizacion.total <= monto_max)
+    if producto_id:
+        q = q.join(CotizacionLinea, CotizacionLinea.cotizacion_id == Cotizacion.id).filter(
+            CotizacionLinea.producto_id == producto_id
+        ).distinct()
     if terminos_pago_estado:
         q = q.filter(Cotizacion.terminos_pago_estado == terminos_pago_estado)
     return q.order_by(Cotizacion.numero.desc()).all()

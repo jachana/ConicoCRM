@@ -103,6 +103,7 @@ class CotizacionListOut(BaseModel):
     total_neto: Decimal
     total_iva: Decimal
     total: Decimal
+    margen_total: Decimal | None = None
     created_at: datetime
     updated_at: datetime
     cliente: ClienteMinOut | None = None

@@ -47,6 +47,16 @@ class Cotizacion(Base):
         order_by="CotizacionLinea.orden",
     )
 
+    @property
+    def margen_total(self) -> "Decimal | None":
+        lineas_con_margen = [l for l in self.lineas if l.margen is not None]
+        if not lineas_con_margen:
+            return None
+        base = sum(l.total_neto for l in lineas_con_margen)
+        if not base:
+            return None
+        return sum(l.total_neto * l.margen for l in lineas_con_margen) / base
+
 
 class CotizacionLinea(Base):
     __tablename__ = "cotizacion_lineas"
