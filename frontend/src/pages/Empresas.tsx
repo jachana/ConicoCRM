@@ -103,19 +103,19 @@ export default function Empresas() {
     .filter(e => !filterConDeuda || (deudaMap.get(e.id)?.deuda_total ?? 0) > 0)
     .sort((a, b) => {
       const da = deudaMap.get(a.id)
-      const db2 = deudaMap.get(b.id)
+      const db = deudaMap.get(b.id)
       let cmp = 0
       if (sortField === 'deuda_total') {
-        cmp = Number(da?.deuda_total ?? 0) - Number(db2?.deuda_total ?? 0)
+        cmp = Number(da?.deuda_total ?? 0) - Number(db?.deuda_total ?? 0)
       } else if (sortField === 'deuda_vencida') {
-        cmp = Number(da?.deuda_vencida ?? 0) - Number(db2?.deuda_vencida ?? 0)
+        cmp = Number(da?.deuda_vencida ?? 0) - Number(db?.deuda_vencida ?? 0)
       } else if (sortField === 'ultima_compra') {
-        const ta = a.ultima_compra ? new Date(a.ultima_compra).getTime() : 0
-        const tb = b.ultima_compra ? new Date(b.ultima_compra).getTime() : 0
+        const ta = a.ultima_compra ? new Date(a.ultima_compra + 'T00:00:00').getTime() : 0
+        const tb = b.ultima_compra ? new Date(b.ultima_compra + 'T00:00:00').getTime() : 0
         cmp = ta - tb
       } else {
-        const va = String((a as unknown as Record<string, unknown>)[sortField] ?? '')
-        const vb = String((b as unknown as Record<string, unknown>)[sortField] ?? '')
+        const va = String(a[sortField as keyof EmpresaListItem] ?? '')
+        const vb = String(b[sortField as keyof EmpresaListItem] ?? '')
         cmp = va.localeCompare(vb, 'es-CL')
       }
       return sortDir === 'asc' ? cmp : -cmp
@@ -246,6 +246,7 @@ export default function Empresas() {
                 { field: 'deuda_vencida' as SortField, label: 'Vencida' },
               ]).map(({ field, label }) => (
                 <th key={field} onClick={() => toggleSort(field)}
+                  aria-sort={sortField === field ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   className="text-left px-4 py-3 font-medium whitespace-nowrap cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none">
                   {label}
                   {sortField === field
@@ -304,8 +305,8 @@ export default function Empresas() {
                           className="px-2.5 py-1 bg-sky-700 hover:bg-sky-600 text-white text-xs font-medium rounded-lg transition-colors">
                           Ver
                         </button>
-                        <button onClick={() => abrirEditar(e)} className="text-xs text-blue-600 hover:underline">Editar</button>
-                        <button onClick={() => { setEliminandoId(e.id); setDeleteError(null) }} className="text-xs text-red-500 hover:underline">Eliminar</button>
+                        <button onClick={() => abrirEditar(e)} aria-label={`Editar ${e.nombre}`} className="text-xs text-blue-600 hover:underline">Editar</button>
+                        <button onClick={() => { setEliminandoId(e.id); setDeleteError(null) }} aria-label={`Eliminar ${e.nombre}`} className="text-xs text-red-500 hover:underline">Eliminar</button>
                       </span>
                     )}
                   </td>
