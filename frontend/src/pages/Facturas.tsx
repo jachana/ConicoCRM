@@ -194,7 +194,7 @@ export default function Facturas() {
   function clearAll() {
     setEstados([]); setClienteId(null); setClienteNombre('')
     setEmpresaId(null); setEmpresaNombre(''); setFechaDesde(''); setFechaHasta('')
-    setMontoMin(''); setMontoMax(''); setProductos([])
+    setMontoMin(''); setMontoMax(''); setProductos([]); setProductoSearch('')
   }
 
   const fechaSummary = fechaDesde && fechaHasta
@@ -376,7 +376,7 @@ export default function Facturas() {
       <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
 
         {/* Left: list */}
-        <div className={activeTab !== 'list' ? 'hidden lg:block' : ''}>
+        <div className={activeTab === 'list' ? '' : 'hidden lg:block'}>
           {isLoading ? (
             <div className="text-gray-400 py-12 text-center text-sm">Cargando...</div>
           ) : facturas.length === 0 ? (
@@ -458,7 +458,7 @@ export default function Facturas() {
         </div>
 
         {/* Right: preview panel */}
-        <div className={activeTab !== 'preview' ? 'hidden lg:block' : ''}>
+        <div className={activeTab === 'preview' ? '' : 'hidden lg:block'}>
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
               Vista previa exportación
