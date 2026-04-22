@@ -375,6 +375,66 @@ def facturas_empresa(
     ]
 
 
+@router.get("/{empresa_id}/productos", response_model=list[EmpresaProductoLineOut])
+def productos_empresa(
+    empresa_id: int,
+    q: str = Query(""),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    sort_by: str = Query("fecha"),
+    sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
+    perms: tuple[User, Session] = require_permission("empresas", "view"),
+):
+    _, db = perms
+    e = db.get(Empresa, empresa_id)
+    if not e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+
+    query = (
+        db.query(FacturaLinea, Factura.fecha, Factura.id, Factura.numero)
+        .join(Factura, Factura.id == FacturaLinea.factura_id)
+        .filter(
+            Factura.empresa_id == empresa_id,
+            Factura.estado != "anulada",
+        )
+    )
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            FacturaLinea.descripcion.ilike(like) | FacturaLinea.sku.ilike(like)
+        )
+    if fecha_desde:
+        query = query.filter(Factura.fecha >= fecha_desde)
+    if fecha_hasta:
+        query = query.filter(Factura.fecha <= fecha_hasta)
+
+    sort_map = {
+        "fecha": Factura.fecha,
+        "sku": FacturaLinea.sku,
+        "descripcion": FacturaLinea.descripcion,
+        "cantidad": FacturaLinea.cantidad,
+        "precio_unit": FacturaLinea.valor_neto,
+        "total_neto": FacturaLinea.total_neto,
+    }
+    sort_col = sort_map.get(sort_by, Factura.fecha)
+    query = query.order_by(sort_col.desc() if sort_dir == "desc" else sort_col.asc())
+
+    rows = query.all()
+    return [
+        EmpresaProductoLineOut(
+            fecha=fecha,
+            factura_id=factura_id,
+            factura_numero=factura_numero,
+            sku=linea.sku,
+            descripcion=linea.descripcion,
+            cantidad=linea.cantidad,
+            precio_unit=linea.valor_neto,
+            total_neto=linea.total_neto,
+        )
+        for linea, fecha, factura_id, factura_numero in rows
+    ]
+
+
 @router.get("/{empresa_id}", response_model=EmpresaOut)
 def obtener_empresa(
     empresa_id: int,
