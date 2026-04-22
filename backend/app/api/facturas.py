@@ -1,4 +1,5 @@
 import re
+from collections.abc import Callable
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from io import BytesIO
@@ -41,7 +42,7 @@ _TRANSITIONS: dict[tuple[str, str], str] = {
 
 _METODOS_PAGO = {"efectivo", "transferencia", "cheque", "debito", "credito", "deposito"}
 
-_FAC_EXPORT_COLUMNS: dict[str, tuple] = {
+_FAC_EXPORT_COLUMNS: dict[str, tuple[str, Callable]] = {
     "numero":            ("Nº FAC",        lambda f, l: f.numero),
     "fecha":             ("Fecha",          lambda f, l: f.fecha.strftime("%d/%m/%Y") if f.fecha else ""),
     "estado":            ("Estado",         lambda f, l: f.estado),

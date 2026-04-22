@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import date
 from decimal import Decimal
 from io import BytesIO
@@ -34,7 +35,7 @@ _ESTADO_LABELS: dict[str, str] = {
     "cerrada_fv": "Cerrada (FV)", "rechazada": "Rechazada",
 }
 
-_COT_EXPORT_COLUMNS: dict[str, tuple] = {
+_COT_EXPORT_COLUMNS: dict[str, tuple[str, Callable]] = {
     "numero":         ("Nº COT",      lambda c, l: c.numero),
     "fecha":          ("Fecha",        lambda c, l: c.fecha.strftime("%d/%m/%Y") if c.fecha else ""),
     "estado":         ("Estado",       lambda c, l: _ESTADO_LABELS.get(c.estado, c.estado)),
