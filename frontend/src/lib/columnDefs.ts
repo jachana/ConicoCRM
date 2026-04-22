@@ -1,4 +1,4 @@
-import type { ColDef, FlatLine } from '../types'
+import type { ColDef, FlatLine, GenericColDef, EmpresaFacturaItem, EmpresaProductoLine } from '../types'
 
 function fmtDate(s: string | null | undefined): string {
   if (!s) return ''
@@ -42,4 +42,24 @@ export const FACTURA_COLUMN_DEFS: ColDef[] = [
   { key: 'monto_pagado',      label: 'Monto Pagado', defaultVisible: false, getValue: (r: FlatLine) => fmtMoney(r.monto_pagado) },
   { key: 'metodo_pago',       label: 'Método Pago',  defaultVisible: false, getValue: (r: FlatLine) => r.metodo_pago },
   { key: 'fecha_pago',        label: 'Fecha Pago',   defaultVisible: false, getValue: (r: FlatLine) => fmtDate(r.fecha_pago) },
+]
+
+export const EMPRESA_FACTURA_COLS: GenericColDef<EmpresaFacturaItem>[] = [
+  { key: 'numero',       label: 'Nº',        defaultVisible: true,  getValue: r => r.numero },
+  { key: 'fecha',        label: 'Fecha',      defaultVisible: true,  getValue: r => fmtDate(r.fecha) },
+  { key: 'estado',       label: 'Estado',     defaultVisible: true,  getValue: r => r.estado },
+  { key: 'contacto',     label: 'Contacto',   defaultVisible: false, getValue: r => r.contacto ?? '—' },
+  { key: 'total',        label: 'Total',      defaultVisible: true,  getValue: r => fmtMoney(r.total) },
+  { key: 'monto_pagado', label: 'Pagado',     defaultVisible: true,  getValue: r => fmtMoney(r.monto_pagado) },
+  { key: 'pendiente',    label: 'Pendiente',  defaultVisible: true,  getValue: r => fmtMoney(r.pendiente) },
+]
+
+export const EMPRESA_PRODUCTO_COLS: GenericColDef<EmpresaProductoLine>[] = [
+  { key: 'fecha',          label: 'Fecha',        defaultVisible: true,  getValue: r => fmtDate(r.fecha) },
+  { key: 'factura_numero', label: 'Nº Factura',   defaultVisible: true,  getValue: r => r.factura_numero },
+  { key: 'sku',            label: 'SKU',           defaultVisible: true,  getValue: r => r.sku ?? '—' },
+  { key: 'descripcion',    label: 'Descripción',   defaultVisible: true,  getValue: r => r.descripcion },
+  { key: 'cantidad',       label: 'Cantidad',      defaultVisible: true,  getValue: r => r.cantidad },
+  { key: 'precio_unit',    label: 'Precio Unit.',  defaultVisible: true,  getValue: r => fmtMoney(r.precio_unit) },
+  { key: 'total_neto',     label: 'Total',         defaultVisible: true,  getValue: r => fmtMoney(r.total_neto) },
 ]
