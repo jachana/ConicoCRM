@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import require_permission
 from app.models.producto import Producto
-from app.models.tag import ProductoTag, producto_tag_link
+from app.models.tag import ProductoTag
 from app.models.user import User
 from app.models.movimiento_inventario import MovimientoInventario
 from app.schemas.producto import ProductoBusquedaOut, ProductoCreate, ProductoOut, ProductoUpdate
