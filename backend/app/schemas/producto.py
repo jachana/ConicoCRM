@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class ProductoBase(BaseModel):
@@ -11,6 +11,16 @@ class ProductoBase(BaseModel):
     stock_minimo: int = 0
     stock_actual: int = 0
     proveedor_id: int | None = None
+    tags: list[str] = []
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def extract_tags(cls, v):
+        if not v:
+            return []
+        if v and hasattr(v[0], "nombre"):
+            return [t.nombre for t in v]
+        return list(v)
 
 
 class ProductoCreate(ProductoBase):
@@ -25,10 +35,13 @@ class ProductoUpdate(BaseModel):
     stock_minimo: int | None = None
     stock_actual: int | None = None
     proveedor_id: int | None = None
+    tags: list[str] | None = None
 
 
 class ProductoOut(ProductoBase):
     id: int
+    sku: str | None = None
+    formato: str | None = None
     created_at: datetime
     model_config = {"from_attributes": True}
 
@@ -42,4 +55,14 @@ class ProductoBusquedaOut(BaseModel):
     precio_venta: Decimal
     precio_costo: Decimal
     stock_actual: int
+    tags: list[str] = []
     model_config = {"from_attributes": True}
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def extract_tags(cls, v):
+        if not v:
+            return []
+        if v and hasattr(v[0], "nombre"):
+            return [t.nombre for t in v]
+        return list(v)

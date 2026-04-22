@@ -27,3 +27,8 @@ class Producto(Base):
     )
 
     proveedor: Mapped["Proveedor | None"] = relationship("Proveedor", back_populates="productos")
+    tags: Mapped[list["ProductoTag"]] = relationship(
+        "ProductoTag",
+        secondary="producto_tag_link",
+        lazy="selectin",
+    )

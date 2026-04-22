@@ -3,14 +3,34 @@ from io import BytesIO
 import openpyxl
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_permission
 from app.models.producto import Producto
+from app.models.tag import ProductoTag, producto_tag_link
 from app.models.user import User
 from app.models.movimiento_inventario import MovimientoInventario
 from app.schemas.producto import ProductoBusquedaOut, ProductoCreate, ProductoOut, ProductoUpdate
 from app.schemas.movimiento_inventario import MovimientoListOut
+
+
+def _sync_tags(producto: Producto, tag_nombres: list[str], db: Session) -> None:
+    nombres = [n.strip().lower() for n in tag_nombres if n.strip()]
+    if not nombres:
+        producto.tags = []
+        return
+    existing = {t.nombre: t for t in db.query(ProductoTag).filter(ProductoTag.nombre.in_(nombres)).all()}
+    tags = []
+    for nombre in nombres:
+        if nombre in existing:
+            tags.append(existing[nombre])
+        else:
+            t = ProductoTag(nombre=nombre)
+            db.add(t)
+            tags.append(t)
+    producto.tags = tags
+
 
 router = APIRouter()
 
@@ -39,28 +59,39 @@ def exportar_excel(
 
 @router.get("/buscar", response_model=list[ProductoBusquedaOut])
 def buscar_productos(
-    q: str = Query("", description="Texto a buscar en nombre del producto"),
+    q: str = Query("", description="Texto a buscar en nombre, SKU o tag"),
     perms: tuple[User, Session] = require_permission("catalogo", "view"),
 ):
     _, db = perms
-    return (
-        db.query(Producto)
-        .filter(Producto.nombre.ilike(f"%{q}%"))
-        .order_by(Producto.nombre)
-        .limit(20)
-        .all()
-    )
+    query = db.query(Producto).outerjoin(Producto.tags)
+    if q:
+        pattern = f"%{q}%"
+        query = query.filter(
+            or_(
+                Producto.nombre.ilike(pattern),
+                Producto.sku.ilike(pattern),
+                ProductoTag.nombre.ilike(pattern),
+            )
+        ).distinct()
+    return query.order_by(Producto.nombre).limit(20).all()
 
 
 @router.get("/", response_model=list[ProductoOut])
 def listar_productos(
-    q: str = Query("", description="Filtrar por nombre"),
+    q: str = Query("", description="Filtrar por nombre, SKU o tag"),
     perms: tuple[User, Session] = require_permission("catalogo", "view"),
 ):
     _, db = perms
-    query = db.query(Producto)
+    query = db.query(Producto).outerjoin(Producto.tags)
     if q:
-        query = query.filter(Producto.nombre.ilike(f"%{q}%"))
+        pattern = f"%{q}%"
+        query = query.filter(
+            or_(
+                Producto.nombre.ilike(pattern),
+                Producto.sku.ilike(pattern),
+                ProductoTag.nombre.ilike(pattern),
+            )
+        ).distinct()
     return query.order_by(Producto.nombre).all()
 
 
@@ -70,8 +101,11 @@ def crear_producto(
     perms: tuple[User, Session] = require_permission("catalogo", "create"),
 ):
     _, db = perms
-    producto = Producto(**body.model_dump())
+    data = body.model_dump(exclude={"tags"})
+    producto = Producto(**data)
     db.add(producto)
+    db.flush()
+    _sync_tags(producto, body.tags, db)
     db.commit()
     db.refresh(producto)
     return producto
@@ -99,8 +133,10 @@ def actualizar_producto(
     p = db.get(Producto, producto_id)
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
-    for field, value in body.model_dump(exclude_unset=True).items():
+    for field, value in body.model_dump(exclude_unset=True, exclude={"tags"}).items():
         setattr(p, field, value)
+    if body.tags is not None:
+        _sync_tags(p, body.tags, db)
     db.commit()
     db.refresh(p)
     return p

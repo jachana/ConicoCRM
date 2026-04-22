@@ -34,6 +34,7 @@ def setup_test_db():
     import app.models.empleado_vacacion  # noqa: F401
     import app.models.cotizacion  # noqa: F401
     import app.models.nota_venta  # noqa: F401
+    import app.models.tag  # noqa: F401
     import app.models.factura  # noqa: F401
     import app.models.orden_compra  # noqa: F401
     import app.models.movimiento_inventario  # noqa: F401
