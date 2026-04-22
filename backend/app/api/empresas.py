@@ -1,3 +1,5 @@
+import csv
+import io as _io
 from io import BytesIO
 
 import openpyxl
@@ -11,7 +13,68 @@ from app.models.cliente import Cliente as ClienteModel
 from app.models.empresa import Empresa
 from app.models.factura import Factura
 from app.models.user import User
-from app.schemas.empresa import EmpresaCreate, EmpresaDeudaOut, EmpresaCreditoOut, EmpresaOut, EmpresaUpdate, FacturaResumen, EmpresaDeudaBulkItem
+from app.schemas.empresa import (
+    EmpresaCreate, EmpresaDeudaOut, EmpresaCreditoOut, EmpresaOut, EmpresaUpdate,
+    FacturaResumen, EmpresaDeudaBulkItem, EmpresaListItem,
+    EmpresaFacturaDetailItem, EmpresaProductoLineOut,
+)
+
+
+def _export_xlsx(headers: list[str], rows: list[list]) -> "StreamingResponse":
+    import openpyxl as _openpyxl
+    wb = _openpyxl.Workbook()
+    ws = wb.active
+    ws.append(headers)
+    for row in rows:
+        ws.append(row)
+    buf = _io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=export.xlsx"},
+    )
+
+
+def _export_csv(headers: list[str], rows: list[list]) -> "StreamingResponse":
+    output = _io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(headers)
+    writer.writerows(rows)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=export.csv"},
+    )
+
+
+def _export_pdf(title: str, headers: list[str], rows: list[list]) -> "StreamingResponse":
+    from weasyprint import HTML
+    rows_html = "".join(
+        "<tr>" + "".join(f"<td>{c}</td>" for c in row) + "</tr>"
+        for row in rows
+    )
+    html_str = f"""<html><head><style>
+      body{{font-family:Arial,sans-serif;font-size:9px;}}
+      h1{{font-size:13px;color:#0369a1;margin-bottom:8px;}}
+      table{{width:100%;border-collapse:collapse;}}
+      th{{background:#0369a1;color:white;padding:4px 8px;text-align:left;}}
+      td{{padding:3px 8px;border-bottom:1px solid #e2e8f0;}}
+      tr:nth-child(even) td{{background:#f8fafc;}}
+    </style></head><body>
+      <h1>{title}</h1>
+      <table><tr>{"".join(f"<th>{h}</th>" for h in headers)}</tr>{rows_html}</table>
+    </body></html>"""
+    buf = _io.BytesIO()
+    HTML(string=html_str).write_pdf(buf)
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=export.pdf"},
+    )
+
 
 router = APIRouter()
 
@@ -42,17 +105,73 @@ def exportar_excel(
     )
 
 
-@router.get("/", response_model=list[EmpresaOut])
+@router.get("/", response_model=list[EmpresaListItem])
 def listar_empresas(
     q: str = Query(""),
+    sector: str | None = Query(None),
+    producto_ids: list[int] = Query(default=[]),
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
+    from sqlalchemy import func, select as sa_select
+    from app.models.factura import FacturaLinea
+
     _, db = perms
-    query = db.query(Empresa)
+
+    ultima_compra_subq = (
+        sa_select(
+            Factura.empresa_id,
+            func.max(Factura.fecha).label("ultima_compra"),
+        )
+        .where(Factura.estado != "anulada", Factura.empresa_id.isnot(None))
+        .group_by(Factura.empresa_id)
+        .subquery()
+    )
+
+    query = db.query(Empresa, ultima_compra_subq.c.ultima_compra).outerjoin(
+        ultima_compra_subq, ultima_compra_subq.c.empresa_id == Empresa.id
+    )
+
     if q:
         like = f"%{q}%"
         query = query.filter(Empresa.nombre.ilike(like) | Empresa.rut.ilike(like))
-    return query.order_by(Empresa.nombre).all()
+    if sector:
+        query = query.filter(Empresa.sector == sector)
+    if producto_ids:
+        producto_subq = (
+            sa_select(Factura.empresa_id)
+            .join(FacturaLinea, FacturaLinea.factura_id == Factura.id)
+            .where(
+                FacturaLinea.producto_id.in_(producto_ids),
+                Factura.empresa_id.isnot(None),
+                Factura.estado != "anulada",
+            )
+            .distinct()
+            .subquery()
+        )
+        query = query.filter(Empresa.id.in_(sa_select(producto_subq.c.empresa_id)))
+
+    rows = query.order_by(Empresa.nombre).all()
+    result = []
+    for empresa, ultima_compra in rows:
+        item = EmpresaListItem.model_validate(empresa)
+        item.ultima_compra = ultima_compra
+        result.append(item)
+    return result
+
+
+@router.get("/sectores", response_model=list[str])
+def listar_sectores(
+    perms: tuple[User, Session] = require_permission("empresas", "view"),
+):
+    _, db = perms
+    rows = (
+        db.query(Empresa.sector)
+        .filter(Empresa.sector.isnot(None))
+        .distinct()
+        .order_by(Empresa.sector)
+        .all()
+    )
+    return [r[0] for r in rows]
 
 
 @router.get("/deuda-bulk", response_model=list[EmpresaDeudaBulkItem])
