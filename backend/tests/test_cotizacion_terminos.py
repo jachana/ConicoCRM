@@ -25,7 +25,8 @@ def test_parse_dias_none():
 
 def _make_empresa(db, plazo_credito="30 Días"):
     from app.models.empresa import Empresa
-    emp = Empresa(nombre="Test Empresa", plazo_credito=plazo_credito)
+    from decimal import Decimal
+    emp = Empresa(nombre="Test Empresa", plazo_credito=plazo_credito, linea_credito=Decimal("1000000"))
     db.add(emp)
     db.commit()
     db.refresh(emp)

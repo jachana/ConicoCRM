@@ -148,6 +148,15 @@ def _calc_terminos_estado(
     return "pendiente" if nuevo_dias > default_dias else "aprobado"
 
 
+def _enforce_al_contado(empresa_id: int | None, terminos_pago: str | None, db: Session) -> str | None:
+    if not empresa_id:
+        return terminos_pago
+    empresa = db.get(Empresa, empresa_id)
+    if empresa and (empresa.linea_credito is None or empresa.linea_credito <= 0):
+        return "al_contado"
+    return terminos_pago
+
+
 def _check_lineas_invalidas(lineas: list[CotizacionLinea]) -> None:
     errors = []
     if any(l.producto_id is None for l in lineas):
@@ -335,6 +344,7 @@ def crear_cotizacion(
     current_user, db = perms
     numero = _asignar_numero(db)
     vendedor_id = body.vendedor_id if body.vendedor_id and current_user.role in ("admin", "subadmin") else current_user.id
+    terminos = _enforce_al_contado(body.empresa_id, body.terminos_pago, db)
     cotizacion = Cotizacion(
         numero=numero,
         cliente_id=body.cliente_id,
@@ -345,9 +355,9 @@ def crear_cotizacion(
         nota=body.nota,
         correo=body.correo,
         empresa_id=body.empresa_id,
-        terminos_pago=body.terminos_pago,
+        terminos_pago=terminos,
         terminos_pago_estado=_calc_terminos_estado(
-            body.terminos_pago, body.empresa_id, db, current_user
+            terminos, body.empresa_id, db, current_user
         ),
         validez_dias=body.validez_dias,
     )
@@ -422,6 +432,7 @@ def actualizar_cotizacion(
 
     for field, value in update_data.items():
         setattr(cot, field, value)
+    cot.terminos_pago = _enforce_al_contado(cot.empresa_id, cot.terminos_pago, db)
     db.commit()
     db.refresh(cot)
     return db.query(Cotizacion).options(
