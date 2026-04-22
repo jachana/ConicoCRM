@@ -15,12 +15,12 @@ TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
 HTML_REPORT="$REPORT_DIR/report_$TIMESTAMP.html"
 LATEST_REPORT="$REPORT_DIR/report_latest.html"
 
-MARKER_FILTER="-m 'not smoke'"
+INCLUDE_SMOKE=false
 EXTRA_ARGS=()
 
 for arg in "$@"; do
   if [[ "$arg" == "--smoke" ]]; then
-    MARKER_FILTER=""
+    INCLUDE_SMOKE=true
   else
     EXTRA_ARGS+=("$arg")
   fi
@@ -32,14 +32,18 @@ echo ""
 
 cd "$SCRIPT_DIR"
 
-set +e
-python -m pytest tests/ \
-  ${MARKER_FILTER:+$MARKER_FILTER} \
-  --html="$HTML_REPORT" \
-  --self-contained-html \
-  -v \
-  "${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}"
+PYTEST_ARGS=(tests/ --html="$HTML_REPORT" --self-contained-html -v)
 
+if [[ "$INCLUDE_SMOKE" == false ]]; then
+  PYTEST_ARGS+=(-m "not smoke")
+fi
+
+if [[ ${#EXTRA_ARGS[@]} -gt 0 ]]; then
+  PYTEST_ARGS+=("${EXTRA_ARGS[@]}")
+fi
+
+set +e
+python -m pytest "${PYTEST_ARGS[@]}"
 EXIT_CODE=$?
 set -e
 
