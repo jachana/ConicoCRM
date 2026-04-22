@@ -214,6 +214,9 @@ export interface NotaVenta {
   estado: 'pendiente' | 'despachada' | 'entregada' | 'pagada' | 'cancelada'
   nota: string | null
   correo: string | null
+  direccion_despacho: string | null
+  retiro_en_conico: boolean
+  terminos_pago: string | null
   total_neto: number
   total_iva: number
   total: number

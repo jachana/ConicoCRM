@@ -86,6 +86,8 @@ function nvSnapshot(nv: NotaVenta): string {
     fecha: nv.fecha,
     nota: nv.nota ?? '',
     empresaId: nv.empresa_id ?? '',
+    retiroEnConico: nv.retiro_en_conico ?? false,
+    direccionDespacho: nv.direccion_despacho ?? '',
     lineas: (nv.lineas ?? []).map(l => ({
       producto_id: l.producto_id ?? null,
       cantidad: l.cantidad,
@@ -111,6 +113,8 @@ export default function NotaVentaDetalle() {
   const [correo, setCorreo] = useState('')
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
   const [nota, setNota] = useState('')
+  const [retiroEnConico, setRetiroEnConico] = useState(false)
+  const [direccionDespacho, setDireccionDespacho] = useState('')
   const [lineas, setLineas] = useState<LineaLocal[]>([newLinea(1)])
   const [empresaId, setEmpresaId] = useState<number | ''>('')
   const [saving, setSaving] = useState(false)
@@ -132,6 +136,7 @@ export default function NotaVentaDetalle() {
 
   const currentSnapshot = useMemo(() => JSON.stringify({
     clienteId, vendedorId, contacto, correo, fecha, nota, empresaId,
+    retiroEnConico, direccionDespacho,
     lineas: lineas.map(l => ({
       producto_id: l.producto_id ?? null,
       cantidad: l.cantidad,
@@ -140,7 +145,7 @@ export default function NotaVentaDetalle() {
       sku: l.sku ?? null,
       formato: l.formato ?? null,
     }))
-  }), [clienteId, vendedorId, contacto, correo, fecha, nota, empresaId, lineas])
+  }), [clienteId, vendedorId, contacto, correo, fecha, nota, empresaId, retiroEnConico, direccionDespacho, lineas])
 
   const isDirty = !isNew && savedSnapshot !== null && currentSnapshot !== savedSnapshot
 
@@ -174,6 +179,8 @@ export default function NotaVentaDetalle() {
       setCorreo(nv.correo ?? '')
       setFecha(nv.fecha)
       setNota(nv.nota ?? '')
+      setRetiroEnConico(nv.retiro_en_conico ?? false)
+      setDireccionDespacho(nv.direccion_despacho ?? '')
       setEmpresaId(nv.empresa_id ?? '')
       setLineas(
         (nv.lineas ?? []).map((l, i) => ({
@@ -330,6 +337,8 @@ export default function NotaVentaDetalle() {
         fecha,
         nota: nota || null,
         empresa_id: empresaId || null,
+        retiro_en_conico: retiroEnConico,
+        direccion_despacho: retiroEnConico ? null : (direccionDespacho.trim() || null),
       }
       const lineasPayload = lineas.map((l, i) => ({
         orden: i + 1,
@@ -381,6 +390,8 @@ export default function NotaVentaDetalle() {
       setCorreo(nv.correo ?? '')
       setFecha(nv.fecha)
       setNota(nv.nota ?? '')
+      setRetiroEnConico(nv.retiro_en_conico ?? false)
+      setDireccionDespacho(nv.direccion_despacho ?? '')
       setEmpresaId(nv.empresa_id ?? '')
       setLineas(
         (nv.lineas ?? []).map((l, i) => ({
@@ -598,6 +609,35 @@ export default function NotaVentaDetalle() {
             <textarea value={nota} onChange={e => setNota(e.target.value)} rows={2}
               className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${df('nota', nota) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
               placeholder="Notas internas o para el cliente..." />
+          </div>
+          {/* Despacho */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={retiroEnConico}
+                onChange={e => {
+                  setRetiroEnConico(e.target.checked)
+                  if (e.target.checked) setDireccionDespacho('')
+                }}
+                className="rounded border-gray-300"
+              />
+              <span className={`text-sm font-medium ${df('retiroEnConico', retiroEnConico) ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'}`}>Retiro en Conico</span>
+            </label>
+            {!retiroEnConico && (
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  Dirección de despacho <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={direccionDespacho}
+                  onChange={e => setDireccionDespacho(e.target.value)}
+                  placeholder="Calle, número, ciudad"
+                  className={`w-full border rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('direccionDespacho', direccionDespacho) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600'}`}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
