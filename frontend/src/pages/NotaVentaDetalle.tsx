@@ -212,6 +212,9 @@ export default function NotaVentaDetalle() {
     queryFn: () => api.get('/api/empresas/').then(r => r.data),
   })
 
+  const selectedEmpresa = empresas.find(e => e.id === empresaId) ?? null
+  const empresaSinCredito = selectedEmpresa != null && (selectedEmpresa.linea_credito == null || selectedEmpresa.linea_credito <= 0)
+
   function handleClienteChange(cid: number | '') {
     setClienteId(cid)
     if (cid) {
@@ -337,6 +340,7 @@ export default function NotaVentaDetalle() {
         fecha,
         nota: nota || null,
         empresa_id: empresaId || null,
+        terminos_pago: empresaSinCredito ? 'al_contado' : null,
         retiro_en_conico: retiroEnConico,
         direccion_despacho: retiroEnConico ? null : (direccionDespacho.trim() || null),
       }

@@ -258,6 +258,7 @@ export default function CotizacionDetalle() {
   })
 
   const selectedEmpresa = empresas.find(e => e.id === empresaId) ?? null
+  const empresaSinCredito = selectedEmpresa != null && (selectedEmpresa.linea_credito == null || selectedEmpresa.linea_credito <= 0)
   const empresaPlazo = selectedEmpresa?.plazo_credito ?? 'Al contado'
   const empresaLimitDias = parseDias(selectedEmpresa?.plazo_credito)
   const terminosPagoNeedsApproval = !isAdmin
@@ -284,7 +285,8 @@ export default function CotizacionDetalle() {
           if (c.empresa_id) {
             setEmpresaId(c.empresa_id)
             const emp = empresas.find(e => e.id === c.empresa_id)
-            setTerminosPago(emp?.plazo_credito ?? 'Al contado')
+            const sinCredito = emp != null && (emp.linea_credito == null || emp.linea_credito <= 0)
+            setTerminosPago(sinCredito ? 'Al contado' : (emp?.plazo_credito ?? 'Al contado'))
           }
         }
       }
@@ -296,7 +298,8 @@ export default function CotizacionDetalle() {
       setEmpresaId(eid)
       if (eid) {
         const emp = empresas.find(e => e.id === eid)
-        setTerminosPago(emp?.plazo_credito ?? 'Al contado')
+        const sinCredito = emp != null && (emp.linea_credito == null || emp.linea_credito <= 0)
+        setTerminosPago(sinCredito ? 'Al contado' : (emp?.plazo_credito ?? 'Al contado'))
       }
     })
   }
@@ -521,7 +524,7 @@ export default function CotizacionDetalle() {
         estado,
         nota: nota || null,
         empresa_id: empresaId || null,
-        terminos_pago: terminosPago || null,
+        terminos_pago: empresaSinCredito ? 'Al contado' : (terminosPago || null),
         validez_dias: validezDias,
       }
       const lineasPayload = lineas.map((l, i) => ({
@@ -887,31 +890,48 @@ export default function CotizacionDetalle() {
           <div className="sm:col-span-2 lg:col-span-2">
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
               Términos de Pago
-              {terminosPagoNeedsApproval && (
+              {!empresaSinCredito && terminosPagoNeedsApproval && (
                 <span className="ml-2 px-1.5 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded font-medium">
                   Requiere aprobación
                 </span>
               )}
             </label>
-            <select
-              value={terminosPago}
-              onChange={e => setTerminosPago(e.target.value)}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('terminosPago', terminosPago) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
-            >
-              <option value="">— Seleccionar —</option>
-              <option value="Al contado">Al contado</option>
-              <option value="30 Días">30 Días</option>
-              <option value="60 Días">60 Días</option>
-              <option value="90 Días">90 Días</option>
-              <option value="120 Días">120 Días</option>
-            </select>
-            {adminTerminosWarning && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0">
-                  <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                </svg>
-                Plazo supera el límite de la empresa ({empresaPlazo})
-              </p>
+            {empresaSinCredito ? (
+              <>
+                <select
+                  value="Al contado"
+                  disabled
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 cursor-not-allowed"
+                >
+                  <option value="Al contado">Al contado</option>
+                </select>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  Esta empresa no tiene línea de crédito.
+                </p>
+              </>
+            ) : (
+              <>
+                <select
+                  value={terminosPago}
+                  onChange={e => setTerminosPago(e.target.value)}
+                  className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('terminosPago', terminosPago) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
+                >
+                  <option value="">— Seleccionar —</option>
+                  <option value="Al contado">Al contado</option>
+                  <option value="30 Días">30 Días</option>
+                  <option value="60 Días">60 Días</option>
+                  <option value="90 Días">90 Días</option>
+                  <option value="120 Días">120 Días</option>
+                </select>
+                {adminTerminosWarning && (
+                  <p className="mt-1 flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0">
+                      <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                    </svg>
+                    Plazo supera el límite de la empresa ({empresaPlazo})
+                  </p>
+                )}
+              </>
             )}
           </div>
           <div>
