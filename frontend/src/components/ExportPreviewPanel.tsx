@@ -17,11 +17,6 @@ const PREVIEW_CAP = 200
 export default function ExportPreviewPanel({
   lines, availableColumns, isLoading, exportBaseUrl, storageKey, filename,
 }: Props) {
-  const defaultKeys = useMemo(
-    () => availableColumns.filter(c => c.defaultVisible).map(c => c.key),
-    [availableColumns],
-  )
-
   const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem(storageKey)
@@ -32,8 +27,11 @@ export default function ExportPreviewPanel({
         if (filtered.length > 0) return filtered
       }
     } catch {}
-    return defaultKeys
+    return availableColumns.filter(c => c.defaultVisible).map(c => c.key)
   })
+
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   function toggleKey(key: string) {
     setVisibleKeys(prev => {
@@ -43,8 +41,11 @@ export default function ExportPreviewPanel({
     })
   }
 
-  const visibleCols = availableColumns.filter(c => visibleKeys.includes(c.key))
-  const displayRows = lines.slice(0, PREVIEW_CAP)
+  const visibleCols = useMemo(
+    () => availableColumns.filter(c => visibleKeys.includes(c.key)),
+    [availableColumns, visibleKeys],
+  )
+  const displayRows = useMemo(() => lines.slice(0, PREVIEW_CAP), [lines])
 
   const docCount = useMemo(() => new Set(lines.map(l => l.numero)).size, [lines])
   const totalNeto = useMemo(() => lines.reduce((s, l) => s + l.total_neto, 0), [lines])
@@ -56,20 +57,28 @@ export default function ExportPreviewPanel({
   }, [lines])
 
   async function handleExport() {
-    const colParams = visibleKeys.map(k => `columns=${encodeURIComponent(k)}`).join('&')
-    const sep = exportBaseUrl.includes('?') ? '&' : '?'
-    const url = `${exportBaseUrl}${sep}${colParams}`
-    const resp = await api.get(url, { responseType: 'blob' })
-    const blob = new Blob([resp.data], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(a.href)
+    setExportError(null)
+    setIsExporting(true)
+    try {
+      const colParams = visibleKeys.map(k => `columns=${encodeURIComponent(k)}`).join('&')
+      const sep = exportBaseUrl.includes('?') ? '&' : '?'
+      const url = `${exportBaseUrl}${sep}${colParams}`
+      const resp = await api.get(url, { responseType: 'blob' })
+      const blob = new Blob([resp.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(a.href), 100)
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Error al exportar')
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   return (
@@ -111,6 +120,8 @@ export default function ExportPreviewPanel({
         <div className="text-gray-400 text-sm py-8 text-center">Cargando...</div>
       ) : lines.length === 0 ? (
         <div className="text-gray-400 text-sm py-8 text-center">Sin líneas</div>
+      ) : visibleCols.length === 0 ? (
+        <div className="text-gray-400 text-sm py-8 text-center">Selecciona al menos una columna</div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
           <table className="text-xs w-full">
@@ -145,12 +156,17 @@ export default function ExportPreviewPanel({
             ? `Mostrando ${PREVIEW_CAP} de ${lines.length} líneas — exporta todas`
             : `${lines.length} línea${lines.length !== 1 ? 's' : ''}`}
         </span>
-        <button onClick={handleExport}
-          disabled={visibleKeys.length === 0 || lines.length === 0}
-          className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
-          <Download size={15} />
-          Exportar Excel
-        </button>
+        <div className="flex flex-col items-end gap-1">
+          {exportError && (
+            <span className="text-xs text-red-500">{exportError}</span>
+          )}
+          <button onClick={handleExport}
+            disabled={isExporting || visibleKeys.length === 0 || lines.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
+            <Download size={15} />
+            {isExporting ? 'Exportando...' : 'Exportar Excel'}
+          </button>
+        </div>
       </div>
     </div>
   )
