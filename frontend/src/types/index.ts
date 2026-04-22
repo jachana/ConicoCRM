@@ -264,6 +264,7 @@ export interface Factura {
   fecha_pago: string | null;
   monto_pagado: number | null;
   metodo_pago: string | null;
+  margen_total?: number | null;
   created_at: string;
   updated_at: string;
   cliente: { id: number; nombre: string; rut: string | null } | null;
@@ -272,6 +273,63 @@ export interface Factura {
   nv: { id: number; numero: number } | null;
   cotizacion: { id: number; numero: number } | null;
   lineas: FacturaLinea[];
+}
+
+export interface FacturaList {
+  id: number
+  numero: number
+  cotizacion_id: number | null
+  nv_id: number | null
+  cliente_id: number | null
+  vendedor_id: number | null
+  empresa_id: number | null
+  contacto: string | null
+  fecha: string
+  fecha_vencimiento: string | null
+  estado: string
+  correo: string | null
+  total_neto: number
+  total_iva: number
+  total: number
+  fecha_pago: string | null
+  monto_pagado: number | null
+  metodo_pago: string | null
+  created_at: string
+  updated_at: string
+  cliente: { id: number; nombre: string; rut: string | null } | null
+  vendedor: { id: number; name: string; email: string } | null
+  empresa: EmpresaRef | null
+  lineas: FacturaLinea[]
+  margen_total: number | null
+}
+
+export interface FlatLine {
+  numero: number
+  fecha: string
+  estado: string
+  cliente_nombre: string
+  empresa_nombre: string
+  encargado: string
+  contacto: string
+  sku: string
+  descripcion: string
+  formato: string
+  cantidad: number
+  precio_unit: number
+  total_neto: number
+  margen: number | null
+  // Facturas-only
+  fecha_vencimiento: string
+  monto_pagado: number | null
+  metodo_pago: string
+  fecha_pago: string
+}
+
+export interface ColDef {
+  key: string
+  label: string
+  defaultVisible: boolean
+  getValue: (row: FlatLine) => string | number
 }
 
 export type OrdenCompraEstado = 'borrador' | 'enviada' | 'recibida_parcial' | 'recibida_completa' | 'cancelada'
