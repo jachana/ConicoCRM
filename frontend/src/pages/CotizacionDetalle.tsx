@@ -42,8 +42,8 @@ function calcLinea(l: LineaLocal): LineaLocal {
   const cantidad = Number(l.cantidad) || 0
   const valor_neto = Number(l.valor_neto) || 0
   const descuento = Math.min(100, Math.max(0, Number(l.descuento) || 0))
-  const total_neto = Math.round(cantidad * valor_neto * (1 - descuento / 100) * 100) / 100
-  const iva = Math.round(total_neto * 0.19 * 100) / 100
+  const total_neto = Math.round(cantidad * valor_neto * (1 - descuento / 100))
+  const iva = Math.round(total_neto * 0.19)
   const total = total_neto + iva
   return { ...l, cantidad, valor_neto, descuento, total_neto, iva, total }
 }
@@ -171,12 +171,13 @@ export default function CotizacionDetalle() {
   const df = (field: string, val: any) => savedParsed !== null && savedParsed[field] !== val
   const lineaDirty = (idx: number) => {
     if (!savedParsed) return false
-    const saved = (savedParsed.lineas ?? []) as Array<{ producto_id: number | null; cantidad: number; valor_neto: number; descripcion: string; sku: string | null; formato: string | null }>
+    const saved = (savedParsed.lineas ?? []) as Array<{ producto_id: number | null; cantidad: number; valor_neto: number; descripcion: string; sku: string | null; formato: string | null; descuento: number }>
     if (idx >= saved.length) return true
     const s = saved[idx], c = lineas[idx]
     return s.producto_id !== (c.producto_id ?? null) || s.cantidad !== c.cantidad ||
       s.valor_neto !== c.valor_neto || s.descripcion !== (c.descripcion ?? '') ||
-      s.sku !== (c.sku ?? null) || s.formato !== (c.formato ?? null)
+      s.sku !== (c.sku ?? null) || s.formato !== (c.formato ?? null) ||
+      s.descuento !== (c.descuento ?? 0)
   }
 
   const { data: cotizacion } = useQuery<Cotizacion>({
@@ -914,7 +915,7 @@ export default function CotizacionDetalle() {
             )}
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Validez (días)</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Validez (días)</label>
             <input
               type="number"
               min={1}
@@ -925,8 +926,7 @@ export default function CotizacionDetalle() {
             {cotizacion?.fecha && (
               <p className="text-xs text-gray-400 mt-1">
                 Vence:{' '}
-                {new Date(new Date(cotizacion.fecha + 'T00:00:00').getTime() + validezDias * 86400000)
-                  .toLocaleDateString('es-CL')}
+                {(() => { const d = new Date(cotizacion.fecha + 'T00:00:00'); d.setDate(d.getDate() + validezDias); return d.toLocaleDateString('es-CL') })()}
               </p>
             )}
           </div>
@@ -1013,7 +1013,7 @@ export default function CotizacionDetalle() {
                     step={0.1}
                     value={linea.descuento ?? 0}
                     onChange={e => updateLinea(idx, { descuento: Number(e.target.value) })}
-                    className="w-16 text-right border border-gray-200 rounded px-1 py-0.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="w-16 text-right border border-gray-300 rounded-lg px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </td>
                 <td className="px-3 py-3 text-right text-gray-700 dark:text-gray-300 text-sm font-medium">{fmtMoney(linea.total_neto)}</td>
