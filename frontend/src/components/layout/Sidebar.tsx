@@ -24,11 +24,12 @@ interface NavItem {
   label: string
   module?: Module
   adminOnly?: boolean
+  pending?: boolean
   children?: NavChild[]
 }
 
 const NAV: NavItem[] = [
-  { to: '/',               icon: LayoutDashboard, label: 'Dashboard',         module: 'dashboard' },
+  { to: '/',               icon: LayoutDashboard, label: 'Dashboard',         module: 'dashboard',  pending: true },
   { to: '/aprobaciones',   icon: ClipboardList,   label: 'Aprobaciones',      adminOnly: true },
   { to: '/clientes',       icon: Users,           label: 'Clientes',          module: 'clientes' },
   { to: '/empresas',       icon: Building2,       label: 'Empresas',          module: 'empresas' },
@@ -47,13 +48,13 @@ const NAV: NavItem[] = [
     ],
   },
   {
-    icon: Truck, label: 'Compras',
+    icon: Truck, label: 'Compras', pending: true,
     children: [
       { to: '/ordenes-compra', icon: ShoppingCart, label: 'Órdenes de Compra' },
       { to: '/proveedores',    icon: Truck,        label: 'Proveedores' },
     ],
   },
-  { to: '/rrhh',           icon: UserCog,         label: 'RRHH',              module: 'rrhh' },
+  { to: '/rrhh',           icon: UserCog,         label: 'RRHH',              module: 'rrhh',       pending: true },
   { to: '/reportes',       icon: BarChart2,       label: 'Reportes' },
   { to: '/usuarios',       icon: Users,           label: 'Usuarios',          module: 'usuarios' },
   { to: '/configuracion',  icon: Settings,        label: 'Configuración',     adminOnly: true },
@@ -131,12 +132,21 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
       <nav className="flex-1 overflow-y-auto py-2 space-y-0.5">
         {NAV.filter(item => (!item.module || myPermissions?.[item.module]?.view !== false) && (!item.adminOnly || isAdminUser)).map((item) => {
           if (item.children) {
-            const { icon: Icon, label, children } = item
+            const { icon: Icon, label, children, pending } = item
             const isGroupActive = children.some(c => location.pathname.startsWith(c.to))
             const isOpen = collapsed ? true : !!openGroups[label]
             return (
               <div key={label}>
                 {!collapsed && (
+                  pending ? (
+                    <div
+                      className="flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm w-[calc(100%-12px)] cursor-not-allowed opacity-50"
+                    >
+                      <Icon size={18} strokeWidth={1.8} />
+                      <span className="truncate flex-1 text-left">{label}</span>
+                      <span className="text-[9px] font-semibold uppercase tracking-wide bg-gray-700 text-gray-400 rounded px-1 py-0.5 flex-shrink-0">pronto</span>
+                    </div>
+                  ) : (
                   <button
                     onClick={() => toggleGroup(label)}
                     className={`flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm transition-colors w-[calc(100%-12px)]
@@ -146,8 +156,9 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
                     <span className="truncate flex-1 text-left">{label}</span>
                     <ChevronDown size={14} className={`transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
                   </button>
+                  )
                 )}
-                {isOpen && (
+                {!pending && isOpen && (
                   <div className={!collapsed ? 'ml-3' : ''}>
                     {children.map(({ to, icon: ChildIcon, label: childLabel }) => (
                       <NavLink
@@ -176,9 +187,26 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
             )
           }
 
-          const { to, icon: Icon, label } = item as NavItem & { to: string }
+          const { to, icon: Icon, label, pending } = item as NavItem & { to: string }
           const badge = to === '/inventario' ? stockBajoCount : to === '/aprobaciones' ? aprobacionesCount : 0
           const badgeColor = to === '/aprobaciones' ? 'bg-orange-500' : 'bg-red-500'
+          if (pending) {
+            return (
+              <div
+                key={to}
+                title={collapsed ? label : undefined}
+                className="flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm cursor-not-allowed opacity-50"
+              >
+                <Icon size={18} strokeWidth={1.8} className="flex-shrink-0" />
+                {!collapsed && (
+                  <>
+                    <span className="truncate flex-1">{label}</span>
+                    <span className="text-[9px] font-semibold uppercase tracking-wide bg-gray-700 text-gray-400 rounded px-1 py-0.5 flex-shrink-0">pronto</span>
+                  </>
+                )}
+              </div>
+            )
+          }
           return (
             <NavLink
               key={to}
