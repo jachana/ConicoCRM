@@ -317,6 +317,7 @@ export default function Empresas() {
       </div>
 
       <EmpresaDetailModal
+        key={detalleEmpresa?.id}
         empresa={detalleEmpresa}
         onClose={() => setDetalleEmpresa(null)}
         onEdit={(e) => {

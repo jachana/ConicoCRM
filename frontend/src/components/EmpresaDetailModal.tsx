@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import type { EmpresaListItem, Empresa } from '../types'
 import EmpresaTabResumen from './EmpresaTabResumen'
@@ -24,6 +24,12 @@ interface Props {
 export default function EmpresaDetailModal({ empresa, onClose, onEdit }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('resumen')
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
+
   if (!empresa) return null
 
   return (
@@ -32,19 +38,22 @@ export default function EmpresaDetailModal({ empresa, onClose, onEdit }: Props) 
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="empresa-modal-title"
         className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
           <div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">{empresa.nombre}</h2>
+            <h2 id="empresa-modal-title" className="text-lg font-bold text-gray-900 dark:text-white">{empresa.nombre}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
               {[empresa.rut, empresa.sector, empresa.prioridad ? `Prioridad ${empresa.prioridad}` : null]
                 .filter(Boolean).join(' · ')}
             </p>
           </div>
-          <button onClick={onClose}
+          <button onClick={onClose} aria-label="Cerrar"
             className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors mt-0.5">
             <X size={20} />
           </button>
