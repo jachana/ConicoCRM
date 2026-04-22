@@ -94,6 +94,30 @@ interface UserMin { id: number; name: string }
 interface EmpresaMin { id: number; nombre: string }
 interface ProductoMin { id: number; nombre: string; sku: string | null }
 
+// ── Module-level helpers ───────────────────────────────────────────────────────
+
+function buildListParams(
+  estados: string[],
+  emisorId: number | null,
+  empresaId: number | null,
+  fechaDesde: string,
+  fechaHasta: string,
+  montoMin: string,
+  montoMax: string,
+  productos: { id: number }[],
+): URLSearchParams {
+  const p = new URLSearchParams()
+  estados.forEach(e => p.append('estado', e))
+  if (emisorId) p.append('vendedor_id', String(emisorId))
+  if (empresaId) p.append('empresa_id', String(empresaId))
+  if (fechaDesde) p.append('fecha_desde', fechaDesde)
+  if (fechaHasta) p.append('fecha_hasta', fechaHasta)
+  if (montoMin) p.append('monto_min', montoMin)
+  if (montoMax) p.append('monto_max', montoMax)
+  productos.forEach(p2 => p.append('producto_id', String(p2.id)))
+  return p
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function Cotizaciones() {
@@ -153,15 +177,10 @@ export default function Cotizaciones() {
   })
 
   // ── Build query params ────────────────────────────────────────────────────────
-  const params = new URLSearchParams()
-  estados.forEach(e => params.append('estado', e))
-  if (emisorId) params.set('vendedor_id', String(emisorId))
-  if (empresaId) params.set('empresa_id', String(empresaId))
-  if (fechaDesde) params.set('fecha_desde', fechaDesde)
-  if (fechaHasta) params.set('fecha_hasta', fechaHasta)
-  if (montoMin) params.set('monto_min', montoMin)
-  if (montoMax) params.set('monto_max', montoMax)
-  productos.forEach(p => params.append('producto_id', String(p.id)))
+  const params = useMemo(
+    () => buildListParams(estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos),
+    [estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos],
+  )
 
   const hasFilters = estados.length > 0 || !!emisorId || !!empresaId ||
     !!fechaDesde || !!fechaHasta || !!montoMin || !!montoMax || productos.length > 0
@@ -204,16 +223,7 @@ export default function Cotizaciones() {
     ), [cotizaciones])
 
   const exportBaseUrl = useMemo(() => {
-    const p = new URLSearchParams()
-    estados.forEach(e => p.append('estado', e))
-    if (emisorId) p.append('vendedor_id', String(emisorId))
-    if (empresaId) p.append('empresa_id', String(empresaId))
-    if (fechaDesde) p.append('fecha_desde', fechaDesde)
-    if (fechaHasta) p.append('fecha_hasta', fechaHasta)
-    if (montoMin) p.append('monto_min', montoMin)
-    if (montoMax) p.append('monto_max', montoMax)
-    productos.forEach(prod => p.append('producto_id', String(prod.id)))
-    const qs = p.toString()
+    const qs = buildListParams(estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos).toString()
     return `/api/cotizaciones/export/excel${qs ? '?' + qs : ''}`
   }, [estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos])
 
@@ -240,6 +250,11 @@ export default function Cotizaciones() {
   const montoSummary = montoMin && montoMax ? `$${Number(montoMin).toLocaleString()} – $${Number(montoMax).toLocaleString()}`
     : montoMin ? `Mín $${Number(montoMin).toLocaleString()}`
     : `Máx $${Number(montoMax).toLocaleString()}`
+
+  const exportFilename = useMemo(
+    () => `cotizaciones-${new Date().toISOString().split('T')[0]}.xlsx`,
+    [],
+  )
 
   const checkboxCls = 'flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-800 dark:text-gray-200'
 
@@ -495,7 +510,7 @@ export default function Cotizaciones() {
 
               {/* Desktop table */}
               <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
-                <table className="w-full text-sm min-w-[1000px]">
+                <table className="w-full text-sm min-w-[600px]">
                   <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
                     <tr>
                       {['Nº', 'Fecha', 'Cliente / Empresa', 'Total', 'Margen', 'Estado', 'Encargado', 'Acciones'].map(h => (
@@ -565,7 +580,7 @@ export default function Cotizaciones() {
               isLoading={isLoading}
               exportBaseUrl={exportBaseUrl}
               storageKey="cotizaciones-preview-cols"
-              filename={`cotizaciones-${new Date().toISOString().split('T')[0]}.xlsx`}
+              filename={exportFilename}
             />
           </div>
         </div>
