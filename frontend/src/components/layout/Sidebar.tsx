@@ -29,10 +29,12 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: '/',               icon: LayoutDashboard, label: 'Dashboard',         module: 'dashboard' },
-  { to: '/cotizaciones',   icon: FileText,        label: 'Cotizaciones',      module: 'cotizaciones' },
+  { to: '/aprobaciones',   icon: ClipboardList,   label: 'Aprobaciones',      adminOnly: true },
   { to: '/clientes',       icon: Users,           label: 'Clientes',          module: 'clientes' },
   { to: '/empresas',       icon: Building2,       label: 'Empresas',          module: 'empresas' },
   { to: '/catalogo',       icon: Package,         label: 'Catálogo',          module: 'catalogo' },
+  { to: '/inventario',     icon: Warehouse,       label: 'Inventario',        module: 'inventario' },
+  { to: '/cotizaciones',   icon: FileText,        label: 'Cotizaciones',      module: 'cotizaciones' },
   { to: '/notas-venta',    icon: ShoppingCart,    label: 'Notas de Venta',    module: 'nota_venta' },
   {
     icon: Banknote, label: 'Cobranza',
@@ -43,11 +45,15 @@ const NAV: NavItem[] = [
       { to: '/pagos',          icon: CreditCard,  label: 'Pagos' },
     ],
   },
-  { to: '/reportes',      icon: BarChart2,       label: 'Reportes' },
-  { to: '/inventario',     icon: Warehouse,       label: 'Inventario',        module: 'inventario' },
-  { to: '/ordenes-compra', icon: ShoppingCart,    label: 'Órdenes de Compra', module: 'ordenes_compra' },
-  { to: '/proveedores',    icon: Truck,           label: 'Proveedores',       module: 'proveedores' },
+  {
+    icon: Truck, label: 'Compras',
+    children: [
+      { to: '/ordenes-compra', icon: ShoppingCart, label: 'Órdenes de Compra' },
+      { to: '/proveedores',    icon: Truck,        label: 'Proveedores' },
+    ],
+  },
   { to: '/rrhh',           icon: UserCog,         label: 'RRHH',              module: 'rrhh' },
+  { to: '/reportes',       icon: BarChart2,       label: 'Reportes' },
   { to: '/usuarios',       icon: Users,           label: 'Usuarios',          module: 'usuarios' },
   { to: '/configuracion',  icon: Settings,        label: 'Configuración',     adminOnly: true },
 ]
@@ -58,9 +64,9 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
   const { theme, toggle: toggleTheme } = useTheme()
   const location = useLocation()
 
-  const cobranzaPaths = ['/cobranza', '/notas-credito', '/notas-debito', '/pagos']
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => ({
-    Cobranza: cobranzaPaths.some(p => location.pathname.startsWith(p)),
+    Cobranza: ['/cobranza', '/notas-credito', '/notas-debito', '/pagos'].some(p => location.pathname.startsWith(p)),
+    Compras:  ['/ordenes-compra', '/proveedores'].some(p => location.pathname.startsWith(p)),
   }))
 
   const toggleGroup = (label: string) =>
@@ -170,7 +176,8 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
           }
 
           const { to, icon: Icon, label } = item as NavItem & { to: string }
-          const badge = to === '/inventario' ? stockBajoCount : 0
+          const badge = to === '/inventario' ? stockBajoCount : to === '/aprobaciones' ? aprobacionesCount : 0
+          const badgeColor = to === '/aprobaciones' ? 'bg-orange-500' : 'bg-red-500'
           return (
             <NavLink
               key={to}
@@ -190,7 +197,7 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
                   <span className="relative flex-shrink-0">
                     <Icon size={18} strokeWidth={isActive ? 2.5 : 1.8} />
                     {badge > 0 && collapsed && (
-                      <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
+                      <span className={`absolute -top-1.5 -right-1.5 ${badgeColor} text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5`}>
                         {badge > 99 ? '99+' : badge}
                       </span>
                     )}
@@ -199,7 +206,7 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
                     <>
                       <span className="truncate flex-1">{label}</span>
                       {badge > 0 && (
-                        <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                        <span className={`${badgeColor} text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1`}>
                           {badge > 99 ? '99+' : badge}
                         </span>
                       )}
@@ -210,42 +217,6 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
             </NavLink>
           )
         })}
-        {isAdminUser && (
-          <NavLink
-            to="/aprobaciones"
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm transition-colors
-               ${isActive
-                 ? 'bg-brand-500/15 text-brand-400 font-medium'
-                 : 'hover:bg-white/8 hover:text-white text-gray-400'}`
-            }
-            title={collapsed ? 'Aprobaciones' : undefined}
-          >
-            {({ isActive }) => (
-              <>
-                <span className="relative flex-shrink-0">
-                  <ClipboardList size={18} strokeWidth={isActive ? 2.5 : 1.8} />
-                  {aprobacionesCount > 0 && collapsed && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-orange-500 text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
-                      {aprobacionesCount > 99 ? '99+' : aprobacionesCount}
-                    </span>
-                  )}
-                </span>
-                {!collapsed && (
-                  <>
-                    <span className="truncate flex-1">Aprobaciones</span>
-                    {aprobacionesCount > 0 && (
-                      <span className="bg-orange-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                        {aprobacionesCount > 99 ? '99+' : aprobacionesCount}
-                      </span>
-                    )}
-                  </>
-                )}
-              </>
-            )}
-          </NavLink>
-        )}
       </nav>
 
       {/* Footer */}
