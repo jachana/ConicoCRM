@@ -581,7 +581,7 @@ export default function Cotizaciones() {
       )}
 
       {emailToast && (
-        <div className={`fixed bottom-20 md:bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+        <div className={`fixed bottom-20 md:bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-[70] ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
           {emailToast.msg}
         </div>
       )}
@@ -621,7 +621,7 @@ export default function Cotizaciones() {
 
       {/* Discard confirmation */}
       {showDiscardConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/30">
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 w-full max-w-sm">
             <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-2">¿Descartar exportación?</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Volverás a la lista de cotizaciones.</p>
