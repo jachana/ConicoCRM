@@ -66,7 +66,7 @@ export default function ClienteSelectModal({ open, empresaId, empresaNombre, onS
       return api.post<Cliente>('/api/clientes/', payload).then(r => r.data)
     },
     onSuccess: (newCliente) => {
-      qc.invalidateQueries({ queryKey: ['clientes'] })
+      qc.invalidateQueries({ queryKey: ['clientes', { empresa_id: empresaId }] })
       toast.success('Cliente creado')
       onSelect(newCliente)
     },
