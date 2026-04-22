@@ -109,6 +109,7 @@ class CotizacionListOut(BaseModel):
     cliente: ClienteMinOut | None = None
     vendedor: VendedorMinOut | None = None
     empresa: EmpresaRef | None = None
+    lineas: list[CotizacionLineaOut] = []
     model_config = {"from_attributes": True}
 
 
