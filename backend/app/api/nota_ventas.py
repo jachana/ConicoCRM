@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.auth import get_current_user
 from app.api.deps import require_permission
+from app.api.shared import enforce_al_contado
 from app.database import get_db
 from app.models.cotizacion import Cotizacion
 from app.models.empresa import Empresa
@@ -127,15 +128,6 @@ def _check_credit_limit(db: Session, empresa_id: int | None, total: Decimal, cur
             status_code=402,
             detail=f"Límite de crédito excedido. Disponible: {credito_disponible}, solicitado: {total}",
         )
-
-
-def _enforce_al_contado(empresa_id: int | None, terminos_pago: str | None, db: Session) -> str | None:
-    if not empresa_id:
-        return terminos_pago
-    empresa = db.get(Empresa, empresa_id)
-    if empresa and (empresa.linea_credito is None or empresa.linea_credito <= 0):
-        return "al_contado"
-    return terminos_pago
 
 
 def _check_lineas_invalidas(lineas: list[NotaVentaLinea]) -> None:
@@ -302,7 +294,7 @@ def crear_nv(
     )
     db.add(nv)
     db.flush()
-    nv.terminos_pago = _enforce_al_contado(body.empresa_id, body.terminos_pago, db)
+    nv.terminos_pago = enforce_al_contado(body.empresa_id, body.terminos_pago, db)
     nv.lineas = _calcular_lineas(db, body.lineas)
     _check_lineas_invalidas(nv.lineas)
     for linea in nv.lineas:
@@ -344,6 +336,7 @@ def crear_nv_desde_cotizacion(
     )
     db.add(nv)
     db.flush()
+    nv.terminos_pago = enforce_al_contado(nv.empresa_id, nv.terminos_pago, db)
 
     lineas = []
     for cl in cot.lineas:
@@ -401,7 +394,7 @@ def actualizar_nv(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin/subadmin puede reasignar el encargado")
     for field, value in updates.items():
         setattr(nv, field, value)
-    nv.terminos_pago = _enforce_al_contado(nv.empresa_id, nv.terminos_pago, db)
+    nv.terminos_pago = enforce_al_contado(nv.empresa_id, nv.terminos_pago, db)
     db.commit()
     return _load_nv(db, nv_id)
 

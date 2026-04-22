@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.auth import get_current_user
 from app.api.deps import require_permission
+from app.api.shared import enforce_al_contado
 from app.database import get_db
 from app.models.aprobacion_margen import AprobacionMargen
 from app.models.cotizacion import Cotizacion, CotizacionLinea
@@ -146,15 +147,6 @@ def _calc_terminos_estado(
     default_dias = _parse_dias(empresa.plazo_credito if empresa else None)
     nuevo_dias = _parse_dias(terminos_pago)
     return "pendiente" if nuevo_dias > default_dias else "aprobado"
-
-
-def _enforce_al_contado(empresa_id: int | None, terminos_pago: str | None, db: Session) -> str | None:
-    if not empresa_id:
-        return terminos_pago
-    empresa = db.get(Empresa, empresa_id)
-    if empresa and (empresa.linea_credito is None or empresa.linea_credito <= 0):
-        return "al_contado"
-    return terminos_pago
 
 
 def _check_lineas_invalidas(lineas: list[CotizacionLinea]) -> None:
@@ -344,7 +336,7 @@ def crear_cotizacion(
     current_user, db = perms
     numero = _asignar_numero(db)
     vendedor_id = body.vendedor_id if body.vendedor_id and current_user.role in ("admin", "subadmin") else current_user.id
-    terminos = _enforce_al_contado(body.empresa_id, body.terminos_pago, db)
+    terminos = enforce_al_contado(body.empresa_id, body.terminos_pago, db)
     cotizacion = Cotizacion(
         numero=numero,
         cliente_id=body.cliente_id,
@@ -432,7 +424,7 @@ def actualizar_cotizacion(
 
     for field, value in update_data.items():
         setattr(cot, field, value)
-    cot.terminos_pago = _enforce_al_contado(cot.empresa_id, cot.terminos_pago, db)
+    cot.terminos_pago = enforce_al_contado(cot.empresa_id, cot.terminos_pago, db)
     db.commit()
     db.refresh(cot)
     return db.query(Cotizacion).options(
