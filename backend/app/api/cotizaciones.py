@@ -65,7 +65,7 @@ def _get_config_dict(db: Session) -> dict:
 def _calcular_lineas(db: Session, lineas_data: list[CotizacionLineaCreate]) -> list[CotizacionLinea]:
     lineas = []
     for data in lineas_data:
-        descuento = data.descuento if hasattr(data, 'descuento') else Decimal("0")
+        descuento = data.descuento
         total_neto = data.cantidad * data.valor_neto * (1 - descuento / 100)
         iva = total_neto * Decimal("0.19")
         total = total_neto + iva
@@ -73,8 +73,9 @@ def _calcular_lineas(db: Session, lineas_data: list[CotizacionLineaCreate]) -> l
         margen = None
         if data.producto_id:
             producto = db.get(Producto, data.producto_id)
-            if producto and data.valor_neto > 0:
-                margen = (data.valor_neto - producto.precio_costo) / data.valor_neto
+            if producto:
+                precio_efectivo = data.valor_neto * (1 - descuento / 100)
+                margen = (precio_efectivo - producto.precio_costo) / precio_efectivo if precio_efectivo > 0 else Decimal("0")
 
         lineas.append(CotizacionLinea(
             orden=data.orden,

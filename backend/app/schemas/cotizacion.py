@@ -17,7 +17,6 @@ class CotizacionLineaCreate(BaseModel):
 
 class CotizacionLineaOut(CotizacionLineaCreate):
     id: int
-    descuento: Decimal = Decimal("0")
     total_neto: Decimal
     iva: Decimal
     total: Decimal
