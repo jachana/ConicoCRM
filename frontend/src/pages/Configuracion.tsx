@@ -40,12 +40,20 @@ export default function Configuracion() {
   const addBanco = useMutation({
     mutationFn: (nombre: string) => api.post('/api/bancos-receptores', { nombre }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['bancos-receptores'] }); setNuevoBanco('') },
+    onError: () => {
+      setToast({ msg: 'Error al agregar banco', ok: false })
+      setTimeout(() => setToast(null), 3000)
+    },
   })
 
   const toggleBanco = useMutation({
     mutationFn: ({ id, activo }: { id: number; activo: boolean }) =>
       api.patch(`/api/bancos-receptores/${id}`, { activo }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['bancos-receptores'] }),
+    onError: () => {
+      setToast({ msg: 'Error al actualizar banco', ok: false })
+      setTimeout(() => setToast(null), 3000)
+    },
   })
 
   useEffect(() => {
@@ -144,7 +152,7 @@ export default function Configuracion() {
         </button>
       </div>
 
-      <section className="mt-8 border-t pt-6">
+      <section className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
           Bancos de recepción de pagos
         </h2>
@@ -171,7 +179,7 @@ export default function Configuracion() {
             onChange={e => setNuevoBanco(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && nuevoBanco.trim() && addBanco.mutate(nuevoBanco.trim())}
             placeholder="Nombre del banco"
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={() => nuevoBanco.trim() && addBanco.mutate(nuevoBanco.trim())}

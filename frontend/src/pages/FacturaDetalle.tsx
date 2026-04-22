@@ -472,12 +472,16 @@ export default function FacturaDetalle() {
               <select
                 value={bancoReceptorId ?? ''}
                 onChange={e => setBancoReceptorId(e.target.value ? Number(e.target.value) : null)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="">Sin especificar</option>
-                {bancos.filter(b => b.activo).map(b => (
-                  <option key={b.id} value={b.id}>{b.nombre}</option>
-                ))}
+                {bancos
+                  .filter(b => b.activo || b.id === bancoReceptorId)
+                  .map(b => (
+                    <option key={b.id} value={b.id}>
+                      {b.nombre}{!b.activo ? ' (inactivo)' : ''}
+                    </option>
+                  ))}
               </select>
             </div>
             <div>
