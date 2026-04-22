@@ -3,12 +3,13 @@ import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, RotateCcw, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, RotateCcw, ExternalLink, UserPlus } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta } from '../types'
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 import UnsavedChangesModal from '../components/UnsavedChangesModal'
+import ClienteSelectModal from '../components/ClienteSelectModal'
 
 type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string; _stock?: number | null; _costo?: number | null; descuento: number }
 
@@ -141,6 +142,7 @@ export default function CotizacionDetalle() {
   const [revokeDialog, setRevokeDialog] = useState<{ pendingChange: () => void } | null>(null)
 
   const [unsavedModal, setUnsavedModal] = useState(false)
+  const [clienteModalOpen, setClienteModalOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<'pdf' | 'email' | null>(null)
   const [modalSaving, setModalSaving] = useState(false)
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
@@ -304,6 +306,19 @@ export default function CotizacionDetalle() {
         setTerminosPago('')
       }
     })
+  }
+
+  useEffect(() => {
+    if (empresaId && !clienteId) {
+      setClienteModalOpen(true)
+    }
+  }, [empresaId])
+
+  function handleClienteSelect(cliente: Cliente) {
+    setClienteId(cliente.id)
+    setContacto(cliente.nombre)
+    setCorreo(cliente.email ?? correo)
+    setClienteModalOpen(false)
   }
 
   const selectedCliente = clientes.find(c => c.id === clienteId) ?? null
@@ -828,15 +843,27 @@ export default function CotizacionDetalle() {
           </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Empresa</label>
-                <select
-                  value={empresaId}
-                  onChange={e => handleEmpresaChange(e.target.value ? Number(e.target.value) : '')}
-                  disabled={!!clienteId}
-                  className={`w-full px-3 py-1.5 text-sm border rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${df('empresaId', empresaId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600'} ${clienteId ? 'bg-gray-50 dark:bg-gray-800/50 cursor-default' : 'bg-white dark:bg-gray-800'}`}
-                >
-                  <option value="">— Sin empresa —</option>
-                  {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-                </select>
+                <div className="flex gap-1.5">
+                  <select
+                    value={empresaId}
+                    onChange={e => handleEmpresaChange(e.target.value ? Number(e.target.value) : '')}
+                    disabled={!!clienteId}
+                    className={`flex-1 px-3 py-1.5 text-sm border rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${df('empresaId', empresaId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600'} ${clienteId ? 'bg-gray-50 dark:bg-gray-800/50 cursor-default' : 'bg-white dark:bg-gray-800'}`}
+                  >
+                    <option value="">— Sin empresa —</option>
+                    {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                  </select>
+                  {empresaId && (
+                    <button
+                      type="button"
+                      onClick={() => setClienteModalOpen(true)}
+                      title="Seleccionar cliente de esta empresa"
+                      className="flex-shrink-0 px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-400 dark:hover:border-blue-500 bg-white dark:bg-gray-800 transition-colors"
+                    >
+                      <UserPlus size={15} />
+                    </button>
+                  )}
+                </div>
               </div>
           {selectedCliente && (
             <div className="sm:col-span-2 lg:col-span-3">
@@ -1150,6 +1177,14 @@ export default function CotizacionDetalle() {
           onCancel={() => setCreditModal(null)}
         />
       )}
+
+      <ClienteSelectModal
+        open={clienteModalOpen}
+        empresaId={typeof empresaId === 'number' ? empresaId : 0}
+        empresaNombre={empresas.find(e => e.id === empresaId)?.nombre ?? ''}
+        onSelect={handleClienteSelect}
+        onClose={() => setClienteModalOpen(false)}
+      />
 
       {solicitudMargenModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
