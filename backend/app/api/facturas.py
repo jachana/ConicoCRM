@@ -220,6 +220,7 @@ def listar_facturas(
         joinedload(Factura.cliente),
         joinedload(Factura.vendedor),
         joinedload(Factura.empresa),
+        joinedload(Factura.lineas),
     )
     if estado:
         q = q.filter(Factura.estado.in_(estado))

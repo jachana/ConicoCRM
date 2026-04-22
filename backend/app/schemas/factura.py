@@ -137,4 +137,6 @@ class FacturaListOut(BaseModel):
     cliente: ClienteMinOut | None = None
     vendedor: VendedorMinOut | None = None
     empresa: EmpresaRef | None = None
+    lineas: list[FacturaLineaOut] = []
+    margen_total: Decimal | None = None
     model_config = {"from_attributes": True}

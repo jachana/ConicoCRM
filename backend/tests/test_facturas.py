@@ -331,6 +331,23 @@ def test_excel_export(client, admin_token):
     assert "spreadsheetml" in r.headers["content-type"]
 
 
+def test_lista_includes_lineas_and_margen_total(client, admin_token):
+    prod = _create_producto(client, admin_token)
+    cli_id = _create_cliente(client, admin_token)
+    fac = _create_factura(client, admin_token, cli_id, lineas=[
+        {"orden": 0, "producto_id": prod["id"], "descripcion": prod["nombre"],
+         "cantidad": 1, "valor_neto": 500}
+    ])
+    r = client.get("/api/facturas/", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    found = next(f for f in r.json() if f["id"] == fac["id"])
+    assert "lineas" in found
+    assert len(found["lineas"]) == 1
+    assert found["lineas"][0]["descripcion"] == prod["nombre"]
+    assert "margen_total" in found
+    assert found["margen_total"] is not None
+
+
 def test_import_xml_bulk_empresa_not_found_returns_empresa_data(client, admin_token):
     xml = b"""<?xml version="1.0" encoding="ISO-8859-1"?>
 <DTE xmlns="http://www.sii.cl/SiiDte" version="1.0">
