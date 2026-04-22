@@ -34,7 +34,7 @@ const BASE_COLUMNS: ColDef[] = [
   { key: 'margen',         label: 'Margen %',      defaultVisible: true,  getValue: (r: FlatLine) => fmtPct(r.margen) },
 ]
 
-export const COTIZACION_COLUMN_DEFS: ColDef[] = BASE_COLUMNS
+export const COTIZACION_COLUMN_DEFS: ColDef[] = [...BASE_COLUMNS]
 
 export const FACTURA_COLUMN_DEFS: ColDef[] = [
   ...BASE_COLUMNS,
