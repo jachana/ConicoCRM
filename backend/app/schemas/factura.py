@@ -32,6 +32,7 @@ class FacturaCreate(BaseModel):
     nota: str | None = None
     correo: str | None = None
     empresa_id: int | None = None
+    banco_receptor_id: int | None = None
     lineas: list[FacturaLineaCreate] = []
 
 
@@ -44,6 +45,7 @@ class FacturaUpdate(BaseModel):
     nota: str | None = None
     correo: str | None = None
     empresa_id: int | None = None
+    banco_receptor_id: int | None = None
 
 
 class FacturaEstadoCambio(BaseModel):
@@ -89,6 +91,7 @@ class FacturaOut(BaseModel):
     cliente_id: int | None = None
     vendedor_id: int | None = None
     empresa_id: int | None = None
+    banco_receptor_id: int | None = None
     contacto: str | None = None
     fecha: date
     fecha_vencimiento: date | None = None
@@ -121,6 +124,7 @@ class FacturaListOut(BaseModel):
     cliente_id: int | None = None
     vendedor_id: int | None = None
     empresa_id: int | None = None
+    banco_receptor_id: int | None = None
     contacto: str | None = None
     fecha: date
     fecha_vencimiento: date | None = None

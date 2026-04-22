@@ -326,6 +326,7 @@ def crear_factura(
         nota=body.nota,
         correo=body.correo,
         empresa_id=body.empresa_id,
+        banco_receptor_id=body.banco_receptor_id,
     )
     db.add(factura)
     db.flush()

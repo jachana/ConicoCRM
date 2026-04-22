@@ -20,6 +20,9 @@ class Factura(Base):
     empresa_id: Mapped[int | None] = mapped_column(
         ForeignKey("empresas.id", ondelete="SET NULL"), nullable=True
     )
+    banco_receptor_id: Mapped[int | None] = mapped_column(
+        ForeignKey("banco_receptores.id", ondelete="SET NULL"), nullable=True
+    )
     vendedor_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
@@ -53,6 +56,7 @@ class Factura(Base):
 
     cliente: Mapped["Cliente | None"] = relationship("Cliente")
     empresa: Mapped["Empresa | None"] = relationship("Empresa")
+    banco_receptor: Mapped["BancoReceptor | None"] = relationship("BancoReceptor")
     vendedor: Mapped["User | None"] = relationship("User")
     cotizacion: Mapped["Cotizacion | None"] = relationship("Cotizacion")
     nv: Mapped["NotaVenta | None"] = relationship("NotaVenta", back_populates="factura")

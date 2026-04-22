@@ -23,6 +23,7 @@ from app.api import cobranza
 from app.api import dte
 from app.api import reportes
 from app.api import tags
+from app.api import bancos_receptores
 
 app = FastAPI(title="Conico PMS")
 
@@ -57,3 +58,4 @@ app.include_router(cobranza.router, prefix="/api/cobranza", tags=["cobranza"])
 app.include_router(dte.router, prefix="/api/dte", tags=["dte"])
 app.include_router(reportes.router, prefix="/api/reportes", tags=["reportes"])
 app.include_router(tags.router, prefix="/api/tags", tags=["tags"])
+app.include_router(bancos_receptores.router, prefix="/api/bancos-receptores", tags=["config"])
