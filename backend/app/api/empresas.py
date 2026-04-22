@@ -1,17 +1,18 @@
 import csv
+import html as _html
 import io as _io
-from io import BytesIO
 
 import openpyxl
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy import func, select as sa_select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_permission
 from app.models.cliente import Cliente as ClienteModel
 from app.models.empresa import Empresa
-from app.models.factura import Factura
+from app.models.factura import Factura, FacturaLinea
 from app.models.user import User
 from app.schemas.empresa import (
     EmpresaCreate, EmpresaDeudaOut, EmpresaCreditoOut, EmpresaOut, EmpresaUpdate,
@@ -21,8 +22,7 @@ from app.schemas.empresa import (
 
 
 def _export_xlsx(headers: list[str], rows: list[list]) -> "StreamingResponse":
-    import openpyxl as _openpyxl
-    wb = _openpyxl.Workbook()
+    wb = openpyxl.Workbook()
     ws = wb.active
     ws.append(headers)
     for row in rows:
@@ -42,8 +42,9 @@ def _export_csv(headers: list[str], rows: list[list]) -> "StreamingResponse":
     writer = csv.writer(output)
     writer.writerow(headers)
     writer.writerows(rows)
+    buf = _io.BytesIO(output.getvalue().encode("utf-8-sig"))
     return StreamingResponse(
-        iter([output.getvalue()]),
+        buf,
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": "attachment; filename=export.csv"},
     )
@@ -52,7 +53,7 @@ def _export_csv(headers: list[str], rows: list[list]) -> "StreamingResponse":
 def _export_pdf(title: str, headers: list[str], rows: list[list]) -> "StreamingResponse":
     from weasyprint import HTML
     rows_html = "".join(
-        "<tr>" + "".join(f"<td>{c}</td>" for c in row) + "</tr>"
+        "<tr>" + "".join(f"<td>{_html.escape(str(c))}</td>" for c in row) + "</tr>"
         for row in rows
     )
     html_str = f"""<html><head><style>
@@ -63,7 +64,7 @@ def _export_pdf(title: str, headers: list[str], rows: list[list]) -> "StreamingR
       td{{padding:3px 8px;border-bottom:1px solid #e2e8f0;}}
       tr:nth-child(even) td{{background:#f8fafc;}}
     </style></head><body>
-      <h1>{title}</h1>
+      <h1>{_html.escape(title)}</h1>
       <table><tr>{"".join(f"<th>{h}</th>" for h in headers)}</tr>{rows_html}</table>
     </body></html>"""
     buf = _io.BytesIO()
@@ -95,7 +96,7 @@ def exportar_excel(
             e.forma_pago or "", e.prioridad or "", e.sector or "",
             e.email or "", e.ubicacion or "",
         ])
-    buf = BytesIO()
+    buf = _io.BytesIO()
     wb.save(buf)
     buf.seek(0)
     return StreamingResponse(
@@ -112,9 +113,6 @@ def listar_empresas(
     producto_ids: list[int] = Query(default=[]),
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
-    from sqlalchemy import func, select as sa_select
-    from app.models.factura import FacturaLinea
-
     _, db = perms
 
     ultima_compra_subq = (
@@ -153,8 +151,9 @@ def listar_empresas(
     rows = query.order_by(Empresa.nombre).all()
     result = []
     for empresa, ultima_compra in rows:
-        item = EmpresaListItem.model_validate(empresa)
-        item.ultima_compra = ultima_compra
+        item = EmpresaListItem.model_validate(
+            {**empresa.__dict__, "ultima_compra": ultima_compra}
+        )
         result.append(item)
     return result
 
