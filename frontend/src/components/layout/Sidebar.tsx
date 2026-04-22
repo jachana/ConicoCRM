@@ -1,9 +1,9 @@
-import React from 'react'
-import { NavLink } from 'react-router-dom'
+import React, { useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Users, Package, ShoppingCart,
   Warehouse, Truck, UserCog, Building2, CreditCard,
-  ChevronLeft, ChevronRight, LogOut, Sun, Moon, X, ClipboardList, Settings, Banknote, BarChart2,
+  ChevronLeft, ChevronRight, ChevronDown, LogOut, Sun, Moon, X, ClipboardList, Settings, Banknote, BarChart2,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth'
 import { useTheme } from './ThemeProvider'
@@ -17,17 +17,32 @@ interface SidebarProps {
   onClose?: () => void
 }
 
-const NAV: { to: string; icon: React.ElementType; label: string; module?: Module; adminOnly?: boolean }[] = [
+interface NavChild { to: string; icon: React.ElementType; label: string }
+interface NavItem {
+  to?: string
+  icon: React.ElementType
+  label: string
+  module?: Module
+  adminOnly?: boolean
+  children?: NavChild[]
+}
+
+const NAV: NavItem[] = [
   { to: '/',               icon: LayoutDashboard, label: 'Dashboard',         module: 'dashboard' },
   { to: '/cotizaciones',   icon: FileText,        label: 'Cotizaciones',      module: 'cotizaciones' },
   { to: '/clientes',       icon: Users,           label: 'Clientes',          module: 'clientes' },
   { to: '/empresas',       icon: Building2,       label: 'Empresas',          module: 'empresas' },
   { to: '/catalogo',       icon: Package,         label: 'Catálogo',          module: 'catalogo' },
   { to: '/notas-venta',    icon: ShoppingCart,    label: 'Notas de Venta',    module: 'nota_venta' },
-  { to: '/notas-credito',  icon: FileText,        label: 'Notas de Crédito' },
-  { to: '/notas-debito',   icon: FileText,        label: 'Notas de Débito' },
-  { to: '/pagos',          icon: CreditCard,      label: 'Pagos' },
-  { to: '/cobranza',      icon: Banknote,        label: 'Cobranza' },
+  {
+    icon: Banknote, label: 'Cobranza',
+    children: [
+      { to: '/cobranza',       icon: Banknote,    label: 'Cobranza' },
+      { to: '/notas-credito',  icon: FileText,    label: 'Notas de Crédito' },
+      { to: '/notas-debito',   icon: FileText,    label: 'Notas de Débito' },
+      { to: '/pagos',          icon: CreditCard,  label: 'Pagos' },
+    ],
+  },
   { to: '/reportes',      icon: BarChart2,       label: 'Reportes' },
   { to: '/inventario',     icon: Warehouse,       label: 'Inventario',        module: 'inventario' },
   { to: '/ordenes-compra', icon: ShoppingCart,    label: 'Órdenes de Compra', module: 'ordenes_compra' },
@@ -41,6 +56,15 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
   const logout = useAuthStore(s => s.logout)
   const user = useAuthStore(s => s.user)
   const { theme, toggle: toggleTheme } = useTheme()
+  const location = useLocation()
+
+  const cobranzaPaths = ['/cobranza', '/notas-credito', '/notas-debito', '/pagos']
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => ({
+    Cobranza: cobranzaPaths.some(p => location.pathname.startsWith(p)),
+  }))
+
+  const toggleGroup = (label: string) =>
+    setOpenGroups(prev => ({ ...prev, [label]: !prev[label] }))
 
   const { data: stockBajo = [] } = useQuery<{ id: number }[]>({
     queryKey: ['stock-bajo'],
@@ -98,7 +122,54 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
 
       {/* Nav links */}
       <nav className="flex-1 overflow-y-auto py-2 space-y-0.5">
-        {NAV.filter(item => (!item.module || myPermissions?.[item.module]?.view !== false) && (!item.adminOnly || isAdminUser)).map(({ to, icon: Icon, label }) => {
+        {NAV.filter(item => (!item.module || myPermissions?.[item.module]?.view !== false) && (!item.adminOnly || isAdminUser)).map((item) => {
+          if (item.children) {
+            const { icon: Icon, label, children } = item
+            const isGroupActive = children.some(c => location.pathname.startsWith(c.to))
+            const isOpen = collapsed ? true : !!openGroups[label]
+            return (
+              <div key={label}>
+                {!collapsed && (
+                  <button
+                    onClick={() => toggleGroup(label)}
+                    className={`flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm transition-colors w-[calc(100%-12px)]
+                      ${isGroupActive ? 'text-brand-400 font-medium' : 'text-gray-400 hover:bg-white/8 hover:text-white'}`}
+                  >
+                    <Icon size={18} strokeWidth={isGroupActive ? 2.5 : 1.8} />
+                    <span className="truncate flex-1 text-left">{label}</span>
+                    <ChevronDown size={14} className={`transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                )}
+                {isOpen && (
+                  <div className={!collapsed ? 'ml-3' : ''}>
+                    {children.map(({ to, icon: ChildIcon, label: childLabel }) => (
+                      <NavLink
+                        key={to}
+                        to={to}
+                        onClick={onClose}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3 py-2 mx-1.5 rounded-lg text-sm transition-colors
+                           ${isActive
+                             ? 'bg-brand-500/15 text-brand-400 font-medium'
+                             : 'hover:bg-white/8 hover:text-white text-gray-400'}`
+                        }
+                        title={collapsed ? childLabel : undefined}
+                      >
+                        {({ isActive }) => (
+                          <>
+                            <ChildIcon size={16} strokeWidth={isActive ? 2.5 : 1.8} className="flex-shrink-0" />
+                            {!collapsed && <span className="truncate flex-1">{childLabel}</span>}
+                          </>
+                        )}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          }
+
+          const { to, icon: Icon, label } = item as NavItem & { to: string }
           const badge = to === '/inventario' ? stockBajoCount : 0
           return (
             <NavLink
