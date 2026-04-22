@@ -560,3 +560,36 @@ export interface ReportesDte {
   por_tipo: { tipo: string; label: string; count: number; aceptadas: number }[]
   emisiones: { id: number; tipo: string; folio: number | null; estado: string; monto_total: number; created_at: string | null; detalle_rechazo: string | null }[]
 }
+
+export interface EmpresaListItem extends Empresa {
+  ultima_compra: string | null
+}
+
+export interface EmpresaFacturaItem {
+  id: number
+  numero: number
+  fecha: string
+  estado: string
+  contacto: string | null
+  total: number
+  monto_pagado: number
+  pendiente: number
+}
+
+export interface EmpresaProductoLine {
+  fecha: string
+  factura_id: number
+  factura_numero: number
+  sku: string | null
+  descripcion: string
+  cantidad: number
+  precio_unit: number
+  total_neto: number
+}
+
+export interface GenericColDef<T = Record<string, unknown>> {
+  key: string
+  label: string
+  defaultVisible: boolean
+  getValue: (row: T) => string | number
+}
