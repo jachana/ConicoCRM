@@ -192,7 +192,7 @@ def exportar_excel(
     fecha_hasta: date | None = Query(None),
     monto_min: Decimal | None = Query(None),
     monto_max: Decimal | None = Query(None),
-    producto_id: int | None = Query(None),
+    producto_id: list[int] | None = Query(None),
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
     _, db = perms
@@ -223,7 +223,7 @@ def exportar_excel(
         q = q.filter(Cotizacion.total <= monto_max)
     if producto_id:
         q = q.join(CotizacionLinea, CotizacionLinea.cotizacion_id == Cotizacion.id).filter(
-            CotizacionLinea.producto_id == producto_id
+            CotizacionLinea.producto_id.in_(producto_id)
         ).distinct()
     cotizaciones = q.order_by(Cotizacion.numero.desc()).all()
 
@@ -293,7 +293,7 @@ def listar_cotizaciones(
     fecha_hasta: date | None = Query(None),
     monto_min: Decimal | None = Query(None),
     monto_max: Decimal | None = Query(None),
-    producto_id: int | None = Query(None),
+    producto_id: list[int] | None = Query(None),
     terminos_pago_estado: str | None = Query(None),
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
@@ -322,7 +322,7 @@ def listar_cotizaciones(
         q = q.filter(Cotizacion.total <= monto_max)
     if producto_id:
         q = q.join(CotizacionLinea, CotizacionLinea.cotizacion_id == Cotizacion.id).filter(
-            CotizacionLinea.producto_id == producto_id
+            CotizacionLinea.producto_id.in_(producto_id)
         ).distinct()
     if terminos_pago_estado:
         q = q.filter(Cotizacion.terminos_pago_estado == terminos_pago_estado)

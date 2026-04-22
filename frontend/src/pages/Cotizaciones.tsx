@@ -1,10 +1,12 @@
 import { openPdf } from '../lib/pdf'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Plus, FileText, Mail, Trash2, Eye, Download, Filter, X } from 'lucide-react'
+import { Plus, FileText, Mail, Trash2, Eye, Download, ChevronDown, X } from 'lucide-react'
 import { api } from '../lib/api'
 import type { Cotizacion } from '../types'
+
+// ── Constants ──────────────────────────────────────────────────────────────────
 
 const ESTADO_LABELS: Record<string, string> = {
   no_definido: 'Sin definir',
@@ -22,65 +24,113 @@ const ESTADO_COLORS: Record<string, string> = {
   rechazada: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
 function fmtMoney(n: number) {
   return `$ ${Math.round(n).toLocaleString('es-CL')}`
+}
+
+function fmtDate(iso: string) {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
 function MargenBadge({ value }: { value: number | null | undefined }) {
   if (value == null) return <span className="text-gray-400 text-xs">—</span>
   const pct = Math.round(value * 1000) / 10
-  const color = pct < 15
-    ? 'text-red-600 dark:text-red-400'
-    : pct < 25
-    ? 'text-orange-500 dark:text-orange-400'
+  const color = pct < 15 ? 'text-red-600 dark:text-red-400'
+    : pct < 25 ? 'text-orange-500 dark:text-orange-400'
     : 'text-green-600 dark:text-green-400'
   return <span className={`font-medium text-sm font-num ${color}`}>{pct.toFixed(1)}%</span>
 }
+
+// ── Filter Pill ────────────────────────────────────────────────────────────────
+
+interface PillProps {
+  label: string
+  active: boolean
+  summary?: string
+  isOpen: boolean
+  onToggle: () => void
+  onClear: () => void
+  children: React.ReactNode
+  wide?: boolean
+}
+
+function FilterPill({ label, active, summary, isOpen, onToggle, onClear, children, wide }: PillProps) {
+  return (
+    <div className="relative flex-shrink-0">
+      <div className={`flex items-center rounded-full border text-sm transition-colors
+        ${active
+          ? 'border-brand-500 bg-brand-500/10 text-brand-700 dark:text-brand-300'
+          : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500'
+        }`}
+      >
+        <button onClick={onToggle} className="flex items-center gap-1.5 pl-3 pr-1.5 py-1.5">
+          <span className="whitespace-nowrap">{active && summary ? summary : label}</span>
+          <ChevronDown size={13} className={`transition-transform ${isOpen ? 'rotate-180' : ''} text-gray-400`} />
+        </button>
+        {active && (
+          <button onClick={(e) => { e.stopPropagation(); onClear() }}
+            className="pr-2 pl-0.5 py-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+            <X size={13} />
+          </button>
+        )}
+      </div>
+      {isOpen && (
+        <div className={`absolute top-full left-0 mt-1.5 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-2 ${wide ? 'w-80' : 'min-w-[200px]'}`}>
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Types ──────────────────────────────────────────────────────────────────────
 
 interface UserMin { id: number; name: string }
 interface EmpresaMin { id: number; nombre: string }
 interface ProductoMin { id: number; nombre: string; sku: string | null }
 
+// ── Main component ─────────────────────────────────────────────────────────────
+
 export default function Cotizaciones() {
   const navigate = useNavigate()
   const qc = useQueryClient()
 
-  // ── Filter state ──────────────────────────────────────────────────────────
+  // ── Filter state ─────────────────────────────────────────────────────────────
   const [estados, setEstados] = useState<string[]>([])
-  const [estadoOpen, setEstadoOpen] = useState(false)
-  const estadoRef = useRef<HTMLDivElement>(null)
-
-  const [fechaDesde, setFechaDesde] = useState('')
-  const [fechaHasta, setFechaHasta] = useState('')
   const [emisorId, setEmisorId] = useState<number | null>(null)
   const [empresaId, setEmpresaId] = useState<number | null>(null)
+  const [fechaDesde, setFechaDesde] = useState('')
+  const [fechaHasta, setFechaHasta] = useState('')
   const [montoMin, setMontoMin] = useState('')
   const [montoMax, setMontoMax] = useState('')
-
+  const [productos, setProductos] = useState<ProductoMin[]>([])   // OR list
   const [productoSearch, setProductoSearch] = useState('')
-  const [productoId, setProductoId] = useState<number | null>(null)
-  const [productoNombre, setProductoNombre] = useState('')
-  const [productoOpen, setProductoOpen] = useState(false)
-  const productoRef = useRef<HTMLDivElement>(null)
 
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  // ── Popover state ─────────────────────────────────────────────────────────────
+  const [openPill, setOpenPill] = useState<string | null>(null)
+  const filterBarRef = useRef<HTMLDivElement>(null)
 
-  // ── UI state ──────────────────────────────────────────────────────────────
+  // ── UI state ──────────────────────────────────────────────────────────────────
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState('')
   const [emailToast, setEmailToast] = useState<{ msg: string; ok: boolean } | null>(null)
 
-  // ── Outside click handlers ─────────────────────────────────────────────
+  // Close popovers on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (estadoRef.current && !estadoRef.current.contains(e.target as Node)) setEstadoOpen(false)
-      if (productoRef.current && !productoRef.current.contains(e.target as Node)) setProductoOpen(false)
+      if (filterBarRef.current && !filterBarRef.current.contains(e.target as Node))
+        setOpenPill(null)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  // ── Reference data ────────────────────────────────────────────────────────
+  const togglePill = useCallback((name: string) =>
+    setOpenPill(prev => prev === name ? null : name), [])
+
+  // ── Reference data ────────────────────────────────────────────────────────────
   const { data: users = [] } = useQuery<UserMin[]>({
     queryKey: ['users-list'],
     queryFn: () => api.get('/api/users').then(r => r.data),
@@ -94,37 +144,36 @@ export default function Cotizaciones() {
   const { data: productoResults = [] } = useQuery<ProductoMin[]>({
     queryKey: ['productos-search', productoSearch],
     queryFn: () => api.get(`/api/productos/?q=${encodeURIComponent(productoSearch)}`).then(r => r.data),
-    enabled: productoSearch.length >= 2 && !productoId,
+    enabled: productoSearch.length >= 1,
     staleTime: 30_000,
   })
 
-  // ── Build query params ────────────────────────────────────────────────────
+  // ── Build query params ────────────────────────────────────────────────────────
   const params = new URLSearchParams()
   estados.forEach(e => params.append('estado', e))
-  if (fechaDesde) params.set('fecha_desde', fechaDesde)
-  if (fechaHasta) params.set('fecha_hasta', fechaHasta)
   if (emisorId) params.set('vendedor_id', String(emisorId))
   if (empresaId) params.set('empresa_id', String(empresaId))
+  if (fechaDesde) params.set('fecha_desde', fechaDesde)
+  if (fechaHasta) params.set('fecha_hasta', fechaHasta)
   if (montoMin) params.set('monto_min', montoMin)
   if (montoMax) params.set('monto_max', montoMax)
-  if (productoId) params.set('producto_id', String(productoId))
+  productos.forEach(p => params.append('producto_id', String(p.id)))
 
-  const activeFilterCount = [
-    estados.length > 0, !!fechaDesde, !!fechaHasta, !!emisorId,
-    !!empresaId, !!montoMin, !!montoMax, !!productoId,
-  ].filter(Boolean).length
+  const hasFilters = estados.length > 0 || !!emisorId || !!empresaId ||
+    !!fechaDesde || !!fechaHasta || !!montoMin || !!montoMax || productos.length > 0
 
+  function clearAll() {
+    setEstados([]); setEmisorId(null); setEmpresaId(null)
+    setFechaDesde(''); setFechaHasta('')
+    setMontoMin(''); setMontoMax('')
+    setProductos([]); setProductoSearch('')
+  }
+
+  // ── Data ──────────────────────────────────────────────────────────────────────
   const { data: cotizaciones = [], isLoading } = useQuery<Cotizacion[]>({
-    queryKey: ['cotizaciones', estados, fechaDesde, fechaHasta, emisorId, empresaId, montoMin, montoMax, productoId],
+    queryKey: ['cotizaciones', estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos.map(p => p.id)],
     queryFn: () => api.get(`/api/cotizaciones/?${params.toString()}`).then(r => r.data),
   })
-
-  function clearFilters() {
-    setEstados([]); setFechaDesde(''); setFechaHasta('')
-    setEmisorId(null); setEmpresaId(null)
-    setMontoMin(''); setMontoMax('')
-    setProductoId(null); setProductoNombre(''); setProductoSearch('')
-  }
 
   async function handleExport() {
     const res = await api.get(`/api/cotizaciones/export/excel?${params.toString()}`, { responseType: 'blob' })
@@ -148,27 +197,35 @@ export default function Cotizaciones() {
     onError: (err: any) => { setEmailToast({ msg: err?.response?.data?.detail || 'Error al enviar email', ok: false }); setTimeout(() => setEmailToast(null), 4000) },
   })
 
-  const inputCls = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
-  const selectCls = `${inputCls} cursor-pointer`
+  // ── Filter pill helpers ────────────────────────────────────────────────────────
+  const emisorName = users.find(u => u.id === emisorId)?.name
+  const empresaNombre = empresas.find(e => e.id === empresaId)?.nombre
 
+  const fechaSummary = fechaDesde && fechaHasta ? `${fmtDate(fechaDesde)} – ${fmtDate(fechaHasta)}`
+    : fechaDesde ? `Desde ${fmtDate(fechaDesde)}`
+    : `Hasta ${fmtDate(fechaHasta)}`
+
+  const montoSummary = montoMin && montoMax ? `$${Number(montoMin).toLocaleString()} – $${Number(montoMax).toLocaleString()}`
+    : montoMin ? `Mín $${Number(montoMin).toLocaleString()}`
+    : `Máx $${Number(montoMax).toLocaleString()}`
+
+  const checkboxCls = 'flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-800 dark:text-gray-200'
+
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className="p-4 md:p-6 max-w-7xl">
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-4 gap-2">
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5 gap-2">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Cotizaciones</h1>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            title="Exportar a Excel"
-          >
+          <button onClick={handleExport}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             <Download size={15} />
             <span className="hidden sm:inline">Exportar</span>
           </button>
-          <button
-            onClick={() => navigate('/cotizaciones/nueva')}
-            className="flex items-center gap-2 px-3 md:px-4 py-2 bg-brand-500 hover:bg-brand-400 text-gray-900 text-sm font-semibold rounded-lg transition-colors"
-          >
+          <button onClick={() => navigate('/cotizaciones/nueva')}
+            className="flex items-center gap-2 px-3 md:px-4 py-2 bg-brand-500 hover:bg-brand-400 text-gray-900 text-sm font-semibold rounded-lg transition-colors">
             <Plus size={16} />
             <span className="hidden sm:inline">Nueva cotización</span>
             <span className="sm:hidden">Nueva</span>
@@ -176,177 +233,182 @@ export default function Cotizaciones() {
         </div>
       </div>
 
-      {/* ── Filters toggle ── */}
-      <div className="mb-3">
-        <button
-          onClick={() => setFiltersOpen(o => !o)}
-          className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors
-            ${activeFilterCount > 0
-              ? 'border-brand-500 bg-brand-500/10 text-brand-600 dark:text-brand-400'
-              : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
-        >
-          <Filter size={15} />
-          Filtros
-          {activeFilterCount > 0 && (
-            <span className="bg-brand-500 text-gray-900 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-              {activeFilterCount}
-            </span>
-          )}
-        </button>
-      </div>
+      {/* Filter bar */}
+      <div ref={filterBarRef} className="mb-4">
+        <div className="flex flex-wrap gap-2 items-center">
 
-      {/* ── Filter panel ── */}
-      {filtersOpen && (
-        <div className="mb-4 p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* Estado */}
+          <FilterPill
+            label="Estado" active={estados.length > 0}
+            summary={estados.length === 1 ? ESTADO_LABELS[estados[0]] : `${estados.length} estados`}
+            isOpen={openPill === 'estado'} onToggle={() => togglePill('estado')}
+            onClear={() => setEstados([])}
+          >
+            {Object.entries(ESTADO_LABELS).map(([value, lbl]) => (
+              <label key={value} className={checkboxCls}>
+                <input type="checkbox" className="rounded border-gray-300"
+                  checked={estados.includes(value)}
+                  onChange={e => setEstados(prev => e.target.checked ? [...prev, value] : prev.filter(v => v !== value))} />
+                {lbl}
+              </label>
+            ))}
+          </FilterPill>
 
-            {/* Estado */}
-            <div ref={estadoRef} className="relative">
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Estado</label>
-              <button
-                type="button"
-                onClick={() => setEstadoOpen(o => !o)}
-                className={`${inputCls} flex items-center justify-between`}
-              >
-                <span className="truncate">
-                  {estados.length === 0 ? 'Todos' : estados.map(e => ESTADO_LABELS[e] ?? e).join(', ')}
-                </span>
-                <svg className="ml-2 h-4 w-4 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                </svg>
-              </button>
-              {estadoOpen && (
-                <div className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
-                  {Object.entries(ESTADO_LABELS).map(([value, label]) => (
-                    <label key={value} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-900 dark:text-white">
-                      <input
-                        type="checkbox"
-                        checked={estados.includes(value)}
-                        onChange={e => setEstados(prev => e.target.checked ? [...prev, value] : prev.filter(v => v !== value))}
-                        className="rounded border-gray-300"
-                      />
-                      {label}
-                    </label>
-                  ))}
-                  {estados.length > 0 && (
-                    <button onClick={() => setEstados([])} className="w-full text-left px-3 py-1.5 text-xs text-gray-400 hover:text-gray-600 border-t border-gray-100 dark:border-gray-700 mt-1">
-                      Limpiar
-                    </button>
-                  )}
-                </div>
-              )}
+          {/* Emisor */}
+          <FilterPill
+            label="Emisor" active={!!emisorId} summary={emisorName}
+            isOpen={openPill === 'emisor'} onToggle={() => togglePill('emisor')}
+            onClear={() => setEmisorId(null)}
+          >
+            <div className="max-h-56 overflow-y-auto">
+              {users.map(u => (
+                <button key={u.id} onClick={() => { setEmisorId(u.id); setOpenPill(null) }}
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
+                    ${emisorId === u.id ? 'text-brand-600 dark:text-brand-400 font-medium' : 'text-gray-800 dark:text-gray-200'}`}>
+                  {u.name}
+                </button>
+              ))}
             </div>
+          </FilterPill>
 
-            {/* Emisor */}
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Emisor</label>
-              <select value={emisorId ?? ''} onChange={e => setEmisorId(e.target.value ? Number(e.target.value) : null)} className={selectCls}>
-                <option value="">Todos</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
+          {/* Empresa */}
+          <FilterPill
+            label="Empresa" active={!!empresaId} summary={empresaNombre}
+            isOpen={openPill === 'empresa'} onToggle={() => togglePill('empresa')}
+            onClear={() => setEmpresaId(null)}
+          >
+            <div className="max-h-56 overflow-y-auto">
+              {empresas.map(e => (
+                <button key={e.id} onClick={() => { setEmpresaId(e.id); setOpenPill(null) }}
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
+                    ${empresaId === e.id ? 'text-brand-600 dark:text-brand-400 font-medium' : 'text-gray-800 dark:text-gray-200'}`}>
+                  {e.nombre}
+                </button>
+              ))}
             </div>
+          </FilterPill>
 
-            {/* Empresa */}
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Empresa cliente</label>
-              <select value={empresaId ?? ''} onChange={e => setEmpresaId(e.target.value ? Number(e.target.value) : null)} className={selectCls}>
-                <option value="">Todas</option>
-                {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-              </select>
-            </div>
-
-            {/* Fecha desde */}
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Fecha desde</label>
-              <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} className={inputCls} />
-            </div>
-
-            {/* Fecha hasta */}
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Fecha hasta</label>
-              <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} className={inputCls} />
-            </div>
-
-            {/* Monto */}
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Monto total</label>
-              <div className="flex gap-2">
-                <input type="number" placeholder="Mín" value={montoMin} onChange={e => setMontoMin(e.target.value)}
-                  className={`${inputCls} flex-1`} />
-                <input type="number" placeholder="Máx" value={montoMax} onChange={e => setMontoMax(e.target.value)}
-                  className={`${inputCls} flex-1`} />
+          {/* Fechas */}
+          <FilterPill
+            label="Fechas" active={!!(fechaDesde || fechaHasta)} summary={fechaSummary}
+            isOpen={openPill === 'fechas'} onToggle={() => togglePill('fechas')}
+            onClear={() => { setFechaDesde(''); setFechaHasta('') }}
+            wide
+          >
+            <div className="px-3 py-2 space-y-2">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</p>
+                <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</p>
+                <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
               </div>
             </div>
+          </FilterPill>
 
-            {/* Producto */}
-            <div ref={productoRef} className="relative sm:col-span-2 lg:col-span-1">
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Producto</label>
-              {productoId ? (
-                <div className={`${inputCls} flex items-center justify-between`}>
-                  <span className="truncate text-gray-900 dark:text-white">{productoNombre}</span>
-                  <button onClick={() => { setProductoId(null); setProductoNombre(''); setProductoSearch('') }}
-                    className="ml-2 text-gray-400 hover:text-gray-600 flex-shrink-0">
-                    <X size={14} />
-                  </button>
-                </div>
-              ) : (
-                <input
-                  type="text"
-                  placeholder="Buscar producto..."
-                  value={productoSearch}
-                  onChange={e => { setProductoSearch(e.target.value); setProductoOpen(true) }}
-                  onFocus={() => productoSearch.length >= 2 && setProductoOpen(true)}
-                  className={inputCls}
-                />
-              )}
-              {productoOpen && productoResults.length > 0 && !productoId && (
-                <div className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 max-h-48 overflow-y-auto">
-                  {productoResults.map(p => (
-                    <button
-                      key={p.id}
-                      onClick={() => { setProductoId(p.id); setProductoNombre(p.nombre); setProductoSearch(''); setProductoOpen(false) }}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      <span className="font-medium">{p.nombre}</span>
-                      {p.sku && <span className="ml-2 text-xs text-gray-400">{p.sku}</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
+          {/* Monto */}
+          <FilterPill
+            label="Monto" active={!!(montoMin || montoMax)} summary={montoSummary}
+            isOpen={openPill === 'monto'} onToggle={() => togglePill('monto')}
+            onClear={() => { setMontoMin(''); setMontoMax('') }}
+            wide
+          >
+            <div className="px-3 py-2 space-y-2">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Mínimo</p>
+                <input type="number" placeholder="0" value={montoMin} onChange={e => setMontoMin(e.target.value)}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Máximo</p>
+                <input type="number" placeholder="∞" value={montoMax} onChange={e => setMontoMax(e.target.value)}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+              </div>
             </div>
+          </FilterPill>
 
-          </div>
+          {/* Productos */}
+          <FilterPill
+            label="Productos" active={productos.length > 0}
+            summary={productos.length === 1 ? productos[0].nombre : `${productos.length} productos`}
+            isOpen={openPill === 'productos'} onToggle={() => togglePill('productos')}
+            onClear={() => { setProductos([]); setProductoSearch('') }}
+            wide
+          >
+            <div className="px-3 pt-2 pb-1">
+              <input
+                autoFocus
+                type="text"
+                placeholder="Buscar producto..."
+                value={productoSearch}
+                onChange={e => setProductoSearch(e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+            {/* Selected chips */}
+            {productos.length > 0 && (
+              <div className="px-3 py-1 flex flex-wrap gap-1">
+                {productos.map(p => (
+                  <span key={p.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-500/15 text-brand-700 dark:text-brand-300 rounded-full text-xs">
+                    {p.nombre}
+                    <button onClick={() => setProductos(prev => prev.filter(x => x.id !== p.id))}>
+                      <X size={11} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {/* Search results */}
+            {productoResults.length > 0 && (
+              <>
+                <div className="border-t border-gray-100 dark:border-gray-700 mt-1" />
+                <div className="max-h-48 overflow-y-auto py-1">
+                  {productoResults
+                    .filter(r => !productos.some(p => p.id === r.id))
+                    .map(r => (
+                      <button key={r.id}
+                        onClick={() => setProductos(prev => [...prev, r])}
+                        className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-800 dark:text-gray-200 flex items-center justify-between gap-2">
+                        <span className="truncate">{r.nombre}</span>
+                        {r.sku && <span className="text-xs text-gray-400 flex-shrink-0">{r.sku}</span>}
+                      </button>
+                    ))}
+                </div>
+              </>
+            )}
+            {productoSearch.length >= 1 && productoResults.filter(r => !productos.some(p => p.id === r.id)).length === 0 && (
+              <p className="px-3 py-2 text-xs text-gray-400">Sin resultados</p>
+            )}
+          </FilterPill>
 
-          {activeFilterCount > 0 && (
-            <button onClick={clearFilters} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 underline">
-              Limpiar todos los filtros
+          {/* Clear all */}
+          {hasFilters && (
+            <button onClick={clearAll} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 px-1 underline underline-offset-2 flex-shrink-0">
+              Limpiar todo
             </button>
           )}
         </div>
-      )}
+      </div>
 
+      {/* Results */}
       {isLoading ? (
         <div className="text-gray-400 py-12 text-center text-sm">Cargando...</div>
       ) : cotizaciones.length === 0 ? (
         <div className="text-gray-400 py-12 text-center text-sm">Sin cotizaciones</div>
       ) : (
         <>
-          {/* ── Mobile cards ── */}
+          {/* Mobile cards */}
           <div className="md:hidden space-y-2">
             {cotizaciones.map(c => (
               <div key={c.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 font-num">
-                      COT-{String(c.numero).padStart(5, '0')}
-                    </span>
-                    <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">
-                      {c.cliente?.nombre ?? '—'}
-                    </p>
-                    {c.empresa?.nombre && (
-                      <p className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</p>
-                    )}
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-num">COT-{String(c.numero).padStart(5, '0')}</span>
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">{c.cliente?.nombre ?? '—'}</p>
+                    {c.empresa?.nombre && <p className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</p>}
                   </div>
                   <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[c.estado] ?? ''}`}>
                     {ESTADO_LABELS[c.estado] ?? c.estado}
@@ -354,14 +416,12 @@ export default function Cotizaciones() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-gray-500 dark:text-gray-400 space-x-2">
-                    <span>{new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-CL')}</span>
+                    <span>{fmtDate(c.fecha)}</span>
                     {c.vendedor?.name && <span>· {c.vendedor.name}</span>}
                   </div>
                   <div className="flex items-center gap-3">
                     <MargenBadge value={c.margen_total} />
-                    <span className="font-semibold text-gray-900 dark:text-white text-sm font-num">
-                      {fmtMoney(c.total)}
-                    </span>
+                    <span className="font-semibold text-gray-900 dark:text-white text-sm font-num">{fmtMoney(c.total)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
@@ -388,7 +448,7 @@ export default function Cotizaciones() {
             ))}
           </div>
 
-          {/* ── Desktop table ── */}
+          {/* Desktop table */}
           <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
             <table className="w-full text-sm min-w-[1000px]">
               <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
@@ -404,21 +464,13 @@ export default function Cotizaciones() {
                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-white font-num">
                       COT-{String(c.numero).padStart(5, '0')}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                      {new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-CL')}
-                    </td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{fmtDate(c.fecha)}</td>
                     <td className="px-4 py-3">
                       <div className="text-gray-900 dark:text-white leading-tight">{c.cliente?.nombre ?? '-'}</div>
-                      {c.empresa?.nombre && (
-                        <div className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</div>
-                      )}
+                      {c.empresa?.nombre && <div className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</div>}
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white whitespace-nowrap font-num">
-                      {fmtMoney(c.total)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <MargenBadge value={c.margen_total} />
-                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white whitespace-nowrap font-num">{fmtMoney(c.total)}</td>
+                    <td className="px-4 py-3"><MargenBadge value={c.margen_total} /></td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[c.estado] ?? ''}`}>
                         {ESTADO_LABELS[c.estado] ?? c.estado}
@@ -455,7 +507,7 @@ export default function Cotizaciones() {
         </>
       )}
 
-      {/* ── Delete modal ── */}
+      {/* Delete modal */}
       {deleteId !== null && (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 w-full max-w-sm">
