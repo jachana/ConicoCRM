@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class EmpresaBase(BaseModel):
     nombre: str
     razon_social: str | None = None
-    rut: str
+    rut: str | None = None
     forma_pago: str | None = None
     linea_credito: Decimal | None = None
     limite_credito: Decimal | None = None

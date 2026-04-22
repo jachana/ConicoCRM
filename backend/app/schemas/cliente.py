@@ -5,7 +5,7 @@ from app.schemas.empresa import EmpresaRef
 
 class ClienteBase(BaseModel):
     nombre: str
-    rut: str
+    rut: str | None = None
     email: str | None = None
     telefono: str | None = None
     direccion_despacho: str | None = None
