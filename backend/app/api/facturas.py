@@ -41,6 +41,31 @@ _TRANSITIONS: dict[tuple[str, str], str] = {
 
 _METODOS_PAGO = {"efectivo", "transferencia", "cheque", "debito", "credito", "deposito"}
 
+_FAC_EXPORT_COLUMNS: dict[str, tuple] = {
+    "numero":            ("Nº FAC",        lambda f, l: f.numero),
+    "fecha":             ("Fecha",          lambda f, l: f.fecha.strftime("%d/%m/%Y") if f.fecha else ""),
+    "estado":            ("Estado",         lambda f, l: f.estado),
+    "cliente_nombre":    ("Cliente",        lambda f, l: f.cliente.nombre if f.cliente else ""),
+    "empresa_nombre":    ("Empresa",        lambda f, l: f.empresa.nombre if f.empresa else ""),
+    "encargado":         ("Encargado",      lambda f, l: f.vendedor.name if f.vendedor else ""),
+    "contacto":          ("Contacto",       lambda f, l: f.contacto or ""),
+    "sku":               ("SKU",            lambda f, l: l.sku or ""),
+    "descripcion":       ("Descripción",    lambda f, l: l.descripcion),
+    "formato":           ("Formato",        lambda f, l: l.formato or ""),
+    "cantidad":          ("Cantidad",       lambda f, l: l.cantidad),
+    "precio_unit":       ("Precio Unit.",   lambda f, l: float(l.valor_neto)),
+    "total_neto":        ("Total Neto",     lambda f, l: float(l.total_neto)),
+    "margen":            ("Margen %",       lambda f, l: round(float(l.margen) * 100, 2) if l.margen is not None else ""),
+    "fecha_vencimiento": ("Vencimiento",    lambda f, l: f.fecha_vencimiento.strftime("%d/%m/%Y") if f.fecha_vencimiento else ""),
+    "monto_pagado":      ("Monto Pagado",   lambda f, l: float(f.monto_pagado) if f.monto_pagado is not None else ""),
+    "metodo_pago":       ("Método Pago",    lambda f, l: f.metodo_pago or ""),
+    "fecha_pago":        ("Fecha Pago",     lambda f, l: f.fecha_pago.strftime("%d/%m/%Y") if f.fecha_pago else ""),
+}
+_FAC_DEFAULT_COLUMNS = [
+    "numero", "fecha", "cliente_nombre", "empresa_nombre",
+    "sku", "descripcion", "cantidad", "precio_unit", "total_neto", "margen",
+]
+
 
 def _get_config_dict(db: Session) -> dict:
     return {r.key: r.value for r in db.query(SystemConfig).all()}
@@ -171,39 +196,70 @@ def _upsert_from_xml(db: Session, xml_bytes: bytes) -> tuple[Factura, str]:
 
 @router.get("/export/excel")
 def exportar_excel(
+    estado: list[str] | None = Query(None),
+    cliente_id: int | None = Query(None),
+    empresa_id: int | None = Query(None),
+    vendedor_id: int | None = Query(None),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    monto_min: Decimal | None = Query(None),
+    monto_max: Decimal | None = Query(None),
+    producto_id: list[int] | None = Query(None),
+    columns: list[str] | None = Query(None),
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _, db = perms
-    facturas = (
+    q = (
         db.query(Factura)
-        .options(joinedload(Factura.cliente), joinedload(Factura.vendedor))
-        .order_by(Factura.numero.desc())
-        .all()
+        .options(
+            joinedload(Factura.cliente),
+            joinedload(Factura.vendedor),
+            joinedload(Factura.empresa),
+            selectinload(Factura.lineas),
+        )
     )
+    if estado:
+        q = q.filter(Factura.estado.in_(estado))
+    if cliente_id:
+        q = q.filter(Factura.cliente_id == cliente_id)
+    if empresa_id:
+        q = q.filter(Factura.empresa_id == empresa_id)
+    if vendedor_id:
+        q = q.filter(Factura.vendedor_id == vendedor_id)
+    if fecha_desde:
+        q = q.filter(Factura.fecha >= fecha_desde)
+    if fecha_hasta:
+        q = q.filter(Factura.fecha <= fecha_hasta)
+    if monto_min is not None:
+        q = q.filter(Factura.total >= monto_min)
+    if monto_max is not None:
+        q = q.filter(Factura.total <= monto_max)
+    if producto_id:
+        q = q.join(FacturaLinea, FacturaLinea.factura_id == Factura.id).filter(
+            FacturaLinea.producto_id.in_(producto_id)
+        ).distinct()
+    facturas = q.order_by(Factura.numero.desc()).all()
+
+    col_keys = [k for k in (columns or _FAC_DEFAULT_COLUMNS) if k in _FAC_EXPORT_COLUMNS]
+    if not col_keys:
+        col_keys = _FAC_DEFAULT_COLUMNS
+
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Facturas"
-    ws.append(["Nº FAC", "Fecha", "Vencimiento", "Cliente", "Contacto", "Total Neto", "IVA", "Total", "Estado", "Encargado"])
+    ws.append([_FAC_EXPORT_COLUMNS[k][0] for k in col_keys])
     for f in facturas:
-        ws.append([
-            f.numero,
-            f.fecha.strftime("%d/%m/%Y") if f.fecha else "",
-            f.fecha_vencimiento.strftime("%d/%m/%Y") if f.fecha_vencimiento else "",
-            f.cliente.nombre if f.cliente else "",
-            f.contacto or "",
-            float(f.total_neto),
-            float(f.total_iva),
-            float(f.total),
-            f.estado,
-            f.vendedor.name if f.vendedor else "",
-        ])
+        for l in f.lineas:
+            ws.append([_FAC_EXPORT_COLUMNS[k][1](f, l) for k in col_keys])
+
+    today = date.today().strftime("%Y-%m-%d")
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
     return StreamingResponse(
         buf,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=facturas.xlsx"},
+        headers={"Content-Disposition": f"attachment; filename=facturas-{today}.xlsx"},
     )
 
 

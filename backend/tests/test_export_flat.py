@@ -72,3 +72,66 @@ def test_cotizaciones_export_default_columns_when_none_specified(client, admin_t
     assert "Nº COT" in headers
     assert "Cliente" in headers
     assert "Total Neto" in headers
+
+
+def _setup_factura(client, admin_token):
+    r = client.post("/api/clientes/", json={"nombre": "CLI Fac Export", "rut": "11.222.333-4"},
+                    headers={"Authorization": f"Bearer {admin_token}"})
+    cli_id = r.json()["id"]
+    r = client.post("/api/productos/", json={
+        "nombre": "Cable 2.5mm", "sku": "CAB-25", "precio_venta": 2400, "precio_costo": 1500, "unidad": "m",
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 201, r.text
+    prod_id = r.json()["id"]
+    r = client.post("/api/facturas/", json={
+        "cliente_id": cli_id,
+        "lineas": [
+            {"orden": 0, "producto_id": prod_id, "descripcion": "Cable 2.5mm",
+             "sku": "CAB-25", "cantidad": 5, "valor_neto": 2400},
+        ],
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def test_facturas_export_returns_xlsx(client, admin_token):
+    _setup_factura(client, admin_token)
+    r = client.get("/api/facturas/export/excel",
+                   headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    ctype = r.headers.get("content-type", "")
+    assert "spreadsheetml" in ctype or "openxmlformats" in ctype
+
+
+def test_facturas_export_single_flat_sheet(client, admin_token):
+    _setup_factura(client, admin_token)
+    r = client.get("/api/facturas/export/excel",
+                   headers={"Authorization": f"Bearer {admin_token}"})
+    wb = openpyxl.load_workbook(BytesIO(r.content))
+    assert len(wb.sheetnames) == 1
+    assert wb.sheetnames[0] == "Facturas"
+    ws = wb.active
+    assert ws.max_row >= 2  # header + at least one line
+
+
+def test_facturas_export_columns_param(client, admin_token):
+    _setup_factura(client, admin_token)
+    r = client.get(
+        "/api/facturas/export/excel?columns=numero&columns=estado&columns=descripcion",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    wb = openpyxl.load_workbook(BytesIO(r.content))
+    ws = wb.active
+    headers = [ws.cell(1, col).value for col in range(1, ws.max_column + 1)]
+    assert headers == ["Nº FAC", "Estado", "Descripción"]
+
+
+def test_facturas_export_filter_by_estado(client, admin_token):
+    _setup_factura(client, admin_token)
+    r = client.get("/api/facturas/export/excel?estado=emitida",
+                   headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    wb = openpyxl.load_workbook(BytesIO(r.content))
+    ws = wb.active
+    assert ws.max_row >= 2
