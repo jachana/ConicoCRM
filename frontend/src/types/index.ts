@@ -125,6 +125,7 @@ export interface CotizacionLinea {
   formato: string | null
   cantidad: number
   valor_neto: number
+  descuento: number
   total_neto: number
   iva: number
   total: number
@@ -144,6 +145,7 @@ export interface Cotizacion {
   nota: string | null
   terminos_pago: string | null
   terminos_pago_estado: string
+  validez_dias: number
   correo: string | null
   total_neto: number
   total_iva: number

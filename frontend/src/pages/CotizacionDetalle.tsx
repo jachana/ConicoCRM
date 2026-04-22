@@ -10,7 +10,7 @@ import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, Not
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 import UnsavedChangesModal from '../components/UnsavedChangesModal'
 
-type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string; _stock?: number | null; _costo?: number | null }
+type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string; _stock?: number | null; _costo?: number | null; descuento: number }
 
 const ESTADOS = [
   { value: 'no_definido', label: 'Sin definir' },
@@ -30,6 +30,7 @@ function newLinea(orden: number): LineaLocal {
     formato: null,
     cantidad: 1,
     valor_neto: 0,
+    descuento: 0,
     total_neto: 0,
     iva: 0,
     total: 0,
@@ -40,10 +41,11 @@ function newLinea(orden: number): LineaLocal {
 function calcLinea(l: LineaLocal): LineaLocal {
   const cantidad = Number(l.cantidad) || 0
   const valor_neto = Number(l.valor_neto) || 0
-  const total_neto = cantidad * valor_neto
+  const descuento = Math.min(100, Math.max(0, Number(l.descuento) || 0))
+  const total_neto = Math.round(cantidad * valor_neto * (1 - descuento / 100) * 100) / 100
   const iva = Math.round(total_neto * 0.19 * 100) / 100
   const total = total_neto + iva
-  return { ...l, cantidad, valor_neto, total_neto, iva, total }
+  return { ...l, cantidad, valor_neto, descuento, total_neto, iva, total }
 }
 
 function fmtMoney(n: number | string | null | undefined) {
@@ -78,10 +80,12 @@ function cotizacionSnapshot(cot: Cotizacion): string {
     nota: cot.nota ?? '',
     empresaId: cot.empresa_id ?? '',
     terminosPago: cot.terminos_pago ?? '',
+    validezDias: cot.validez_dias ?? 5,
     lineas: (cot.lineas ?? []).map(l => ({
       producto_id: l.producto_id ?? null,
       cantidad: l.cantidad,
       valor_neto: l.valor_neto,
+      descuento: l.descuento ?? 0,
       descripcion: l.descripcion ?? '',
       sku: l.sku ?? null,
       formato: l.formato ?? null,
@@ -142,21 +146,23 @@ export default function CotizacionDetalle() {
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
   const [terminosPago, setTerminosPago] = useState('')
   const [terminosPagoEstado, setTerminosPagoEstado] = useState('aprobado')
+  const [validezDias, setValidezDias] = useState<number>(5)
 
   const lineasErrors = useMemo(() => getLineasErrors(lineas), [lineas])
 
   const currentSnapshot = useMemo(() => JSON.stringify({
     clienteId, vendedorId, contacto, correo, fecha, estado, nota, empresaId,
-    terminosPago,
+    terminosPago, validezDias,
     lineas: lineas.map(l => ({
       producto_id: l.producto_id ?? null,
       cantidad: l.cantidad,
       valor_neto: l.valor_neto,
+      descuento: l.descuento ?? 0,
       descripcion: l.descripcion ?? '',
       sku: l.sku ?? null,
       formato: l.formato ?? null,
     }))
-  }), [clienteId, vendedorId, contacto, correo, fecha, estado, nota, empresaId, terminosPago, lineas])
+  }), [clienteId, vendedorId, contacto, correo, fecha, estado, nota, empresaId, terminosPago, validezDias, lineas])
 
   const isDirty = !isNew && savedSnapshot !== null && currentSnapshot !== savedSnapshot
 
@@ -216,6 +222,7 @@ export default function CotizacionDetalle() {
       setEmpresaId(cotizacion.empresa_id ?? '')
       setTerminosPago(cotizacion.terminos_pago ?? '')
       setTerminosPagoEstado(cotizacion.terminos_pago_estado ?? 'aprobado')
+      setValidezDias(cotizacion.validez_dias ?? 5)
       setLineas(
         (cotizacion.lineas ?? []).map((l, i) => calcLinea({
           ...l,
@@ -223,6 +230,7 @@ export default function CotizacionDetalle() {
           producto_id: l.producto_id ?? null,
           sku: l.sku ?? null,
           formato: l.formato ?? null,
+          descuento: l.descuento ?? 0,
           margen: l.margen ?? null,
           _costo: (l.margen != null && Number(l.valor_neto) > 0) ? Number(l.valor_neto) * (1 - l.margen) : null,
         }))
@@ -513,6 +521,7 @@ export default function CotizacionDetalle() {
         nota: nota || null,
         empresa_id: empresaId || null,
         terminos_pago: terminosPago || null,
+        validez_dias: validezDias,
       }
       const lineasPayload = lineas.map((l, i) => ({
         orden: i + 1,
@@ -522,6 +531,7 @@ export default function CotizacionDetalle() {
         formato: l.formato,
         cantidad: l.cantidad,
         valor_neto: l.valor_neto,
+        descuento: l.descuento ?? 0,
       }))
 
       let cotId: number
@@ -569,6 +579,7 @@ export default function CotizacionDetalle() {
       setEmpresaId(cotizacion.empresa_id ?? '')
       setTerminosPago(cotizacion.terminos_pago ?? '')
       setTerminosPagoEstado(cotizacion.terminos_pago_estado ?? 'aprobado')
+      setValidezDias(cotizacion.validez_dias ?? 5)
       setLineas(
         (cotizacion.lineas ?? []).map((l, i) => calcLinea({
           ...l,
@@ -576,6 +587,7 @@ export default function CotizacionDetalle() {
           producto_id: l.producto_id ?? null,
           sku: l.sku ?? null,
           formato: l.formato ?? null,
+          descuento: l.descuento ?? 0,
           margen: l.margen ?? null,
           _costo: (l.margen != null && Number(l.valor_neto) > 0) ? Number(l.valor_neto) * (1 - l.margen) : null,
         }))
@@ -871,7 +883,7 @@ export default function CotizacionDetalle() {
               className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${df('nota', nota) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
               placeholder="Notas internas o para el cliente..." />
           </div>
-          <div className="sm:col-span-2 lg:col-span-3">
+          <div className="sm:col-span-2 lg:col-span-2">
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
               Términos de Pago
               {terminosPagoNeedsApproval && (
@@ -901,6 +913,23 @@ export default function CotizacionDetalle() {
               </p>
             )}
           </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Validez (días)</label>
+            <input
+              type="number"
+              min={1}
+              value={validezDias}
+              onChange={e => setValidezDias(Number(e.target.value))}
+              className={`w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('validezDias', validezDias) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
+            />
+            {cotizacion?.fecha && (
+              <p className="text-xs text-gray-400 mt-1">
+                Vence:{' '}
+                {new Date(new Date(cotizacion.fecha + 'T00:00:00').getTime() + validezDias * 86400000)
+                  .toLocaleDateString('es-CL')}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -912,6 +941,7 @@ export default function CotizacionDetalle() {
               <th className="px-3 py-3 font-medium">Producto</th>
               <th className="px-3 py-3 font-medium text-right w-20">Cant.</th>
               <th className="px-3 py-3 font-medium text-right w-32">Precio Unit.</th>
+              <th className="text-right text-xs font-medium text-gray-500 uppercase px-2 py-2 w-20">Desc %</th>
               <th className="px-3 py-3 font-medium text-right w-32">Total Neto</th>
               <th className="px-3 py-3 font-medium text-right w-20">Margen</th>
               <th className="px-3 py-3 w-8"></th>
@@ -974,6 +1004,17 @@ export default function CotizacionDetalle() {
                       </div>
                     )}
                   </div>
+                </td>
+                <td className="px-2 py-1">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={linea.descuento ?? 0}
+                    onChange={e => updateLinea(idx, { descuento: Number(e.target.value) })}
+                    className="w-16 text-right border border-gray-200 rounded px-1 py-0.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
                 </td>
                 <td className="px-3 py-3 text-right text-gray-700 dark:text-gray-300 text-sm font-medium">{fmtMoney(linea.total_neto)}</td>
                 <td className="px-3 py-2">
