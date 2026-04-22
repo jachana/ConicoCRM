@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { FileText, Mail, ArrowLeft, ExternalLink, Pencil, X, Check, Plus, Trash2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
-import type { Factura, FacturaLinea, Cliente, User, Empresa, Pago } from '../types'
+import type { Factura, FacturaLinea, Cliente, User, Empresa, Pago, BancoReceptor } from '../types'
 import DteBadge from '../components/DteBadge'
 
 const ESTADO_LABELS: Record<string, string> = {
@@ -81,6 +81,7 @@ export default function FacturaDetalle() {
   const [fechaVencimiento, setFechaVencimiento] = useState('')
   const [nota, setNota] = useState('')
   const [empresaId, setEmpresaId] = useState<number | ''>('')
+  const [bancoReceptorId, setBancoReceptorId] = useState<number | null>(null)
   const [lineas, setLineas] = useState<LineaLocal[]>([])
 
   const { data: factura } = useQuery<Factura>({
@@ -99,6 +100,7 @@ export default function FacturaDetalle() {
       setFechaVencimiento(factura.fecha_vencimiento ?? '')
       setNota(factura.nota ?? '')
       setEmpresaId(factura.empresa_id ?? '')
+      setBancoReceptorId(factura.banco_receptor_id ?? null)
       setLineas(
         (factura.lineas ?? []).map((l, i) => ({
           ...l,
@@ -123,6 +125,12 @@ export default function FacturaDetalle() {
   const { data: empresas = [] } = useQuery<Empresa[]>({
     queryKey: ['empresas'],
     queryFn: () => api.get('/api/empresas/').then(r => r.data),
+    enabled: editing,
+  })
+
+  const { data: bancos = [] } = useQuery<BancoReceptor[]>({
+    queryKey: ['bancos-receptores'],
+    queryFn: () => api.get('/api/bancos-receptores').then(r => r.data),
     enabled: editing,
   })
 
@@ -179,6 +187,7 @@ export default function FacturaDetalle() {
         fecha_vencimiento: fechaVencimiento || null,
         nota: nota || null,
         empresa_id: empresaId || null,
+        banco_receptor_id: bancoReceptorId,
       }
       await api.patch(`/api/facturas/${id}`, payload)
       if (editingLineas) {
@@ -215,6 +224,7 @@ export default function FacturaDetalle() {
       setFechaVencimiento(factura.fecha_vencimiento ?? '')
       setNota(factura.nota ?? '')
       setEmpresaId(factura.empresa_id ?? '')
+      setBancoReceptorId(factura.banco_receptor_id ?? null)
       setLineas(
         (factura.lineas ?? []).map((l, i) => ({
           ...l,
@@ -455,6 +465,19 @@ export default function FacturaDetalle() {
               >
                 <option value="">— Sin empresa —</option>
                 {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Banco de recepción</label>
+              <select
+                value={bancoReceptorId ?? ''}
+                onChange={e => setBancoReceptorId(e.target.value ? Number(e.target.value) : null)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Sin especificar</option>
+                {bancos.filter(b => b.activo).map(b => (
+                  <option key={b.id} value={b.id}>{b.nombre}</option>
+                ))}
               </select>
             </div>
             <div>

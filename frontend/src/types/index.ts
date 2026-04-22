@@ -245,6 +245,12 @@ export interface FacturaLinea {
   margen: number | null;
 }
 
+export interface BancoReceptor {
+  id: number
+  nombre: string
+  activo: boolean
+}
+
 export interface Factura {
   id: number;
   numero: number;
@@ -253,6 +259,7 @@ export interface Factura {
   cliente_id: number | null;
   vendedor_id: number | null;
   empresa_id: number | null;
+  banco_receptor_id: number | null;
   contacto: string | null;
   fecha: string;
   fecha_vencimiento: string | null;

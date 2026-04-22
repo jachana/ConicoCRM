@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
-import type { SystemConfig } from '../types'
+import type { SystemConfig, BancoReceptor } from '../types'
 
 const COMPANY_FIELDS = [
   { key: 'empresa_nombre', label: 'Nombre empresa' },
@@ -30,6 +30,23 @@ export default function Configuracion() {
 
   const [form, setForm] = useState<Record<string, string>>({})
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+  const [nuevoBanco, setNuevoBanco] = useState('')
+
+  const { data: bancos = [] } = useQuery<BancoReceptor[]>({
+    queryKey: ['bancos-receptores'],
+    queryFn: () => api.get('/api/bancos-receptores').then(r => r.data),
+  })
+
+  const addBanco = useMutation({
+    mutationFn: (nombre: string) => api.post('/api/bancos-receptores', { nombre }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['bancos-receptores'] }); setNuevoBanco('') },
+  })
+
+  const toggleBanco = useMutation({
+    mutationFn: ({ id, activo }: { id: number; activo: boolean }) =>
+      api.patch(`/api/bancos-receptores/${id}`, { activo }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['bancos-receptores'] }),
+  })
 
   useEffect(() => {
     if (config.length === 0) return
@@ -126,6 +143,45 @@ export default function Configuracion() {
           {saveMut.isPending ? 'Guardando...' : 'Guardar configuración'}
         </button>
       </div>
+
+      <section className="mt-8 border-t pt-6">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+          Bancos de recepción de pagos
+        </h2>
+        <div className="space-y-1 mb-3">
+          {bancos.map(b => (
+            <div key={b.id} className="flex items-center justify-between text-sm py-1">
+              <span className={b.activo ? 'text-gray-900 dark:text-gray-100' : 'line-through text-gray-400'}>
+                {b.nombre}
+              </span>
+              <button
+                onClick={() => toggleBanco.mutate({ id: b.id, activo: !b.activo })}
+                className="text-xs text-blue-500 hover:underline ml-4"
+              >
+                {b.activo ? 'Desactivar' : 'Activar'}
+              </button>
+            </div>
+          ))}
+          {bancos.length === 0 && <p className="text-xs text-gray-400">Sin bancos configurados</p>}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={nuevoBanco}
+            onChange={e => setNuevoBanco(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && nuevoBanco.trim() && addBanco.mutate(nuevoBanco.trim())}
+            placeholder="Nombre del banco"
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onClick={() => nuevoBanco.trim() && addBanco.mutate(nuevoBanco.trim())}
+            disabled={!nuevoBanco.trim() || addBanco.isPending}
+            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+          >
+            Agregar
+          </button>
+        </div>
+      </section>
     </div>
   )
 }
