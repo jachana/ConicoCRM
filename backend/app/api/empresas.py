@@ -357,6 +357,7 @@ def facturas_empresa(
         "total": Factura.total,
         "estado": Factura.estado,
         "pendiente": Factura.total,
+        "monto_pagado": Factura.monto_pagado,
     }.get(sort_by, Factura.fecha)
     query = query.order_by(sort_col.desc() if sort_dir == "desc" else sort_col.asc())
 

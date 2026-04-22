@@ -13,7 +13,7 @@ const ESTADO_BADGE: Record<string, string> = {
   anulada: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
 }
 
-type SortField = 'fecha' | 'numero' | 'total' | 'pendiente' | 'estado'
+type SortField = 'fecha' | 'numero' | 'total' | 'pendiente' | 'estado' | 'monto_pagado'
 
 function fmtDate(s: string) {
   return new Date(s + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: '2-digit' })
@@ -50,13 +50,14 @@ export default function EmpresaTabFacturas({ empresaId, empresaNombre }: Props) 
       api.get(`/api/empresas/${empresaId}/facturas?${params.toString()}`).then(r => r.data),
   })
 
-  const exportBaseUrl = `/api/empresas/${empresaId}/export/facturas?${(() => {
+  const exportBaseUrl = (() => {
     const p = new URLSearchParams()
     estados.forEach(e => p.append('estado', e))
     if (fechaDesde) p.set('fecha_desde', fechaDesde)
     if (fechaHasta) p.set('fecha_hasta', fechaHasta)
-    return p.toString()
-  })()}`
+    const qs = p.toString()
+    return `/api/empresas/${empresaId}/export/facturas${qs ? '?' + qs : ''}`
+  })()
 
   const totalPendiente = useMemo(() => facturas.reduce((s, f) => s + f.pendiente, 0), [facturas])
 

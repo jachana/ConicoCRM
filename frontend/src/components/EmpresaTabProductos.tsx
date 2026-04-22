@@ -38,12 +38,14 @@ export default function EmpresaTabProductos({ empresaId, empresaNombre }: Props)
       api.get(`/api/empresas/${empresaId}/productos?${params.toString()}`).then(r => r.data),
   })
 
-  const exportBaseUrl = `/api/empresas/${empresaId}/export/productos?${(() => {
-    const p = new URLSearchParams({ q })
+  const exportBaseUrl = (() => {
+    const p = new URLSearchParams()
+    if (q) p.set('q', q)
     if (fechaDesde) p.set('fecha_desde', fechaDesde)
     if (fechaHasta) p.set('fecha_hasta', fechaHasta)
-    return p.toString()
-  })()}`
+    const qs = p.toString()
+    return `/api/empresas/${empresaId}/export/productos${qs ? '?' + qs : ''}`
+  })()
 
   const totalNeto = useMemo(() => lineas.reduce((s, l) => s + l.total_neto, 0), [lineas])
   const facturaCount = useMemo(() => new Set(lineas.map(l => l.factura_id)).size, [lineas])
