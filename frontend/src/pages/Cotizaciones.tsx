@@ -126,9 +126,14 @@ export default function Cotizaciones() {
     setProductoId(null); setProductoNombre(''); setProductoSearch('')
   }
 
-  function handleExport() {
-    const p = new URLSearchParams(params)
-    window.open(`/api/cotizaciones/export/excel?${p.toString()}`, '_blank')
+  async function handleExport() {
+    const res = await api.get(`/api/cotizaciones/export/excel?${params.toString()}`, { responseType: 'blob' })
+    const url = URL.createObjectURL(new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'cotizaciones.xlsx'
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
   }
 
   const deleteMut = useMutation({
