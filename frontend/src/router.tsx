@@ -15,6 +15,7 @@ import Inventario from './pages/Inventario'
 import NotaVentas from './pages/NotaVentas'
 import NotaVentaDetalle from './pages/NotaVentaDetalle'
 import FacturaDetalle from './pages/FacturaDetalle'
+import Facturas from './pages/Facturas'
 import Pagos from './pages/Pagos'
 import Aprobaciones from './pages/Aprobaciones'
 import Dashboard from './pages/Dashboard'
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
       { path: 'notas-venta', element: <NotaVentas /> },
       { path: 'notas-venta/nueva', element: <NotaVentaDetalle /> },
       { path: 'notas-venta/:id', element: <NotaVentaDetalle /> },
+      { path: 'facturas', element: <Facturas /> },
       { path: 'facturas/nueva', element: <FacturaDetalle /> },
       { path: 'facturas/:id', element: <FacturaDetalle /> },
       { path: 'notas-credito', element: <NotasCredito /> },
