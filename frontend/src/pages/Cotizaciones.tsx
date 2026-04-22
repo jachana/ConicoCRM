@@ -1,10 +1,13 @@
 import { openPdf } from '../lib/pdf'
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Plus, FileText, Mail, Trash2, Eye, Download, ChevronDown, X } from 'lucide-react'
+import { Plus, FileText, Mail, Trash2, Eye, ChevronDown, X } from 'lucide-react'
 import { api } from '../lib/api'
 import type { Cotizacion } from '../types'
+import ExportPreviewPanel from '../components/ExportPreviewPanel'
+import { COTIZACION_COLUMN_DEFS } from '../lib/columnDefs'
+import type { FlatLine } from '../types'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -116,6 +119,7 @@ export default function Cotizaciones() {
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState('')
   const [emailToast, setEmailToast] = useState<{ msg: string; ok: boolean } | null>(null)
+  const [activeTab, setActiveTab] = useState<'list' | 'preview'>('list')
 
   // Close popovers on outside click
   useEffect(() => {
@@ -175,15 +179,43 @@ export default function Cotizaciones() {
     queryFn: () => api.get(`/api/cotizaciones/?${params.toString()}`).then(r => r.data),
   })
 
-  async function handleExport() {
-    const res = await api.get(`/api/cotizaciones/export/excel?${params.toString()}`, { responseType: 'blob' })
-    const url = URL.createObjectURL(new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'cotizaciones.xlsx'
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 10_000)
-  }
+  const flatLines = useMemo<FlatLine[]>(() =>
+    cotizaciones.flatMap(c =>
+      (c.lineas ?? []).map(l => ({
+        numero: c.numero,
+        fecha: c.fecha,
+        estado: c.estado,
+        cliente_nombre: c.cliente?.nombre ?? '',
+        empresa_nombre: c.empresa?.nombre ?? '',
+        encargado: c.vendedor?.name ?? '',
+        contacto: c.contacto ?? '',
+        sku: l.sku ?? '',
+        descripcion: l.descripcion,
+        formato: l.formato ?? '',
+        cantidad: l.cantidad,
+        precio_unit: Number(l.valor_neto),
+        total_neto: Number(l.total_neto),
+        margen: l.margen ?? null,
+        fecha_vencimiento: '',
+        monto_pagado: null,
+        metodo_pago: '',
+        fecha_pago: '',
+      }))
+    ), [cotizaciones])
+
+  const exportBaseUrl = useMemo(() => {
+    const p = new URLSearchParams()
+    estados.forEach(e => p.append('estado', e))
+    if (emisorId) p.append('vendedor_id', String(emisorId))
+    if (empresaId) p.append('empresa_id', String(empresaId))
+    if (fechaDesde) p.append('fecha_desde', fechaDesde)
+    if (fechaHasta) p.append('fecha_hasta', fechaHasta)
+    if (montoMin) p.append('monto_min', montoMin)
+    if (montoMax) p.append('monto_max', montoMax)
+    productos.forEach(prod => p.append('producto_id', String(prod.id)))
+    const qs = p.toString()
+    return `/api/cotizaciones/export/excel${qs ? '?' + qs : ''}`
+  }, [estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos])
 
   const deleteMut = useMutation({
     mutationFn: (id: number) => api.delete(`/api/cotizaciones/${id}`),
@@ -213,17 +245,12 @@ export default function Cotizaciones() {
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="p-4 md:p-6 max-w-7xl">
+    <div className="p-4 md:p-6">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-5 gap-2">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Cotizaciones</h1>
         <div className="flex items-center gap-2">
-          <button onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            <Download size={15} />
-            <span className="hidden sm:inline">Exportar</span>
-          </button>
           <button onClick={() => navigate('/cotizaciones/nueva')}
             className="flex items-center gap-2 px-3 md:px-4 py-2 bg-brand-500 hover:bg-brand-400 text-gray-900 text-sm font-semibold rounded-lg transition-colors">
             <Plus size={16} />
@@ -393,119 +420,157 @@ export default function Cotizaciones() {
         </div>
       </div>
 
-      {/* Results */}
-      {isLoading ? (
-        <div className="text-gray-400 py-12 text-center text-sm">Cargando...</div>
-      ) : cotizaciones.length === 0 ? (
-        <div className="text-gray-400 py-12 text-center text-sm">Sin cotizaciones</div>
-      ) : (
-        <>
-          {/* Mobile cards */}
-          <div className="md:hidden space-y-2">
-            {cotizaciones.map(c => (
-              <div key={c.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 font-num">COT-{String(c.numero).padStart(5, '0')}</span>
-                    <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">{c.cliente?.nombre ?? '—'}</p>
-                    {c.empresa?.nombre && <p className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</p>}
-                  </div>
-                  <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[c.estado] ?? ''}`}>
-                    {ESTADO_LABELS[c.estado] ?? c.estado}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-gray-500 dark:text-gray-400 space-x-2">
-                    <span>{fmtDate(c.fecha)}</span>
-                    {c.vendedor?.name && <span>· {c.vendedor.name}</span>}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <MargenBadge value={c.margen_total} />
-                    <span className="font-semibold text-gray-900 dark:text-white text-sm font-num">{fmtMoney(c.total)}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-                  <button onClick={() => navigate(`/cotizaciones/${c.id}`)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
-                    <Eye size={14} /> Ver
-                  </button>
-                  <button onClick={() => openPdf(`/api/cotizaciones/${c.id}/pdf`)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-orange-600 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
-                    <FileText size={14} /> PDF
-                  </button>
-                  <button onClick={() => emailMut.mutate(c.id)} disabled={emailMut.isPending}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
-                    <Mail size={14} /> Email
-                  </button>
-                  {c.estado === 'no_definido' && (
-                    <button onClick={() => { setDeleteId(c.id); setDeleteError('') }}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                      <Trash2 size={14} /> Borrar
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Mobile tab toggle */}
+      <div className="lg:hidden flex gap-0 mb-4 border-b border-gray-200 dark:border-gray-800">
+        {(['list', 'preview'] as const).map(tab => (
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              activeTab === tab
+                ? 'border-brand-500 text-brand-600 dark:text-brand-400'
+                : 'border-transparent text-gray-500 dark:text-gray-400'
+            }`}>
+            {tab === 'list' ? 'Lista' : 'Vista previa'}
+          </button>
+        ))}
+      </div>
 
-          {/* Desktop table */}
-          <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
-            <table className="w-full text-sm min-w-[1000px]">
-              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
-                <tr>
-                  {['Nº', 'Fecha', 'Cliente / Empresa', 'Total', 'Margen', 'Estado', 'Encargado', 'Acciones'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 font-medium">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+      {/* Split layout */}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+
+        {/* Left: list */}
+        <div className={activeTab === 'list' ? '' : 'hidden lg:block'}>
+          {isLoading ? (
+            <div className="text-gray-400 py-12 text-center text-sm">Cargando...</div>
+          ) : cotizaciones.length === 0 ? (
+            <div className="text-gray-400 py-12 text-center text-sm">Sin cotizaciones</div>
+          ) : (
+            <>
+              {/* Mobile cards */}
+              <div className="md:hidden space-y-2">
                 {cotizaciones.map(c => (
-                  <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white font-num">
-                      COT-{String(c.numero).padStart(5, '0')}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{fmtDate(c.fecha)}</td>
-                    <td className="px-4 py-3">
-                      <div className="text-gray-900 dark:text-white leading-tight">{c.cliente?.nombre ?? '-'}</div>
-                      {c.empresa?.nombre && <div className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</div>}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white whitespace-nowrap font-num">{fmtMoney(c.total)}</td>
-                    <td className="px-4 py-3"><MargenBadge value={c.margen_total} /></td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[c.estado] ?? ''}`}>
+                  <div key={c.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-num">COT-{String(c.numero).padStart(5, '0')}</span>
+                        <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">{c.cliente?.nombre ?? '—'}</p>
+                        {c.empresa?.nombre && <p className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</p>}
+                      </div>
+                      <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[c.estado] ?? ''}`}>
                         {ESTADO_LABELS[c.estado] ?? c.estado}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{c.vendedor?.name ?? '-'}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => navigate(`/cotizaciones/${c.id}`)}
-                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors" title="Ver/Editar">
-                          <Eye size={15} />
-                        </button>
-                        <button onClick={() => openPdf(`/api/cotizaciones/${c.id}/pdf`)}
-                          className="p-1.5 text-gray-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded transition-colors" title="PDF">
-                          <FileText size={15} />
-                        </button>
-                        <button onClick={() => emailMut.mutate(c.id)} disabled={emailMut.isPending}
-                          className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors" title="Enviar email">
-                          <Mail size={15} />
-                        </button>
-                        {c.estado === 'no_definido' && (
-                          <button onClick={() => { setDeleteId(c.id); setDeleteError('') }}
-                            className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors" title="Eliminar">
-                            <Trash2 size={15} />
-                          </button>
-                        )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 space-x-2">
+                        <span>{fmtDate(c.fecha)}</span>
+                        {c.vendedor?.name && <span>· {c.vendedor.name}</span>}
                       </div>
-                    </td>
-                  </tr>
+                      <div className="flex items-center gap-3">
+                        <MargenBadge value={c.margen_total} />
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm font-num">{fmtMoney(c.total)}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                      <button onClick={() => navigate(`/cotizaciones/${c.id}`)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                        <Eye size={14} /> Ver
+                      </button>
+                      <button onClick={() => openPdf(`/api/cotizaciones/${c.id}/pdf`)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-orange-600 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
+                        <FileText size={14} /> PDF
+                      </button>
+                      <button onClick={() => emailMut.mutate(c.id)} disabled={emailMut.isPending}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
+                        <Mail size={14} /> Email
+                      </button>
+                      {c.estado === 'no_definido' && (
+                        <button onClick={() => { setDeleteId(c.id); setDeleteError('') }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                          <Trash2 size={14} /> Borrar
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
+                <table className="w-full text-sm min-w-[1000px]">
+                  <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
+                    <tr>
+                      {['Nº', 'Fecha', 'Cliente / Empresa', 'Total', 'Margen', 'Estado', 'Encargado', 'Acciones'].map(h => (
+                        <th key={h} className="text-left px-4 py-3 font-medium">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {cotizaciones.map(c => (
+                      <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white font-num">
+                          COT-{String(c.numero).padStart(5, '0')}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{fmtDate(c.fecha)}</td>
+                        <td className="px-4 py-3">
+                          <div className="text-gray-900 dark:text-white leading-tight">{c.cliente?.nombre ?? '-'}</div>
+                          {c.empresa?.nombre && <div className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</div>}
+                        </td>
+                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white whitespace-nowrap font-num">{fmtMoney(c.total)}</td>
+                        <td className="px-4 py-3"><MargenBadge value={c.margen_total} /></td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[c.estado] ?? ''}`}>
+                            {ESTADO_LABELS[c.estado] ?? c.estado}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{c.vendedor?.name ?? '-'}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => navigate(`/cotizaciones/${c.id}`)}
+                              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors" title="Ver/Editar">
+                              <Eye size={15} />
+                            </button>
+                            <button onClick={() => openPdf(`/api/cotizaciones/${c.id}/pdf`)}
+                              className="p-1.5 text-gray-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded transition-colors" title="PDF">
+                              <FileText size={15} />
+                            </button>
+                            <button onClick={() => emailMut.mutate(c.id)} disabled={emailMut.isPending}
+                              className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors" title="Enviar email">
+                              <Mail size={15} />
+                            </button>
+                            {c.estado === 'no_definido' && (
+                              <button onClick={() => { setDeleteId(c.id); setDeleteError('') }}
+                                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors" title="Eliminar">
+                                <Trash2 size={15} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Right: preview panel */}
+        <div className={activeTab === 'preview' ? '' : 'hidden lg:block'}>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              Vista previa exportación
+            </h2>
+            <ExportPreviewPanel
+              lines={flatLines}
+              availableColumns={COTIZACION_COLUMN_DEFS}
+              isLoading={isLoading}
+              exportBaseUrl={exportBaseUrl}
+              storageKey="cotizaciones-preview-cols"
+              filename={`cotizaciones-${new Date().toISOString().split('T')[0]}.xlsx`}
+            />
           </div>
-        </>
-      )}
+        </div>
+
+      </div>
 
       {/* Delete modal */}
       {deleteId !== null && (
