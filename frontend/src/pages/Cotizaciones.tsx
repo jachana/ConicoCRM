@@ -143,7 +143,6 @@ export default function Cotizaciones() {
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState('')
   const [emailToast, setEmailToast] = useState<{ msg: string; ok: boolean } | null>(null)
-  const [activeTab, setActiveTab] = useState<'list' | 'preview'>('list')
 
   // Close popovers on outside click
   useEffect(() => {
@@ -435,25 +434,8 @@ export default function Cotizaciones() {
         </div>
       </div>
 
-      {/* Mobile tab toggle */}
-      <div className="lg:hidden flex gap-0 mb-4 border-b border-gray-200 dark:border-gray-800">
-        {(['list', 'preview'] as const).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              activeTab === tab
-                ? 'border-brand-500 text-brand-600 dark:text-brand-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400'
-            }`}>
-            {tab === 'list' ? 'Lista' : 'Vista previa'}
-          </button>
-        ))}
-      </div>
-
-      {/* Split layout */}
-      <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
-
-        {/* Left: list */}
-        <div className={activeTab === 'list' ? '' : 'hidden lg:block'}>
+      {/* List */}
+      <div>
           {isLoading ? (
             <div className="text-gray-400 py-12 text-center text-sm">Cargando...</div>
           ) : cotizaciones.length === 0 ? (
@@ -566,25 +548,6 @@ export default function Cotizaciones() {
               </div>
             </>
           )}
-        </div>
-
-        {/* Right: preview panel */}
-        <div className={activeTab === 'preview' ? '' : 'hidden lg:block'}>
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-              Vista previa exportación
-            </h2>
-            <ExportPreviewPanel
-              lines={flatLines}
-              availableColumns={COTIZACION_COLUMN_DEFS}
-              isLoading={isLoading}
-              exportBaseUrl={exportBaseUrl}
-              storageKey="cotizaciones-preview-cols"
-              filename={exportFilename}
-            />
-          </div>
-        </div>
-
       </div>
 
       {/* Delete modal */}
