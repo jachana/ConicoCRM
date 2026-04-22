@@ -173,6 +173,7 @@ def test_cot_email_blocked_negative_margin(client, db, admin_token):
 def _make_nv_linea(client, token, cid, producto_id, valor_neto):
     r = client.post("/api/nota_ventas/", json={
         "cliente_id": cid,
+        "retiro_en_conico": True,
         "lineas": [{"orden": 1, "descripcion": "Test NV", "producto_id": producto_id,
                     "cantidad": 1, "valor_neto": valor_neto}],
     }, headers={"Authorization": f"Bearer {token}"})
@@ -191,6 +192,7 @@ def test_nv_save_blocked_empty_item(client, admin_token):
     cid = _make_cliente(client, admin_token)
     r = client.post("/api/nota_ventas/", json={
         "cliente_id": cid,
+        "retiro_en_conico": True,
         "lineas": [{"orden": 1, "descripcion": "Texto libre", "producto_id": None,
                     "cantidad": 1, "valor_neto": 1000}],
     }, headers={"Authorization": f"Bearer {admin_token}"})

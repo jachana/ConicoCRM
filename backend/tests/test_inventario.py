@@ -190,6 +190,7 @@ def _crear_nv(client, token, producto_id: int, cantidad: int = 3):
         json={
             "cliente_id": cli,
             "fecha": "2026-04-19",
+            "retiro_en_conico": True,
             "lineas": [{"orden": 1, "descripcion": "Item", "cantidad": cantidad,
                          "valor_neto": 1000, "producto_id": producto_id}],
         },

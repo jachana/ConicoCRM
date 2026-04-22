@@ -45,7 +45,7 @@ def _create_nv(client, admin_token, cliente_id):
     prod = _create_producto(client, admin_token)
     r = client.post(
         "/api/nota_ventas/",
-        json={"cliente_id": cliente_id, "correo": "nv@test.com",
+        json={"cliente_id": cliente_id, "correo": "nv@test.com", "retiro_en_conico": True,
               "lineas": [{"orden": 0, "descripcion": "Prod", "producto_id": prod["id"],
                           "cantidad": 1, "valor_neto": 500}]},
         headers={"Authorization": f"Bearer {admin_token}"},
