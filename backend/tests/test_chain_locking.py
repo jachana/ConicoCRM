@@ -8,7 +8,7 @@ def _make_cliente(client, token):
     return r.json()["id"]
 
 
-def _make_produto(client, token):
+def _make_producto(client, token):
     r = client.post("/api/productos/", json={
         "nombre": "Lock Prod",
         "sku": f"LOCK-{random.randint(10000, 99999)}",
@@ -57,7 +57,7 @@ def _make_factura_from_nv(client, token, nv_id):
 
 def test_creating_nv_from_cotizacion_locks_cotizacion(client, admin_token):
     cid = _make_cliente(client, admin_token)
-    prod = _make_produto(client, admin_token)
+    prod = _make_producto(client, admin_token)
     cot = _make_cotizacion(client, admin_token, cid, prod["id"])
     assert cot["is_locked"] is False
 
@@ -70,7 +70,7 @@ def test_creating_nv_from_cotizacion_locks_cotizacion(client, admin_token):
 
 def test_patch_locked_cotizacion_returns_403(client, admin_token):
     cid = _make_cliente(client, admin_token)
-    prod = _make_produto(client, admin_token)
+    prod = _make_producto(client, admin_token)
     cot = _make_cotizacion(client, admin_token, cid, prod["id"])
     _make_nv_from_cot(client, admin_token, cot["id"])
 
@@ -82,7 +82,7 @@ def test_patch_locked_cotizacion_returns_403(client, admin_token):
 
 def test_put_lineas_locked_cotizacion_returns_403(client, admin_token):
     cid = _make_cliente(client, admin_token)
-    prod = _make_produto(client, admin_token)
+    prod = _make_producto(client, admin_token)
     cot = _make_cotizacion(client, admin_token, cid, prod["id"])
     _make_nv_from_cot(client, admin_token, cot["id"])
 
@@ -94,7 +94,7 @@ def test_put_lineas_locked_cotizacion_returns_403(client, admin_token):
 
 def test_unlocked_cotizacion_is_still_editable(client, admin_token):
     cid = _make_cliente(client, admin_token)
-    prod = _make_produto(client, admin_token)
+    prod = _make_producto(client, admin_token)
     cot = _make_cotizacion(client, admin_token, cid, prod["id"])
 
     r = client.patch(f"/api/cotizaciones/{cot['id']}",
