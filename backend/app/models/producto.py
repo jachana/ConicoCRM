@@ -25,8 +25,16 @@ class Producto(Base):
         default=lambda: datetime.now(timezone.utc),
         server_default=text("CURRENT_TIMESTAMP"),
     )
+    marca_id: Mapped[int | None] = mapped_column(
+        ForeignKey("marcas.id", ondelete="SET NULL"), nullable=True
+    )
+    volumen: Mapped[Decimal | None] = mapped_column(Numeric(8, 2), nullable=True)
+    ultimo_costo_unitario: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), default=Decimal("0"), server_default=text("0")
+    )
 
     proveedor: Mapped["Proveedor | None"] = relationship("Proveedor", back_populates="productos")
+    marca: Mapped["Marca | None"] = relationship("Marca")
     tags: Mapped[list["ProductoTag"]] = relationship(
         "ProductoTag",
         secondary="producto_tag_link",
@@ -35,3 +43,11 @@ class Producto(Base):
     documentos: Mapped[list["ProductoDocumento"]] = relationship(
         "ProductoDocumento", back_populates="producto", cascade="all, delete-orphan"
     )
+
+    @property
+    def precio_con_iva(self) -> Decimal:
+        return (self.precio_venta * Decimal("1.19")).quantize(Decimal("0.01"))
+
+    @property
+    def costo_con_iva(self) -> Decimal:
+        return (self.precio_costo * Decimal("1.19")).quantize(Decimal("0.01"))
