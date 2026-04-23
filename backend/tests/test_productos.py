@@ -11,7 +11,7 @@ def test_vendedor_puede_ver_productos(client, vendedor_token):
 def test_vendedor_no_puede_crear_producto(client, vendedor_token):
     r = client.post(
         "/api/productos/",
-        json={"nombre": "Prod X", "precio_costo": "10.00", "precio_venta": "20.00"},
+        json={"nombre": "Prod X", "precio_venta": "20.00"},
         headers={"Authorization": f"Bearer {vendedor_token}"},
     )
     assert r.status_code == 403
@@ -20,7 +20,7 @@ def test_vendedor_no_puede_crear_producto(client, vendedor_token):
 def test_crear_producto(client, admin_token):
     r = client.post(
         "/api/productos/",
-        json={"nombre": "Tornillo M6", "descripcion": "Tornillo inoxidable", "precio_costo": "50.00", "precio_venta": "120.00", "stock_minimo": 10},
+        json={"nombre": "Tornillo M6", "descripcion": "Tornillo inoxidable", "precio_venta": "120.00", "stock_minimo": 10},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 201
@@ -38,7 +38,7 @@ def test_crear_producto_con_proveedor(client, admin_token):
     prov_id = prov.json()["id"]
     r = client.post(
         "/api/productos/",
-        json={"nombre": "Prod con Prov", "precio_costo": "10.00", "precio_venta": "20.00", "proveedor_id": prov_id},
+        json={"nombre": "Prod con Prov", "precio_venta": "20.00", "proveedor_id": prov_id},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 201
@@ -46,8 +46,8 @@ def test_crear_producto_con_proveedor(client, admin_token):
 
 
 def test_buscar_productos(client, admin_token):
-    client.post("/api/productos/", json={"nombre": "Perno hexagonal", "precio_costo": "5.00", "precio_venta": "10.00"}, headers={"Authorization": f"Bearer {admin_token}"})
-    client.post("/api/productos/", json={"nombre": "Tuerca M8", "precio_costo": "3.00", "precio_venta": "6.00"}, headers={"Authorization": f"Bearer {admin_token}"})
+    client.post("/api/productos/", json={"nombre": "Perno hexagonal", "precio_venta": "10.00"}, headers={"Authorization": f"Bearer {admin_token}"})
+    client.post("/api/productos/", json={"nombre": "Tuerca M8", "precio_venta": "6.00"}, headers={"Authorization": f"Bearer {admin_token}"})
     r = client.get("/api/productos/buscar?q=perno", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
     resultados = r.json()
@@ -56,7 +56,7 @@ def test_buscar_productos(client, admin_token):
 
 
 def test_actualizar_producto(client, admin_token):
-    r = client.post("/api/productos/", json={"nombre": "Viejo", "precio_costo": "1.00", "precio_venta": "2.00"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.post("/api/productos/", json={"nombre": "Viejo", "precio_venta": "2.00"}, headers={"Authorization": f"Bearer {admin_token}"})
     pid = r.json()["id"]
     r2 = client.patch(
         f"/api/productos/{pid}",
@@ -69,7 +69,7 @@ def test_actualizar_producto(client, admin_token):
 
 
 def test_eliminar_producto(client, admin_token):
-    r = client.post("/api/productos/", json={"nombre": "Para Borrar", "precio_costo": "1.00", "precio_venta": "2.00"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.post("/api/productos/", json={"nombre": "Para Borrar", "precio_venta": "2.00"}, headers={"Authorization": f"Bearer {admin_token}"})
     pid = r.json()["id"]
     r2 = client.delete(f"/api/productos/{pid}", headers={"Authorization": f"Bearer {admin_token}"})
     assert r2.status_code == 204
