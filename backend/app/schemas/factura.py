@@ -38,7 +38,7 @@ class FacturaCreate(BaseModel):
     lineas: list[FacturaLineaCreate] = []
 
 
-_METODOS_PAGO_ALLOWED = {"Efectivo", "Transferencia", "Cheque", "Débito", "Crédito", "Mixto"}
+METODOS_PAGO = {"Efectivo", "Transferencia", "Cheque", "Débito", "Crédito", "Mixto"}
 
 
 class FacturaUpdate(BaseModel):
@@ -56,8 +56,8 @@ class FacturaUpdate(BaseModel):
     @field_validator("metodo_pago")
     @classmethod
     def validar_metodo_pago(cls, v: str | None) -> str | None:
-        if v is not None and v not in _METODOS_PAGO_ALLOWED:
-            raise ValueError(f"metodo_pago debe ser uno de: {sorted(_METODOS_PAGO_ALLOWED)}")
+        if v is not None and v not in METODOS_PAGO:
+            raise ValueError(f"metodo_pago debe ser uno de: {sorted(METODOS_PAGO)}")
         return v
 
 
@@ -66,6 +66,13 @@ class FacturaEstadoCambio(BaseModel):
     fecha_pago: date | None = None
     monto_pagado: Decimal | None = None
     metodo_pago: str | None = None
+
+    @field_validator("metodo_pago")
+    @classmethod
+    def validar_metodo_pago(cls, v: str | None) -> str | None:
+        if v is not None and v not in METODOS_PAGO:
+            raise ValueError(f"metodo_pago debe ser uno de: {sorted(METODOS_PAGO)}")
+        return v
 
 
 class ClienteMinOut(BaseModel):
