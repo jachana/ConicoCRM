@@ -402,6 +402,9 @@ def actualizar_cotizacion(
     cot = db.get(Cotizacion, cotizacion_id)
     if not cot:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    if cot.is_locked:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Cotización bloqueada — se generó una NV desde ella")
     if not _can_edit(current_user, cot):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No puedes editar cotizaciones de otros vendedores")
     update_data = body.model_dump(exclude_unset=True)
@@ -445,6 +448,9 @@ def reemplazar_lineas(
     cot = db.query(Cotizacion).options(joinedload(Cotizacion.lineas)).get(cotizacion_id)
     if not cot:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    if cot.is_locked:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Cotización bloqueada — se generó una NV desde ella")
     if not _can_edit(current_user, cot):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos")
 
