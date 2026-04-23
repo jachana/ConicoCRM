@@ -24,7 +24,9 @@ class NotaVenta(Base):
     fecha: Mapped[date] = mapped_column(Date, default=date.today)
     estado: Mapped[str] = mapped_column(String(20), default="pendiente")
     nota: Mapped[str | None] = mapped_column(Text, nullable=True)
-    direccion_despacho: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sede_despacho_id: Mapped[int | None] = mapped_column(
+        ForeignKey("sedes_despacho.id", ondelete="SET NULL"), nullable=True
+    )
     retiro_en_conico: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
     terminos_pago: Mapped[str | None] = mapped_column(String(255), nullable=True)
     correo: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -57,6 +59,7 @@ class NotaVenta(Base):
     factura: Mapped["Factura | None"] = relationship(
         "Factura", back_populates="nv", uselist=False
     )
+    sede_despacho: Mapped["SedeDespacho | None"] = relationship("SedeDespacho")
 
     @property
     def factura_id(self) -> int | None:

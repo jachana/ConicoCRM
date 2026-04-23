@@ -28,3 +28,6 @@ class Empresa(Base):
     )
 
     clientes: Mapped[list["Cliente"]] = relationship("Cliente", back_populates="empresa")
+    sedes_despacho: Mapped[list["SedeDespacho"]] = relationship(
+        "SedeDespacho", back_populates="empresa", cascade="all, delete-orphan"
+    )
