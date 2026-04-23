@@ -477,8 +477,10 @@ def actualizar_factura(
     factura = db.get(Factura, factura_id)
     if not factura:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Factura no encontrada")
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Las facturas no son editables una vez emitidas")
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(factura, field, value)
+    db.commit()
+    return _load_factura(db, factura_id)
 
 
 @router.put("/{factura_id}/lineas", response_model=FacturaOut)

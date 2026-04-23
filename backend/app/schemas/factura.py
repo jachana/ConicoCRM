@@ -47,6 +47,7 @@ class FacturaUpdate(BaseModel):
     correo: str | None = None
     empresa_id: int | None = None
     banco_receptor_id: int | None = None
+    metodo_pago: str | None = None
 
 
 class FacturaEstadoCambio(BaseModel):
