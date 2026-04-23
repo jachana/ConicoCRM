@@ -1,6 +1,6 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 from app.schemas.empresa import EmpresaRef
 
 
@@ -91,6 +91,12 @@ class CotizacionOut(BaseModel):
     empresa: EmpresaRef | None = None
     lineas: list[CotizacionLineaOut] = []
     is_locked: bool = False
+
+    @computed_field
+    @property
+    def fecha_expiracion(self) -> date:
+        return self.fecha + timedelta(days=self.validez_dias)
+
     model_config = {"from_attributes": True}
 
 

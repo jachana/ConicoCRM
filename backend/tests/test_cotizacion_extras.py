@@ -63,3 +63,31 @@ def test_cotizacion_linea_con_descuento(client, admin_token, db):
     assert float(linea["descuento"]) == pytest.approx(10.0)
     # total_neto = 2 * 100 * (1 - 10/100) = 180
     assert float(linea["total_neto"]) == pytest.approx(180.0)
+
+
+def test_fecha_expiracion_en_response(client, admin_token, db):
+    from datetime import date, timedelta
+    c, u = _make_cliente_vendedor(db)
+    resp = client.post(
+        "/api/cotizaciones/",
+        json={"cliente_id": c.id, "validez_dias": 7, "lineas": []},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    expected = (date.today() + timedelta(days=7)).isoformat()
+    assert data["fecha_expiracion"] == expected
+
+
+def test_fecha_expiracion_default_5_dias(client, admin_token, db):
+    from datetime import date, timedelta
+    c, u = _make_cliente_vendedor(db)
+    resp = client.post(
+        "/api/cotizaciones/",
+        json={"cliente_id": c.id, "lineas": []},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    expected = (date.today() + timedelta(days=5)).isoformat()
+    assert data["fecha_expiracion"] == expected
