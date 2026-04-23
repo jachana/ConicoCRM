@@ -2,11 +2,14 @@ import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
-import type { Empresa, EmpresaListItem, DeudaBulkItem } from '../types'
+import type { Empresa, EmpresaListItem, DeudaBulkItem, SedeDespacho } from '../types'
 import EmpresaFilters from '../components/EmpresaFilters'
 import EmpresaDetailModal from '../components/EmpresaDetailModal'
 
 const PLAZO_OPTIONS = ['Al contado', '30 Dias', '60 Dias', '90 Dias', 'Especial']
+
+type SedeForm = { nombre: string; direccion: string }
+const EMPTY_SEDE: SedeForm = { nombre: '', direccion: '' }
 
 type FormData = {
   nombre: string
@@ -143,7 +146,17 @@ export default function Empresas() {
     setError(null); setModalOpen(true)
   }
 
-  function cerrarModal() { setModalOpen(false); setEditando(null); setError(null) }
+  function cerrarModal() {
+    setModalOpen(false)
+    setEditando(null)
+    setError(null)
+    setSedes([])
+    setSedeAdding(false)
+    setSedeEditId(null)
+    setSedeForm(EMPTY_SEDE)
+    setSedeError(null)
+    setSedeEliminandoId(null)
+  }
 
   const guardar = useMutation({
     mutationFn: (data: FormData) => {
@@ -175,6 +188,60 @@ export default function Empresas() {
     },
     onError: (e: any) => setDeleteError(e?.response?.data?.detail ?? 'Error al eliminar'),
   })
+
+  // Sedes de despacho
+  const [sedes, setSedes] = useState<SedeDespacho[]>([])
+  const [sedeForm, setSedeForm] = useState<SedeForm>(EMPTY_SEDE)
+  const [sedeEditId, setSedeEditId] = useState<number | null>(null)
+  const [sedeAdding, setSedeAdding] = useState(false)
+  const [sedeError, setSedeError] = useState<string | null>(null)
+  const [sedeSaving, setSedeSaving] = useState(false)
+  const [sedeEliminandoId, setSedeEliminandoId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (editando) {
+      api.get(`/api/sedes-despacho/?empresa_id=${editando.id}`)
+        .then(r => setSedes(r.data))
+        .catch(() => setSedes([]))
+    } else {
+      setSedes([])
+    }
+  }, [editando])
+
+  async function guardarSede() {
+    if (!editando) return
+    setSedeSaving(true)
+    setSedeError(null)
+    try {
+      if (sedeEditId !== null) {
+        const r = await api.put(`/api/sedes-despacho/${sedeEditId}`, sedeForm)
+        setSedes(prev => prev.map(s => s.id === sedeEditId ? r.data : s))
+      } else {
+        const r = await api.post('/api/sedes-despacho/', { ...sedeForm, empresa_id: editando.id })
+        setSedes(prev => [...prev, r.data])
+      }
+      setSedeAdding(false)
+      setSedeEditId(null)
+      setSedeForm(EMPTY_SEDE)
+    } catch (e: any) {
+      setSedeError(e?.response?.data?.detail ?? 'Error al guardar sede')
+    } finally {
+      setSedeSaving(false)
+    }
+  }
+
+  async function eliminarSede(id: number) {
+    setSedeSaving(true)
+    try {
+      await api.delete(`/api/sedes-despacho/${id}`)
+      setSedes(prev => prev.filter(s => s.id !== id))
+      setSedeEliminandoId(null)
+    } catch (e: any) {
+      setSedeError(e?.response?.data?.detail ?? 'Error al eliminar sede')
+    } finally {
+      setSedeSaving(false)
+    }
+  }
 
   if (isLoading) return <div className="p-6 text-gray-500">Cargando...</div>
 
@@ -382,6 +449,103 @@ export default function Empresas() {
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nota Cobranza</label>
                 <textarea rows={2} value={form.nota_cobranza} onChange={e => setForm(f => ({ ...f, nota_cobranza: e.target.value }))}
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              {/* Sedes de despacho */}
+              <div className="col-span-2">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Sedes de despacho</label>
+                  {editando && !sedeAdding && sedeEditId === null && (
+                    <button
+                      type="button"
+                      onClick={() => { setSedeAdding(true); setSedeForm(EMPTY_SEDE) }}
+                      className="text-xs text-blue-600 hover:underline"
+                    >+ Agregar sede</button>
+                  )}
+                </div>
+                {!editando && (
+                  <p className="text-xs text-gray-400">Guarda la empresa primero para agregar sedes.</p>
+                )}
+                {editando && (
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    {sedes.length === 0 && !sedeAdding && (
+                      <p className="text-xs text-gray-400 px-3 py-2">Sin sedes registradas</p>
+                    )}
+                    {sedes.map(s => (
+                      <div key={s.id} className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                        {sedeEditId === s.id ? (
+                          <div className="space-y-1">
+                            <input
+                              type="text"
+                              value={sedeForm.nombre}
+                              onChange={e => setSedeForm(f => ({ ...f, nombre: e.target.value }))}
+                              placeholder="Nombre"
+                              className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            />
+                            <input
+                              type="text"
+                              value={sedeForm.direccion}
+                              onChange={e => setSedeForm(f => ({ ...f, direccion: e.target.value }))}
+                              placeholder="Dirección"
+                              className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            />
+                            {sedeError && <p className="text-xs text-red-500">{sedeError}</p>}
+                            <div className="flex gap-2">
+                              <button type="button" onClick={guardarSede} disabled={sedeSaving || !sedeForm.nombre || !sedeForm.direccion}
+                                className="text-xs text-blue-600 hover:underline disabled:opacity-50">Guardar</button>
+                              <button type="button" onClick={() => { setSedeEditId(null); setSedeForm(EMPTY_SEDE); setSedeError(null) }}
+                                className="text-xs text-gray-500 hover:underline">Cancelar</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">{s.nombre}</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{s.direccion}</span>
+                            </div>
+                            {sedeEliminandoId === s.id ? (
+                              <span className="flex gap-2 text-xs">
+                                <button type="button" onClick={() => eliminarSede(s.id)} disabled={sedeSaving} className="text-red-600 hover:underline disabled:opacity-50">Sí</button>
+                                <button type="button" onClick={() => setSedeEliminandoId(null)} className="text-gray-500 hover:underline">No</button>
+                              </span>
+                            ) : (
+                              <span className="flex gap-2">
+                                <button type="button" onClick={() => { setSedeEditId(s.id); setSedeForm({ nombre: s.nombre, direccion: s.direccion }); setSedeError(null); setSedeEliminandoId(null) }}
+                                  className="text-xs text-blue-600 hover:underline">Editar</button>
+                                <button type="button" onClick={() => setSedeEliminandoId(s.id)}
+                                  className="text-xs text-red-500 hover:underline">Eliminar</button>
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {sedeAdding && (
+                      <div className="px-3 py-2 space-y-1 border-t border-gray-100 dark:border-gray-800">
+                        <input
+                          type="text"
+                          value={sedeForm.nombre}
+                          onChange={e => setSedeForm(f => ({ ...f, nombre: e.target.value }))}
+                          placeholder="Nombre de la sede"
+                          className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        />
+                        <input
+                          type="text"
+                          value={sedeForm.direccion}
+                          onChange={e => setSedeForm(f => ({ ...f, direccion: e.target.value }))}
+                          placeholder="Dirección completa"
+                          className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        />
+                        {sedeError && <p className="text-xs text-red-500">{sedeError}</p>}
+                        <div className="flex gap-2">
+                          <button type="button" onClick={guardarSede} disabled={sedeSaving || !sedeForm.nombre || !sedeForm.direccion}
+                            className="text-xs text-blue-600 hover:underline disabled:opacity-50">Guardar</button>
+                          <button type="button" onClick={() => { setSedeAdding(false); setSedeForm(EMPTY_SEDE); setSedeError(null) }}
+                            className="text-xs text-gray-500 hover:underline">Cancelar</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               {error && <p className="col-span-2 text-xs text-red-500">{error}</p>}
               <div className="col-span-2 flex justify-end gap-2 pt-2">

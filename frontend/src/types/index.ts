@@ -27,6 +27,20 @@ export interface Proveedor {
   created_at: string
 }
 
+export interface SedeDespacho {
+  id: number
+  empresa_id: number
+  nombre: string
+  direccion: string
+  created_at: string
+}
+
+export interface SedeDespachoRef {
+  id: number
+  nombre: string
+  direccion: string
+}
+
 export interface EmpresaRef {
   id: number
   nombre: string
@@ -218,7 +232,8 @@ export interface NotaVenta {
   estado: 'pendiente' | 'despachada' | 'entregada' | 'pagada' | 'cancelada'
   nota: string | null
   correo: string | null
-  direccion_despacho: string | null
+  sede_despacho_id: number | null
+  sede_despacho?: SedeDespachoRef | null
   retiro_en_conico: boolean
   terminos_pago: string | null
   total_neto: number
