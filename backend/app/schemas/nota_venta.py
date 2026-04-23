@@ -2,6 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from pydantic import BaseModel
 from app.schemas.empresa import EmpresaRef
+from app.schemas.sede_despacho import SedeDespachoRef
 
 
 class NotaVentaLineaCreate(BaseModel):
@@ -32,7 +33,7 @@ class NotaVentaCreate(BaseModel):
     correo: str | None = None
     empresa_id: int | None = None
     lineas: list[NotaVentaLineaCreate] = []
-    direccion_despacho: str | None = None
+    sede_despacho_id: int | None = None
     retiro_en_conico: bool = False
     terminos_pago: str | None = None
 
@@ -45,7 +46,7 @@ class NotaVentaUpdate(BaseModel):
     nota: str | None = None
     correo: str | None = None
     empresa_id: int | None = None
-    direccion_despacho: str | None = None
+    sede_despacho_id: int | None = None
     retiro_en_conico: bool | None = None
     terminos_pago: str | None = None
 
@@ -99,7 +100,8 @@ class NotaVentaOut(BaseModel):
     empresa: EmpresaRef | None = None
     cotizacion: CotizacionRef | None = None
     lineas: list[NotaVentaLineaOut] = []
-    direccion_despacho: str | None = None
+    sede_despacho_id: int | None = None
+    sede_despacho: SedeDespachoRef | None = None
     retiro_en_conico: bool = False
     terminos_pago: str | None = None
     is_locked: bool = False
@@ -126,7 +128,7 @@ class NotaVentaListOut(BaseModel):
     cliente: ClienteMinOut | None = None
     vendedor: VendedorMinOut | None = None
     empresa: EmpresaRef | None = None
-    direccion_despacho: str | None = None
+    sede_despacho_id: int | None = None
     retiro_en_conico: bool = False
     terminos_pago: str | None = None
     is_locked: bool = False
