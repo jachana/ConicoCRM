@@ -101,3 +101,104 @@ def test_cascade_delete_empresa_removes_sedes(client, admin_token, empresa_id):
     )
     assert resp.status_code == 200
     assert resp.json() == []
+
+
+@pytest.fixture
+def cliente_id(client, admin_token):
+    resp = client.post(
+        "/api/clientes/",
+        json={"nombre": "Cliente NV Test"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 201
+    return resp.json()["id"]
+
+
+def test_nv_with_sede_despacho(client, admin_token, empresa_id, cliente_id):
+    sede = client.post(
+        "/api/sedes-despacho/",
+        json={"empresa_id": empresa_id, "nombre": "Sede A", "direccion": "Calle 1"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    ).json()
+    resp = client.post(
+        "/api/nota_ventas/",
+        json={
+            "cliente_id": cliente_id,
+            "empresa_id": empresa_id,
+            "sede_despacho_id": sede["id"],
+            "retiro_en_conico": False,
+            "lineas": [],
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["sede_despacho_id"] == sede["id"]
+    assert data["sede_despacho"]["nombre"] == "Sede A"
+
+
+def test_nv_retiro_en_conico_no_sede(client, admin_token, cliente_id):
+    resp = client.post(
+        "/api/nota_ventas/",
+        json={
+            "cliente_id": cliente_id,
+            "retiro_en_conico": True,
+            "sede_despacho_id": None,
+            "lineas": [],
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["retiro_en_conico"] is True
+    assert resp.json()["sede_despacho_id"] is None
+
+
+def test_nv_mutual_exclusivity_error(client, admin_token, empresa_id, cliente_id):
+    sede = client.post(
+        "/api/sedes-despacho/",
+        json={"empresa_id": empresa_id, "nombre": "Sede B", "direccion": "Calle 2"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    ).json()
+    resp = client.post(
+        "/api/nota_ventas/",
+        json={
+            "cliente_id": cliente_id,
+            "retiro_en_conico": True,
+            "sede_despacho_id": sede["id"],
+            "lineas": [],
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 422
+
+
+def test_nv_both_empty_is_valid(client, admin_token, cliente_id):
+    resp = client.post(
+        "/api/nota_ventas/",
+        json={
+            "cliente_id": cliente_id,
+            "retiro_en_conico": False,
+            "sede_despacho_id": None,
+            "lineas": [],
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 201
+
+
+def test_delete_sede_blocked_by_nv(client, admin_token, empresa_id, cliente_id):
+    sede = client.post(
+        "/api/sedes-despacho/",
+        json={"empresa_id": empresa_id, "nombre": "Sede Referenciada", "direccion": "Av X"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    ).json()
+    client.post(
+        "/api/nota_ventas/",
+        json={"cliente_id": cliente_id, "sede_despacho_id": sede["id"], "lineas": []},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    resp = client.delete(
+        f"/api/sedes-despacho/{sede['id']}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 409
