@@ -90,3 +90,15 @@ def test_consumir_stock_sin_lotes_reduce_stock_igual(db, producto):
     db.refresh(producto)
 
     assert producto.stock_actual == 7
+
+
+def test_consumir_sobre_stock_permite_stock_negativo(db, producto):
+    """Distributor can sell items not in stock — negative stock_actual is valid."""
+    producto.stock_actual = 2
+    producto.ultimo_costo_unitario = Decimal("10")
+    db.commit()
+
+    consumir_stock_fifo(db, producto_id=producto.id, cantidad=5, referencia_tipo="nota_venta", referencia_id=1, usuario_id=None)
+    db.refresh(producto)
+
+    assert producto.stock_actual == -3

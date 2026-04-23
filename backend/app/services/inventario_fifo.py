@@ -9,6 +9,12 @@ from app.models.producto import Producto
 
 
 def recalcular_precio_costo(db: Session, producto: Producto) -> None:
+    """Set producto.precio_costo = MAX(costo_unitario) of active lots.
+
+    Falls back to producto.ultimo_costo_unitario (last received cost)
+    when no active lots remain. Does NOT use historical MAX of all lots —
+    the fallback is the most recent purchase price, not the highest ever.
+    """
     result = db.execute(
         select(func.max(LoteCosto.costo_unitario)).where(
             LoteCosto.producto_id == producto.id,
@@ -29,6 +35,14 @@ def crear_lote_entrada(
     oc_linea_id: int | None,
     usuario_id: int | None,
 ) -> LoteCosto:
+    """Create a cost lot for an incoming stock batch.
+
+    Updates producto.ultimo_costo_unitario to costo_unitario (last received cost)
+    and recalculates producto.precio_costo to MAX of active lots.
+
+    NOTE: Does NOT update producto.stock_actual. Caller is responsible.
+    NOTE: Does NOT create a MovimientoInventario. Caller is responsible.
+    """
     lote = LoteCosto(
         producto_id=producto_id,
         oc_linea_id=oc_linea_id,
@@ -54,6 +68,17 @@ def consumir_stock_fifo(
     referencia_id: int,
     usuario_id: int | None,
 ) -> None:
+    """Consume stock FIFO from oldest lot first.
+
+    Creates one MovimientoInventario per lot consumed. If lots are exhausted
+    before cantidad is fully consumed, creates an additional movement with
+    lote_costo_id=None for the remainder.
+
+    Decrements producto.stock_actual unconditionally. Negative stock_actual
+    is permitted — this distributor sells items not yet in stock.
+
+    NOTE: Does NOT raise on insufficient stock. Negative stock is valid.
+    """
     producto = db.get(Producto, producto_id)
     lotes = db.execute(
         select(LoteCosto)
