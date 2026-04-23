@@ -361,3 +361,60 @@ def test_recepcionar_crea_lote_costo(client, admin_token, db):
     producto = db.get(Producto, prod_id)
     assert producto.precio_costo == Decimal("50.00")
     assert producto.stock_actual == 10
+
+
+def test_recepcionar_sin_valor_neto_falla(client, admin_token, db):
+    from tests.conftest import TestingSession
+    from app.models.orden_compra import OrdenCompra
+
+    prov_r = client.post(
+        "/api/proveedores/",
+        json={"nombre": "ProvVN", "rut": "22222222-2"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert prov_r.status_code == 201
+    prov_id = prov_r.json()["id"]
+
+    prod_r = client.post(
+        "/api/productos/",
+        json={"nombre": "ProdVN", "precio_venta": 100, "stock_minimo": 0},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert prod_r.status_code == 201
+    prod_id = prod_r.json()["id"]
+
+    oc_r = client.post(
+        "/api/ordenes-compra/",
+        json={
+            "proveedor_id": prov_id,
+            "fecha": "2026-04-23",
+            "lineas": [
+                {
+                    "orden": 1,
+                    "producto_id": prod_id,
+                    "descripcion": "desc",
+                    "cantidad": 5,
+                    "valor_neto": "0",
+                }
+            ],
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert oc_r.status_code == 201
+    oc_data = oc_r.json()
+    oc_id = oc_data["id"]
+    linea_id = oc_data["lineas"][0]["id"]
+
+    setup_db = TestingSession()
+    orden = setup_db.get(OrdenCompra, oc_id)
+    orden.estado = "enviada"
+    setup_db.commit()
+    setup_db.close()
+
+    resp = client.post(
+        f"/api/ordenes-compra/{oc_id}/recepcionar",
+        json={"lineas": [{"id": linea_id, "cantidad_recibida": 5}]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 400
+    assert "valor_neto" in resp.json()["detail"]

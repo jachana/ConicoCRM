@@ -315,6 +315,11 @@ def recepcionar(
         if linea.producto_id and delta > 0:
             producto = db.get(Producto, linea.producto_id)
             if producto:
+                if not linea.valor_neto:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"La línea {linea.id} no tiene valor_neto; no se puede recepcionar sin costo unitario",
+                    )
                 producto.stock_actual += delta
                 lote = crear_lote_entrada(
                     db,
