@@ -214,6 +214,7 @@ export default function NotaVentaDetalle() {
 
   const selectedEmpresa = empresas.find(e => e.id === empresaId) ?? null
   const empresaSinCredito = selectedEmpresa != null && (selectedEmpresa.linea_credito == null || selectedEmpresa.linea_credito <= 0)
+  const isLocked = nv?.is_locked ?? false
 
   function handleClienteChange(cid: number | '') {
     setClienteId(cid)
@@ -532,14 +533,16 @@ export default function NotaVentaDetalle() {
               )}
             </>
           )}
-          <button
-            onClick={handleSave}
-            disabled={saving || lineasErrors.length > 0}
-            title={lineasErrors.length > 0 ? lineasErrors.join(' | ') : undefined}
-            className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
-          >
-            {saving ? 'Guardando...' : 'Guardar'}
-          </button>
+          {!isLocked && (
+            <button
+              onClick={handleSave}
+              disabled={saving || lineasErrors.length > 0}
+              title={lineasErrors.length > 0 ? lineasErrors.join(' | ') : undefined}
+              className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
+            >
+              {saving ? 'Guardando...' : 'Guardar'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -556,6 +559,12 @@ export default function NotaVentaDetalle() {
         </div>
       )}
 
+      {isLocked && (
+        <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300">
+          Este documento está bloqueado — se generó una Factura desde esta nota de venta.
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
           {error}
@@ -567,7 +576,8 @@ export default function NotaVentaDetalle() {
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Cliente *</label>
             <select value={clienteId} onChange={e => handleClienteChange(e.target.value ? Number(e.target.value) : '')}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('clienteId', clienteId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}>
+              disabled={isLocked}
+              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('clienteId', clienteId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}>
               <option value="">Seleccionar cliente...</option>
               {clientes.map(c => (
                 <option key={c.id} value={c.id}>{c.nombre}{c.rut ? ` · ${c.rut}` : ''}</option>
@@ -577,33 +587,59 @@ export default function NotaVentaDetalle() {
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Empresa</label>
             <select value={empresaId} onChange={e => setEmpresaId(e.target.value ? Number(e.target.value) : '')}
-              className={`w-full px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${df('empresaId', empresaId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600'}`}>
+              disabled={isLocked}
+              className={`w-full px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60 disabled:cursor-not-allowed ${df('empresaId', empresaId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600'}`}>
               <option value="">— Sin empresa —</option>
               {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
             </select>
           </div>
+          {empresaId !== '' && (
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Términos de pago
+              </label>
+              {empresaSinCredito ? (
+                <>
+                  <div className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 cursor-not-allowed">
+                    Al contado
+                  </div>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    Esta empresa no tiene línea de crédito.
+                  </p>
+                </>
+              ) : (
+                <div className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                  {nv?.terminos_pago ?? '—'}
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Contacto</label>
             <input type="text" value={contacto} onChange={e => setContacto(e.target.value)}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('contacto', contacto) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
+              disabled={isLocked}
+              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('contacto', contacto) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
               placeholder="Nombre del contacto" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Correo</label>
             <input type="email" value={correo} onChange={e => setCorreo(e.target.value)}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('correo', correo) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
+              disabled={isLocked}
+              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('correo', correo) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
               placeholder="email@ejemplo.com" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
             <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('fecha', fecha) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`} />
+              disabled={isLocked}
+              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('fecha', fecha) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`} />
           </div>
           {isAdmin && (
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Encargado</label>
               <select value={vendedorId} onChange={e => setVendedorId(e.target.value ? Number(e.target.value) : '')}
-                className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('vendedorId', vendedorId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}>
+                disabled={isLocked}
+                className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('vendedorId', vendedorId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}>
                 {usuarios.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
@@ -611,7 +647,8 @@ export default function NotaVentaDetalle() {
           <div className="sm:col-span-2 lg:col-span-3">
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Nota / Observaciones</label>
             <textarea value={nota} onChange={e => setNota(e.target.value)} rows={2}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${df('nota', nota) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
+              disabled={isLocked}
+              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-60 disabled:cursor-not-allowed ${df('nota', nota) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
               placeholder="Notas internas o para el cliente..." />
           </div>
           {/* Despacho */}
@@ -620,11 +657,12 @@ export default function NotaVentaDetalle() {
               <input
                 type="checkbox"
                 checked={retiroEnConico}
+                disabled={isLocked}
                 onChange={e => {
                   setRetiroEnConico(e.target.checked)
                   if (e.target.checked) setDireccionDespacho('')
                 }}
-                className="rounded border-gray-300"
+                className="rounded border-gray-300 disabled:opacity-60 disabled:cursor-not-allowed"
               />
               <span className={`text-sm font-medium ${df('retiroEnConico', retiroEnConico) ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'}`}>Retiro en Conico</span>
             </label>
@@ -636,9 +674,10 @@ export default function NotaVentaDetalle() {
                 <input
                   type="text"
                   value={direccionDespacho}
+                  disabled={isLocked}
                   onChange={e => setDireccionDespacho(e.target.value)}
                   placeholder="Calle, número, ciudad"
-                  className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('direccionDespacho', direccionDespacho) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('direccionDespacho', direccionDespacho) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
                 />
               </div>
             )}
@@ -669,14 +708,16 @@ export default function NotaVentaDetalle() {
                 <td className="px-3 py-2 text-center text-gray-500 dark:text-gray-400">{idx + 1}</td>
                 <td className="px-3 py-2">
                   <input type="text" value={linea.sku ?? ''} onChange={e => updateLinea(idx, { sku: e.target.value || null })}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    disabled={isLocked}
+                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="SKU" />
                 </td>
                 <td className="px-3 py-2 relative">
                   <input type="text" value={linea.descripcion}
+                    disabled={isLocked}
                     onChange={e => handleDescripcionChange(idx, e.target.value)}
                     onBlur={() => setTimeout(() => { setAutocompleteIdx(null); setAutocompleteResults([]) }, 200)}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="Descripción..." />
                   {autocompleteIdx === idx && autocompleteResults.length > 0 && (
                     <div className="absolute z-20 left-3 right-3 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
@@ -692,18 +733,21 @@ export default function NotaVentaDetalle() {
                 </td>
                 <td className="px-3 py-2">
                   <input type="text" value={linea.formato ?? ''} onChange={e => updateLinea(idx, { formato: e.target.value || null })}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    disabled={isLocked}
+                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="Formato" />
                 </td>
                 <td className="px-3 py-2">
                   <input type="number" min="1" value={linea.cantidad}
+                    disabled={isLocked}
                     onChange={e => updateLinea(idx, { cantidad: Math.max(1, parseInt(e.target.value) || 1) })}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right disabled:opacity-60 disabled:cursor-not-allowed" />
                 </td>
                 <td className="px-3 py-2">
                   <input type="number" min="0" value={linea.valor_neto}
+                    disabled={isLocked}
                     onChange={e => updateLinea(idx, { valor_neto: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right disabled:opacity-60 disabled:cursor-not-allowed" />
                 </td>
                 <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300 text-xs font-medium">{fmtMoney(linea.total_neto)}</td>
                 <td className="px-3 py-2 text-right text-gray-500 dark:text-gray-400 text-xs">{fmtMoney(linea.iva)}</td>
@@ -714,7 +758,7 @@ export default function NotaVentaDetalle() {
                     : <span className="text-gray-400">—</span>}
                 </td>
                 <td className="px-3 py-2">
-                  <button onClick={() => removeLinea(idx)} className="p-1 text-gray-400 hover:text-red-500 transition-colors" disabled={lineas.length === 1}>
+                  <button onClick={() => removeLinea(idx)} className="p-1 text-gray-400 hover:text-red-500 transition-colors" disabled={lineas.length === 1 || isLocked}>
                     <Trash2 size={14} />
                   </button>
                 </td>
@@ -725,11 +769,14 @@ export default function NotaVentaDetalle() {
       </div>
 
       <div className="flex items-start justify-between">
-        <button onClick={addLinea}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
-          <Plus size={15} />
-          Agregar línea
-        </button>
+        {!isLocked && (
+          <button onClick={addLinea}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+            <Plus size={15} />
+            Agregar línea
+          </button>
+        )}
+        {isLocked && <div />}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 min-w-[260px]">
           <div className="space-y-1.5 text-sm">
             <div className="flex justify-between text-gray-600 dark:text-gray-400">
