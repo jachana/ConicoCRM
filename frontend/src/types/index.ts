@@ -316,6 +316,7 @@ export interface FacturaList {
   empresa: EmpresaRef | null
   lineas: FacturaLinea[]
   margen_total: number | null
+  is_locked?: boolean
 }
 
 export interface FlatLine {
