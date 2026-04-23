@@ -156,6 +156,7 @@ export interface Cotizacion {
   cliente?: { id: number; nombre: string; rut: string | null; email: string | null; telefono: string | null }
   vendedor?: { id: number; name: string; email: string }
   lineas?: CotizacionLinea[]
+  is_locked?: boolean
 }
 
 export interface Empleado {
@@ -228,6 +229,7 @@ export interface NotaVenta {
   vendedor?: { id: number; name: string; email: string }
   cotizacion?: { id: number; numero: number } | null
   lineas?: NotaVentaLinea[]
+  is_locked?: boolean
 }
 
 export interface FacturaLinea {
@@ -285,6 +287,7 @@ export interface Factura {
   nv: { id: number; numero: number } | null;
   cotizacion: { id: number; numero: number } | null;
   lineas: FacturaLinea[];
+  is_locked?: boolean;
 }
 
 export interface FacturaList {

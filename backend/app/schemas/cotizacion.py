@@ -90,6 +90,7 @@ class CotizacionOut(BaseModel):
     vendedor: VendedorMinOut | None = None
     empresa: EmpresaRef | None = None
     lineas: list[CotizacionLineaOut] = []
+    is_locked: bool = False
     model_config = {"from_attributes": True}
 
 
@@ -115,6 +116,7 @@ class CotizacionListOut(BaseModel):
     vendedor: VendedorMinOut | None = None
     empresa: EmpresaRef | None = None
     lineas: list[CotizacionLineaOut] = []
+    is_locked: bool = False
     model_config = {"from_attributes": True}
 
 

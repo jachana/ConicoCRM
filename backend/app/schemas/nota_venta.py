@@ -102,6 +102,7 @@ class NotaVentaOut(BaseModel):
     direccion_despacho: str | None = None
     retiro_en_conico: bool = False
     terminos_pago: str | None = None
+    is_locked: bool = False
     model_config = {"from_attributes": True}
 
 
@@ -128,4 +129,5 @@ class NotaVentaListOut(BaseModel):
     direccion_despacho: str | None = None
     retiro_en_conico: bool = False
     terminos_pago: str | None = None
+    is_locked: bool = False
     model_config = {"from_attributes": True}

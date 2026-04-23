@@ -113,6 +113,7 @@ class FacturaOut(BaseModel):
     nv: NVRef | None = None
     cotizacion: CotizacionRef | None = None
     lineas: list[FacturaLineaOut] = []
+    is_locked: bool = True
     model_config = {"from_attributes": True}
 
 
@@ -143,4 +144,5 @@ class FacturaListOut(BaseModel):
     empresa: EmpresaRef | None = None
     lineas: list[FacturaLineaOut] = []
     margen_total: Decimal | None = None
+    is_locked: bool = True
     model_config = {"from_attributes": True}
