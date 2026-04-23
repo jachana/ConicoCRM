@@ -40,7 +40,7 @@ _TRANSITIONS: dict[tuple[str, str], str] = {
     ("parcial",  "anulada"): "admin_only",
 }
 
-_METODOS_PAGO = {"efectivo", "transferencia", "cheque", "debito", "credito", "deposito"}
+_METODOS_PAGO = {"Efectivo", "Transferencia", "Cheque", "Débito", "Crédito", "Mixto"}
 
 _FAC_EXPORT_COLUMNS: dict[str, tuple[str, Callable]] = {
     "numero":            ("Nº FAC",        lambda f, l: f.numero),

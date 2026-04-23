@@ -37,7 +37,7 @@ class FacturaCreate(BaseModel):
     lineas: list[FacturaLineaCreate] = []
 
 
-_METODOS_PAGO_ALLOWED = {"efectivo", "transferencia", "cheque", "debito", "credito", "deposito"}
+_METODOS_PAGO_ALLOWED = {"Efectivo", "Transferencia", "Cheque", "Débito", "Crédito", "Mixto"}
 
 
 class FacturaUpdate(BaseModel):
