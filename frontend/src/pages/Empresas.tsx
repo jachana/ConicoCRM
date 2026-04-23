@@ -231,12 +231,15 @@ export default function Empresas() {
   }
 
   async function eliminarSede(id: number) {
+    setSedeSaving(true)
     try {
       await api.delete(`/api/sedes-despacho/${id}`)
       setSedes(prev => prev.filter(s => s.id !== id))
       setSedeEliminandoId(null)
     } catch (e: any) {
       setSedeError(e?.response?.data?.detail ?? 'Error al eliminar sede')
+    } finally {
+      setSedeSaving(false)
     }
   }
 
@@ -501,12 +504,12 @@ export default function Empresas() {
                             </div>
                             {sedeEliminandoId === s.id ? (
                               <span className="flex gap-2 text-xs">
-                                <button type="button" onClick={() => eliminarSede(s.id)} className="text-red-600 hover:underline">Sí</button>
+                                <button type="button" onClick={() => eliminarSede(s.id)} disabled={sedeSaving} className="text-red-600 hover:underline disabled:opacity-50">Sí</button>
                                 <button type="button" onClick={() => setSedeEliminandoId(null)} className="text-gray-500 hover:underline">No</button>
                               </span>
                             ) : (
                               <span className="flex gap-2">
-                                <button type="button" onClick={() => { setSedeEditId(s.id); setSedeForm({ nombre: s.nombre, direccion: s.direccion }); setSedeError(null) }}
+                                <button type="button" onClick={() => { setSedeEditId(s.id); setSedeForm({ nombre: s.nombre, direccion: s.direccion }); setSedeError(null); setSedeEliminandoId(null) }}
                                   className="text-xs text-blue-600 hover:underline">Editar</button>
                                 <button type="button" onClick={() => setSedeEliminandoId(s.id)}
                                   className="text-xs text-red-500 hover:underline">Eliminar</button>
