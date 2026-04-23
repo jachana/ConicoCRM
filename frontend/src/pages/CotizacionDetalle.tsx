@@ -329,13 +329,14 @@ export default function CotizacionDetalle() {
 
   const selectedCliente = clientes.find(c => c.id === clienteId) ?? null
 
-  function filterProductos(q: string): Producto[] {
-    const lower = q.toLowerCase()
-    return productos.filter(p =>
-      p.nombre.toLowerCase().includes(lower) ||
-      (p.sku ?? '').toLowerCase().includes(lower) ||
-      (p.formato ?? '').toLowerCase().includes(lower)
-    ).slice(0, 10)
+  async function fetchAutocomplete(q: string) {
+    if (q.length < 2) { setAutocompleteResults([]); return }
+    try {
+      const res = await api.get<Producto[]>(`/api/productos/buscar?q=${encodeURIComponent(q)}`)
+      setAutocompleteResults(res.data)
+    } catch {
+      setAutocompleteResults([])
+    }
   }
 
   function handleDescripcionChange(idx: number, value: string, e: React.ChangeEvent<HTMLInputElement>) {
@@ -343,7 +344,7 @@ export default function CotizacionDetalle() {
     const above = rect.bottom + 280 > window.innerHeight
     setDropdownRect({ top: above ? rect.top : rect.bottom, left: rect.left, width: rect.width, above })
     setAutocompleteIdx(idx)
-    setAutocompleteResults(filterProductos(value))
+    fetchAutocomplete(value)
     updateLinea(idx, { descripcion: value })
   }
 
@@ -352,7 +353,7 @@ export default function CotizacionDetalle() {
     const above = rect.bottom + 280 > window.innerHeight
     setDropdownRect({ top: above ? rect.top : rect.bottom, left: rect.left, width: rect.width, above })
     setAutocompleteIdx(idx)
-    setAutocompleteResults(filterProductos(value))
+    fetchAutocomplete(value)
   }
 
   function selectProducto(idx: number, producto: Producto) {
@@ -1084,17 +1085,22 @@ export default function CotizacionDetalle() {
                     )}
                   </div>
                 </td>
-                <td className="px-2 py-1">
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    value={linea.descuento ?? 0}
-                    onChange={e => updateLinea(idx, { descuento: Number(e.target.value) })}
-                    disabled={isLocked}
-                    className="w-16 text-right border border-gray-300 rounded-lg px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+                <td className="px-2 py-1 w-20">
+                  {isLocked ? (
+                    <span className="block text-right text-sm text-gray-900 dark:text-white pr-1">
+                      {Number(linea.descuento ?? 0) > 0 ? `${linea.descuento}%` : '—'}
+                    </span>
+                  ) : (
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={linea.descuento ?? 0}
+                      onChange={e => updateLinea(idx, { descuento: Number(e.target.value) })}
+                      className="w-16 text-right border border-gray-300 rounded-lg px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  )}
                 </td>
                 <td className="px-3 py-3 text-right text-gray-700 dark:text-gray-300 text-sm font-medium">{fmtMoney(linea.total_neto)}</td>
                 <td className="px-3 py-2">
