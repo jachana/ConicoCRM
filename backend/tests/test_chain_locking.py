@@ -159,3 +159,47 @@ def test_estado_change_works_on_locked_nv(client, admin_token):
                      json={"estado": "despachada"},
                      headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
+
+
+# ── Factura locking ───────────────────────────────────────────────────────────
+
+def test_patch_factura_always_returns_403(client, admin_token):
+    cid = _make_cliente(client, admin_token)
+    nv = _make_nv(client, admin_token, cid)
+    factura = _make_factura_from_nv(client, admin_token, nv["id"])
+
+    r = client.patch(f"/api/facturas/{factura['id']}",
+                     json={"nota": "intento editar"},
+                     headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 403
+
+
+def test_put_lineas_factura_always_returns_403(client, admin_token):
+    cid = _make_cliente(client, admin_token)
+    nv = _make_nv(client, admin_token, cid)
+    factura = _make_factura_from_nv(client, admin_token, nv["id"])
+
+    r = client.put(f"/api/facturas/{factura['id']}/lineas",
+                   json=[{"orden": 1, "descripcion": "X", "cantidad": 1, "valor_neto": 500}],
+                   headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 403
+
+
+def test_factura_estado_change_still_works(client, admin_token):
+    """Estado transitions must still work even though field edits are blocked."""
+    cid = _make_cliente(client, admin_token)
+    nv = _make_nv(client, admin_token, cid)
+    factura = _make_factura_from_nv(client, admin_token, nv["id"])
+
+    r = client.patch(f"/api/facturas/{factura['id']}/estado",
+                     json={"estado": "pagada", "fecha_pago": "2026-04-22",
+                           "monto_pagado": factura["total"], "metodo_pago": "transferencia"},
+                     headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+
+
+def test_factura_is_locked_true_in_response(client, admin_token):
+    cid = _make_cliente(client, admin_token)
+    nv = _make_nv(client, admin_token, cid)
+    factura = _make_factura_from_nv(client, admin_token, nv["id"])
+    assert factura["is_locked"] is True

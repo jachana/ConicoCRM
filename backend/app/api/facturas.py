@@ -334,6 +334,10 @@ def crear_factura(
     for linea in factura.lineas:
         linea.factura_id = factura.id
     _recalcular_totales(factura)
+    if body.nv_id:
+        nv_to_lock = db.get(NotaVenta, body.nv_id)
+        if nv_to_lock:
+            nv_to_lock.is_locked = True
     db.commit()
     return _load_factura(db, factura.id)
 
@@ -393,6 +397,7 @@ def crear_factura_desde_nv(
         ))
     factura.lineas = lineas
     _recalcular_totales(factura)
+    nv.is_locked = True
     db.commit()
     return _load_factura(db, factura.id)
 
@@ -468,16 +473,12 @@ def actualizar_factura(
     body: FacturaUpdate,
     perms: tuple[User, Session] = require_permission("facturas", "edit"),
 ):
-    current_user, db = perms
-    if current_user.role not in ("admin", "subadmin"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin/subadmin puede editar facturas")
+    _, db = perms
     factura = db.get(Factura, factura_id)
     if not factura:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Factura no encontrada")
-    for field, value in body.model_dump(exclude_unset=True).items():
-        setattr(factura, field, value)
-    db.commit()
-    return _load_factura(db, factura_id)
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Las facturas no son editables una vez emitidas")
 
 
 @router.put("/{factura_id}/lineas", response_model=FacturaOut)
@@ -486,25 +487,12 @@ def reemplazar_lineas(
     lineas_data: list[FacturaLineaCreate],
     perms: tuple[User, Session] = require_permission("facturas", "edit"),
 ):
-    current_user, db = perms
-    if current_user.role != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin puede editar líneas de factura")
-    factura = db.query(Factura).options(joinedload(Factura.lineas)).filter(Factura.id == factura_id).first()
+    _, db = perms
+    factura = db.get(Factura, factura_id)
     if not factura:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Factura no encontrada")
-    for linea in list(factura.lineas):
-        db.delete(linea)
-    db.flush()
-    nuevas = _calcular_lineas(db, lineas_data)
-    for linea in nuevas:
-        linea.factura_id = factura_id
-        db.add(linea)
-    db.flush()
-    factura.lineas = nuevas
-    _recalcular_totales(factura)
-    factura.updated_at = datetime.now(timezone.utc)
-    db.commit()
-    return _load_factura(db, factura_id)
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Las facturas no son editables una vez emitidas")
 
 
 @router.patch("/{factura_id}/estado", response_model=FacturaOut)

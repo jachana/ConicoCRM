@@ -108,6 +108,7 @@ def test_obtener_factura_404(client, admin_token):
 
 
 def test_actualizar_header(client, admin_token):
+    """Facturas are immutable once emitted — PATCH always returns 403."""
     cid = _create_cliente(client, admin_token)
     f = _create_factura(client, admin_token, cid)
     r = client.patch(
@@ -115,8 +116,7 @@ def test_actualizar_header(client, admin_token):
         json={"contacto": "Juan Test"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
-    assert r.status_code == 200
-    assert r.json()["contacto"] == "Juan Test"
+    assert r.status_code == 403
 
 
 # --- Desde NV ---
@@ -194,6 +194,7 @@ def test_subadmin_no_puede_editar_lineas(client, subadmin_token, admin_token):
 
 
 def test_admin_puede_editar_lineas(client, admin_token):
+    """Facturas are immutable once emitted — PUT /lineas always returns 403."""
     cid = _create_cliente(client, admin_token)
     f = _create_factura(client, admin_token, cid)
     r = client.put(
@@ -201,10 +202,7 @@ def test_admin_puede_editar_lineas(client, admin_token):
         json=[{"orden": 0, "descripcion": "Nueva", "cantidad": 3, "valor_neto": 200}],
         headers={"Authorization": f"Bearer {admin_token}"},
     )
-    assert r.status_code == 200
-    data = r.json()
-    assert len(data["lineas"]) == 1
-    assert float(data["total_neto"]) == pytest.approx(600.0)
+    assert r.status_code == 403
 
 
 # --- Estado ---

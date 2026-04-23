@@ -33,6 +33,7 @@ class FacturaCreate(BaseModel):
     correo: str | None = None
     empresa_id: int | None = None
     banco_receptor_id: int | None = None
+    nv_id: int | None = None
     lineas: list[FacturaLineaCreate] = []
 
 
