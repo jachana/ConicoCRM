@@ -95,11 +95,11 @@ def test_cancelar_nv_costo_pendiente(client, admin_token, db):
     assert r.status_code == 200, r.text
     assert r.json()["estado"] == "cancelada"
 
-    # No devolución (entrada) movements should exist for this NV
+    # No entrada movements should exist for this NV (devolution writes tipo="entrada")
     devol_movs = db.query(MovimientoInventario).filter(
         MovimientoInventario.referencia_tipo == "nota_venta",
         MovimientoInventario.referencia_id == nv_id,
-        MovimientoInventario.tipo == "devolucion",
+        MovimientoInventario.tipo == "entrada",
     ).all()
     assert len(devol_movs) == 0, "Expected no devolución movements for cost-pending NV cancellation"
 
