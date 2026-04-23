@@ -112,6 +112,30 @@ def test_crear_nv_desde_cotizacion_404(client, admin_token):
     assert r.status_code == 404
 
 
+def test_crear_nv_desde_cotizacion_expirada(client, admin_token):
+    from datetime import date, timedelta
+    cid = _make_cliente(client, admin_token)
+    # Create cotizacion with fecha 10 days ago and validez_dias=5 → expired
+    r = client.post(
+        "/api/cotizaciones/",
+        json={
+            "cliente_id": cid,
+            "fecha": (date.today() - timedelta(days=10)).isoformat(),
+            "validez_dias": 5,
+            "lineas": [],
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201
+    cot_id = r.json()["id"]
+    r2 = client.post(
+        f"/api/nota_ventas/from_cotizacion/{cot_id}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r2.status_code == 409
+    assert "expirada" in r2.json()["detail"].lower()
+
+
 # ── listar ────────────────────────────────────────────────────────────────────
 
 def test_listar_nvs(client, admin_token):

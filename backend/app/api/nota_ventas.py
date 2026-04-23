@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from io import BytesIO
 
@@ -319,6 +319,11 @@ def crear_nv_desde_cotizacion(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="La cotización ya está cerrada (ya tiene una nota de venta generada)",
+        )
+    if date.today() > cot.fecha + timedelta(days=cot.validez_dias):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cotización expirada. Cambie la fecha de emisión para generar una NV.",
         )
 
     numero = _asignar_numero_nv(db)
