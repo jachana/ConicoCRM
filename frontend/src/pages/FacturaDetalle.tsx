@@ -365,30 +365,32 @@ export default function FacturaDetalle() {
             <Mail size={15} />
             {emailMut.isPending ? 'Enviando...' : 'Email'}
           </button>
-          {!editing ? (
-            <button
-              onClick={() => setEditing(true)}
-              className="flex items-center gap-2 px-3 py-2 text-sm border border-indigo-300 dark:border-indigo-700 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
-            >
-              <Pencil size={14} />
-              Editar
-            </button>
-          ) : (
-            <>
+          {!factura?.is_locked && (
+            !editing ? (
               <button
-                onClick={handleCancelEdit}
-                className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-2 px-3 py-2 text-sm border border-indigo-300 dark:border-indigo-700 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
               >
-                Cancelar
+                <Pencil size={14} />
+                Editar
               </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
-              >
-                {saving ? 'Guardando...' : 'Guardar'}
-              </button>
-            </>
+            ) : (
+              <>
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
+                >
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </button>
+              </>
+            )
           )}
           {canDelete && (
             <button
@@ -430,6 +432,12 @@ export default function FacturaDetalle() {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {factura?.is_locked && (
+        <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300">
+          Las facturas no son editables una vez emitidas.
         </div>
       )}
 
@@ -669,7 +677,7 @@ export default function FacturaDetalle() {
       {/* Lines section */}
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Líneas</h2>
-        {!editingLineas && currentUser?.role === 'admin' && (
+        {!factura?.is_locked && !editingLineas && currentUser?.role === 'admin' && (
           <button
             onClick={() => { setEditingLineas(true); setEditing(true) }}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-indigo-300 dark:border-indigo-700 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
