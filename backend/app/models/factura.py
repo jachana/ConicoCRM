@@ -82,6 +82,10 @@ class Factura(Base):
             return None
         return sum(l.total_neto * l.margen for l in lineas_con_margen) / base
 
+    @property
+    def is_locked(self) -> bool:
+        return self.estado not in ("emitida", "parcial")
+
 
 class FacturaLinea(Base):
     __tablename__ = "factura_lineas"

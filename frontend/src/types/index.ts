@@ -263,6 +263,7 @@ export interface Factura {
   vendedor_id: number | null;
   empresa_id: number | null;
   banco_receptor_id: number | null;
+  banco_receptor: { id: number; nombre: string; activo: boolean } | null;
   contacto: string | null;
   fecha: string;
   fecha_vencimiento: string | null;

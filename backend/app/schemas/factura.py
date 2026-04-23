@@ -2,6 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from pydantic import BaseModel, field_validator
 from app.schemas.empresa import EmpresaRef
+from app.schemas.banco_receptor import BancoReceptorOut
 
 
 class FacturaLineaCreate(BaseModel):
@@ -122,10 +123,11 @@ class FacturaOut(BaseModel):
     cliente: ClienteMinOut | None = None
     vendedor: VendedorMinOut | None = None
     empresa: EmpresaRef | None = None
+    banco_receptor: BancoReceptorOut | None = None
     nv: NVRef | None = None
     cotizacion: CotizacionRef | None = None
     lineas: list[FacturaLineaOut] = []
-    is_locked: bool = True
+    is_locked: bool
     model_config = {"from_attributes": True}
 
 
@@ -156,5 +158,5 @@ class FacturaListOut(BaseModel):
     empresa: EmpresaRef | None = None
     lineas: list[FacturaLineaOut] = []
     margen_total: Decimal | None = None
-    is_locked: bool = True
+    is_locked: bool
     model_config = {"from_attributes": True}
