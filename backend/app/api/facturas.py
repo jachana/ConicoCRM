@@ -477,6 +477,11 @@ def actualizar_factura(
     factura = db.get(Factura, factura_id)
     if not factura:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Factura no encontrada")
+    if factura.estado in ("pagada", "anulada"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"No se puede modificar una factura en estado '{factura.estado}'"
+        )
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(factura, field, value)
     db.commit()

@@ -108,7 +108,7 @@ def test_obtener_factura_404(client, admin_token):
 
 
 def test_actualizar_header(client, admin_token):
-    """Facturas are immutable once emitted — PATCH always returns 403."""
+    """PATCH updates header fields on facturas in estado 'emitida'."""
     cid = _create_cliente(client, admin_token)
     f = _create_factura(client, admin_token, cid)
     r = client.patch(
@@ -116,7 +116,8 @@ def test_actualizar_header(client, admin_token):
         json={"contacto": "Juan Test"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
-    assert r.status_code == 403
+    assert r.status_code == 200
+    assert r.json()["contacto"] == "Juan Test"
 
 
 # --- Desde NV ---

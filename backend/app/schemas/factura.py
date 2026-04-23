@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from app.schemas.empresa import EmpresaRef
 
 
@@ -37,6 +37,9 @@ class FacturaCreate(BaseModel):
     lineas: list[FacturaLineaCreate] = []
 
 
+_METODOS_PAGO_ALLOWED = {"efectivo", "transferencia", "cheque", "debito", "credito", "deposito"}
+
+
 class FacturaUpdate(BaseModel):
     cliente_id: int | None = None
     vendedor_id: int | None = None
@@ -48,6 +51,13 @@ class FacturaUpdate(BaseModel):
     empresa_id: int | None = None
     banco_receptor_id: int | None = None
     metodo_pago: str | None = None
+
+    @field_validator("metodo_pago")
+    @classmethod
+    def validar_metodo_pago(cls, v: str | None) -> str | None:
+        if v is not None and v not in _METODOS_PAGO_ALLOWED:
+            raise ValueError(f"metodo_pago debe ser uno de: {sorted(_METODOS_PAGO_ALLOWED)}")
+        return v
 
 
 class FacturaEstadoCambio(BaseModel):
