@@ -16,7 +16,7 @@ from app.models.cotizacion import Cotizacion
 from app.models.empresa import Empresa
 from app.models.factura import Factura
 from app.models.nota_venta import NotaVenta, NotaVentaLinea
-from app.models.sede_despacho import SedeDespacho
+from app.models.sede_despacho import SedeDespacho  # noqa: F401
 from app.models.producto import Producto
 from app.models.system_config import SystemConfig
 from app.models.user import User
@@ -397,10 +397,10 @@ def actualizar_nv(
                             detail="Nota de venta bloqueada — se generó una Factura desde ella")
     if not _can_edit(current_user, nv):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos para editar esta NV")
-    nuevo_retiro = body.retiro_en_conico if body.retiro_en_conico is not None else nv.retiro_en_conico
-    nueva_sede_id = body.sede_despacho_id if body.sede_despacho_id is not None else nv.sede_despacho_id
-    _validate_despacho(nuevo_retiro, nueva_sede_id)
     updates = body.model_dump(exclude_unset=True)
+    nuevo_retiro = body.retiro_en_conico if body.retiro_en_conico is not None else nv.retiro_en_conico
+    nueva_sede_id = updates.get("sede_despacho_id", nv.sede_despacho_id)
+    _validate_despacho(nuevo_retiro, nueva_sede_id)
     if "vendedor_id" in updates and current_user.role not in ("admin", "subadmin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin/subadmin puede reasignar el encargado")
     for field, value in updates.items():
