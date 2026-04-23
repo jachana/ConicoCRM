@@ -329,13 +329,14 @@ export default function CotizacionDetalle() {
 
   const selectedCliente = clientes.find(c => c.id === clienteId) ?? null
 
-  function filterProductos(q: string): Producto[] {
-    const lower = q.toLowerCase()
-    return productos.filter(p =>
-      p.nombre.toLowerCase().includes(lower) ||
-      (p.sku ?? '').toLowerCase().includes(lower) ||
-      (p.formato ?? '').toLowerCase().includes(lower)
-    ).slice(0, 10)
+  async function fetchAutocomplete(q: string) {
+    if (q.length < 2) { setAutocompleteResults([]); return }
+    try {
+      const res = await api.get<Producto[]>(`/api/productos/buscar?q=${encodeURIComponent(q)}`)
+      setAutocompleteResults(res.data)
+    } catch {
+      setAutocompleteResults([])
+    }
   }
 
   function handleDescripcionChange(idx: number, value: string, e: React.ChangeEvent<HTMLInputElement>) {
@@ -343,7 +344,7 @@ export default function CotizacionDetalle() {
     const above = rect.bottom + 280 > window.innerHeight
     setDropdownRect({ top: above ? rect.top : rect.bottom, left: rect.left, width: rect.width, above })
     setAutocompleteIdx(idx)
-    setAutocompleteResults(filterProductos(value))
+    fetchAutocomplete(value)
     updateLinea(idx, { descripcion: value })
   }
 
@@ -352,7 +353,7 @@ export default function CotizacionDetalle() {
     const above = rect.bottom + 280 > window.innerHeight
     setDropdownRect({ top: above ? rect.top : rect.bottom, left: rect.left, width: rect.width, above })
     setAutocompleteIdx(idx)
-    setAutocompleteResults(filterProductos(value))
+    fetchAutocomplete(value)
   }
 
   function selectProducto(idx: number, producto: Producto) {
