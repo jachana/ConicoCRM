@@ -312,10 +312,12 @@ def crear_nv(
     _check_credit_limit(db, nv.empresa_id, nv.total, current_user)
 
     # costo=0 guard
-    productos_sin_costo = [
-        l.producto_id for l in nv.lineas
-        if l.producto_id and db.get(Producto, l.producto_id) and db.get(Producto, l.producto_id).precio_costo == 0
-    ]
+    productos_sin_costo = []
+    for l in nv.lineas:
+        if l.producto_id:
+            prod = db.get(Producto, l.producto_id)
+            if prod and prod.precio_costo == 0:
+                productos_sin_costo.append(l.producto_id)
     if productos_sin_costo:
         nv.estado = "pendiente_aprobacion_costo"
 
@@ -387,10 +389,12 @@ def crear_nv_desde_cotizacion(
     cot.is_locked = True
 
     # costo=0 guard
-    productos_sin_costo = [
-        l.producto_id for l in nv.lineas
-        if l.producto_id and db.get(Producto, l.producto_id) and db.get(Producto, l.producto_id).precio_costo == 0
-    ]
+    productos_sin_costo = []
+    for l in nv.lineas:
+        if l.producto_id:
+            prod = db.get(Producto, l.producto_id)
+            if prod and prod.precio_costo == 0:
+                productos_sin_costo.append(l.producto_id)
     if productos_sin_costo:
         nv.estado = "pendiente_aprobacion_costo"
 
