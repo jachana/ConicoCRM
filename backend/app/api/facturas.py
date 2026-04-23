@@ -23,6 +23,7 @@ from app.schemas.factura import (
     FacturaListOut,
     FacturaOut,
     FacturaUpdate,
+    METODOS_PAGO,
 )
 from app.models.empresa import Empresa
 from app.schemas.cobranza import ImportXMLError, ImportXMLResult, RecordatorioCreate
@@ -40,7 +41,6 @@ _TRANSITIONS: dict[tuple[str, str], str] = {
     ("parcial",  "anulada"): "admin_only",
 }
 
-_METODOS_PAGO = {"efectivo", "transferencia", "cheque", "debito", "credito", "deposito"}
 
 _FAC_EXPORT_COLUMNS: dict[str, tuple[str, Callable]] = {
     "numero":            ("Nº FAC",        lambda f, l: f.numero),
@@ -129,6 +129,7 @@ def _load_factura(db: Session, factura_id: int) -> Factura:
         joinedload(Factura.cotizacion),
         joinedload(Factura.nv),
         joinedload(Factura.lineas),
+        joinedload(Factura.banco_receptor),
     ).filter(Factura.id == factura_id).first()
     if not factura:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Factura no encontrada")
@@ -477,8 +478,15 @@ def actualizar_factura(
     factura = db.get(Factura, factura_id)
     if not factura:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Factura no encontrada")
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Las facturas no son editables una vez emitidas")
+    if factura.estado in ("pagada", "anulada"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"No se puede modificar una factura en estado '{factura.estado}'"
+        )
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(factura, field, value)
+    db.commit()
+    return _load_factura(db, factura_id)
 
 
 @router.put("/{factura_id}/lineas", response_model=FacturaOut)
@@ -492,7 +500,7 @@ def reemplazar_lineas(
     if not factura:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Factura no encontrada")
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Las facturas no son editables una vez emitidas")
+                        detail="La edición de líneas no está habilitada")
 
 
 @router.patch("/{factura_id}/estado", response_model=FacturaOut)
@@ -524,10 +532,10 @@ def cambiar_estado(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Para marcar como pagada se requiere fecha_pago, monto_pagado y metodo_pago",
             )
-        if body.metodo_pago not in _METODOS_PAGO:
+        if body.metodo_pago not in METODOS_PAGO:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"metodo_pago inválido. Valores: {', '.join(sorted(_METODOS_PAGO))}",
+                detail=f"metodo_pago inválido. Valores: {', '.join(sorted(METODOS_PAGO))}",
             )
         factura.fecha_pago = body.fecha_pago
         factura.monto_pagado = body.monto_pagado

@@ -108,7 +108,7 @@ def test_obtener_factura_404(client, admin_token):
 
 
 def test_actualizar_header(client, admin_token):
-    """Facturas are immutable once emitted — PATCH always returns 403."""
+    """PATCH updates header fields on facturas in estado 'emitida'."""
     cid = _create_cliente(client, admin_token)
     f = _create_factura(client, admin_token, cid)
     r = client.patch(
@@ -116,7 +116,8 @@ def test_actualizar_header(client, admin_token):
         json={"contacto": "Juan Test"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
-    assert r.status_code == 403
+    assert r.status_code == 200
+    assert r.json()["contacto"] == "Juan Test"
 
 
 # --- Desde NV ---
@@ -234,14 +235,14 @@ def test_emitida_a_pagada_ok(client, admin_token):
     f = _create_factura(client, admin_token, cid)
     r = client.patch(
         f"/api/facturas/{f['id']}/estado",
-        json={"estado": "pagada", "fecha_pago": "2026-04-18", "monto_pagado": 2380, "metodo_pago": "transferencia"},
+        json={"estado": "pagada", "fecha_pago": "2026-04-18", "monto_pagado": 2380, "metodo_pago": "Transferencia"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 200
     data = r.json()
     assert data["estado"] == "pagada"
     assert data["fecha_pago"] == "2026-04-18"
-    assert data["metodo_pago"] == "transferencia"
+    assert data["metodo_pago"] == "Transferencia"
 
 
 def test_emitida_a_anulada(client, admin_token):
@@ -261,7 +262,7 @@ def test_pagada_a_anulada_solo_admin(client, admin_token, subadmin_token):
     f = _create_factura(client, admin_token, cid)
     client.patch(
         f"/api/facturas/{f['id']}/estado",
-        json={"estado": "pagada", "fecha_pago": "2026-04-18", "monto_pagado": 100, "metodo_pago": "efectivo"},
+        json={"estado": "pagada", "fecha_pago": "2026-04-18", "monto_pagado": 100, "metodo_pago": "Efectivo"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     r_sub = client.patch(
@@ -304,7 +305,7 @@ def test_eliminar_pagada_409(client, admin_token):
     f = _create_factura(client, admin_token, cid)
     client.patch(
         f"/api/facturas/{f['id']}/estado",
-        json={"estado": "pagada", "fecha_pago": "2026-04-18", "monto_pagado": 100, "metodo_pago": "efectivo"},
+        json={"estado": "pagada", "fecha_pago": "2026-04-18", "monto_pagado": 100, "metodo_pago": "Efectivo"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     r = client.delete(f"/api/facturas/{f['id']}", headers={"Authorization": f"Bearer {admin_token}"})
@@ -416,6 +417,67 @@ def test_filter_facturas_by_producto(client, admin_token):
     assert r.status_code == 200
     ids = [f["id"] for f in r.json()]
     assert fac_id in ids
+
+
+# --- PATCH metodo_pago ---
+
+def test_patch_metodo_pago_emitida_ok(client, admin_token):
+    """PATCH metodo_pago on emitida factura returns 200 with updated value."""
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+    r = client.patch(
+        f"/api/facturas/{f['id']}",
+        json={"metodo_pago": "Transferencia"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert r.json()["metodo_pago"] == "Transferencia"
+
+
+def test_patch_metodo_pago_invalido_422(client, admin_token):
+    """PATCH with an invalid metodo_pago value returns 422."""
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+    r = client.patch(
+        f"/api/facturas/{f['id']}",
+        json={"metodo_pago": "bitcoin"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 422
+
+
+def test_patch_bloqueado_en_estado_pagada_409(client, admin_token):
+    """PATCH on a 'pagada' factura returns 409."""
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+    client.patch(
+        f"/api/facturas/{f['id']}/estado",
+        json={"estado": "pagada", "fecha_pago": "2026-04-18", "monto_pagado": 2380, "metodo_pago": "Efectivo"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    r = client.patch(
+        f"/api/facturas/{f['id']}",
+        json={"contacto": "Alguien"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 409
+
+
+def test_patch_bloqueado_en_estado_anulada_409(client, admin_token):
+    """PATCH on an 'anulada' factura returns 409."""
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+    client.patch(
+        f"/api/facturas/{f['id']}/estado",
+        json={"estado": "anulada"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    r = client.patch(
+        f"/api/facturas/{f['id']}",
+        json={"contacto": "Alguien"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 409
 
 
 def test_import_xml_bulk_empresa_not_found_returns_empresa_data(client, admin_token):

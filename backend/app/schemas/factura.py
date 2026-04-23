@@ -1,7 +1,8 @@
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from app.schemas.empresa import EmpresaRef
+from app.schemas.banco_receptor import BancoReceptorOut
 
 
 class FacturaLineaCreate(BaseModel):
@@ -37,6 +38,9 @@ class FacturaCreate(BaseModel):
     lineas: list[FacturaLineaCreate] = []
 
 
+METODOS_PAGO = {"Efectivo", "Transferencia", "Cheque", "Débito", "Crédito", "Mixto"}
+
+
 class FacturaUpdate(BaseModel):
     cliente_id: int | None = None
     vendedor_id: int | None = None
@@ -47,6 +51,14 @@ class FacturaUpdate(BaseModel):
     correo: str | None = None
     empresa_id: int | None = None
     banco_receptor_id: int | None = None
+    metodo_pago: str | None = None
+
+    @field_validator("metodo_pago")
+    @classmethod
+    def validar_metodo_pago(cls, v: str | None) -> str | None:
+        if v is not None and v not in METODOS_PAGO:
+            raise ValueError(f"metodo_pago debe ser uno de: {sorted(METODOS_PAGO)}")
+        return v
 
 
 class FacturaEstadoCambio(BaseModel):
@@ -54,6 +66,13 @@ class FacturaEstadoCambio(BaseModel):
     fecha_pago: date | None = None
     monto_pagado: Decimal | None = None
     metodo_pago: str | None = None
+
+    @field_validator("metodo_pago")
+    @classmethod
+    def validar_metodo_pago(cls, v: str | None) -> str | None:
+        if v is not None and v not in METODOS_PAGO:
+            raise ValueError(f"metodo_pago debe ser uno de: {sorted(METODOS_PAGO)}")
+        return v
 
 
 class ClienteMinOut(BaseModel):
@@ -111,10 +130,11 @@ class FacturaOut(BaseModel):
     cliente: ClienteMinOut | None = None
     vendedor: VendedorMinOut | None = None
     empresa: EmpresaRef | None = None
+    banco_receptor: BancoReceptorOut | None = None
     nv: NVRef | None = None
     cotizacion: CotizacionRef | None = None
     lineas: list[FacturaLineaOut] = []
-    is_locked: bool = True
+    is_locked: bool
     model_config = {"from_attributes": True}
 
 
@@ -145,5 +165,5 @@ class FacturaListOut(BaseModel):
     empresa: EmpresaRef | None = None
     lineas: list[FacturaLineaOut] = []
     margen_total: Decimal | None = None
-    is_locked: bool = True
+    is_locked: bool
     model_config = {"from_attributes": True}

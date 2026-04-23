@@ -22,7 +22,7 @@ const ESTADO_COLORS: Record<string, string> = {
   anulada: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
 }
 
-const METODOS_PAGO = ['efectivo', 'transferencia', 'cheque', 'debito', 'credito', 'deposito']
+const METODOS_PAGO = ['Efectivo', 'Transferencia', 'Cheque', 'Débito', 'Crédito', 'Mixto']
 
 function getValidTransitions(estado: string): string[] {
   const all: Record<string, string[]> = {
@@ -69,7 +69,7 @@ export default function FacturaDetalle() {
   const [emitiendo, setEmitiendo] = useState(false)
   const [pagoFecha, setPagoFecha] = useState(new Date().toISOString().split('T')[0])
   const [pagoMonto, setPagoMonto] = useState('')
-  const [pagoMetodo, setPagoMetodo] = useState('transferencia')
+  const [pagoMetodo, setPagoMetodo] = useState('Transferencia')
   const [pagoNota, setPagoNota] = useState('')
 
   // Form fields
@@ -82,6 +82,7 @@ export default function FacturaDetalle() {
   const [nota, setNota] = useState('')
   const [empresaId, setEmpresaId] = useState<number | ''>('')
   const [bancoReceptorId, setBancoReceptorId] = useState<number | null>(null)
+  const [metodoPago, setMetodoPago] = useState<string>('')
   const [lineas, setLineas] = useState<LineaLocal[]>([])
 
   const { data: factura } = useQuery<Factura>({
@@ -101,6 +102,7 @@ export default function FacturaDetalle() {
       setNota(factura.nota ?? '')
       setEmpresaId(factura.empresa_id ?? '')
       setBancoReceptorId(factura.banco_receptor_id ?? null)
+      setMetodoPago(factura.metodo_pago ?? '')
       setLineas(
         (factura.lineas ?? []).map((l, i) => ({
           ...l,
@@ -150,7 +152,7 @@ export default function FacturaDetalle() {
       setPagoMonto('')
       setPagoNota('')
       setPagoFecha(new Date().toISOString().split('T')[0])
-      setPagoMetodo('transferencia')
+      setPagoMetodo('Transferencia')
     },
     onError: (err: any) => setError(err?.response?.data?.detail || 'Error al registrar pago'),
   })
@@ -188,6 +190,7 @@ export default function FacturaDetalle() {
         nota: nota || null,
         empresa_id: empresaId || null,
         banco_receptor_id: bancoReceptorId,
+        metodo_pago: metodoPago || null,
       }
       await api.patch(`/api/facturas/${id}`, payload)
       if (editingLineas) {
@@ -225,6 +228,7 @@ export default function FacturaDetalle() {
       setNota(factura.nota ?? '')
       setEmpresaId(factura.empresa_id ?? '')
       setBancoReceptorId(factura.banco_receptor_id ?? null)
+      setMetodoPago(factura.metodo_pago ?? '')
       setLineas(
         (factura.lineas ?? []).map((l, i) => ({
           ...l,
@@ -437,7 +441,7 @@ export default function FacturaDetalle() {
 
       {factura?.is_locked && (
         <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300">
-          Las facturas no son editables una vez emitidas.
+          Esta factura no es editable en su estado actual.
         </div>
       )}
 
@@ -490,6 +494,17 @@ export default function FacturaDetalle() {
                       {b.nombre}{!b.activo ? ' (inactivo)' : ''}
                     </option>
                   ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Método de pago</label>
+              <select
+                value={metodoPago}
+                onChange={e => setMetodoPago(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">Sin especificar</option>
+                {METODOS_PAGO.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
             <div>
@@ -567,6 +582,18 @@ export default function FacturaDetalle() {
               <div>
                 <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Empresa</span>
                 <span className="text-sm text-gray-900 dark:text-white">{factura.empresa.nombre}</span>
+              </div>
+            )}
+            {factura.banco_receptor && (
+              <div>
+                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Banco de recepción</span>
+                <span className="text-sm text-gray-900 dark:text-white">{factura.banco_receptor.nombre}</span>
+              </div>
+            )}
+            {factura.metodo_pago && (
+              <div>
+                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Método de pago</span>
+                <span className="text-sm text-gray-900 dark:text-white">{factura.metodo_pago}</span>
               </div>
             )}
             {factura.contacto && (
