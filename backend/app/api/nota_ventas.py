@@ -44,6 +44,7 @@ _TRANSITIONS: dict[tuple[str, str], str] = {
     ("despachada", "cancelada"):  "admin",
     ("entregada",  "cancelada"):  "admin",
     ("pagada",     "cancelada"):  "admin",
+    ("pendiente_aprobacion_costo", "cancelada"): "admin",
 }
 
 
@@ -543,7 +544,9 @@ def cambiar_estado(
     nv.estado = body.estado
     if body.estado == "cancelada":
         nv_full = db.query(NotaVenta).options(joinedload(NotaVenta.lineas)).filter(NotaVenta.id == nv_id).first()
-        _registrar_movimientos_devolucion(db, nv_id, nv_full.lineas if nv_full else [], current_user.id)
+        prev_estado = transition[0]
+        if prev_estado != "pendiente_aprobacion_costo":
+            _registrar_movimientos_devolucion(db, nv_id, nv_full.lineas if nv_full else [], current_user.id)
     db.commit()
     return _load_nv(db, nv_id)
 
@@ -557,13 +560,14 @@ def eliminar_nv(
     nv = db.get(NotaVenta, nv_id)
     if not nv:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nota de venta no encontrada")
-    if nv.estado != "pendiente":
+    if nv.estado not in ("pendiente", "pendiente_aprobacion_costo"):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Solo se pueden eliminar notas de venta en estado 'pendiente'",
         )
     nv_full = db.query(NotaVenta).options(joinedload(NotaVenta.lineas)).filter(NotaVenta.id == nv_id).first()
-    _registrar_movimientos_devolucion(db, nv_id, nv_full.lineas if nv_full else [], current_user.id)
+    if nv.estado == "pendiente":
+        _registrar_movimientos_devolucion(db, nv_id, nv_full.lineas if nv_full else [], current_user.id)
     db.delete(nv)
     db.commit()
 
