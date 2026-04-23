@@ -360,6 +360,7 @@ def crear_nv_desde_cotizacion(
     _check_credit_limit(db, nv.empresa_id, nv.total, current_user)
 
     cot.estado = "cerrada_fv"
+    cot.is_locked = True
     _registrar_movimientos_salida(db, nv.id, nv.lineas, current_user.id)
     db.commit()
     return _load_nv(db, nv.id)
@@ -384,6 +385,9 @@ def actualizar_nv(
     nv = db.get(NotaVenta, nv_id)
     if not nv:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nota de venta no encontrada")
+    if nv.is_locked:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Nota de venta bloqueada — se generó una Factura desde ella")
     if not _can_edit(current_user, nv):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos para editar esta NV")
     nuevo_retiro = body.retiro_en_conico if body.retiro_en_conico is not None else nv.retiro_en_conico
@@ -409,6 +413,9 @@ def reemplazar_lineas(
     nv = db.query(NotaVenta).options(joinedload(NotaVenta.lineas)).filter(NotaVenta.id == nv_id).first()
     if not nv:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nota de venta no encontrada")
+    if nv.is_locked:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Nota de venta bloqueada — se generó una Factura desde ella")
     if not _can_edit(current_user, nv):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos")
 

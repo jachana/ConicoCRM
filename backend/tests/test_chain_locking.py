@@ -101,3 +101,61 @@ def test_unlocked_cotizacion_is_still_editable(client, admin_token):
                      json={"nota": "edición válida"},
                      headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
+
+
+# ── NotaVenta locking ─────────────────────────────────────────────────────────
+
+def test_creating_factura_from_nv_locks_nv(client, admin_token):
+    cid = _make_cliente(client, admin_token)
+    nv = _make_nv(client, admin_token, cid)
+    assert nv["is_locked"] is False
+
+    _make_factura_from_nv(client, admin_token, nv["id"])
+
+    r = client.get(f"/api/nota_ventas/{nv['id']}",
+                   headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.json()["is_locked"] is True
+
+
+def test_patch_locked_nv_returns_403(client, admin_token):
+    cid = _make_cliente(client, admin_token)
+    nv = _make_nv(client, admin_token, cid)
+    _make_factura_from_nv(client, admin_token, nv["id"])
+
+    r = client.patch(f"/api/nota_ventas/{nv['id']}",
+                     json={"nota": "intento editar"},
+                     headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 403
+
+
+def test_put_lineas_locked_nv_returns_403(client, admin_token):
+    cid = _make_cliente(client, admin_token)
+    nv = _make_nv(client, admin_token, cid)
+    _make_factura_from_nv(client, admin_token, nv["id"])
+
+    r = client.put(f"/api/nota_ventas/{nv['id']}/lineas",
+                   json=[{"orden": 1, "descripcion": "X", "cantidad": 1, "valor_neto": 500}],
+                   headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 403
+
+
+def test_unlocked_nv_is_still_editable(client, admin_token):
+    cid = _make_cliente(client, admin_token)
+    nv = _make_nv(client, admin_token, cid)
+
+    r = client.patch(f"/api/nota_ventas/{nv['id']}",
+                     json={"nota": "edición válida"},
+                     headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+
+
+def test_estado_change_works_on_locked_nv(client, admin_token):
+    """Estado transitions must still work even when NV is locked."""
+    cid = _make_cliente(client, admin_token)
+    nv = _make_nv(client, admin_token, cid)
+    _make_factura_from_nv(client, admin_token, nv["id"])
+
+    r = client.patch(f"/api/nota_ventas/{nv['id']}/estado",
+                     json={"estado": "despachada"},
+                     headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
