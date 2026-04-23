@@ -866,7 +866,7 @@ export default function CotizacionDetalle() {
                     <option value="">— Sin empresa —</option>
                     {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
                   </select>
-                  {empresaId && (
+                  {empresaId && !isLocked && (
                     <button
                       type="button"
                       onClick={() => setClienteModalOpen(true)}
