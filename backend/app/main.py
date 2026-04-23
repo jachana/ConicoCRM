@@ -25,6 +25,7 @@ from app.api import reportes
 from app.api import tags
 from app.api import bancos_receptores
 from app.api import sedes_despacho
+from app.api import marcas
 
 app = FastAPI(title="Conico PMS")
 
@@ -61,3 +62,4 @@ app.include_router(reportes.router, prefix="/api/reportes", tags=["reportes"])
 app.include_router(tags.router, prefix="/api/tags", tags=["tags"])
 app.include_router(bancos_receptores.router, prefix="/api/bancos-receptores", tags=["config"])
 app.include_router(sedes_despacho.router, prefix="/api/sedes-despacho", tags=["empresas"])
+app.include_router(marcas.router, prefix="/api/marcas", tags=["catálogo"])
