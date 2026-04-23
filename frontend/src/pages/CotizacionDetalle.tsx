@@ -259,6 +259,8 @@ export default function CotizacionDetalle() {
     queryFn: () => api.get('/api/empresas/').then(r => r.data),
   })
 
+  const isLocked = cotizacion?.is_locked ?? false
+
   const selectedEmpresa = empresas.find(e => e.id === empresaId) ?? null
   const empresaSinCredito = selectedEmpresa != null && (selectedEmpresa.linea_credito == null || selectedEmpresa.linea_credito <= 0)
   const empresaPlazo = selectedEmpresa?.plazo_credito ?? 'Al contado'
@@ -731,14 +733,16 @@ export default function CotizacionDetalle() {
               Solicitar ajuste de márgenes
             </button>
           )}
-          <button
-            onClick={handleSave}
-            disabled={saving || lineasErrors.length > 0}
-            title={lineasErrors.length > 0 ? lineasErrors.join(' | ') : undefined}
-            className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
-          >
-            {saving ? 'Guardando...' : 'Guardar'}
-          </button>
+          {!isLocked && (
+            <button
+              onClick={handleSave}
+              disabled={saving || lineasErrors.length > 0}
+              title={lineasErrors.length > 0 ? lineasErrors.join(' | ') : undefined}
+              className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
+            >
+              {saving ? 'Guardando...' : 'Guardar'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -828,6 +832,12 @@ export default function CotizacionDetalle() {
         </div>
       )}
 
+      {isLocked && (
+        <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300">
+          Este documento está bloqueado — se generó una Nota de Venta desde esta cotización.
+        </div>
+      )}
+
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 mb-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
@@ -835,6 +845,7 @@ export default function CotizacionDetalle() {
             <select
               value={clienteId}
               onChange={e => handleClienteChange(e.target.value ? Number(e.target.value) : '')}
+              disabled={isLocked}
               className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('clienteId', clienteId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
             >
               <option value="">Seleccionar cliente...</option>
@@ -849,7 +860,7 @@ export default function CotizacionDetalle() {
                   <select
                     value={empresaId}
                     onChange={e => handleEmpresaChange(e.target.value ? Number(e.target.value) : '')}
-                    disabled={!!clienteId}
+                    disabled={!!clienteId || isLocked}
                     className={`flex-1 px-3 py-1.5 text-sm border rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${df('empresaId', empresaId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600'} ${clienteId ? 'bg-gray-50 dark:bg-gray-800/50 cursor-default' : 'bg-white dark:bg-gray-800'}`}
                   >
                     <option value="">— Sin empresa —</option>
@@ -894,11 +905,13 @@ export default function CotizacionDetalle() {
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
             <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
+              disabled={isLocked}
               className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('fecha', fecha) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`} />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Estado</label>
             <select value={estado} onChange={e => setEstado(e.target.value)}
+              disabled={isLocked}
               className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('estado', estado) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}>
               {ESTADOS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
             </select>
@@ -907,6 +920,7 @@ export default function CotizacionDetalle() {
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Encargado</label>
               <select value={vendedorId} onChange={e => setVendedorId(e.target.value ? Number(e.target.value) : '')}
+                disabled={isLocked}
                 className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('vendedorId', vendedorId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}>
                 {usuarios.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
@@ -915,6 +929,7 @@ export default function CotizacionDetalle() {
           <div className="sm:col-span-2 lg:col-span-3">
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Nota / Observaciones</label>
             <textarea value={nota} onChange={e => setNota(e.target.value)} rows={2}
+              disabled={isLocked}
               className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${df('nota', nota) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
               placeholder="Notas internas o para el cliente..." />
           </div>
@@ -945,6 +960,7 @@ export default function CotizacionDetalle() {
                 <select
                   value={terminosPago}
                   onChange={e => setTerminosPago(e.target.value)}
+                  disabled={isLocked}
                   className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('terminosPago', terminosPago) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
                 >
                   <option value="">— Seleccionar —</option>
@@ -972,6 +988,7 @@ export default function CotizacionDetalle() {
               min={1}
               value={validezDias}
               onChange={e => setValidezDias(Number(e.target.value))}
+              disabled={isLocked}
               className={`w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('validezDias', validezDias) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
             />
             {cotizacion?.fecha && (
@@ -1007,6 +1024,7 @@ export default function CotizacionDetalle() {
                     onChange={e => handleDescripcionChange(idx, e.target.value, e)}
                     onFocus={e => handleDescripcionFocus(idx, linea.descripcion, e)}
                     onBlur={() => setTimeout(() => { setAutocompleteIdx(null); setAutocompleteResults([]) }, 150)}
+                    disabled={isLocked}
                     className="w-full px-2.5 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="Buscar en catálogo..." />
                   {linea.producto_id && (
@@ -1024,6 +1042,7 @@ export default function CotizacionDetalle() {
                 <td className="px-3 py-2">
                   <input type="number" min="1" value={linea.cantidad}
                     onChange={e => withRevokeGuard(() => updateLinea(idx, { cantidad: Math.max(1, parseInt(e.target.value) || 1) }))}
+                    disabled={isLocked}
                     className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right ${linea._stock != null && linea.cantidad > linea._stock ? 'border-orange-400 dark:border-orange-500' : 'border-gray-200 dark:border-gray-700'}`} />
                 </td>
                 <td className="px-3 py-2">
@@ -1041,6 +1060,7 @@ export default function CotizacionDetalle() {
                         onFocus={() => setFocusedPrecioIdx(idx)}
                         onBlur={() => setFocusedPrecioIdx(null)}
                         onChange={e => handleValorNetoChange(idx, e.target.value)}
+                        disabled={isLocked}
                         className="w-28 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
                     ) : (
                       <div className="text-right">
@@ -1064,6 +1084,7 @@ export default function CotizacionDetalle() {
                     step={0.1}
                     value={linea.descuento ?? 0}
                     onChange={e => updateLinea(idx, { descuento: Number(e.target.value) })}
+                    disabled={isLocked}
                     className="w-16 text-right border border-gray-300 rounded-lg px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </td>
@@ -1076,6 +1097,7 @@ export default function CotizacionDetalle() {
                         value={linea.margen !== null ? linea.margen * 100 : ''}
                         onChange={e => handleMargenChange(idx, e.target.value)}
                         placeholder="—"
+                        disabled={isLocked}
                         className={`w-16 px-1.5 py-1.5 text-xs border rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 ${linea.margen !== null && Number(linea.margen) < 0.15 ? 'border-orange-400 dark:border-orange-500 text-orange-500' : 'border-gray-200 dark:border-gray-700 text-green-600 dark:text-green-400'}`}
                       />
                     ) : linea.id != null ? (
@@ -1086,6 +1108,7 @@ export default function CotizacionDetalle() {
                           : (linea.margen !== null ? (Number(linea.margen) * 100).toFixed(1) : '')}
                         onChange={e => linea.id != null && handleMargenPropuesta(linea.id, e.target.value)}
                         placeholder="—"
+                        disabled={isLocked}
                         className={`w-16 px-1.5 py-1.5 text-xs border-2 border-dashed rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white dark:bg-gray-800 ${
                           linea.id != null && propuestas[linea.id] != null
                             ? 'border-blue-400 text-blue-600 dark:text-blue-400'
@@ -1104,9 +1127,11 @@ export default function CotizacionDetalle() {
                   </div>
                 </td>
                 <td className="px-3 py-2">
-                  <button onClick={() => removeLinea(idx)} className="p-1 text-gray-400 hover:text-red-500 transition-colors" disabled={lineas.length === 1}>
-                    <Trash2 size={14} />
-                  </button>
+                  {!isLocked && (
+                    <button onClick={() => removeLinea(idx)} className="p-1 text-gray-400 hover:text-red-500 transition-colors" disabled={lineas.length === 1}>
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -1115,10 +1140,13 @@ export default function CotizacionDetalle() {
       </div>
 
       <div className="flex items-start justify-between">
-        <button onClick={addLinea} className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
-          <Plus size={15} />
-          Agregar línea
-        </button>
+        {!isLocked && (
+          <button onClick={addLinea} className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+            <Plus size={15} />
+            Agregar línea
+          </button>
+        )}
+        {isLocked && <div />}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 min-w-[260px]">
           <div className="space-y-1.5 text-sm">
             <div className="flex justify-between text-gray-600 dark:text-gray-400">
