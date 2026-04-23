@@ -23,3 +23,6 @@ from app.models.tag import ProductoTag, producto_tag_link  # noqa: F401
 from app.models.banco_receptor import BancoReceptor  # noqa: F401
 from app.models.sede_despacho import SedeDespacho  # noqa: F401
 from app.models.marca import Marca  # noqa: F401
+from app.models.orden_compra import OrdenCompra, OrdenCompraLinea  # noqa: F401
+from app.models.lote_costo import LoteCosto  # noqa: F401
+from app.models.producto_documento import ProductoDocumento  # noqa: F401

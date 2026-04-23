@@ -32,3 +32,6 @@ class Producto(Base):
         secondary="producto_tag_link",
         lazy="selectin",
     )
+    documentos: Mapped[list["ProductoDocumento"]] = relationship(
+        "ProductoDocumento", back_populates="producto", cascade="all, delete-orphan"
+    )
