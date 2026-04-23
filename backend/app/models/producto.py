@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from sqlalchemy import String, Text, Numeric, Integer, ForeignKey, DateTime, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
@@ -46,8 +46,8 @@ class Producto(Base):
 
     @property
     def precio_con_iva(self) -> Decimal:
-        return (self.precio_venta * Decimal("1.19")).quantize(Decimal("0.01"))
+        return (self.precio_venta * Decimal("1.19")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     @property
     def costo_con_iva(self) -> Decimal:
-        return (self.precio_costo * Decimal("1.19")).quantize(Decimal("0.01"))
+        return (self.precio_costo * Decimal("1.19")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
