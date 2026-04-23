@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2, FileText, Mail, ArrowLeft, ExternalLink, Receipt } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
-import type { NotaVenta, NotaVentaLinea, Cliente, User, Producto, Empresa } from '../types'
+import type { NotaVenta, NotaVentaLinea, Cliente, User, Producto, Empresa, SedeDespacho } from '../types'
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 import UnsavedChangesModal from '../components/UnsavedChangesModal'
 
@@ -87,7 +87,7 @@ function nvSnapshot(nv: NotaVenta): string {
     nota: nv.nota ?? '',
     empresaId: nv.empresa_id ?? '',
     retiroEnConico: nv.retiro_en_conico ?? false,
-    direccionDespacho: nv.direccion_despacho ?? '',
+    sedeDespachoId: nv.sede_despacho_id ?? null,
     lineas: (nv.lineas ?? []).map(l => ({
       producto_id: l.producto_id ?? null,
       cantidad: l.cantidad,
@@ -114,7 +114,8 @@ export default function NotaVentaDetalle() {
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
   const [nota, setNota] = useState('')
   const [retiroEnConico, setRetiroEnConico] = useState(false)
-  const [direccionDespacho, setDireccionDespacho] = useState('')
+  const [sedeDespachoId, setSedeDespachoId] = useState<number | null>(null)
+  const [sedes, setSedes] = useState<SedeDespacho[]>([])
   const [lineas, setLineas] = useState<LineaLocal[]>([newLinea(1)])
   const [empresaId, setEmpresaId] = useState<number | ''>('')
   const [saving, setSaving] = useState(false)
@@ -136,7 +137,7 @@ export default function NotaVentaDetalle() {
 
   const currentSnapshot = useMemo(() => JSON.stringify({
     clienteId, vendedorId, contacto, correo, fecha, nota, empresaId,
-    retiroEnConico, direccionDespacho,
+    retiroEnConico, sedeDespachoId,
     lineas: lineas.map(l => ({
       producto_id: l.producto_id ?? null,
       cantidad: l.cantidad,
@@ -145,7 +146,7 @@ export default function NotaVentaDetalle() {
       sku: l.sku ?? null,
       formato: l.formato ?? null,
     }))
-  }), [clienteId, vendedorId, contacto, correo, fecha, nota, empresaId, retiroEnConico, direccionDespacho, lineas])
+  }), [clienteId, vendedorId, contacto, correo, fecha, nota, empresaId, retiroEnConico, sedeDespachoId, lineas])
 
   const isDirty = !isNew && savedSnapshot !== null && currentSnapshot !== savedSnapshot
 
@@ -180,7 +181,7 @@ export default function NotaVentaDetalle() {
       setFecha(nv.fecha)
       setNota(nv.nota ?? '')
       setRetiroEnConico(nv.retiro_en_conico ?? false)
-      setDireccionDespacho(nv.direccion_despacho ?? '')
+      setSedeDespachoId(nv.sede_despacho_id ?? null)
       setEmpresaId(nv.empresa_id ?? '')
       setLineas(
         (nv.lineas ?? []).map((l, i) => ({
@@ -195,6 +196,16 @@ export default function NotaVentaDetalle() {
       setSavedSnapshot(nvSnapshot(nv))
     }
   }, [nv])
+
+  useEffect(() => {
+    if (empresaId) {
+      api.get(`/api/sedes-despacho/?empresa_id=${empresaId}`)
+        .then(r => setSedes(r.data))
+        .catch(() => setSedes([]))
+    } else {
+      setSedes([])
+    }
+  }, [empresaId])
 
   const { data: clientes = [] } = useQuery<Cliente[]>({
     queryKey: ['clientes'],
@@ -223,7 +234,7 @@ export default function NotaVentaDetalle() {
       if (c) {
         if (!contacto) setContacto(c.nombre)
         if (!correo && c.email) setCorreo(c.email)
-        if (c.empresa_id && !empresaId) setEmpresaId(c.empresa_id)
+        if (c.empresa_id && !empresaId) { setEmpresaId(c.empresa_id); setSedeDespachoId(null) }
       }
     }
   }
@@ -343,7 +354,7 @@ export default function NotaVentaDetalle() {
         empresa_id: empresaId || null,
         terminos_pago: empresaSinCredito ? 'al_contado' : null,
         retiro_en_conico: retiroEnConico,
-        direccion_despacho: retiroEnConico ? null : (direccionDespacho.trim() || null),
+        sede_despacho_id: retiroEnConico ? null : sedeDespachoId,
       }
       const lineasPayload = lineas.map((l, i) => ({
         orden: i + 1,
@@ -396,7 +407,7 @@ export default function NotaVentaDetalle() {
       setFecha(nv.fecha)
       setNota(nv.nota ?? '')
       setRetiroEnConico(nv.retiro_en_conico ?? false)
-      setDireccionDespacho(nv.direccion_despacho ?? '')
+      setSedeDespachoId(nv.sede_despacho_id ?? null)
       setEmpresaId(nv.empresa_id ?? '')
       setLineas(
         (nv.lineas ?? []).map((l, i) => ({
@@ -586,7 +597,7 @@ export default function NotaVentaDetalle() {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Empresa</label>
-            <select value={empresaId} onChange={e => setEmpresaId(e.target.value ? Number(e.target.value) : '')}
+            <select value={empresaId} onChange={e => { setEmpresaId(e.target.value ? Number(e.target.value) : ''); setSedeDespachoId(null) }}
               disabled={isLocked}
               className={`w-full px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60 disabled:cursor-not-allowed ${df('empresaId', empresaId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600'}`}>
               <option value="">— Sin empresa —</option>
@@ -660,25 +671,32 @@ export default function NotaVentaDetalle() {
                 disabled={isLocked}
                 onChange={e => {
                   setRetiroEnConico(e.target.checked)
-                  if (e.target.checked) setDireccionDespacho('')
+                  if (e.target.checked) setSedeDespachoId(null)
                 }}
                 className="rounded border-gray-300 disabled:opacity-60 disabled:cursor-not-allowed"
               />
-              <span className={`text-sm font-medium ${df('retiroEnConico', retiroEnConico) ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'}`}>Retiro en Conico</span>
+              <span className={`text-sm font-medium ${df('retiroEnConico', retiroEnConico) ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                Retiro en Conico
+              </span>
             </label>
             {!retiroEnConico && (
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                  Dirección de despacho <span className="text-red-500">*</span>
+                  Sede de despacho
                 </label>
-                <input
-                  type="text"
-                  value={direccionDespacho}
+                <select
+                  value={sedeDespachoId ?? ''}
                   disabled={isLocked}
-                  onChange={e => setDireccionDespacho(e.target.value)}
-                  placeholder="Calle, número, ciudad"
-                  className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('direccionDespacho', direccionDespacho) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
-                />
+                  onChange={e => setSedeDespachoId(e.target.value ? Number(e.target.value) : null)}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('sedeDespachoId', sedeDespachoId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
+                >
+                  <option value="">
+                    {sedes.length === 0 ? 'Sin sedes registradas' : '— Seleccionar sede —'}
+                  </option>
+                  {sedes.map(s => (
+                    <option key={s.id} value={s.id}>{s.nombre} — {s.direccion}</option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
