@@ -146,6 +146,7 @@ export interface Cotizacion {
   terminos_pago: string | null
   terminos_pago_estado: string
   validez_dias: number
+  fecha_expiracion: string
   correo: string | null
   total_neto: number
   total_iva: number

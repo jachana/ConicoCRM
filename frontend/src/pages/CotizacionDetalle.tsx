@@ -260,6 +260,8 @@ export default function CotizacionDetalle() {
   })
 
   const isLocked = cotizacion?.is_locked ?? false
+  const isExpired = cotizacion != null
+    && cotizacion.fecha_expiracion < new Date().toISOString().slice(0, 10)
 
   const selectedEmpresa = empresas.find(e => e.id === empresaId) ?? null
   const empresaSinCredito = selectedEmpresa != null && (selectedEmpresa.linea_credito == null || selectedEmpresa.linea_credito <= 0)
@@ -711,9 +713,10 @@ export default function CotizacionDetalle() {
               </button>
               <button
                 onClick={() => checkCredit(total, 'request', () => crearNvMut.mutate(), { empresa_id: Number(empresaId), total, origen: 'cotizacion', cotizacion_id: Number(id) })}
-                disabled={crearNvMut.isPending || lineasErrors.length > 0 || isDirty || cotizacion?.estado === 'cerrada_fv'}
+                disabled={crearNvMut.isPending || lineasErrors.length > 0 || isDirty || cotizacion?.estado === 'cerrada_fv' || isExpired}
                 title={
                   cotizacion?.estado === 'cerrada_fv' ? 'Ya existe una nota de venta para esta cotización'
+                  : isExpired ? 'Cotización expirada — cambie la fecha de emisión'
                   : lineasErrors.length > 0 ? lineasErrors.join(' | ')
                   : isDirty ? 'Guarda los cambios antes de crear la NV'
                   : undefined
@@ -832,6 +835,11 @@ export default function CotizacionDetalle() {
         </div>
       )}
 
+      {isExpired && !isLocked && (
+        <div className="mb-4 rounded-lg border border-orange-300 bg-orange-50 px-4 py-3 text-sm text-orange-800 dark:border-orange-700 dark:bg-orange-900/20 dark:text-orange-300">
+          Esta cotización está expirada. Cambie la fecha de emisión para poder generar una NV.
+        </div>
+      )}
       {isLocked && (
         <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300">
           Este documento está bloqueado — se generó una Nota de Venta desde esta cotización.
@@ -991,10 +999,10 @@ export default function CotizacionDetalle() {
               disabled={isLocked}
               className={`w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('validezDias', validezDias) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
             />
-            {cotizacion?.fecha && (
-              <p className="text-xs text-gray-400 mt-1">
-                Vence:{' '}
-                {(() => { const d = new Date(cotizacion.fecha + 'T00:00:00'); d.setDate(d.getDate() + validezDias); return d.toLocaleDateString('es-CL') })()}
+            {cotizacion?.fecha_expiracion && (
+              <p className={`text-xs mt-1 ${isExpired ? 'text-orange-500 dark:text-orange-400 font-medium' : 'text-gray-400'}`}>
+                Válido hasta:{' '}
+                {new Date(cotizacion.fecha_expiracion + 'T00:00:00').toLocaleDateString('es-CL')}
               </p>
             )}
           </div>
