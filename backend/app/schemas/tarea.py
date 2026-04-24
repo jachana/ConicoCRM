@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from pydantic import BaseModel, Field, model_validator
-from typing import Literal, Optional
+from typing import Literal
 
 
 ENTIDAD_FKS = ["cliente_id", "empresa_id", "cotizacion_id", "nota_venta_id", "factura_id", "producto_id"]
