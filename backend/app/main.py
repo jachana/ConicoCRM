@@ -29,6 +29,7 @@ from app.api import marcas
 from app.api import aprobaciones_costo
 from app.api import productos_documentos
 from app.api import listas_precios
+from app.api import tareas as tareas_api
 
 app = FastAPI(title="Conico PMS")
 
@@ -69,3 +70,4 @@ app.include_router(marcas.router, prefix="/api/marcas", tags=["catálogo"])
 app.include_router(aprobaciones_costo.router, prefix="/api/aprobaciones-costo", tags=["aprobaciones"])
 app.include_router(productos_documentos.router, prefix="/api/productos", tags=["catálogo"])
 app.include_router(listas_precios.router, prefix="/api/listas-precios", tags=["listas_precios"])
+app.include_router(tareas_api.router, prefix="/api/tareas", tags=["tareas"])
