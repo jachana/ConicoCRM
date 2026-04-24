@@ -73,6 +73,7 @@ export default function TareaDrawer({ tarea, onClose, onChanged }: Props) {
   }
 
   async function handleDescartar() {
+    if (busy) return;
     const motivo = prompt('Motivo del descarte:');
     if (!motivo) return;
     setBusy(true);
@@ -89,6 +90,7 @@ export default function TareaDrawer({ tarea, onClose, onChanged }: Props) {
   }
 
   async function handleEliminar() {
+    if (busy) return;
     if (!confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.')) return;
     setBusy(true);
     setError(null);
