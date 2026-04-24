@@ -8,6 +8,7 @@ import { useAuthStore } from '../stores/auth'
 import type { NotaVenta, NotaVentaLinea, Cliente, User, Producto, Empresa, SedeDespacho } from '../types'
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 import UnsavedChangesModal from '../components/UnsavedChangesModal'
+import TareasRelacionadas from '../components/TareasRelacionadas'
 
 type LineaLocal = Omit<NotaVentaLinea, 'id'> & { id?: number; _key: string }
 
@@ -809,6 +810,12 @@ export default function NotaVentaDetalle() {
           </div>
         </div>
       </div>
+
+      {!isNew && nv && (
+        <div className="mt-5">
+          <TareasRelacionadas tipo="nota_venta" id={nv.id} />
+        </div>
+      )}
 
       {emailToast && (
         <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>

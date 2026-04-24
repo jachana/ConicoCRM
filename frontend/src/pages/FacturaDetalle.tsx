@@ -7,6 +7,7 @@ import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { Factura, FacturaLinea, Cliente, User, Empresa, Pago, BancoReceptor } from '../types'
 import DteBadge from '../components/DteBadge'
+import TareasRelacionadas from '../components/TareasRelacionadas'
 
 const ESTADO_LABELS: Record<string, string> = {
   emitida: 'Emitida',
@@ -829,6 +830,8 @@ export default function FacturaDetalle() {
           </div>
         </div>
       </div>
+
+      <TareasRelacionadas tipo="factura" id={factura.id} />
 
       {/* Email toast */}
       {emailToast && (

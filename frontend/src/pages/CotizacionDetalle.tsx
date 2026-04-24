@@ -10,6 +10,7 @@ import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, Not
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 import UnsavedChangesModal from '../components/UnsavedChangesModal'
 import ClienteSelectModal from '../components/ClienteSelectModal'
+import TareasRelacionadas from '../components/TareasRelacionadas'
 
 type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string; _stock?: number | null; _costo?: number | null; descuento: number }
 
@@ -1175,6 +1176,12 @@ export default function CotizacionDetalle() {
           </div>
         </div>
       </div>
+
+      {!isNew && cotizacion && (
+        <div className="mt-5">
+          <TareasRelacionadas tipo="cotizacion" id={cotizacion.id} />
+        </div>
+      )}
 
       {emailToast && (
         <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
