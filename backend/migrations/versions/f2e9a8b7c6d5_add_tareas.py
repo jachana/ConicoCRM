@@ -1,20 +1,25 @@
-# backend/migrations/versions/z1a2b3c4d5e6_add_tareas.py
 """add tareas y reglas_tarea
 
-Revision ID: z1a2b3c4d5e6
+Revision ID: f2e9a8b7c6d5
 Revises: 5e920d5d1874
-Create Date: 2026-04-24
+Create Date: 2026-04-24 02:45:00.000000
+
 """
+from typing import Sequence, Union
+
 from alembic import op
 import sqlalchemy as sa
 
-revision = "z1a2b3c4d5e6"
-down_revision = "5e920d5d1874"
-branch_labels = None
-depends_on = None
+
+# revision identifiers, used by Alembic.
+revision: str = 'f2e9a8b7c6d5'
+down_revision: Union[str, Sequence[str], None] = '5e920d5d1874'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
 
 
-def upgrade():
+def upgrade() -> None:
+    """Upgrade schema."""
     op.create_table(
         "reglas_tarea",
         sa.Column("id", sa.Integer, primary_key=True),
@@ -82,7 +87,8 @@ def upgrade():
     """)
 
 
-def downgrade():
+def downgrade() -> None:
+    """Downgrade schema."""
     op.drop_index("ux_tareas_dedup_pendiente", table_name="tareas")
     op.drop_index("ix_tareas_asignado_estado_due", table_name="tareas")
     op.drop_table("tareas")
