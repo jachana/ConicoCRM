@@ -5,8 +5,9 @@ from app.models.permission import PermissionOverride
 MODULES = [
     "catalogo", "clientes", "proveedores", "empresas", "cotizaciones", "nota_venta",
     "facturas", "ordenes_compra", "inventario", "rrhh", "dashboard", "usuarios",
+    "tareas",
 ]
-ACTIONS = ["view", "create", "edit", "delete"]
+ACTIONS = ["view", "create", "edit", "delete", "view_all", "admin"]
 
 _DEFAULT: dict[str, dict[str, dict[str, bool]]] = {
     "admin": {m: {a: True for a in ACTIONS} for m in MODULES},
@@ -23,6 +24,7 @@ _DEFAULT: dict[str, dict[str, dict[str, bool]]] = {
         "dashboard":      {"view": True,  "create": False, "edit": False, "delete": False},
         "rrhh":           {"view": False, "create": False, "edit": False, "delete": False},
         "usuarios":       {"view": False, "create": False, "edit": False, "delete": False},
+        "tareas":         {"view": True,  "create": True,  "edit": True,  "delete": True,  "view_all": False, "admin": False},
     },
     "vendedor": {
         "catalogo":       {"view": True,  "create": False, "edit": False, "delete": False},
@@ -37,6 +39,7 @@ _DEFAULT: dict[str, dict[str, dict[str, bool]]] = {
         "dashboard":      {"view": True,  "create": False, "edit": False, "delete": False},
         "rrhh":           {"view": False, "create": False, "edit": False, "delete": False},
         "usuarios":       {"view": False, "create": False, "edit": False, "delete": False},
+        "tareas":         {"view": True,  "create": True,  "edit": True,  "delete": False, "view_all": False, "admin": False},
     },
 }
 
