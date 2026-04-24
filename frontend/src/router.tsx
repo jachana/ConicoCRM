@@ -12,6 +12,7 @@ import OrdenesCompra from './pages/OrdenesCompra'
 import OrdenCompraDetalle from './pages/OrdenCompraDetalle'
 import RRHH from './pages/RRHH'
 import Inventario from './pages/Inventario'
+import ListasPrecios from './pages/ListasPrecios'
 import NotaVentas from './pages/NotaVentas'
 import NotaVentaDetalle from './pages/NotaVentaDetalle'
 import FacturaDetalle from './pages/FacturaDetalle'
@@ -73,6 +74,7 @@ export const router = createBrowserRouter([
       { path: 'aprobaciones', element: <Aprobaciones /> },
       { path: 'rrhh', element: <RRHH /> },
       { path: 'inventario', element: <Inventario /> },
+      { path: 'inventario/listas-precios', element: <ListasPrecios /> },
       { path: 'cobranza', element: <Cobranza /> },
       { path: 'reportes', element: <Reportes /> },
     ],

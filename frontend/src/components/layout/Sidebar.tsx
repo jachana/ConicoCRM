@@ -35,6 +35,7 @@ const NAV: NavItem[] = [
   { to: '/empresas',       icon: Building2,       label: 'Empresas',          module: 'empresas' },
   { to: '/catalogo',       icon: Package,         label: 'Catálogo',          module: 'catalogo' },
   { to: '/inventario',     icon: Warehouse,       label: 'Inventario',        module: 'inventario' },
+  { to: '/inventario/listas-precios', icon: FileText,  label: 'Listas de precios', adminOnly: true },
   { to: '/cotizaciones',   icon: FileText,        label: 'Cotizaciones',      module: 'cotizaciones' },
   { to: '/notas-venta',    icon: ShoppingCart,    label: 'Notas de Venta',    module: 'nota_venta' },
   {
