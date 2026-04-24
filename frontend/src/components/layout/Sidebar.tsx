@@ -3,12 +3,13 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Users, Package, ShoppingCart,
   Warehouse, Truck, UserCog, Building2, CreditCard,
-  ChevronLeft, ChevronRight, ChevronDown, LogOut, Sun, Moon, X, ClipboardList, Settings, Banknote, BarChart2,
+  ChevronLeft, ChevronRight, ChevronDown, LogOut, Sun, Moon, X, ClipboardList, Settings, Banknote, BarChart2, CheckSquare,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth'
 import { useTheme } from './ThemeProvider'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
+import MisPendientesWidget from '../MisPendientesWidget'
 import type { Module, Permissions } from '../../types'
 
 interface SidebarProps {
@@ -56,6 +57,7 @@ const NAV: NavItem[] = [
     ],
   },
   { to: '/rrhh',           icon: UserCog,         label: 'RRHH',              module: 'rrhh',       pending: true },
+  { to: '/tareas',         icon: CheckSquare,     label: 'Tareas' },
   { to: '/reportes',       icon: BarChart2,       label: 'Reportes' },
   { to: '/usuarios',       icon: Users,           label: 'Usuarios',          module: 'usuarios' },
   { to: '/configuracion',  icon: Settings,        label: 'Configuración',     adminOnly: true },
@@ -248,6 +250,8 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
           )
         })}
       </nav>
+
+      <MisPendientesWidget collapsed={collapsed} onClose={onClose} />
 
       {/* Footer */}
       <div className="border-t border-white/5 p-2 space-y-0.5">
