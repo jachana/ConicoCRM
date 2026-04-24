@@ -67,15 +67,15 @@ class Tarea(Base):
         server_default=text("CURRENT_TIMESTAMP"),
     )
 
-    asignado = relationship("User", foreign_keys=[asignado_id])
-    creado_por = relationship("User", foreign_keys=[creado_por_id])
-    completada_por = relationship("User", foreign_keys=[completada_por_id])
-    cliente = relationship("Cliente")
-    empresa = relationship("Empresa")
-    cotizacion = relationship("Cotizacion")
-    nota_venta = relationship("NotaVenta")
-    factura = relationship("Factura")
-    producto = relationship("Producto")
+    asignado: Mapped["User"] = relationship("User", foreign_keys=[asignado_id])
+    creado_por: Mapped["User | None"] = relationship("User", foreign_keys=[creado_por_id])
+    completada_por: Mapped["User | None"] = relationship("User", foreign_keys=[completada_por_id])
+    cliente: Mapped["Cliente | None"] = relationship("Cliente")
+    empresa: Mapped["Empresa | None"] = relationship("Empresa")
+    cotizacion: Mapped["Cotizacion | None"] = relationship("Cotizacion")
+    nota_venta: Mapped["NotaVenta | None"] = relationship("NotaVenta")
+    factura: Mapped["Factura | None"] = relationship("Factura")
+    producto: Mapped["Producto | None"] = relationship("Producto")
 
     __table_args__ = (
         CheckConstraint(

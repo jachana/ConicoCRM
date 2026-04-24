@@ -59,7 +59,7 @@ def setup_test_db():
 
 
 @pytest.fixture
-def db():
+def db(setup_test_db):  # noqa: F811 — ensure tables exist before opening session
     session = TestingSession()
     try:
         yield session
@@ -87,7 +87,7 @@ def client():
 
 
 @pytest.fixture
-def admin_user():
+def admin_user(setup_test_db):  # noqa: F811 — ensure DB is ready before inserting seed user
     from app.models.user import User
     from app.core.security import get_password_hash
 
