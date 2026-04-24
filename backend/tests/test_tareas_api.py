@@ -278,3 +278,43 @@ def test_timeline_tareas_por_entidad(client, admin_token, admin_user, cotizacion
     assert resp.status_code == 200
     titulos = [t["titulo"] for t in resp.json()]
     assert titulos == ["vinculada"]
+
+
+@pytest.fixture
+def reglas_seeded(db):
+    from app.models.regla_tarea import ReglaTarea
+    reglas = [
+        ReglaTarea(tipo="cotizacion_vence", activa=True, offset_dias=2, asignado_rol="owner"),
+        ReglaTarea(tipo="factura_vencida", activa=True, offset_dias=1, asignado_rol="owner"),
+        ReglaTarea(tipo="aprobacion_pendiente", activa=True, offset_dias=1, asignado_rol="admin"),
+        ReglaTarea(tipo="nv_despachada_sin_avanzar", activa=True, offset_dias=3, asignado_rol="owner"),
+        ReglaTarea(tipo="cliente_sin_actividad", activa=True, offset_dias=30, asignado_rol="owner"),
+        ReglaTarea(tipo="stock_bajo_minimo", activa=True, offset_dias=0, asignado_rol="admin"),
+    ]
+    for r in reglas:
+        db.add(r)
+    db.commit()
+    return reglas
+
+
+def test_listar_reglas_requiere_admin(client, admin_token, vendedor_token, reglas_seeded):
+    r1 = client.get("/api/tareas/reglas", headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert r1.status_code == 403
+    r2 = client.get("/api/tareas/reglas", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 200
+    assert len(r2.json()) == 6  # 6 reglas seed
+
+
+def test_patch_regla_offset_dias(client, admin_token, reglas_seeded):
+    r = client.patch("/api/tareas/reglas/cotizacion_vence",
+                     json={"offset_dias": 5},
+                     headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert r.json()["offset_dias"] == 5
+
+
+def test_patch_regla_tipo_invalido_404(client, admin_token, reglas_seeded):
+    r = client.patch("/api/tareas/reglas/inexistente",
+                     json={"activa": False},
+                     headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 404
