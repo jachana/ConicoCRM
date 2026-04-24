@@ -68,6 +68,7 @@ export default function Configuracion() {
       empresa_tipo_cuenta: map.empresa_tipo_cuenta ?? '',
       empresa_numero_cuenta: map.empresa_numero_cuenta ?? '',
       empresa_nombre_titular: map.empresa_nombre_titular ?? '',
+      dias_alerta_costo_desactualizado: map.dias_alerta_costo_desactualizado ?? '60',
     })
   }, [config])
 
@@ -121,6 +122,25 @@ export default function Configuracion() {
               />
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 mb-5">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Alertas de inventario</h2>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            Días para considerar un costo desactualizado
+          </label>
+          <input
+            type="number"
+            min={1}
+            value={form.dias_alerta_costo_desactualizado ?? '60'}
+            onChange={e => setForm(prev => ({ ...prev, dias_alerta_costo_desactualizado: e.target.value }))}
+            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            Los productos cuyo costo no se haya actualizado en este número de días aparecerán marcados en rojo en Inventario y en el modal de producto.
+          </p>
         </div>
       </div>
 
