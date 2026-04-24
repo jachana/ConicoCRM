@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, Plus, TrendingUp, TrendingDown } from 'lucide-react'
 import { api } from '../lib/api'
 import type { MovimientoInventario, MovimientoListOut, Producto, StockBajoItem } from '../types'
+import { useAuthStore } from '../stores/auth'
 
 const MOTIVO_LABELS: Record<string, string> = {
   conteo_fisico: 'Conteo físico',
@@ -21,6 +22,12 @@ function MovimientoIcon({ tipo, signo }: { tipo: string; signo: number }) {
   if (tipo === 'entrada' || (tipo === 'ajuste' && signo === 1))
     return <TrendingUp size={14} className="text-green-500" />
   return <TrendingDown size={14} className="text-red-500" />
+}
+
+function diasDesde(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const ms = Date.now() - new Date(iso).getTime()
+  return `${Math.floor(ms / 86400000)}d`
 }
 
 function fmtFecha(iso: string) {
@@ -44,11 +51,14 @@ function ReferenciaCelda({ tipo, id }: { tipo: string | null; id: number | null 
 
 export default function Inventario() {
   const qc = useQueryClient()
+  const isAdmin = useAuthStore(s => s.user)?.role === 'admin'
   const [tab, setTab] = useState<'stock' | 'movimientos'>('stock')
   const [busqueda, setBusqueda] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
+
+  const [soloDesactualizados, setSoloDesactualizados] = useState(false)
 
   const [ajusteOpen, setAjusteOpen] = useState(false)
   const [ajusteProductoId, setAjusteProductoId] = useState('')
@@ -150,7 +160,7 @@ export default function Inventario() {
 
       {tab === 'stock' && (
         <div>
-          <div className="mb-3">
+          <div className="mb-3 flex items-center gap-3">
             <input
               type="text"
               placeholder="Buscar por nombre o SKU..."
@@ -158,6 +168,16 @@ export default function Inventario() {
               onChange={e => setBusqueda(e.target.value)}
               className="w-72 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             />
+            {isAdmin && (
+              <label className="text-sm flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={soloDesactualizados}
+                  onChange={e => setSoloDesactualizados(e.target.checked)}
+                />
+                Solo costo desactualizado
+              </label>
+            )}
           </div>
           <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
             <table className="w-full text-sm">
@@ -168,10 +188,13 @@ export default function Inventario() {
                   <th className="text-right px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">Stock mínimo</th>
                   <th className="text-right px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">Stock actual</th>
                   <th className="text-center px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">Estado</th>
+                  {isAdmin && (
+                    <th className="text-right px-4 py-3 text-gray-600 dark:text-gray-400 font-medium">Últ. act. costo</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {productos.map(p => {
+                {productos.filter(p => !soloDesactualizados || p.costo_desactualizado).map(p => {
                   const critico = p.stock_actual < p.stock_minimo
                   return (
                     <tr key={p.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800">
@@ -190,6 +213,11 @@ export default function Inventario() {
                           <span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">OK</span>
                         )}
                       </td>
+                      {isAdmin && (
+                        <td className={`px-4 py-3 text-right ${p.costo_desactualizado ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-500 dark:text-gray-400'}`}>
+                          {diasDesde(p.precio_costo_actualizado_en)}
+                        </td>
+                      )}
                     </tr>
                   )
                 })}
