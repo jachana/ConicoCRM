@@ -79,6 +79,9 @@ def test_listar_tareas_vendedor_solo_ve_propias(
     resp = client.get("/api/tareas", headers={"Authorization": f"Bearer {vendedor_token}"})
     assert resp.status_code == 200
     data = resp.json()
+    titulos = [t["titulo"] for t in data["items"]]
+    assert "mine" in titulos
+    assert "other" not in titulos
     assert all(t["asignado_id"] == vendedor_user.id for t in data["items"])
 
 
@@ -93,7 +96,8 @@ def test_listar_tareas_admin_ve_todas(
 
     resp = client.get("/api/tareas", headers={"Authorization": f"Bearer {admin_token}"})
     assert resp.status_code == 200
-    assert len(resp.json()["items"]) >= 2
+    titulos = {t["titulo"] for t in resp.json()["items"]}
+    assert {"a", "b"}.issubset(titulos)
 
 
 def test_listar_filtra_por_cliente_id(

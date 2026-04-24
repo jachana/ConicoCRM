@@ -9,7 +9,7 @@ from app.api.deps import require_permission
 from app.core.permissions import has_permission
 from app.models.tarea import Tarea
 from app.models.user import User
-from app.schemas.tarea import TareaIn
+from app.schemas.tarea import TareaIn, TareaOut
 
 router = APIRouter()
 
@@ -49,7 +49,7 @@ def serialize_tarea(t: Tarea) -> dict:
     }
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=TareaOut, status_code=status.HTTP_201_CREATED)
 def crear_tarea(
     payload: TareaIn,
     perms: tuple[User, Session] = require_permission("tareas", "create"),
