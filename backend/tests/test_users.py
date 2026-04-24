@@ -68,3 +68,108 @@ def test_desactivar_user_reasigna_tareas_a_admin(client, admin_token, admin_user
     db.expire_all()
     t_reloaded = db.query(Tarea).filter(Tarea.id == tarea_id).first()
     assert t_reloaded.asignado_id == admin_user.id
+
+
+def test_desactivar_user_inactivo_no_mueve_tareas(client, admin_token, vendedor_user, admin_user, db):
+    from datetime import date
+    from app.models.tarea import Tarea
+    from app.models.user import User
+    db.query(User).filter(User.id == vendedor_user.id).update({"is_active": False})
+    db.commit()
+
+    t = Tarea(
+        titulo="ya-inactivo",
+        due_date=date.today(),
+        origen="manual",
+        asignado_id=vendedor_user.id,
+    )
+    db.add(t); db.commit()
+    tarea_id = t.id
+
+    resp = client.patch(
+        f"/api/users/{vendedor_user.id}",
+        json={"is_active": False},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+
+    db.expire_all()
+    t_reloaded = db.query(Tarea).filter(Tarea.id == tarea_id).first()
+    assert t_reloaded.asignado_id == vendedor_user.id  # no cambió
+
+
+def test_patch_user_sin_is_active_no_mueve_tareas(client, admin_token, vendedor_user, admin_user, db):
+    from datetime import date
+    from app.models.tarea import Tarea
+    t = Tarea(
+        titulo="sin-cambio",
+        due_date=date.today(),
+        origen="manual",
+        asignado_id=vendedor_user.id,
+    )
+    db.add(t); db.commit()
+    tarea_id = t.id
+
+    resp = client.patch(
+        f"/api/users/{vendedor_user.id}",
+        json={"name": "Nuevo Nombre"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+
+    db.expire_all()
+    t_reloaded = db.query(Tarea).filter(Tarea.id == tarea_id).first()
+    assert t_reloaded.asignado_id == vendedor_user.id
+
+
+def test_desactivar_user_solo_mueve_pendientes(client, admin_token, vendedor_user, admin_user, db):
+    from datetime import date
+    from app.models.tarea import Tarea
+    t_pend = Tarea(
+        titulo="pendiente",
+        due_date=date.today(),
+        origen="manual",
+        asignado_id=vendedor_user.id,
+    )
+    t_hecha = Tarea(
+        titulo="hecha",
+        due_date=date.today(),
+        origen="manual",
+        asignado_id=vendedor_user.id,
+        estado="hecha",
+    )
+    t_desc = Tarea(
+        titulo="descartada",
+        due_date=date.today(),
+        origen="manual",
+        asignado_id=vendedor_user.id,
+        estado="descartada",
+        motivo_descarte="test",
+    )
+    db.add_all([t_pend, t_hecha, t_desc]); db.commit()
+    ids = (t_pend.id, t_hecha.id, t_desc.id)
+
+    resp = client.patch(
+        f"/api/users/{vendedor_user.id}",
+        json={"is_active": False},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+
+    db.expire_all()
+    pend = db.query(Tarea).filter(Tarea.id == ids[0]).first()
+    hecha = db.query(Tarea).filter(Tarea.id == ids[1]).first()
+    desc = db.query(Tarea).filter(Tarea.id == ids[2]).first()
+    assert pend.asignado_id == admin_user.id
+    assert hecha.asignado_id == vendedor_user.id
+    assert desc.asignado_id == vendedor_user.id
+
+
+def test_desactivar_ultimo_admin_rechazado(client, admin_token, admin_user, db):
+    resp = client.patch(
+        f"/api/users/{admin_user.id}",
+        json={"is_active": False},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 400
+    assert "admin" in resp.json()["detail"].lower()

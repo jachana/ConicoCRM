@@ -38,6 +38,17 @@ def update_user(user_id: int, body: UserUpdate, db: Session = Depends(get_db), _
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     was_active = user.is_active
+    if was_active and body.is_active is False and user.role == "admin":
+        otros_admins = db.query(User).filter(
+            User.role == "admin",
+            User.is_active.is_(True),
+            User.id != user.id,
+        ).count()
+        if otros_admins == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se puede desactivar el último admin activo",
+            )
     if body.name is not None:
         user.name = body.name
     if body.role is not None:
