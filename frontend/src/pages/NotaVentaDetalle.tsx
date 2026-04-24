@@ -262,9 +262,9 @@ export default function NotaVentaDetalle() {
         sku: producto.sku ?? null,
         descripcion: producto.nombre,
         formato: producto.formato ?? null,
-        valor_neto: producto.precio_venta,
-        margen: producto.precio_venta > 0
-          ? (producto.precio_venta - producto.precio_costo) / producto.precio_venta
+        valor_neto: Number(producto.precio_venta),
+        margen: Number(producto.precio_venta) > 0
+          ? (Number(producto.precio_venta) - Number(producto.precio_costo ?? 0)) / Number(producto.precio_venta)
           : null,
       }
       return calcLinea(updated)

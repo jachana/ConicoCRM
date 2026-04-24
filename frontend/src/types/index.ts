@@ -111,18 +111,51 @@ export interface Producto {
   descripcion: string | null
   sku: string | null
   formato: string | null
-  precio_costo: number
-  precio_venta: number
-  precio_con_iva: number
-  costo_con_iva: number
-  ultimo_costo_unitario: number
+  precio_venta: number | string
+  precio_con_iva: number | string
+  precio_costo?: number | string
+  costo_con_iva?: number | string
+  precio_costo_actualizado_en?: string | null
+  costo_desactualizado?: boolean
   stock_minimo: number
   stock_actual: number
   proveedor_id: number | null
   marca_id: number | null
   marca: { id: number; nombre: string } | null
-  volumen: number | null
+  volumen: number | string | null
+  tags: string[]
   created_at: string
+}
+
+export interface ListaPrecios {
+  id: number
+  nombre_archivo: string
+  fecha_subida: string
+  activa: boolean
+  total_items: number
+  subida_por: { id: number; nombre: string } | null
+}
+
+export interface ListaPreciosItem {
+  id: number
+  sku: string
+  costo_unitario: number | string
+}
+
+export interface ListaPreciosUploadResult {
+  lista_id: number
+  total_filas: number
+  filas_invalidas: number
+  productos_actualizados: number
+  skus_sin_producto: string[]
+  productos_no_incluidos_count: number
+}
+
+export interface HistorialCostoItem {
+  fecha_subida: string
+  costo_unitario: number | string
+  lista_id: number
+  nombre_archivo: string
 }
 
 export interface Cliente {

@@ -92,8 +92,8 @@ export default function Productos() {
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
                   {p.marca ? p.marca.nombre : <span className="text-gray-300 dark:text-gray-600">—</span>}
                 </td>
-                <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">{formatPrecio(p.precio_costo)}</td>
-                <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">{formatPrecio(p.precio_venta)}</td>
+                <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">{formatPrecio(Number(p.precio_costo ?? 0))}</td>
+                <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">{formatPrecio(Number(p.precio_venta))}</td>
                 <td className={`px-4 py-2 text-right font-medium ${p.stock_actual < p.stock_minimo ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}`}>
                   {p.stock_actual}
                   {p.stock_actual < p.stock_minimo && (

@@ -85,7 +85,7 @@ export default function OrdenCompraDetalle() {
   }
 
   function seleccionarProducto(idx: number, producto: Producto) {
-    setLineas(prev => prev.map((l, i) => i !== idx ? l : calcLinea({ ...l, producto_id: producto.id, sku: producto.sku ?? null, descripcion: producto.nombre, valor_neto: producto.precio_costo })))
+    setLineas(prev => prev.map((l, i) => i !== idx ? l : calcLinea({ ...l, producto_id: producto.id, sku: producto.sku ?? null, descripcion: producto.nombre, valor_neto: Number(producto.precio_costo ?? 0) })))
     setAutocompleteResults([])
     setAutocompleteIdx(null)
   }

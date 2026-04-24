@@ -48,7 +48,7 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
       nombre: editando.nombre,
       descripcion: editando.descripcion ?? '',
       precio_venta: String(editando.precio_venta),
-      margen: calcMargen(editando.precio_costo, String(editando.precio_venta)),
+      margen: calcMargen(Number(editando.precio_costo ?? 0), String(editando.precio_venta)),
       stock_minimo: String(editando.stock_minimo),
       proveedor_id: editando.proveedor_id ? String(editando.proveedor_id) : '',
       marca_id: editando.marca_id ? String(editando.marca_id) : '',
@@ -82,7 +82,7 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
   })
 
   const venta = parseFloat(form.precio_venta)
-  const costo = editando?.precio_costo ?? 0
+  const costo = Number(editando?.precio_costo ?? 0)
   const margenVal = parseFloat(form.margen)
   const priceError = formDirty && venta <= costo ? 'El precio de venta debe ser mayor al costo' : null
 
@@ -154,10 +154,10 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                   Precio costo ($) <span className="text-xs text-gray-400">(auto)</span>
                 </label>
-                <input type="text" readOnly value={editando ? formatPrecio(editando.precio_costo) : '—'}
+                <input type="text" readOnly value={editando ? formatPrecio(Number(editando.precio_costo ?? 0)) : '—'}
                   className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
                 {editando && (
-                  <p className="mt-0.5 text-xs text-gray-400">+IVA: {formatPrecio(editando.costo_con_iva)}</p>
+                  <p className="mt-0.5 text-xs text-gray-400">+IVA: {formatPrecio(Number(editando.costo_con_iva ?? 0))}</p>
                 )}
               </div>
 

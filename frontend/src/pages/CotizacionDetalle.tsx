@@ -365,11 +365,11 @@ export default function CotizacionDetalle() {
         sku: producto.sku ?? null,
         descripcion: producto.nombre,
         formato: producto.formato ?? null,
-        valor_neto: producto.precio_venta,
-        margen: producto.precio_venta > 0
-          ? (producto.precio_venta - producto.precio_costo) / producto.precio_venta
+        valor_neto: Number(producto.precio_venta),
+        margen: Number(producto.precio_venta) > 0
+          ? (Number(producto.precio_venta) - Number(producto.precio_costo ?? 0)) / Number(producto.precio_venta)
           : null,
-        _costo: producto.precio_costo ?? null,
+        _costo: producto.precio_costo != null ? Number(producto.precio_costo) : null,
         _stock: producto.stock_actual,
       }
       return calcLinea(updated)
@@ -440,8 +440,8 @@ export default function CotizacionDetalle() {
     if (!linea.producto_id) return
     const prod = productos.find(p => p.id === linea.producto_id)
     if (!prod) return
-    const vn = prod.precio_venta
-    const costo = prod.precio_costo ?? null
+    const vn = Number(prod.precio_venta)
+    const costo = prod.precio_costo != null ? Number(prod.precio_costo) : null
     const newMargen = vn > 0 && costo != null ? (vn - costo) / vn : linea.margen
     setLineas(prev => prev.map((l, i) => i !== idx ? l : calcLinea({ ...l, valor_neto: vn, margen: newMargen, _costo: costo })))
   }
