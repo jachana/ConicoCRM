@@ -24,7 +24,6 @@ from app.schemas.orden_compra import (
     OrdenCompraLineaCreate,
 )
 from app.services.email import EmailNotConfiguredError, enviar_orden_compra
-from app.services.inventario_fifo import crear_lote_entrada
 from app.services.pdf import generar_pdf_orden_compra
 
 router = APIRouter()
@@ -321,14 +320,6 @@ def recepcionar(
                         detail=f"La línea {linea.id} no tiene valor_neto; no se puede recepcionar sin costo unitario",
                     )
                 producto.stock_actual += delta
-                lote = crear_lote_entrada(
-                    db,
-                    producto_id=linea.producto_id,
-                    costo_unitario=linea.valor_neto,
-                    cantidad=delta,
-                    oc_linea_id=linea.id,
-                    usuario_id=current_user.id,
-                )
                 db.add(MovimientoInventario(
                     producto_id=linea.producto_id,
                     tipo="entrada",
@@ -337,7 +328,6 @@ def recepcionar(
                     referencia_tipo="orden_compra",
                     referencia_id=orden_id,
                     usuario_id=current_user.id,
-                    lote_costo_id=lote.id,
                 ))
 
     if all(l.cantidad_recibida >= l.cantidad for l in orden.lineas):

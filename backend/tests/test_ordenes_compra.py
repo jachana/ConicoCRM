@@ -294,9 +294,9 @@ def test_no_puede_editar_orden_no_borrador(client, admin_token):
     assert r2.status_code == 400
 
 
-def test_recepcionar_crea_lote_costo(client, admin_token, db):
+def test_recepcionar_registra_movimiento_sin_lote(client, admin_token, db):
     from tests.conftest import TestingSession
-    from app.models.lote_costo import LoteCosto
+    from app.models.movimiento_inventario import MovimientoInventario
     from app.models.producto import Producto
     from app.models.orden_compra import OrdenCompra
     from decimal import Decimal
@@ -353,14 +353,27 @@ def test_recepcionar_crea_lote_costo(client, admin_token, db):
     )
     assert recv_r.status_code == 200
 
-    lotes = db.query(LoteCosto).filter_by(producto_id=prod_id).all()
-    assert len(lotes) == 1
-    assert lotes[0].cantidad_restante == 10
-    assert lotes[0].costo_unitario == Decimal("50.00")
-
+    # OC reception now only tracks stock, never cost:
+    # - producto.precio_costo remains at its seeded default (Decimal("0"))
+    # - producto.stock_actual increments by the received quantity
+    # - a MovimientoInventario entrada row is recorded referencing the OC
     producto = db.get(Producto, prod_id)
-    assert producto.precio_costo == Decimal("50.00")
     assert producto.stock_actual == 10
+    assert producto.precio_costo == Decimal("0")
+
+    movs = (
+        db.query(MovimientoInventario)
+        .filter_by(
+            producto_id=prod_id,
+            tipo="entrada",
+            referencia_tipo="orden_compra",
+            referencia_id=oc_id,
+        )
+        .all()
+    )
+    assert len(movs) == 1
+    assert movs[0].signo == 1
+    assert movs[0].cantidad == 10
 
 
 def test_recepcionar_sin_valor_neto_falla(client, admin_token, db):
