@@ -128,3 +128,11 @@ def test_producto_volumen(client, admin_token):
     assert r.status_code == 201
     data = r.json()
     assert float(data["volumen"]) == 5.5
+
+
+def test_producto_precio_costo_actualizado_en_nullable_by_default(db):
+    from app.models.producto import Producto
+    p = Producto(nombre="Test", sku="X1")
+    db.add(p); db.commit()
+    db.refresh(p)
+    assert p.precio_costo_actualizado_en is None

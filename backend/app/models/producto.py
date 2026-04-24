@@ -32,6 +32,9 @@ class Producto(Base):
     ultimo_costo_unitario: Mapped[Decimal] = mapped_column(
         Numeric(12, 2), default=Decimal("0"), server_default=text("0")
     )
+    precio_costo_actualizado_en: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     proveedor: Mapped["Proveedor | None"] = relationship("Proveedor", back_populates="productos")
     marca: Mapped["Marca | None"] = relationship("Marca")
