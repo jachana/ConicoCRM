@@ -87,8 +87,3 @@ class ProductoBusquedaOutPublic(BaseModel):
 
 class ProductoBusquedaOutAdmin(ProductoBusquedaOutPublic):
     precio_costo: Decimal
-
-
-# Backward-compatible alias (some external imports may still use this name);
-# prefer the public/admin variants for new code.
-ProductoBusquedaOut = ProductoBusquedaOutAdmin
