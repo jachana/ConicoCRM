@@ -50,6 +50,8 @@ def setup_test_db():
     import app.models.lote_costo  # noqa: F401
     import app.models.producto_documento  # noqa: F401
     import app.models.lista_precios  # noqa: F401
+    import app.models.tarea  # noqa: F401
+    import app.models.regla_tarea  # noqa: F401
     Base.metadata.drop_all(bind=test_engine)
     Base.metadata.create_all(bind=test_engine)
     yield
@@ -157,3 +159,27 @@ def vendedor_user():
 def vendedor_token(client, vendedor_user):
     resp = client.post("/api/auth/login", data={"username": "vendedor@conico.cl", "password": "secret123"})
     return resp.json()["access_token"]
+
+
+@pytest.fixture
+def cliente_demo():
+    from app.models.cliente import Cliente
+    session = TestingSession()
+    c = Cliente(nombre="Cliente Demo")
+    session.add(c)
+    session.commit()
+    session.refresh(c)
+    session.close()
+    return c
+
+
+@pytest.fixture
+def empresa_demo():
+    from app.models.empresa import Empresa
+    session = TestingSession()
+    e = Empresa(nombre="Empresa Demo")
+    session.add(e)
+    session.commit()
+    session.refresh(e)
+    session.close()
+    return e
