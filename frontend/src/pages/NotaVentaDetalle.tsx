@@ -241,12 +241,25 @@ export default function NotaVentaDetalle() {
   }
 
   const fetchAutocomplete = useCallback(async (q: string) => {
-    if (q.length < 2) { setAutocompleteResults([]); return }
     try {
-      const res = await api.get<Producto[]>(`/api/productos/buscar?q=${encodeURIComponent(q)}`)
-      setAutocompleteResults(res.data)
+      if (q.trim() !== '') {
+        const res = await api.get<Producto[]>(`/api/productos/buscar?q=${encodeURIComponent(q)}`)
+        setAutocompleteResults(res.data)
+        return
+      }
+      if (empresaId) {
+        const res = await api.get<Producto[]>(`/api/productos/sugerencias?empresa_id=${empresaId}`)
+        setAutocompleteResults(res.data)
+        return
+      }
+      if (clienteId) {
+        const res = await api.get<Producto[]>(`/api/productos/sugerencias?cliente_id=${clienteId}`)
+        setAutocompleteResults(res.data)
+        return
+      }
+      setAutocompleteResults([])
     } catch { setAutocompleteResults([]) }
-  }, [])
+  }, [empresaId, clienteId])
 
   function handleDescripcionChange(idx: number, value: string) {
     setAutocompleteIdx(idx)
