@@ -78,7 +78,7 @@ def test_cotizacion_auto_descarte_al_cerrar(db, cliente_demo, vendedor_user, reg
 
 
 @freeze_time("2026-05-01")
-def test_factura_vencida_genera_tarea(db, cliente_demo, empresa_demo, vendedor_user, reglas_seeded):
+def test_factura_vencida_genera_tarea(db, admin_user, cliente_demo, empresa_demo, vendedor_user, reglas_seeded):
     f = Factura(
         numero=1001, cliente_id=cliente_demo.id, empresa_id=empresa_demo.id,
         vendedor_id=vendedor_user.id, fecha=date(2026, 4, 1),
@@ -112,7 +112,7 @@ def test_aprobacion_pendiente_credito(db, admin_user, vendedor_user, reglas_seed
 
 
 @freeze_time("2026-05-01")
-def test_nv_despachada_sin_avanzar(db, cliente_demo, vendedor_user, reglas_seeded):
+def test_nv_despachada_sin_avanzar(db, admin_user, cliente_demo, vendedor_user, reglas_seeded):
     from app.models.nota_venta import NotaVenta
     nv = NotaVenta(
         numero=5001,
@@ -129,3 +129,46 @@ def test_nv_despachada_sin_avanzar(db, cliente_demo, vendedor_user, reglas_seede
     tareas = db.query(Tarea).filter(Tarea.tipo_regla == "nv_despachada_sin_avanzar").all()
     assert len(tareas) == 1
     assert tareas[0].nota_venta_id == nv.id
+
+
+@freeze_time("2026-05-01")
+def test_cliente_sin_actividad(db, admin_user, vendedor_user, reglas_seeded):
+    from app.models.cliente import Cliente
+    from app.models.cotizacion import Cotizacion
+    c = Cliente(nombre="Inactivo SA", rut="11111111-1")
+    db.add(c); db.commit()
+
+    cot = Cotizacion(
+        numero=9999,
+        cliente_id=c.id,
+        vendedor_id=vendedor_user.id,
+        fecha=date(2026, 3, 22),
+        estado="cerrada_fv",
+    )
+    db.add(cot); db.commit()
+
+    ejecutar_generacion(db)
+    tareas = db.query(Tarea).filter(Tarea.tipo_regla == "cliente_sin_actividad").all()
+    assert len(tareas) == 1
+    assert tareas[0].cliente_id == c.id
+    assert tareas[0].asignado_id == vendedor_user.id
+
+
+@freeze_time("2026-05-01")
+def test_stock_bajo_minimo(db, admin_user, reglas_seeded):
+    from app.models.producto import Producto
+    p = Producto(
+        nombre="Tornillo",
+        sku="SKU-1",
+        stock_actual=2,
+        stock_minimo=10,
+        precio_costo=Decimal("100"),
+        precio_venta=Decimal("150"),
+    )
+    db.add(p); db.commit()
+
+    ejecutar_generacion(db)
+    tareas = db.query(Tarea).filter(Tarea.tipo_regla == "stock_bajo_minimo").all()
+    assert len(tareas) == 1
+    assert tareas[0].producto_id == p.id
+    assert tareas[0].asignado_id == admin_user.id

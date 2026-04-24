@@ -1,6 +1,7 @@
 from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 import logging
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.celery_app import celery_app
@@ -12,6 +13,8 @@ from app.models.factura import Factura
 from app.models.aprobacion_credito import AprobacionCredito
 from app.models.aprobacion_margen import AprobacionMargen
 from app.models.nota_venta import NotaVenta
+from app.models.cliente import Cliente
+from app.models.producto import Producto
 from app.services.tareas_asignacion import resolver_asignado
 
 log = logging.getLogger(__name__)
@@ -194,11 +197,91 @@ def _generar_nv_despachada_sin_avanzar(db: Session, regla: ReglaTarea):
     _descartar_obsoletas(db, regla, _sigue)
 
 
+def _generar_cliente_sin_actividad(db: Session, regla: ReglaTarea):
+    today = date.today()
+    cutoff = today - timedelta(days=regla.offset_dias)
+
+    cots = db.query(
+        Cotizacion.cliente_id.label("cid"),
+        func.max(Cotizacion.fecha).label("ult"),
+        func.max(Cotizacion.vendedor_id).label("vendedor"),
+    ).group_by(Cotizacion.cliente_id).subquery()
+
+    rows = db.query(Cliente, cots.c.ult, cots.c.vendedor).outerjoin(
+        cots, cots.c.cid == Cliente.id
+    ).all()
+    candidatos = [(c, ult, vend) for c, ult, vend in rows
+                  if ult is None or ult <= cutoff]
+
+    if len(candidatos) > MAX_CANDIDATOS:
+        log.warning(f"cliente_sin_actividad excede {MAX_CANDIDATOS}, omitido")
+        return
+
+    for c, ult, vend in candidatos:
+        key = f"cliente_inactivo:{c.id}"
+        if _existe_pendiente(db, key):
+            continue
+        dias = (today - ult).days if ult else regla.offset_dias
+        asignado = resolver_asignado(db, regla.asignado_rol, vend)
+        _crear_tarea(
+            db,
+            titulo=f"Cliente {c.nombre} sin actividad hace {dias}d",
+            due_date=today,
+            regla=regla,
+            dedup_key=key,
+            asignado_id=asignado,
+            cliente_id=c.id,
+        )
+
+    def _sigue(db, t: Tarea) -> bool:
+        if t.cliente_id is None:
+            return False
+        last = db.query(func.max(Cotizacion.fecha)).filter(
+            Cotizacion.cliente_id == t.cliente_id
+        ).scalar()
+        return last is None or last <= cutoff
+    _descartar_obsoletas(db, regla, _sigue)
+
+
+def _generar_stock_bajo_minimo(db: Session, regla: ReglaTarea):
+    today = date.today()
+    candidatos = db.query(Producto).filter(
+        Producto.stock_actual < Producto.stock_minimo
+    ).all()
+    if len(candidatos) > MAX_CANDIDATOS:
+        log.warning(f"stock_bajo excede {MAX_CANDIDATOS}, omitido")
+        return
+
+    for p in candidatos:
+        key = f"stock_bajo:{p.id}"
+        if _existe_pendiente(db, key):
+            continue
+        asignado = resolver_asignado(db, regla.asignado_rol, None)
+        _crear_tarea(
+            db,
+            titulo=f"Stock bajo: {p.nombre} ({p.stock_actual}/{p.stock_minimo})",
+            due_date=today,
+            regla=regla,
+            dedup_key=key,
+            asignado_id=asignado,
+            producto_id=p.id,
+        )
+
+    def _sigue(db, t: Tarea) -> bool:
+        if t.producto_id is None:
+            return False
+        p = db.query(Producto).filter(Producto.id == t.producto_id).first()
+        return p is not None and p.stock_actual < p.stock_minimo
+    _descartar_obsoletas(db, regla, _sigue)
+
+
 GENERADORES = {
     "cotizacion_vence": _generar_cotizacion_vence,
     "factura_vencida": _generar_factura_vencida,
     "aprobacion_pendiente": _generar_aprobacion_pendiente,
     "nv_despachada_sin_avanzar": _generar_nv_despachada_sin_avanzar,
+    "cliente_sin_actividad": _generar_cliente_sin_actividad,
+    "stock_bajo_minimo": _generar_stock_bajo_minimo,
 }
 
 
