@@ -46,6 +46,9 @@ def setup_test_db():
     import app.models.dte_emision  # noqa: F401
     import app.models.banco_receptor  # noqa: F401
     import app.models.sede_despacho  # noqa: F401
+    import app.models.marca  # noqa: F401
+    import app.models.lote_costo  # noqa: F401
+    import app.models.producto_documento  # noqa: F401
     Base.metadata.drop_all(bind=test_engine)
     Base.metadata.create_all(bind=test_engine)
     yield

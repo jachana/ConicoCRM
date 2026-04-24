@@ -46,7 +46,7 @@ def listar_movimientos(
         q = q.filter(MovimientoInventario.created_at <= end_of_day)
     total = q.count()
     items = q.order_by(MovimientoInventario.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
-    return MovimientoListOut(items=items, total=total)
+    return MovimientoListOut(items=items, total=total, page=page, page_size=page_size)
 
 
 @router.post("/ajustes", response_model=MovimientoOut, status_code=status.HTTP_201_CREATED)

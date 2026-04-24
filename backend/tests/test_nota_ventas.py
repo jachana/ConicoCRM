@@ -60,7 +60,8 @@ def test_crear_nv_admin(client, admin_token):
     assert r.status_code == 201
     data = r.json()
     assert data["numero"] >= 1
-    assert data["estado"] == "pendiente"
+    # Product has no active lots → precio_costo=0 → NV enters cost-approval state
+    assert data["estado"] in ("pendiente", "pendiente_aprobacion_costo")
     assert len(data["lineas"]) == 1
     assert float(data["total_neto"]) == 500
     assert float(data["total_iva"]) == pytest.approx(95, rel=0.01)
@@ -341,3 +342,35 @@ def test_excel_export(client, admin_token):
                    headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
     assert "spreadsheetml" in r.headers["content-type"]
+
+
+# ── costo=0 guard ─────────────────────────────────────────────────────────────
+
+def test_nv_producto_sin_costo_es_pendiente_aprobacion(client, admin_token, db):
+    from app.models.movimiento_inventario import MovimientoInventario
+
+    # Create product with no lots — precio_costo defaults to 0
+    prod_r = client.post("/api/productos/", json={
+        "nombre": "ProdSinCosto",
+        "sku": f"SKU-SC-{random.randint(10000, 99999)}",
+        "precio_venta": "100.00",
+        "stock_minimo": 0,
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    assert prod_r.status_code == 201, prod_r.text
+    prod = prod_r.json()
+
+    cid = _make_cliente(client, admin_token)
+
+    r = _create_nv(client, admin_token, cid,
+                   lineas=[{"orden": 1, "descripcion": "Sin costo", "producto_id": prod["id"],
+                             "cantidad": 1, "valor_neto": 100}])
+    assert r.status_code == 201, r.text
+    data = r.json()
+
+    assert data["estado"] == "pendiente_aprobacion_costo"
+
+    # No inventory movements should have been created for this NV
+    movs = db.query(MovimientoInventario).filter_by(
+        referencia_tipo="nota_venta", referencia_id=data["id"]
+    ).all()
+    assert len(movs) == 0

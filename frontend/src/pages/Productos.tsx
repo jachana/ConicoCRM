@@ -2,37 +2,16 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import type { Producto } from '../types'
-
-type FormData = {
-  nombre: string
-  descripcion: string
-  precio_costo: string
-  precio_venta: string
-  margen: string        // UI-only, never sent to API
-  stock_minimo: string
-  stock_actual: string
-  proveedor_id: string
-}
-
-const EMPTY_FORM: FormData = {
-  nombre: '', descripcion: '', precio_costo: '0', precio_venta: '0',
-  margen: '0', stock_minimo: '0', stock_actual: '0', proveedor_id: '',
-}
+import ProductoModal from '../components/ProductoModal'
+import { useAuthStore } from '../stores/auth'
 
 function formatPrecio(n: number) {
-  return `$${Math.round(n)}`
-}
-
-function calcMargen(costo: string, venta: string): string {
-  const c = parseFloat(costo)
-  const v = parseFloat(venta)
-  if (!v || v <= 0) return '0'
-  const m = ((v - c) / v) * 100
-  return isNaN(m) ? '0' : m.toFixed(2)
+  return `$${Math.round(n).toLocaleString('es-CL')}`
 }
 
 export default function Productos() {
   const qc = useQueryClient()
+  const user = useAuthStore(s => s.user)
   const [busqueda, setBusqueda] = useState('')
 
   const { data: productos = [], isLoading } = useQuery<Producto[]>({
@@ -42,52 +21,12 @@ export default function Productos() {
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editando, setEditando] = useState<Producto | null>(null)
-  const [form, setForm] = useState<FormData>(EMPTY_FORM)
-  const [formDirty, setFormDirty] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [eliminandoId, setEliminandoId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  function abrirCrear() {
-    setEditando(null); setForm(EMPTY_FORM); setFormDirty(false); setError(null); setModalOpen(true)
-  }
-
-  function abrirEditar(p: Producto) {
-    setEditando(p)
-    const costo = String(p.precio_costo)
-    const venta = String(p.precio_venta)
-    setForm({
-      nombre: p.nombre,
-      descripcion: p.descripcion ?? '',
-      precio_costo: costo,
-      precio_venta: venta,
-      margen: calcMargen(costo, venta),
-      stock_minimo: String(p.stock_minimo),
-      stock_actual: String(p.stock_actual),
-      proveedor_id: p.proveedor_id ? String(p.proveedor_id) : '',
-    })
-    setError(null); setFormDirty(false); setModalOpen(true)
-  }
-
-  function cerrarModal() { setModalOpen(false); setEditando(null); setError(null); setFormDirty(false) }
-
-  const guardar = useMutation({
-    mutationFn: (data: FormData) => {
-      const payload = {
-        nombre: data.nombre,
-        descripcion: data.descripcion || null,
-        precio_costo: parseFloat(data.precio_costo) || 0,
-        precio_venta: parseFloat(data.precio_venta) || 0,
-        stock_minimo: parseInt(data.stock_minimo) || 0,
-        stock_actual: parseInt(data.stock_actual) || 0,
-        proveedor_id: data.proveedor_id ? parseInt(data.proveedor_id) : null,
-      }
-      if (editando) return api.patch(`/api/productos/${editando.id}`, payload).then(r => r.data)
-      return api.post('/api/productos/', payload).then(r => r.data)
-    },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['productos'] }); cerrarModal() },
-    onError: (e: any) => setError(e?.response?.data?.detail ?? 'Error al guardar'),
-  })
+  function abrirCrear() { setEditando(null); setModalOpen(true) }
+  function abrirEditar(p: Producto) { setEditando(p); setModalOpen(true) }
+  function cerrarModal() { setModalOpen(false); setEditando(null) }
 
   const eliminar = useMutation({
     mutationFn: (id: number) => api.delete(`/api/productos/${id}`),
@@ -95,51 +34,7 @@ export default function Productos() {
     onError: (e: any) => setDeleteError(e?.response?.data?.detail ?? 'Error al eliminar'),
   })
 
-  function handleCostoChange(val: string) {
-    setFormDirty(true)
-    setForm(f => {
-      const m = parseFloat(f.margen)
-      const c = parseFloat(val)
-      if (!isNaN(m) && m > 0 && m < 100 && !isNaN(c) && c > 0) {
-        const newVenta = (c / (1 - m / 100)).toFixed(2)
-        return { ...f, precio_costo: val, precio_venta: newVenta }
-      }
-      return { ...f, precio_costo: val }
-    })
-  }
-
-  function handleVentaChange(val: string) {
-    setFormDirty(true)
-    setForm(f => {
-      const costoNum = parseFloat(f.precio_costo)
-      const newMargen = costoNum > 0 ? calcMargen(f.precio_costo, val) : f.margen
-      return { ...f, precio_venta: val, margen: newMargen }
-    })
-  }
-
-  function handleMargenChange(val: string) {
-    setFormDirty(true)
-    setForm(f => {
-      const m = parseFloat(val)
-      const c = parseFloat(f.precio_costo)
-      if (!isNaN(m) && m > 0 && m < 100 && !isNaN(c) && c > 0) {
-        const newVenta = (c / (1 - m / 100)).toFixed(2)
-        return { ...f, margen: val, precio_venta: newVenta }
-      }
-      return { ...f, margen: val }
-    })
-  }
-
   if (isLoading) return <div className="p-6 text-gray-500">Cargando...</div>
-
-  const costo = parseFloat(form.precio_costo)
-  const venta = parseFloat(form.precio_venta)
-  const margenVal = parseFloat(form.margen)
-  const priceError =
-    venta <= costo ? 'El precio de venta debe ser mayor al costo' :
-    margenVal <= 0 ? 'El margen debe ser mayor a 0%' :
-    margenVal >= 100 ? 'El margen no puede ser 100% o más' :
-    null
 
   return (
     <div className="p-4 md:p-6 max-w-6xl">
@@ -174,6 +69,7 @@ export default function Productos() {
           <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
             <tr>
               <th className="text-left px-4 py-3 font-medium">Nombre</th>
+              <th className="text-left px-4 py-3 font-medium">Marca</th>
               <th className="text-right px-4 py-3 font-medium">Precio costo</th>
               <th className="text-right px-4 py-3 font-medium">Precio venta</th>
               <th className="text-right px-4 py-3 font-medium">Stock</th>
@@ -184,7 +80,7 @@ export default function Productos() {
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {productos.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">Sin productos registrados</td>
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-400">Sin productos registrados</td>
               </tr>
             )}
             {productos.map(p => (
@@ -192,6 +88,9 @@ export default function Productos() {
                 <td className="px-4 py-3">
                   <div className="font-medium text-gray-900 dark:text-white">{p.nombre}</div>
                   {p.descripcion && <div className="text-xs text-gray-400 truncate max-w-xs">{p.descripcion}</div>}
+                </td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
+                  {p.marca ? p.marca.nombre : <span className="text-gray-300 dark:text-gray-600">—</span>}
                 </td>
                 <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">{formatPrecio(p.precio_costo)}</td>
                 <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">{formatPrecio(p.precio_venta)}</td>
@@ -225,110 +124,11 @@ export default function Productos() {
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {editando ? 'Editar producto' : 'Nuevo producto'}
-              </h2>
-            </div>
-            <form
-              onSubmit={e => {
-                e.preventDefault()
-                setFormDirty(true)
-                if (priceError) { setError('Corrige los errores de precio antes de guardar'); return }
-                guardar.mutate(form)
-              }}
-              className="px-6 py-4 grid grid-cols-2 gap-4"
-            >
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
-                <input type="text" required value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
-                <textarea rows={2} value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              {/* Triangle: Costo */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Precio costo ($)</label>
-                <input
-                  type="number" min="0" step="0.01"
-                  value={form.precio_costo}
-                  onChange={e => handleCostoChange(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
-
-              {/* Triangle: Venta */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Precio venta ($)</label>
-                <input
-                  type="number" min="0" step="0.01"
-                  value={form.precio_venta}
-                  onChange={e => handleVentaChange(e.target.value)}
-                  className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${
-                    formDirty && venta <= costo ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                />
-                {formDirty && venta <= costo && (
-                  <p className="mt-1 text-xs text-red-500">El precio de venta debe ser mayor al costo</p>
-                )}
-              </div>
-
-              {/* Triangle: Margen */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Margen (%)</label>
-                <div className="relative">
-                  <input
-                    type="number" min="0" step="0.01"
-                    value={form.margen}
-                    onChange={e => handleMargenChange(e.target.value)}
-                    className={`w-full px-3 py-2 pr-7 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${
-                      formDirty && (margenVal <= 0 || margenVal >= 100) ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
-                    }`}
-                  />
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
-                </div>
-                {formDirty && (margenVal <= 0 || margenVal >= 100) && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {margenVal <= 0 ? 'Debe ser mayor a 0%' : 'No puede ser 100% o más'}
-                  </p>
-                )}
-              </div>
-
-              {/* Stocks */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Stock mínimo</label>
-                <input
-                  type="number" min="0" step="1"
-                  value={form.stock_minimo}
-                  onChange={e => { setFormDirty(true); setForm(f => ({ ...f, stock_minimo: e.target.value })) }}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Stock actual</label>
-                <input
-                  type="number" min="0" step="1"
-                  value={form.stock_actual}
-                  onChange={e => { setFormDirty(true); setForm(f => ({ ...f, stock_actual: e.target.value })) }}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
-              {error && <p className="col-span-2 text-xs text-red-500">{error}</p>}
-              <div className="col-span-2 flex justify-end gap-2 pt-2">
-                <button type="button" onClick={cerrarModal} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Cancelar</button>
-                <button type="submit" disabled={guardar.isPending || (formDirty && !!priceError)}
-                  className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors">
-                  {guardar.isPending ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <ProductoModal
+          editando={editando}
+          onClose={cerrarModal}
+          userRole={user?.role ?? 'vendedor'}
+        />
       )}
     </div>
   )
