@@ -12,14 +12,12 @@ from sqlalchemy.orm import Session
 from app.api.config import require_admin
 from app.api.deps import require_permission
 from app.models.lista_precios import ListaPrecios, ListaPreciosItem
-from app.models.lote_costo import LoteCosto
 from app.models.producto import Producto
 from app.models.system_config import SystemConfig
 from app.models.tag import ProductoTag
 from app.models.user import User
 from app.models.movimiento_inventario import MovimientoInventario
 from app.schemas.lista_precios import HistorialCostoItem
-from app.schemas.lote_costo import LoteCostoOut
 from app.schemas.producto import (
     ProductoBusquedaOutAdmin,
     ProductoBusquedaOutPublic,
@@ -233,13 +231,13 @@ def exportar_movimientos_producto(
     )
     output = _io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["fecha", "tipo", "cantidad", "signo", "referencia_tipo", "referencia_id", "motivo", "nota", "usuario_id", "lote_costo_id"])
+    writer.writerow(["fecha", "tipo", "cantidad", "signo", "referencia_tipo", "referencia_id", "motivo", "nota", "usuario_id"])
     for m in movimientos:
         writer.writerow([
             m.created_at.isoformat(), m.tipo, m.cantidad, m.signo,
             m.referencia_tipo or "", m.referencia_id or "",
             m.motivo or "", m.nota or "",
-            m.usuario_id or "", m.lote_costo_id or "",
+            m.usuario_id or "",
         ])
     output.seek(0)
     return StreamingResponse(
@@ -268,22 +266,6 @@ def listar_movimientos_producto(
     total = q.count()
     items = q.order_by(MovimientoInventario.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
     return MovimientoListOut(items=items, total=total, page=page, page_size=page_size)
-
-
-@router.get("/{producto_id}/lotes", response_model=list[LoteCostoOut])
-def listar_lotes_producto(
-    producto_id: int,
-    perms: tuple[User, Session] = require_permission("catalogo", "view"),
-):
-    _, db = perms
-    if not db.get(Producto, producto_id):
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
-    return (
-        db.query(LoteCosto)
-        .filter(LoteCosto.producto_id == producto_id, LoteCosto.cantidad_restante > 0)
-        .order_by(LoteCosto.created_at.asc())
-        .all()
-    )
 
 
 @router.get("/{producto_id}/historial-costos", response_model=list[HistorialCostoItem])
