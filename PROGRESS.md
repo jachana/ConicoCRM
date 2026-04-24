@@ -23,29 +23,36 @@
   - Exportación Excel
   - SystemConfig: tabla key/value para configuración global
 
-- [ ] **Fase 4a — Empresa + Cliente (actualización)**
-  - Nuevo módulo Empresa: CRUD, búsqueda, Excel
+- [x] **Fase 4a — Empresa + Cliente**
+  - Módulo Empresa: CRUD, búsqueda, Excel, página con tabs (Clientes, Facturas, Productos, Cotizaciones)
+  - EmpresaDetailModal con 4 tabs, filtros, sort por columna, export
   - Clientes asociados a Empresa (FK nullable); campos heredados read-only en formulario
-  - Nuevos campos en Cliente: recibe_correo, forma_pago, despacho_o_retiro, comuna, direccion_despacho, ultimo_contacto, forma_captacion, compromiso, es_nuevo
-  - Migración cotizaciones: agregar empresa_id nullable
+  - Campos Cliente: recibe_correo, forma_pago, despacho_o_retiro, comuna, direccion_despacho, ultimo_contacto, forma_captacion, compromiso, es_nuevo
+  - ClienteSelectModal en flujo Cotización/NV con scope por empresa
+  - Cotizaciones/NVs con empresa_id nullable
 
 - [x] **Fase 4b — Nota de Venta + Factura**
-  - [x] **Fase 4b-1 — Nota de Venta**: creación desde cero o desde cotización (líneas editables, selección parcial)
+  - **Fase 4b-1 — Nota de Venta**: creación desde cero o desde cotización (líneas editables, selección parcial)
   - Numeración correlativa propia (nv_last_id)
   - Estados: Pendiente → Despachada → Entregada → Pagada | Cancelada
-  - [x] **Fase 4b-2 — Factura**: generada manualmente desde NV (botón "Generar Factura")
+  - **Fase 4b-2 — Factura**: generada manualmente desde NV (botón "Generar Factura")
   - Factura hereda líneas y totales desde NV; registro de pago opcional
   - PDF mismo formato que cotización + email
   - Número correlativo propio (factura_last_id)
   - Estados: Emitida → Pagada → Anulada
   - Fecha de vencimiento + registro de pago (fecha, monto, método)
-  - PDF + email
+  - Chain locking: cotización se bloquea al crear NV; NV se bloquea al crear factura; factura siempre 403 en PATCH
+  - Banner de bloqueo y campos deshabilitados en UI downstream
+  - Banco receptor y método de pago con dropdown en FacturaDetalle
 
-- [ ] **Fase 6 — Órdenes de Compra**
-  - Asociada a proveedor
-  - Estados: Borrador → Enviada → Recibida parcial → Recibida completa → Cancelada
-  - Al recepcionar: actualiza stock en inventario
-  - PDF + email al proveedor
+- [x] **Fase 6 — Órdenes de Compra**
+  - OrdenCompra + OrdenCompraLinea, numeración correlativa (orden_compra_last_id)
+  - Estados: borrador → enviada → recibida parcial → recibida completa → cancelada
+  - API CRUD completa + endpoints de recepción
+  - PDF via WeasyPrint + template HTML
+  - Email SMTP con PDF adjunto al proveedor
+  - Recepción: crea MovimientoInventario (entrada) y actualiza stock
+  - Frontend: páginas OrdenesCompra list + detail, wired al router
 
 - [x] **Fase 7 — Inventario**
   - Stock actual por producto
@@ -59,6 +66,14 @@
   - Documentos adjuntos (contratos, liquidaciones) — almacenados en disco, descarga protegida
   - Registro de períodos de vacaciones
   - Volumen Docker `uploads_data` para persistencia de archivos
+
+- [x] **Fase 9 — Dashboard configurable**
+  - 8 widgets: ventas período, cotizaciones abiertas, top clientes, top productos, stock crítico, NV por cobrar, cotizaciones/ventas por vendedor
+  - Layout persistido por rol en DB (dashboard_layouts); admin edita layouts con drag-and-drop (react-grid-layout)
+  - Modo edición: agregar/mover/redimensionar/eliminar widgets; configurar tipo de gráfico y rango de tiempo
+  - Templates predefinidos: Ventas, Operacional, Completo
+  - Vendedor ve datos filtrados automáticamente a sus propias ventas; sin acceso a widgets admin-only
+  - Gráficos: KPI, barras, línea (Recharts); tablas inline
 
 - [x] **Fase 10 — Control de crédito + aprobaciones**
   - `GET /api/empresas/{id}/credito`: calcula crédito usado (facturas no pagadas) y disponible
@@ -78,15 +93,34 @@
   - Botón "Solicitar ajuste de márgenes" aparece cuando hay propuestas; abre modal con tabla resumen + nota
   - Admins editan valor_neto y margen directamente; vendedores ven ambos campos como solo lectura (excepto propuesta)
   - Banners en CotizacionDetalle para estado de solicitud de crédito y de margen
-  - 6 tests backend; 224/224 tests no-smoke pasan
 
-- [x] **Fase 9 — Dashboard configurable**
-  - 8 widgets: ventas período, cotizaciones abiertas, top clientes, top productos, stock crítico, NV por cobrar, cotizaciones/ventas por vendedor
-  - Layout persistido por rol en DB (dashboard_layouts); admin edita layouts con drag-and-drop (react-grid-layout)
-  - Modo edición: agregar/mover/redimensionar/eliminar widgets; configurar tipo de gráfico y rango de tiempo
-  - Templates predefinidos: Ventas, Operacional, Completo
-  - Vendedor ve datos filtrados automáticamente a sus propias ventas; sin acceso a widgets admin-only
-  - Gráficos: KPI, barras, línea (Recharts); tablas inline
+- [x] **Productos v2 — Catálogo extendido + costos por lista de precios**
+  - Campos nuevos: Marca (FK a Marcas con CRUD admin), Volumen, IVA configurable, precio_con_iva, costo_con_iva computados
+  - ProductoModal con tabs: datos, Documentos (hasta 5 PDFs), Historial costos, Lotes
+  - ProductoDocumento: upload/download/delete con permiso catalogo:delete
+  - Sistema de costos basado en listas de precios (reemplazó FIFO): tabla ListaPrecios + ListaPrecioItem, campo precio_costo_actualizado_en en Producto
+  - Página `/listas-precios` con modal upload (Excel/CSV) admin-only
+  - Panel de costo admin-only en ProductoModal con stale-cost indicator
+  - Columna + filtro stale-cost en página /inventario con threshold configurable
+  - OC recepción ya no usa FIFO: costo viene de la lista de precios vigente
+  - Historial de costos paginado por producto
+
+- [x] **Sedes de Despacho**
+  - Modelo SedeDespacho (FK a Empresa), reemplaza campo `direccion_despacho` de Cliente
+  - Subtable en Empresa edit modal (CRUD inline)
+  - NV referencia sede_despacho_id (FK nullable)
+
+- [x] **Sugerencias de productos por historial**
+  - Endpoint `/api/productos/sugerencias` con ranking por historial de facturas del cliente/empresa
+  - Índices en facturas/líneas para performance
+  - Autocomplete en input vacío sugiere productos previos del cliente/empresa
+  - Autocomplete de cotización usa endpoint /buscar (incluye búsqueda por tag)
+
+- [x] **Sprint A — Quick wins**
+  - Enforce al_contado cuando empresa sin línea de crédito (cotización + NV)
+  - Lock payment terms UI cuando no hay línea de crédito
+  - Expiración de cotización: bloquear creación de NV desde cotización vencida (409)
+  - ClienteSelectModal scope por empresa con query invalidation
 
 - [x] **Tier A #5 — Tareas y Recordatorios**
   - Modelo `Tarea` con 6 FKs nullables (CHECK: máx 1 entidad vinculada) + `ReglaTarea` con seed 6 reglas
@@ -95,7 +129,7 @@
   - Job Celery horario: 6 reglas auto-generadoras (cotizacion_vence, factura_vencida, aprobacion_pendiente, nv_despachada_sin_avanzar, cliente_sin_actividad, stock_bajo_minimo) con idempotencia vía `dedup_key` y auto-descarte cuando el evento se resuelve
   - UI: página `/tareas` con tabs pendiente/hecha/descartada, widget "Mis pendientes" en sidebar, sección "Tareas relacionadas" en fichas (cotización, NV, factura), config admin `/admin/tareas/config`
   - Hook: al desactivar usuario se reasignan sus tareas pendientes al primer admin activo; guard bloquea desactivar al último admin
-  - Tests: model, API, auto-gen por regla (8 tests), integration e2e; 473/473 tests no-smoke pasan
+  - Tests: model, API, auto-gen por regla (8 tests), integration e2e
 
 ---
 
@@ -105,7 +139,7 @@
 Cotización → Nota de Venta → Factura
 ```
 
-Cada etapa hereda datos de la anterior (editables), tiene PDF y email propio.
+Cada etapa hereda datos de la anterior (editables), tiene PDF y email propio. Al crear el documento downstream, el upstream queda bloqueado (inmutable).
 
 ---
 
