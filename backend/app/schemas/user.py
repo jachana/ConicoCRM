@@ -15,6 +15,12 @@ class UserOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class UsuarioMinOut(BaseModel):
+    id: int
+    name: str
+    model_config = {"from_attributes": True}
+
+
 class UserCreate(BaseModel):
     email: EmailStr
     name: str

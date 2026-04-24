@@ -2,11 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from pydantic import BaseModel
 
-
-class UsuarioRef(BaseModel):
-    id: int
-    name: str
-    model_config = {"from_attributes": True}
+from app.schemas.user import UsuarioMinOut
 
 
 class ListaPreciosOut(BaseModel):
@@ -15,7 +11,7 @@ class ListaPreciosOut(BaseModel):
     fecha_subida: datetime
     activa: bool
     total_items: int
-    subida_por: UsuarioRef | None = None
+    subida_por: UsuarioMinOut | None = None
     model_config = {"from_attributes": True}
 
 

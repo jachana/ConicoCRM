@@ -1,6 +1,8 @@
 from datetime import datetime
 from pydantic import BaseModel, field_validator
 
+from app.schemas.user import UsuarioMinOut
+
 MOTIVOS_VALIDOS = {"conteo_fisico", "merma", "correccion", "otro"}
 
 
@@ -37,12 +39,6 @@ class ProductoMinOut(BaseModel):
     id: int
     nombre: str
     sku: str | None = None
-    model_config = {"from_attributes": True}
-
-
-class UsuarioMinOut(BaseModel):
-    id: int
-    name: str
     model_config = {"from_attributes": True}
 
 
