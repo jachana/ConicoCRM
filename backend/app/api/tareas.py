@@ -9,7 +9,7 @@ from app.api.deps import require_permission
 from app.core.permissions import has_permission
 from app.models.tarea import Tarea
 from app.models.user import User
-from app.schemas.tarea import TareaIn, TareaOut
+from app.schemas.tarea import TareaIn, TareaOut, TareaPatch
 
 router = APIRouter()
 
@@ -148,3 +148,84 @@ def listar_tareas(
         serialized = [s for s in serialized if s["prioridad_derivada"] == prioridad_derivada_q]
 
     return {"items": serialized, "total": total, "page": page, "page_size": page_size}
+
+
+def _get_or_404(db: Session, tarea_id: int) -> Tarea:
+    t = db.query(Tarea).options(joinedload(Tarea.asignado)).filter(Tarea.id == tarea_id).first()
+    if t is None:
+        raise HTTPException(404, detail="Tarea no existe")
+    return t
+
+
+def _require_owner_or_admin(t: Tarea, user: User, db: Session):
+    if t.asignado_id == user.id or t.creado_por_id == user.id:
+        return
+    if has_permission(db, user, "tareas", "view_all"):
+        return
+    raise HTTPException(403, detail="Sin acceso a esta tarea")
+
+
+@router.get("/{tarea_id}", response_model=TareaOut)
+def get_tarea(
+    tarea_id: int,
+    perms: tuple[User, Session] = require_permission("tareas", "view"),
+):
+    current_user, db = perms
+    t = _get_or_404(db, tarea_id)
+    _require_owner_or_admin(t, current_user, db)
+    return serialize_tarea(t)
+
+
+@router.patch("/{tarea_id}", response_model=TareaOut)
+def patch_tarea(
+    tarea_id: int,
+    payload: TareaPatch,
+    perms: tuple[User, Session] = require_permission("tareas", "view"),
+):
+    current_user, db = perms
+    t = _get_or_404(db, tarea_id)
+
+    is_admin = has_permission(db, current_user, "tareas", "admin")
+
+    if t.origen == "auto":
+        if payload.titulo is not None or payload.descripcion is not None:
+            raise HTTPException(400, detail="Tareas auto no permiten editar título/descripción")
+        if not is_admin:
+            raise HTTPException(403, detail="Solo admin edita tareas auto")
+    else:
+        if t.creado_por_id != current_user.id and t.asignado_id != current_user.id and not is_admin:
+            raise HTTPException(403, detail="Sin permisos para editar")
+
+    if payload.asignado_id is not None and payload.asignado_id != t.asignado_id:
+        if not is_admin:
+            raise HTTPException(403, detail="Solo admin reasigna")
+        asignado = db.query(User).filter(User.id == payload.asignado_id, User.is_active.is_(True)).first()
+        if asignado is None:
+            raise HTTPException(422, detail="Usuario asignado inválido")
+
+    for field in ("titulo", "descripcion", "due_date", "asignado_id"):
+        val = getattr(payload, field)
+        if val is not None:
+            setattr(t, field, val)
+
+    db.commit()
+    db.refresh(t)
+    return serialize_tarea(t)
+
+
+@router.delete("/{tarea_id}", status_code=204)
+def delete_tarea(
+    tarea_id: int,
+    perms: tuple[User, Session] = require_permission("tareas", "view"),
+):
+    current_user, db = perms
+    t = _get_or_404(db, tarea_id)
+    if t.origen != "manual":
+        raise HTTPException(400, detail="Solo tareas manuales se pueden eliminar")
+
+    is_admin = has_permission(db, current_user, "tareas", "admin")
+    if t.creado_por_id != current_user.id and not is_admin:
+        raise HTTPException(403, detail="Solo creador o admin")
+
+    db.delete(t)
+    db.commit()

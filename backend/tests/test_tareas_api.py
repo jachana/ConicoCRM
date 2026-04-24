@@ -132,3 +132,37 @@ def test_listar_filtra_por_cliente_id(
     titulos = [t["titulo"] for t in resp.json()["items"]]
     assert "con cliente" in titulos
     assert "sin cliente" not in titulos
+
+
+def test_get_detail_403_si_no_es_dueno_ni_admin(client, vendedor_token, otro_vendedor, db):
+    from app.models.tarea import Tarea
+    t = Tarea(titulo="x", due_date=date.today(), origen="manual", asignado_id=otro_vendedor.id)
+    db.add(t); db.commit()
+    resp = client.get(f"/api/tareas/{t.id}", headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert resp.status_code == 403
+
+
+def test_patch_auto_protege_titulo(client, admin_token, admin_user, db):
+    from app.models.tarea import Tarea
+    t = Tarea(titulo="orig", due_date=date.today(), origen="auto", tipo_regla="cotizacion_vence",
+              dedup_key="cotizacion_vence:99", asignado_id=admin_user.id)
+    db.add(t); db.commit()
+    resp = client.patch(f"/api/tareas/{t.id}",
+                        json={"titulo": "nuevo"},
+                        headers={"Authorization": f"Bearer {admin_token}"})
+    assert resp.status_code == 400  # titulo protegido en auto
+
+
+def test_delete_solo_manual(client, admin_token, admin_user, db):
+    from app.models.tarea import Tarea
+    t_manual = Tarea(titulo="m", due_date=date.today(), origen="manual",
+                     asignado_id=admin_user.id, creado_por_id=admin_user.id)
+    t_auto = Tarea(titulo="a", due_date=date.today(), origen="auto",
+                   tipo_regla="cotizacion_vence", dedup_key="cotizacion_vence:77",
+                   asignado_id=admin_user.id)
+    db.add_all([t_manual, t_auto]); db.commit()
+
+    r1 = client.delete(f"/api/tareas/{t_manual.id}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r1.status_code == 204
+    r2 = client.delete(f"/api/tareas/{t_auto.id}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 400
