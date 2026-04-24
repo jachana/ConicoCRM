@@ -29,6 +29,7 @@ import NotaCreditoNueva from './pages/NotaCreditoNueva'
 import NotasDebito from './pages/NotasDebito'
 import NotaDebitoDetalle from './pages/NotaDebitoDetalle'
 import NotaDebitoNueva from './pages/NotaDebitoNueva'
+import TareasPage from './pages/Tareas'
 import { useAuthStore } from './stores/auth'
 import AppLayout from './components/layout/AppLayout'
 
@@ -77,6 +78,7 @@ export const router = createBrowserRouter([
       { path: 'inventario/listas-precios', element: <ListasPrecios /> },
       { path: 'cobranza', element: <Cobranza /> },
       { path: 'reportes', element: <Reportes /> },
+      { path: 'tareas', element: <TareasPage /> },
     ],
   },
 ])
