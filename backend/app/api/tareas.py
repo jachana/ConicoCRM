@@ -14,6 +14,16 @@ from app.schemas.tarea import DescartarIn, MisPendientesOut, ReasignarIn, TareaI
 router = APIRouter()
 
 
+ENTIDAD_FK_MAP = {
+    "cliente": Tarea.cliente_id,
+    "empresa": Tarea.empresa_id,
+    "cotizacion": Tarea.cotizacion_id,
+    "nota_venta": Tarea.nota_venta_id,
+    "factura": Tarea.factura_id,
+    "producto": Tarea.producto_id,
+}
+
+
 def prioridad_derivada(t: Tarea) -> Literal["vencida", "hoy", "futura"]:
     today = date.today()
     if t.estado == "pendiente" and t.due_date < today:
@@ -187,6 +197,27 @@ def mis_pendientes(perms: tuple[User, Session] = require_permission("tareas", "v
         "total": len(tareas),
         "tareas": [serialize_tarea(t) for t in tareas[:5]],
     }
+
+
+@router.get("/timeline/{entidad_tipo}/{entidad_id}")
+def timeline(
+    entidad_tipo: str,
+    entidad_id: int,
+    perms: tuple[User, Session] = require_permission("tareas", "view"),
+):
+    _, db = perms
+    col = ENTIDAD_FK_MAP.get(entidad_tipo)
+    if col is None:
+        raise HTTPException(404, detail="Tipo de entidad inválido")
+
+    tareas = (
+        db.query(Tarea)
+        .options(joinedload(Tarea.asignado))
+        .filter(col == entidad_id)
+        .order_by(Tarea.due_date.desc())
+        .all()
+    )
+    return [serialize_tarea(t) for t in tareas]
 
 
 @router.get("/{tarea_id}", response_model=TareaOut)

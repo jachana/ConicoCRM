@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
@@ -18,6 +19,25 @@ def otro_vendedor(db):
     db.commit()
     db.refresh(user)
     return user
+
+
+@pytest.fixture
+def cotizacion_demo(db, cliente_demo, admin_user):
+    from app.models.cotizacion import Cotizacion
+    c = Cotizacion(
+        numero=9999,
+        cliente_id=cliente_demo.id,
+        vendedor_id=admin_user.id,
+        fecha=date.today(),
+        estado="abierta",
+        total_neto=Decimal("0"),
+        total_iva=Decimal("0"),
+        total=Decimal("0"),
+    )
+    db.add(c)
+    db.commit()
+    db.refresh(c)
+    return c
 
 
 def test_crear_tarea_manual_vendedor_solo_a_si_mismo(
@@ -243,3 +263,18 @@ def test_mis_pendientes(client, vendedor_token, vendedor_user, db):
     assert data["futuras"] >= 1
     assert data["total"] == data["vencidas"] + data["hoy"] + data["futuras"]
     assert len(data["tareas"]) <= 5
+
+
+def test_timeline_tareas_por_entidad(client, admin_token, admin_user, cotizacion_demo, db):
+    from app.models.tarea import Tarea
+    db.add(Tarea(titulo="vinculada", due_date=date.today(), origen="manual",
+                 asignado_id=admin_user.id, cotizacion_id=cotizacion_demo.id))
+    db.add(Tarea(titulo="otra", due_date=date.today(), origen="manual",
+                 asignado_id=admin_user.id))
+    db.commit()
+
+    resp = client.get(f"/api/tareas/timeline/cotizacion/{cotizacion_demo.id}",
+                      headers={"Authorization": f"Bearer {admin_token}"})
+    assert resp.status_code == 200
+    titulos = [t["titulo"] for t in resp.json()]
+    assert titulos == ["vinculada"]
