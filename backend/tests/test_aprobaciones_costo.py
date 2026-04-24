@@ -1,7 +1,10 @@
 """Tests for the cost-approval endpoint and related state machine fixes."""
 import random
+from decimal import Decimal
 
 import pytest
+
+from app.models.producto import Producto
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -67,9 +70,13 @@ def test_aprobar_nv_costo_cero(client, admin_token, db):
         MovimientoInventario.referencia_id == nv_id,
         MovimientoInventario.tipo == "salida",
     ).all()
-    assert len(movs) >= 1, "Expected at least one salida movement after approval"
+    assert len(movs) == 1, "Expected exactly one salida movement after approval"
     total_consumed = sum(m.cantidad for m in movs)
     assert total_consumed == linea["cantidad"]
+
+    # precio_costo must NOT be mutated by stock-tracking approval
+    producto = db.get(Producto, producto_id)
+    assert producto.precio_costo == Decimal("0")
 
 
 def test_vendedor_no_puede_aprobar_costo(client, admin_token, vendedor_token):
