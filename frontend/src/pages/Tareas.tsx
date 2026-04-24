@@ -1,11 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Check, X } from 'lucide-react';
 import { listarTareas, completarTarea, descartarTarea } from '../api/tareas';
-import type { Tarea, TareaEstado, TareaFiltros } from '../types/tarea';
+import type { Tarea, TareaEstado } from '../types/tarea';
 import { useAuth } from '../hooks/useAuth';
 import TareaModal from '../components/TareaModal';
 import TareaDrawer from '../components/TareaDrawer';
+
+function extractErrorDetail(e: unknown, fallback: string): string {
+  const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  return typeof detail === 'string' ? detail : fallback;
+}
 
 const ICONO_PRIORIDAD: Record<string, string> = {
   vencida: '🔴',
@@ -44,40 +49,43 @@ export default function TareasPage() {
   const isAdmin = user?.role === 'admin';
 
   const [tab, setTab] = useState<TareaEstado>('pendiente');
-  const [filtros] = useState<TareaFiltros>({ estado: 'pendiente' });
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [drawerTarea, setDrawerTarea] = useState<Tarea | null>(null);
+  const requestIdRef = useRef(0);
 
   async function cargar() {
+    const id = ++requestIdRef.current;
     setLoading(true);
     setError(null);
     try {
-      const { items, total } = await listarTareas({ ...filtros, estado: tab });
+      const { items, total } = await listarTareas({ estado: tab });
+      if (id !== requestIdRef.current) return;
       setTareas(items);
       setTotal(total);
-    } catch (e: any) {
-      setError(e?.response?.data?.detail ?? 'Error al cargar tareas');
+    } catch (e: unknown) {
+      if (id !== requestIdRef.current) return;
+      setError(extractErrorDetail(e, 'Error al cargar tareas'));
     } finally {
-      setLoading(false);
+      if (id === requestIdRef.current) setLoading(false);
     }
   }
 
   useEffect(() => {
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, JSON.stringify(filtros)]);
+  }, [tab]);
 
   async function handleCompletar(t: Tarea, ev: React.MouseEvent) {
     ev.stopPropagation();
     try {
       await completarTarea(t.id);
       cargar();
-    } catch (e: any) {
-      setError(e?.response?.data?.detail ?? 'Error al completar tarea');
+    } catch (e: unknown) {
+      setError(extractErrorDetail(e, 'Error al completar tarea'));
     }
   }
 
@@ -88,8 +96,8 @@ export default function TareasPage() {
     try {
       await descartarTarea(t.id, motivo);
       cargar();
-    } catch (e: any) {
-      setError(e?.response?.data?.detail ?? 'Error al descartar tarea');
+    } catch (e: unknown) {
+      setError(extractErrorDetail(e, 'Error al descartar tarea'));
     }
   }
 
@@ -145,7 +153,7 @@ export default function TareasPage() {
           <div className="md:hidden space-y-2">
             {tareas.map((t) => {
               const link = entidadLink(t);
-              const puedeDescarter = tab === 'pendiente' && (t.origen === 'auto' || isAdmin);
+              const puedeDescartar = tab === 'pendiente' && (t.origen === 'auto' || isAdmin);
               return (
                 <div
                   key={t.id}
@@ -189,7 +197,7 @@ export default function TareasPage() {
                         >
                           <Check size={16} />
                         </button>
-                        {puedeDescarter && (
+                        {puedeDescartar && (
                           <button
                             onClick={(e) => handleDescartar(t, e)}
                             title="Descartar"
@@ -222,7 +230,7 @@ export default function TareasPage() {
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {tareas.map((t) => {
                   const link = entidadLink(t);
-                  const puedeDescarter = tab === 'pendiente' && (t.origen === 'auto' || isAdmin);
+                  const puedeDescartar = tab === 'pendiente' && (t.origen === 'auto' || isAdmin);
                   return (
                     <tr
                       key={t.id}
@@ -264,7 +272,7 @@ export default function TareasPage() {
                             >
                               <Check size={15} />
                             </button>
-                            {puedeDescarter && (
+                            {puedeDescartar && (
                               <button
                                 onClick={(e) => handleDescartar(t, e)}
                                 title="Descartar"
