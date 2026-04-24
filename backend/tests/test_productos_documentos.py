@@ -6,7 +6,7 @@ def _make_prod(client, token, nombre="ProdDoc"):
                        headers={"Authorization": f"Bearer {token}"}).json()
 
 
-def test_subir_pdf(client, admin_token, tmp_path):
+def test_subir_pdf(client, admin_token):
     prod = _make_prod(client, admin_token)
     pdf_content = b"%PDF-1.4 fake"
     resp = client.post(

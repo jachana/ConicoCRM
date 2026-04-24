@@ -97,7 +97,7 @@ def descargar_documento(
 def eliminar_documento(
     producto_id: int,
     doc_id: int,
-    perms: tuple[User, Session] = require_permission("catalogo", "edit"),
+    perms: tuple[User, Session] = require_permission("catalogo", "delete"),
 ):
     _, db = perms
     doc = db.get(ProductoDocumento, doc_id)
