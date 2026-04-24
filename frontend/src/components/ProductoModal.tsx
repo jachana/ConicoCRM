@@ -149,6 +149,22 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
 
+              {/* Venta (visible to all users) */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Precio venta ($)</label>
+                <input type="number" min="0" step="0.01" value={form.precio_venta}
+                  onChange={e => {
+                    setFormDirty(true)
+                    const v = e.target.value
+                    setForm(f => ({ ...f, precio_venta: v, margen: calcMargen(costo, v) }))
+                  }}
+                  className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${priceError ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`} />
+                {editando && (
+                  <p className="mt-0.5 text-xs text-gray-400">+IVA: {formatPrecio(venta * 1.19)}</p>
+                )}
+                {priceError && <p className="mt-1 text-xs text-red-500">{priceError}</p>}
+              </div>
+
               {isAdmin && (
                 <>
                   {/* Costo (read-only) */}
@@ -161,22 +177,6 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
                     {editando && (
                       <p className="mt-0.5 text-xs text-gray-400">+IVA: {formatPrecio(Number(editando.costo_con_iva ?? 0))}</p>
                     )}
-                  </div>
-
-                  {/* Venta */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Precio venta ($)</label>
-                    <input type="number" min="0" step="0.01" value={form.precio_venta}
-                      onChange={e => {
-                        setFormDirty(true)
-                        const v = e.target.value
-                        setForm(f => ({ ...f, precio_venta: v, margen: calcMargen(costo, v) }))
-                      }}
-                      className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${priceError ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`} />
-                    {editando && (
-                      <p className="mt-0.5 text-xs text-gray-400">+IVA: {formatPrecio(venta * 1.19)}</p>
-                    )}
-                    {priceError && <p className="mt-1 text-xs text-red-500">{priceError}</p>}
                   </div>
 
                   {/* Margen */}
