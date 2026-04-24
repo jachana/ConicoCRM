@@ -10,7 +10,7 @@ export default function ListasPrecios() {
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploadResult, setUploadResult] = useState<ListaPreciosUploadResult | null>(null)
 
-  const { data } = useQuery<ListPage>({
+  const { data, isLoading } = useQuery<ListPage>({
     queryKey: ['listas-precios'],
     queryFn: () => api.get('/api/listas-precios/').then(r => r.data),
   })
@@ -19,6 +19,8 @@ export default function ListasPrecios() {
     mutationFn: (id: number) => api.delete(`/api/listas-precios/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['listas-precios'] }),
   })
+
+  if (isLoading) return <div className="p-6 text-gray-500">Cargando...</div>
 
   return (
     <div className="p-6 space-y-4">
@@ -135,12 +137,15 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-xl max-w-md w-full space-y-3">
         <h2 className="text-lg font-semibold">Subir lista de precios</h2>
-        <input
-          type="file"
-          accept=".xlsx,.csv"
-          className="text-sm"
-          onChange={e => setFile(e.target.files?.[0] ?? null)}
-        />
+        <label className="text-sm flex flex-col gap-1">
+          Archivo (.xlsx o .csv)
+          <input
+            type="file"
+            accept=".xlsx,.csv"
+            className="text-sm"
+            onChange={e => setFile(e.target.files?.[0] ?? null)}
+          />
+        </label>
         <div className="grid grid-cols-2 gap-2">
           <label className="text-sm flex flex-col gap-1">
             Columna SKU
