@@ -602,6 +602,50 @@ def reporte_margenes(
 
 
 # ---------------------------------------------------------------------------
+# GET /por-marca
+# ---------------------------------------------------------------------------
+
+def _get_por_marca(
+    date_from: date,
+    date_to: date,
+    db: Session,
+    vendedor_id: int | None,
+    cliente_ids: list[int] | None,
+    marca_ids: list[int] | None,
+) -> dict:
+    """Return por-marca aggregation dict. Used by both JSON endpoint and exports."""
+    return {
+        "kpis": {
+            "total_neto": 0.0,
+            "total_bruto": 0.0,
+            "ganancia_total": 0.0,
+            "margen_promedio_pct": 0.0,
+            "num_facturas": 0,
+            "num_marcas": 0,
+            "ticket_promedio": 0.0,
+            "cantidad_total": 0.0,
+        },
+        "por_marca": [],
+        "por_marca_cliente": [],
+        "sin_marca": {"cantidad": 0.0, "neto": 0.0, "ganancia": 0.0},
+    }
+
+
+@router.get("/por-marca")
+def reporte_por_marca(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    cliente_id: list[int] | None = Query(None),
+    marca_id: list[int] | None = Query(None),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    current_user, db = perms
+    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    return _get_por_marca(date_from, date_to, db, vendedor_id, cliente_id, marca_id)
+
+
+# ---------------------------------------------------------------------------
 # GET /dte
 # ---------------------------------------------------------------------------
 
