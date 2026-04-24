@@ -5,7 +5,7 @@ celery_app = Celery(
     "conico",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["app.tasks.dte"],
+    include=["app.tasks.dte", "app.tasks.tareas"],
 )
 
 celery_app.conf.update(
@@ -18,6 +18,10 @@ celery_app.conf.update(
         "poll-dte-status": {
             "task": "app.tasks.dte.poll_dte_status",
             "schedule": 300.0,
+        },
+        "generar-tareas-automaticas": {
+            "task": "app.tasks.tareas.generar_tareas_automaticas",
+            "schedule": 3600.0,
         },
     },
 )
