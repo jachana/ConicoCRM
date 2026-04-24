@@ -29,9 +29,7 @@ from app.schemas.nota_venta import (
     NotaVentaUpdate,
 )
 from app.models.movimiento_inventario import MovimientoInventario
-from app.models.lote_costo import LoteCosto
 from app.services.email import EmailNotConfiguredError, enviar_nota_venta
-from app.services.inventario_fifo import consumir_stock_fifo, crear_lote_entrada
 from app.services.pdf import generar_pdf_nota_venta
 
 router = APIRouter()
@@ -161,14 +159,18 @@ def _validate_despacho(retiro: bool, sede_id: int | None) -> None:
 def _registrar_movimientos_salida(db: Session, nv_id: int, lineas: list, usuario_id: int | None) -> None:
     for linea in lineas:
         if linea.producto_id and linea.cantidad > 0:
-            consumir_stock_fifo(
-                db,
-                producto_id=linea.producto_id,
-                cantidad=linea.cantidad,
-                referencia_tipo="nota_venta",
-                referencia_id=nv_id,
-                usuario_id=usuario_id,
-            )
+            producto = db.get(Producto, linea.producto_id)
+            if producto:
+                producto.stock_actual -= linea.cantidad
+                db.add(MovimientoInventario(
+                    producto_id=linea.producto_id,
+                    tipo="salida",
+                    cantidad=linea.cantidad,
+                    signo=-1,
+                    referencia_tipo="nota_venta",
+                    referencia_id=nv_id,
+                    usuario_id=usuario_id,
+                ))
 
 
 def _registrar_movimientos_devolucion(db: Session, nv_id: int, lineas: list, usuario_id: int | None) -> None:
@@ -177,14 +179,6 @@ def _registrar_movimientos_devolucion(db: Session, nv_id: int, lineas: list, usu
             producto = db.get(Producto, linea.producto_id)
             if producto:
                 producto.stock_actual += linea.cantidad
-                lote = crear_lote_entrada(
-                    db,
-                    producto_id=linea.producto_id,
-                    costo_unitario=producto.ultimo_costo_unitario,
-                    cantidad=linea.cantidad,
-                    oc_linea_id=None,
-                    usuario_id=usuario_id,
-                )
                 db.add(MovimientoInventario(
                     producto_id=linea.producto_id,
                     tipo="entrada",
@@ -193,7 +187,6 @@ def _registrar_movimientos_devolucion(db: Session, nv_id: int, lineas: list, usu
                     referencia_tipo="nota_venta",
                     referencia_id=nv_id,
                     usuario_id=usuario_id,
-                    lote_costo_id=lote.id,
                 ))
 
 
@@ -495,25 +488,27 @@ def reemplazar_lineas(
         if not producto:
             continue
         if delta > 0:
-            consumir_stock_fifo(
-                db,
+            producto.stock_actual -= delta
+            db.add(MovimientoInventario(
                 producto_id=prod_id,
+                tipo="salida",
                 cantidad=delta,
+                signo=-1,
                 referencia_tipo="nota_venta",
                 referencia_id=nv_id,
                 usuario_id=current_user.id,
-            )
+            ))
         else:
             restore = abs(delta)
             producto.stock_actual += restore
-            lote = crear_lote_entrada(
-                db, producto_id=prod_id, costo_unitario=producto.ultimo_costo_unitario,
-                cantidad=restore, oc_linea_id=None, usuario_id=current_user.id,
-            )
             db.add(MovimientoInventario(
-                producto_id=prod_id, tipo="ajuste", cantidad=restore, signo=1,
-                referencia_tipo="nota_venta", referencia_id=nv_id,
-                usuario_id=current_user.id, lote_costo_id=lote.id,
+                producto_id=prod_id,
+                tipo="ajuste",
+                cantidad=restore,
+                signo=1,
+                referencia_tipo="nota_venta",
+                referencia_id=nv_id,
+                usuario_id=current_user.id,
             ))
 
     db.commit()

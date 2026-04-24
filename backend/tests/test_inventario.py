@@ -26,9 +26,8 @@ def _crear_producto(db, nombre="Prod", stock_actual=10, stock_minimo=5, precio_c
     """Creates a Producto directly via the ORM session.
 
     Uses `db` fixture to avoid spawning separate connections that contaminate the
-    SQLite pool. precio_costo is NOT exposed via ProductoCreate schema (inventario v2
-    derives it from LoteCosto) — we set it directly on the model for tests that
-    depend on the costo=0 guard in NV creation.
+    SQLite pool. precio_costo is NOT exposed via ProductoCreate schema — we set it
+    directly on the model for tests that depend on the costo=0 guard in NV creation.
     """
     from decimal import Decimal
     from app.models.producto import Producto
