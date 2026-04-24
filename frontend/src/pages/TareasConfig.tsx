@@ -16,9 +16,9 @@ const TIPO_LABELS: Record<string, string> = {
   cotizacion_vence: 'Cotización por vencer',
   factura_vencida: 'Factura vencida',
   aprobacion_pendiente: 'Aprobación pendiente',
-  nv_despachada_sin_factura: 'NV despachada sin factura',
-  cliente_inactivo: 'Cliente inactivo',
-  stock_bajo: 'Stock bajo',
+  nv_despachada_sin_avanzar: 'NV despachada sin avanzar',
+  cliente_sin_actividad: 'Cliente sin actividad',
+  stock_bajo_minimo: 'Stock bajo mínimo',
 };
 
 const ROL_OPTIONS: AsignadoRol[] = ['vendedor', 'admin', 'owner'];
