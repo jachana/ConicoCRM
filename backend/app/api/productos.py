@@ -246,7 +246,7 @@ def historial_costos(
         db.query(ListaPrecios, ListaPreciosItem)
         .join(ListaPreciosItem, ListaPreciosItem.lista_id == ListaPrecios.id)
         .filter(ListaPreciosItem.sku == p.sku)
-        .order_by(ListaPrecios.fecha_subida.desc())
+        .order_by(ListaPrecios.fecha_subida.desc(), ListaPrecios.id.desc())
         .all()
     )
     return [
