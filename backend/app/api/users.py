@@ -37,6 +37,7 @@ def update_user(user_id: int, body: UserUpdate, db: Session = Depends(get_db), _
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    was_active = user.is_active
     if body.name is not None:
         user.name = body.name
     if body.role is not None:
@@ -45,6 +46,14 @@ def update_user(user_id: int, body: UserUpdate, db: Session = Depends(get_db), _
         user.is_active = body.is_active
     if body.password is not None:
         user.hashed_password = get_password_hash(body.password)
+    if was_active and body.is_active is False:
+        from app.models.tarea import Tarea
+        from app.services.tareas_asignacion import _primer_admin_activo
+        nuevo_asignado = _primer_admin_activo(db)
+        db.query(Tarea).filter(
+            Tarea.asignado_id == user_id,
+            Tarea.estado == "pendiente",
+        ).update({"asignado_id": nuevo_asignado}, synchronize_session=False)
     db.commit()
     db.refresh(user)
     return user

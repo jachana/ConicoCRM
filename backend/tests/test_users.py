@@ -44,3 +44,27 @@ def test_set_permissions(client, admin_token):
                       headers={"Authorization": f"Bearer {admin_token}"})
     assert resp.status_code == 200
     assert resp.json()["inventario"]["view"] is True
+
+
+def test_desactivar_user_reasigna_tareas_a_admin(client, admin_token, admin_user, vendedor_user, db):
+    from datetime import date
+    from app.models.tarea import Tarea
+    t = Tarea(
+        titulo="huerfana-futura",
+        due_date=date.today(),
+        origen="manual",
+        asignado_id=vendedor_user.id,
+    )
+    db.add(t); db.commit()
+    tarea_id = t.id
+
+    resp = client.patch(
+        f"/api/users/{vendedor_user.id}",
+        json={"is_active": False},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+
+    db.expire_all()
+    t_reloaded = db.query(Tarea).filter(Tarea.id == tarea_id).first()
+    assert t_reloaded.asignado_id == admin_user.id
