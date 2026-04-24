@@ -21,7 +21,8 @@ from app.models.movimiento_inventario import MovimientoInventario
 from app.schemas.lista_precios import HistorialCostoItem
 from app.schemas.lote_costo import LoteCostoOut
 from app.schemas.producto import (
-    ProductoBusquedaOut,
+    ProductoBusquedaOutAdmin,
+    ProductoBusquedaOutPublic,
     ProductoCreate,
     ProductoOutAdmin,
     ProductoOutPublic,
@@ -55,11 +56,22 @@ def _stale_cost(fecha: datetime | None, threshold_days: int, now: datetime) -> b
     return (now - fecha).days > threshold_days
 
 
+def _get_threshold_days(db: Session) -> int:
+    """Return the configured stale-cost threshold in days, falling back to 60 on
+    missing or malformed SystemConfig rows (e.g., admin saved 'banana')."""
+    cfg = db.get(SystemConfig, "dias_alerta_costo_desactualizado")
+    if cfg is None:
+        return 60
+    try:
+        return int(cfg.value)
+    except (TypeError, ValueError):
+        return 60
+
+
 def _serialize_producto(db: Session, producto: Producto, user: User):
     if user.role != "admin":
         return ProductoOutPublic.model_validate(producto).model_dump(mode="json")
-    cfg = db.get(SystemConfig, "dias_alerta_costo_desactualizado")
-    threshold_days = int(cfg.value) if cfg else 60
+    threshold_days = _get_threshold_days(db)
     stale = _stale_cost(producto.precio_costo_actualizado_en, threshold_days, datetime.now(timezone.utc))
     out = ProductoOutAdmin.model_validate(producto).model_dump(mode="json")
     out["costo_desactualizado"] = stale
@@ -91,12 +103,12 @@ def exportar_excel(
     )
 
 
-@router.get("/buscar", response_model=list[ProductoBusquedaOut])
+@router.get("/buscar")
 def buscar_productos(
     q: str = Query("", description="Texto a buscar en nombre, SKU o tag"),
     perms: tuple[User, Session] = require_permission("catalogo", "view"),
 ):
-    _, db = perms
+    user, db = perms
     query = db.query(Producto).outerjoin(Producto.tags)
     if q:
         pattern = f"%{q}%"
@@ -107,7 +119,9 @@ def buscar_productos(
                 ProductoTag.nombre.ilike(pattern),
             )
         ).distinct()
-    return query.order_by(Producto.nombre).limit(20).all()
+    rows = query.order_by(Producto.nombre).limit(20).all()
+    schema = ProductoBusquedaOutAdmin if user.role == "admin" else ProductoBusquedaOutPublic
+    return [schema.model_validate(p).model_dump(mode="json") for p in rows]
 
 
 @router.get("/")
@@ -131,8 +145,7 @@ def listar_productos(
     if user.role != "admin":
         return [ProductoOutPublic.model_validate(p).model_dump(mode="json") for p in rows]
 
-    cfg = db.get(SystemConfig, "dias_alerta_costo_desactualizado")
-    threshold_days = int(cfg.value) if cfg else 60
+    threshold_days = _get_threshold_days(db)
     now = datetime.now(timezone.utc)
 
     def serialize(p: Producto):

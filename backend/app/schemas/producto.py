@@ -63,14 +63,13 @@ class ProductoOutAdmin(ProductoOutPublic):
     costo_desactualizado: bool = False
 
 
-class ProductoBusquedaOut(BaseModel):
+class ProductoBusquedaOutPublic(BaseModel):
     id: int
     nombre: str
     descripcion: str | None = None
     sku: str | None = None
     formato: str | None = None
     precio_venta: Decimal
-    precio_costo: Decimal  # admin-only endpoint (serializer trims on response)
     stock_actual: int
     marca_id: int | None = None
     tags: list[str] = []
@@ -84,3 +83,12 @@ class ProductoBusquedaOut(BaseModel):
         if v and hasattr(v[0], "nombre"):
             return [t.nombre for t in v]
         return list(v)
+
+
+class ProductoBusquedaOutAdmin(ProductoBusquedaOutPublic):
+    precio_costo: Decimal
+
+
+# Backward-compatible alias (some external imports may still use this name);
+# prefer the public/admin variants for new code.
+ProductoBusquedaOut = ProductoBusquedaOutAdmin

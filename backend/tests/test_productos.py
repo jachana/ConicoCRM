@@ -182,3 +182,50 @@ def test_costo_desactualizado_false_when_recent(client, admin_token, db):
     db.add(p); db.commit()
     resp = client.get(f"/api/productos/{p.id}", headers={"Authorization": f"Bearer {admin_token}"})
     assert resp.json()["costo_desactualizado"] is False
+
+
+def test_buscar_productos_hides_cost_for_vendedor(client, vendedor_token, db):
+    from app.models.producto import Producto
+    from decimal import Decimal
+    p = Producto(nombre="Alfa", sku="A1", precio_costo=Decimal("100"), precio_venta=Decimal("150"))
+    db.add(p); db.commit()
+
+    resp = client.get("/api/productos/buscar?q=A", headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert resp.status_code == 200
+    resultados = resp.json()
+    assert len(resultados) >= 1
+    for item in resultados:
+        assert "precio_costo" not in item
+
+
+def test_buscar_productos_exposes_cost_for_admin(client, admin_token, db):
+    from app.models.producto import Producto
+    from decimal import Decimal
+    p = Producto(nombre="Alfa", sku="A1", precio_costo=Decimal("100"), precio_venta=Decimal("150"))
+    db.add(p); db.commit()
+
+    resp = client.get("/api/productos/buscar?q=A", headers={"Authorization": f"Bearer {admin_token}"})
+    assert resp.status_code == 200
+    resultados = resp.json()
+    assert len(resultados) >= 1
+    for item in resultados:
+        assert "precio_costo" in item
+
+
+def test_costo_desactualizado_uses_fallback_when_config_invalid(client, admin_token, db):
+    from app.models.producto import Producto
+    from app.models.system_config import SystemConfig
+    from datetime import datetime, timezone
+    existing = db.get(SystemConfig, "dias_alerta_costo_desactualizado")
+    if existing:
+        db.delete(existing)
+        db.commit()
+    db.add(SystemConfig(key="dias_alerta_costo_desactualizado", value="banana"))
+    db.commit()
+
+    p = Producto(nombre="A", sku="X", precio_costo_actualizado_en=datetime.now(timezone.utc))
+    db.add(p); db.commit()
+
+    resp = client.get(f"/api/productos/{p.id}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert resp.status_code == 200
+    assert resp.json()["costo_desactualizado"] is False
