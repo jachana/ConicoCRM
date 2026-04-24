@@ -274,3 +274,14 @@ def test_historial_por_producto(client, admin_token, db):
     data = r.json()
     assert data["total"] == 1
     assert data["items"][0]["producto_id"] == pid
+
+
+def test_movimientos_csv_export_excluye_lote_costo_id(client, admin_token, db):
+    pid = _crear_producto(db, nombre="ProdCSV", stock_actual=0)
+    r = client.get(f"/api/productos/{pid}/movimientos/export",
+        headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert "text/csv" in r.headers["content-type"]
+    header = r.text.splitlines()[0]
+    assert header == "fecha,tipo,cantidad,signo,referencia_tipo,referencia_id,motivo,nota,usuario_id"
+    assert "lote_costo_id" not in header
