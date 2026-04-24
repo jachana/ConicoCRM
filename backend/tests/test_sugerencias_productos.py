@@ -1,3 +1,4 @@
+import itertools
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -5,6 +6,11 @@ from app.models.cliente import Cliente
 from app.models.empresa import Empresa
 from app.models.factura import Factura, FacturaLinea
 from app.models.producto import Producto
+
+# Module-level counter: guarantees unique factura.numero across all tests in
+# this file regardless of date or cliente_id, avoiding UNIQUE constraint
+# collisions when multiple facturas share the same date.
+_factura_numero = itertools.count(start=1)
 
 
 def _seed_basic(db):
@@ -23,7 +29,7 @@ def _seed_basic(db):
 def _factura_con_lineas(db, cliente_id, empresa_id, fecha, estado, lineas_qty):
     """lineas_qty: dict[producto_id] = cantidad"""
     f = Factura(
-        numero=int(fecha.strftime("%Y%m%d")) + cliente_id,
+        numero=next(_factura_numero),
         cliente_id=cliente_id,
         empresa_id=empresa_id,
         fecha=fecha,
@@ -139,3 +145,21 @@ def test_sin_parametros_retorna_vacio(client, admin_token, db):
     )
     assert r.status_code == 200
     assert r.json() == []
+
+
+def test_vendedor_no_ve_precio_costo(client, vendedor_token, db):
+    """Vendedor usa ProductoBusquedaOutPublic — no debe ver precio_costo."""
+    seed = _seed_basic(db)
+    seed["pA"].precio_costo = Decimal("50")
+    db.commit()
+    _factura_con_lineas(
+        db, seed["cli"].id, seed["emp"].id, date.today() - timedelta(days=10),
+        "pagada", {seed["pA"].id: 3},
+    )
+    r = client.get(
+        f"/api/productos/sugerencias?empresa_id={seed['emp'].id}",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert r.status_code == 200
+    assert len(r.json()) > 0
+    assert "precio_costo" not in r.json()[0]
