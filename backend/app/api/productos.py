@@ -3,17 +3,20 @@ import io as _io
 from io import BytesIO
 
 import openpyxl
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from app.api.config import require_admin
 from app.api.deps import require_permission
+from app.models.lista_precios import ListaPrecios, ListaPreciosItem
 from app.models.lote_costo import LoteCosto
 from app.models.producto import Producto
 from app.models.tag import ProductoTag
 from app.models.user import User
 from app.models.movimiento_inventario import MovimientoInventario
+from app.schemas.lista_precios import HistorialCostoItem
 from app.schemas.lote_costo import LoteCostoOut
 from app.schemas.producto import ProductoBusquedaOut, ProductoCreate, ProductoOut, ProductoUpdate
 from app.schemas.movimiento_inventario import MovimientoListOut
@@ -226,3 +229,32 @@ def listar_lotes_producto(
         .order_by(LoteCosto.created_at.asc())
         .all()
     )
+
+
+@router.get("/{producto_id}/historial-costos", response_model=list[HistorialCostoItem])
+def historial_costos(
+    producto_id: int,
+    perms: tuple[User, Session] = Depends(require_admin),
+):
+    _, db = perms
+    p = db.get(Producto, producto_id)
+    if not p:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    if not p.sku:
+        return []
+    rows = (
+        db.query(ListaPrecios, ListaPreciosItem)
+        .join(ListaPreciosItem, ListaPreciosItem.lista_id == ListaPrecios.id)
+        .filter(ListaPreciosItem.sku == p.sku)
+        .order_by(ListaPrecios.fecha_subida.desc())
+        .all()
+    )
+    return [
+        HistorialCostoItem(
+            fecha_subida=lp.fecha_subida,
+            costo_unitario=item.costo_unitario,
+            lista_id=lp.id,
+            nombre_archivo=lp.nombre_archivo,
+        )
+        for lp, item in rows
+    ]
