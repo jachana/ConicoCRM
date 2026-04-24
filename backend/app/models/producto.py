@@ -29,9 +29,6 @@ class Producto(Base):
         ForeignKey("marcas.id", ondelete="SET NULL"), nullable=True
     )
     volumen: Mapped[Decimal | None] = mapped_column(Numeric(8, 2), nullable=True)
-    ultimo_costo_unitario: Mapped[Decimal] = mapped_column(
-        Numeric(12, 2), default=Decimal("0"), server_default=text("0")
-    )
     precio_costo_actualizado_en: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
