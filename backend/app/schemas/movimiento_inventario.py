@@ -57,6 +57,7 @@ class MovimientoOut(BaseModel):
     motivo: str | None = None
     nota: str | None = None
     usuario_id: int | None = None
+    lote_costo_id: int | None = None
     created_at: datetime
     producto: ProductoMinOut | None = None
     usuario: UsuarioMinOut | None = None
@@ -66,6 +67,8 @@ class MovimientoOut(BaseModel):
 class MovimientoListOut(BaseModel):
     items: list[MovimientoOut]
     total: int
+    page: int
+    page_size: int
 
 
 class StockBajoItem(BaseModel):

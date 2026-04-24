@@ -1,16 +1,21 @@
+import csv
+import io as _io
 from io import BytesIO
 
 import openpyxl
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse as _StreamingResponse
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_permission
+from app.models.lote_costo import LoteCosto
 from app.models.producto import Producto
 from app.models.tag import ProductoTag
 from app.models.user import User
 from app.models.movimiento_inventario import MovimientoInventario
+from app.schemas.lote_costo import LoteCostoOut
 from app.schemas.producto import ProductoBusquedaOut, ProductoCreate, ProductoOut, ProductoUpdate
 from app.schemas.movimiento_inventario import MovimientoListOut
 
@@ -155,11 +160,43 @@ def eliminar_producto(
     db.commit()
 
 
+@router.get("/{producto_id}/movimientos/export")
+def exportar_movimientos_producto(
+    producto_id: int,
+    perms: tuple[User, Session] = require_permission("inventario", "view"),
+):
+    _, db = perms
+    if not db.get(Producto, producto_id):
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    movimientos = (
+        db.query(MovimientoInventario)
+        .filter_by(producto_id=producto_id)
+        .order_by(MovimientoInventario.created_at.asc())
+        .all()
+    )
+    output = _io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["fecha", "tipo", "cantidad", "signo", "referencia_tipo", "referencia_id", "motivo", "nota", "usuario_id", "lote_costo_id"])
+    for m in movimientos:
+        writer.writerow([
+            m.created_at.isoformat(), m.tipo, m.cantidad, m.signo,
+            m.referencia_tipo or "", m.referencia_id or "",
+            m.motivo or "", m.nota or "",
+            m.usuario_id or "", m.lote_costo_id or "",
+        ])
+    output.seek(0)
+    return _StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=movimientos_{producto_id}.csv"},
+    )
+
+
 @router.get("/{producto_id}/movimientos", response_model=MovimientoListOut)
 def listar_movimientos_producto(
     producto_id: int,
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(50, ge=1, le=200),
     perms: tuple[User, Session] = require_permission("inventario", "view"),
 ):
     _, db = perms
@@ -173,4 +210,20 @@ def listar_movimientos_producto(
     )
     total = q.count()
     items = q.order_by(MovimientoInventario.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
-    return MovimientoListOut(items=items, total=total)
+    return MovimientoListOut(items=items, total=total, page=page, page_size=page_size)
+
+
+@router.get("/{producto_id}/lotes", response_model=list[LoteCostoOut])
+def listar_lotes_producto(
+    producto_id: int,
+    perms: tuple[User, Session] = require_permission("catalogo", "view"),
+):
+    _, db = perms
+    if not db.get(Producto, producto_id):
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return (
+        db.query(LoteCosto)
+        .filter(LoteCosto.producto_id == producto_id, LoteCosto.cantidad_restante > 0)
+        .order_by(LoteCosto.created_at.asc())
+        .all()
+    )
