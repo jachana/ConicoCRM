@@ -1,7 +1,6 @@
 from datetime import date
 from typing import Literal
 from fastapi import APIRouter
-from sqlalchemy.orm import Session
 
 from app.models.tarea import Tarea
 
