@@ -15,6 +15,13 @@ class ListaPreciosOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ListaPreciosPage(BaseModel):
+    items: list[ListaPreciosOut]
+    total: int
+    page: int
+    page_size: int
+
+
 class ListaPreciosItemOut(BaseModel):
     id: int
     sku: str

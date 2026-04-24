@@ -1,18 +1,19 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy import update
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import require_permission
+from app.api.config import require_admin
 from app.models.lista_precios import ListaPrecios, ListaPreciosItem
 from app.models.producto import Producto
 from app.models.user import User
 from app.schemas.lista_precios import (
     ListaPreciosItemsPage,
     ListaPreciosOut,
+    ListaPreciosPage,
     ListaPreciosUploadResult,
 )
 from app.services.lista_precios_parser import ParseError, parse_lista_precios
@@ -22,23 +23,18 @@ router = APIRouter()
 UPLOAD_DIR = Path("uploads") / "listas_precios"
 
 
-def _require_admin(current_user: User) -> None:
-    if current_user.role != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin")
-
-
 @router.post("/", response_model=ListaPreciosUploadResult, status_code=201)
 async def subir_lista(
     archivo: UploadFile = File(...),
     columna_sku: str = Form("sku"),
     columna_costo: str = Form("costo"),
-    perms: tuple[User, Session] = require_permission("catalogo", "edit"),
+    perms: tuple[User, Session] = Depends(require_admin),
 ):
     user, db = perms
-    _require_admin(user)
 
     content = await archivo.read()
-    filename = archivo.filename or "lista.xlsx"
+    raw_name = archivo.filename or "lista.xlsx"
+    filename = Path(raw_name).name or "lista.xlsx"  # strip directory components
     try:
         parsed = parse_lista_precios(content, filename, columna_sku, columna_costo)
     except ParseError as e:
@@ -91,40 +87,39 @@ async def subir_lista(
     )
 
 
-class _Page(ListaPreciosOut):
-    pass
-
-
-@router.get("/")
+@router.get("/", response_model=ListaPreciosPage)
 def listar_listas(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    perms: tuple[User, Session] = require_permission("catalogo", "view"),
+    perms: tuple[User, Session] = Depends(require_admin),
 ):
-    user, db = perms
-    _require_admin(user)
+    _, db = perms
     q = db.query(ListaPrecios).options(joinedload(ListaPrecios.subida_por)).order_by(ListaPrecios.fecha_subida.desc())
     total = q.count()
     rows = q.offset((page - 1) * page_size).limit(page_size).all()
-    return {"items": [ListaPreciosOut.model_validate(r) for r in rows], "total": total, "page": page, "page_size": page_size}
+    return ListaPreciosPage(items=rows, total=total, page=page, page_size=page_size)
 
 
 @router.get("/activa", response_model=ListaPreciosOut | None)
 def lista_activa(
-    perms: tuple[User, Session] = require_permission("catalogo", "view"),
+    perms: tuple[User, Session] = Depends(require_admin),
 ):
-    user, db = perms
-    _require_admin(user)
-    return db.query(ListaPrecios).filter(ListaPrecios.activa.is_(True)).first()
+    _, db = perms
+    lista = (
+        db.query(ListaPrecios)
+        .options(joinedload(ListaPrecios.subida_por))
+        .filter(ListaPrecios.activa.is_(True))
+        .first()
+    )
+    return lista
 
 
 @router.get("/{lista_id}", response_model=ListaPreciosOut)
 def obtener_lista(
     lista_id: int,
-    perms: tuple[User, Session] = require_permission("catalogo", "view"),
+    perms: tuple[User, Session] = Depends(require_admin),
 ):
-    user, db = perms
-    _require_admin(user)
+    _, db = perms
     lp = db.get(ListaPrecios, lista_id)
     if not lp:
         raise HTTPException(status_code=404, detail="Lista no encontrada")
@@ -136,10 +131,9 @@ def listar_items(
     lista_id: int,
     page: int = Query(1, ge=1),
     page_size: int = Query(100, ge=1, le=500),
-    perms: tuple[User, Session] = require_permission("catalogo", "view"),
+    perms: tuple[User, Session] = Depends(require_admin),
 ):
-    user, db = perms
-    _require_admin(user)
+    _, db = perms
     if not db.get(ListaPrecios, lista_id):
         raise HTTPException(status_code=404, detail="Lista no encontrada")
     q = db.query(ListaPreciosItem).filter_by(lista_id=lista_id)
@@ -151,10 +145,9 @@ def listar_items(
 @router.get("/{lista_id}/download")
 def descargar_lista(
     lista_id: int,
-    perms: tuple[User, Session] = require_permission("catalogo", "view"),
+    perms: tuple[User, Session] = Depends(require_admin),
 ):
-    user, db = perms
-    _require_admin(user)
+    _, db = perms
     lp = db.get(ListaPrecios, lista_id)
     if not lp:
         raise HTTPException(status_code=404, detail="Lista no encontrada")
@@ -167,10 +160,9 @@ def descargar_lista(
 @router.delete("/{lista_id}", status_code=204)
 def eliminar_lista(
     lista_id: int,
-    perms: tuple[User, Session] = require_permission("catalogo", "delete"),
+    perms: tuple[User, Session] = Depends(require_admin),
 ):
-    user, db = perms
-    _require_admin(user)
+    _, db = perms
     lp = db.get(ListaPrecios, lista_id)
     if not lp:
         raise HTTPException(status_code=404, detail="Lista no encontrada")
