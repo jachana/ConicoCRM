@@ -2,6 +2,7 @@ export type TareaEstado = 'pendiente' | 'hecha' | 'descartada';
 export type TareaOrigen = 'manual' | 'auto';
 export type PrioridadDerivada = 'vencida' | 'hoy' | 'futura';
 export type AsignadoRol = 'vendedor' | 'admin' | 'owner';
+export type EntidadTipo = 'cliente' | 'empresa' | 'cotizacion' | 'nota_venta' | 'factura' | 'producto';
 
 export interface Tarea {
   id: number;
@@ -25,6 +26,13 @@ export interface Tarea {
   completada_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface TareaPage {
+  items: Tarea[];
+  total: number;
+  page: number;
+  page_size: number;
 }
 
 export interface MisPendientes {

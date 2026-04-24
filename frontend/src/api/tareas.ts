@@ -1,19 +1,19 @@
 import { api } from '../lib/api';
 import type {
   Tarea,
+  TareaPage,
   MisPendientes,
   ReglaTarea,
   TareaCreateInput,
   TareaFiltros,
+  EntidadTipo,
 } from '../types/tarea';
 
-export async function listarTareas(
-  filtros: TareaFiltros = {},
-): Promise<{ items: Tarea[]; total: number; page: number; page_size: number }> {
+export async function listarTareas(filtros: TareaFiltros = {}): Promise<TareaPage> {
   const params = Object.fromEntries(
     Object.entries(filtros).filter(([, v]) => v != null),
   );
-  const { data } = await api.get('/api/tareas', { params });
+  const { data } = await api.get<TareaPage>('/api/tareas', { params });
   return data;
 }
 
@@ -60,7 +60,7 @@ export async function reasignarTarea(id: number, asignado_id: number): Promise<T
 }
 
 export async function timelineTareas(
-  entidadTipo: 'cliente' | 'empresa' | 'cotizacion' | 'nota_venta' | 'factura' | 'producto',
+  entidadTipo: EntidadTipo,
   entidadId: number,
 ): Promise<Tarea[]> {
   const { data } = await api.get<Tarea[]>(`/api/tareas/timeline/${entidadTipo}/${entidadId}`);
