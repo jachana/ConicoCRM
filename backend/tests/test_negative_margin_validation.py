@@ -4,16 +4,25 @@ import random
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
-def _make_producto(client, token, precio_venta=1000, precio_costo=600):
-    r = client.post("/api/productos/", json={
-        "nombre": "Prod Validation Test",
-        "sku": f"SKU-VAL-{precio_venta}-{precio_costo}-{random.randint(10000, 99999)}",
-        "precio_venta": precio_venta,
-        "precio_costo": precio_costo,
-        "unidad": "un",
-    }, headers={"Authorization": f"Bearer {token}"})
-    assert r.status_code == 201, r.text
-    return r.json()
+def _make_producto(db, precio_venta=1000, precio_costo=600):
+    """Creates a Producto via ORM session (no extra DB connections).
+
+    precio_costo is NOT exposed via ProductoCreate (inventario v2 derives it from
+    LoteCosto) — we set it directly on the model for tests that depend on the
+    margen calculation (margen = (valor_neto - precio_costo) / valor_neto).
+    """
+    from decimal import Decimal
+    from app.models.producto import Producto
+    p = Producto(
+        nombre="Prod Validation Test",
+        sku=f"SKU-VAL-{precio_venta}-{precio_costo}-{random.randint(10000, 99999)}",
+        precio_venta=Decimal(str(precio_venta)),
+        precio_costo=Decimal(str(precio_costo)),
+    )
+    db.add(p)
+    db.commit()
+    db.refresh(p)
+    return {"id": p.id, "precio_venta": float(precio_venta), "precio_costo": float(precio_costo)}
 
 
 def _make_cliente(client, token):
@@ -34,9 +43,9 @@ def _make_cotizacion_linea(client, token, cid, producto_id, valor_neto):
 
 # ── cotizacion save ───────────────────────────────────────────────────────────
 
-def test_cot_save_blocked_negative_margin(client, admin_token):
+def test_cot_save_blocked_negative_margin(client, admin_token, db):
     # precio_venta=500 < precio_costo=1000 → margen = (500-1000)/500 = -1.0
-    prod = _make_producto(client, admin_token, precio_venta=500, precio_costo=1000)
+    prod = _make_producto(db, precio_venta=500, precio_costo=1000)
     cid = _make_cliente(client, admin_token)
     r = _make_cotizacion_linea(client, admin_token, cid, prod["id"], valor_neto=500)
     assert r.status_code == 422
@@ -54,17 +63,17 @@ def test_cot_save_blocked_empty_item(client, admin_token):
     assert "linea_sin_item" in r.json()["detail"]
 
 
-def test_cot_save_allowed_positive_margin(client, admin_token):
+def test_cot_save_allowed_positive_margin(client, admin_token, db):
     # precio_venta=1000, precio_costo=600 → margen = (1000-600)/1000 = 0.4
-    prod = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    prod = _make_producto(db, precio_venta=1000, precio_costo=600)
     cid = _make_cliente(client, admin_token)
     r = _make_cotizacion_linea(client, admin_token, cid, prod["id"], valor_neto=1000)
     assert r.status_code == 201
 
 
-def test_cot_update_lineas_blocked_negative_margin(client, admin_token):
-    prod_ok = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
-    prod_neg = _make_producto(client, admin_token, precio_venta=500, precio_costo=1000)
+def test_cot_update_lineas_blocked_negative_margin(client, admin_token, db):
+    prod_ok = _make_producto(db, precio_venta=1000, precio_costo=600)
+    prod_neg = _make_producto(db, precio_venta=500, precio_costo=1000)
     cid = _make_cliente(client, admin_token)
     # Create valid cotizacion
     r = _make_cotizacion_linea(client, admin_token, cid, prod_ok["id"], valor_neto=1000)
@@ -79,8 +88,8 @@ def test_cot_update_lineas_blocked_negative_margin(client, admin_token):
     assert "margen_negativo" in r2.json()["detail"]
 
 
-def test_cot_update_lineas_blocked_empty_item(client, admin_token):
-    prod_ok = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+def test_cot_update_lineas_blocked_empty_item(client, admin_token, db):
+    prod_ok = _make_producto(db, precio_venta=1000, precio_costo=600)
     cid = _make_cliente(client, admin_token)
     r = _make_cotizacion_linea(client, admin_token, cid, prod_ok["id"], valor_neto=1000)
     assert r.status_code == 201
@@ -93,9 +102,9 @@ def test_cot_update_lineas_blocked_empty_item(client, admin_token):
     assert "linea_sin_item" in r2.json()["detail"]
 
 
-def test_cot_save_blocked_both_errors(client, admin_token):
+def test_cot_save_blocked_both_errors(client, admin_token, db):
     # One line with negative margin, one line with no item
-    prod_neg = _make_producto(client, admin_token, precio_venta=500, precio_costo=1000)
+    prod_neg = _make_producto(db, precio_venta=500, precio_costo=1000)
     cid = _make_cliente(client, admin_token)
     r = client.post("/api/cotizaciones/", json={
         "cliente_id": cid,
@@ -118,7 +127,7 @@ def test_cot_pdf_blocked_negative_margin(client, db, admin_token):
     from app.models.cotizacion import CotizacionLinea
     from decimal import Decimal
     # Create valid cotizacion via API (passes save validation)
-    prod = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    prod = _make_producto(db, precio_venta=1000, precio_costo=600)
     cid = _make_cliente(client, admin_token)
     r = _make_cotizacion_linea(client, admin_token, cid, prod["id"], valor_neto=1000)
     assert r.status_code == 201
@@ -136,7 +145,7 @@ def test_cot_pdf_blocked_negative_margin(client, db, admin_token):
 
 def test_cot_pdf_blocked_empty_item(client, db, admin_token):
     from app.models.cotizacion import CotizacionLinea
-    prod = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    prod = _make_producto(db, precio_venta=1000, precio_costo=600)
     cid = _make_cliente(client, admin_token)
     r = _make_cotizacion_linea(client, admin_token, cid, prod["id"], valor_neto=1000)
     assert r.status_code == 201
@@ -154,7 +163,7 @@ def test_cot_pdf_blocked_empty_item(client, db, admin_token):
 def test_cot_email_blocked_negative_margin(client, db, admin_token):
     from app.models.cotizacion import CotizacionLinea
     from decimal import Decimal
-    prod = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    prod = _make_producto(db, precio_venta=1000, precio_costo=600)
     cid = _make_cliente(client, admin_token)
     r = _make_cotizacion_linea(client, admin_token, cid, prod["id"], valor_neto=1000)
     assert r.status_code == 201
@@ -180,8 +189,8 @@ def _make_nv_linea(client, token, cid, producto_id, valor_neto):
     return r
 
 
-def test_nv_save_blocked_negative_margin(client, admin_token):
-    prod = _make_producto(client, admin_token, precio_venta=500, precio_costo=1000)
+def test_nv_save_blocked_negative_margin(client, admin_token, db):
+    prod = _make_producto(db, precio_venta=500, precio_costo=1000)
     cid = _make_cliente(client, admin_token)
     r = _make_nv_linea(client, admin_token, cid, prod["id"], valor_neto=500)
     assert r.status_code == 422
@@ -200,9 +209,9 @@ def test_nv_save_blocked_empty_item(client, admin_token):
     assert "linea_sin_item" in r.json()["detail"]
 
 
-def test_nv_update_lineas_blocked_negative_margin(client, admin_token):
-    prod_ok = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
-    prod_neg = _make_producto(client, admin_token, precio_venta=500, precio_costo=1000)
+def test_nv_update_lineas_blocked_negative_margin(client, admin_token, db):
+    prod_ok = _make_producto(db, precio_venta=1000, precio_costo=600)
+    prod_neg = _make_producto(db, precio_venta=500, precio_costo=1000)
     cid = _make_cliente(client, admin_token)
     r = _make_nv_linea(client, admin_token, cid, prod_ok["id"], valor_neto=1000)
     assert r.status_code == 201
@@ -218,7 +227,7 @@ def test_nv_update_lineas_blocked_negative_margin(client, admin_token):
 def test_nv_pdf_blocked_negative_margin(client, db, admin_token):
     from app.models.nota_venta import NotaVentaLinea
     from decimal import Decimal
-    prod = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    prod = _make_producto(db, precio_venta=1000, precio_costo=600)
     cid = _make_cliente(client, admin_token)
     r = _make_nv_linea(client, admin_token, cid, prod["id"], valor_neto=1000)
     assert r.status_code == 201
@@ -234,7 +243,7 @@ def test_nv_pdf_blocked_negative_margin(client, db, admin_token):
 
 def test_nv_email_blocked_empty_item(client, db, admin_token):
     from app.models.nota_venta import NotaVentaLinea
-    prod = _make_producto(client, admin_token, precio_venta=1000, precio_costo=600)
+    prod = _make_producto(db, precio_venta=1000, precio_costo=600)
     cid = _make_cliente(client, admin_token)
     r = _make_nv_linea(client, admin_token, cid, prod["id"], valor_neto=1000)
     assert r.status_code == 201

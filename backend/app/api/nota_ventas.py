@@ -142,7 +142,7 @@ def _check_lineas_invalidas(lineas: list[NotaVentaLinea]) -> None:
         errors.append("margen_negativo")
     if errors:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=" | ".join({
                 "linea_sin_item": "linea_sin_item: Hay líneas sin producto seleccionado",
                 "margen_negativo": "margen_negativo: Hay líneas con margen negativo",
@@ -535,7 +535,7 @@ def cambiar_estado(
     allowed = _TRANSITIONS.get(transition)
     if allowed is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Transición '{nv.estado}' → '{body.estado}' no permitida",
         )
     if allowed == "admin" and current_user.role not in ("admin", "subadmin"):

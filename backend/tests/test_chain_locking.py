@@ -163,15 +163,17 @@ def test_estado_change_works_on_locked_nv(client, admin_token):
 
 # ── Factura locking ───────────────────────────────────────────────────────────
 
-def test_patch_factura_always_returns_403(client, admin_token):
+def test_patch_factura_editable_while_emitida(client, admin_token):
+    """Facturas emitidas permiten editar campos (nota, banco_receptor_id, metodo_pago).
+    Se bloquean (409) sólo cuando pasan a pagada o anulada."""
     cid = _make_cliente(client, admin_token)
     nv = _make_nv(client, admin_token, cid)
     factura = _make_factura_from_nv(client, admin_token, nv["id"])
 
     r = client.patch(f"/api/facturas/{factura['id']}",
-                     json={"nota": "intento editar"},
+                     json={"nota": "edición válida"},
                      headers={"Authorization": f"Bearer {admin_token}"})
-    assert r.status_code == 403
+    assert r.status_code == 200
 
 
 def test_put_lineas_factura_always_returns_403(client, admin_token):
@@ -193,13 +195,14 @@ def test_factura_estado_change_still_works(client, admin_token):
 
     r = client.patch(f"/api/facturas/{factura['id']}/estado",
                      json={"estado": "pagada", "fecha_pago": "2026-04-22",
-                           "monto_pagado": factura["total"], "metodo_pago": "transferencia"},
+                           "monto_pagado": factura["total"], "metodo_pago": "Transferencia"},
                      headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
 
 
-def test_factura_is_locked_true_in_response(client, admin_token):
+def test_factura_is_locked_false_while_emitida(client, admin_token):
+    """is_locked es computado desde estado: False para emitida/parcial, True para pagada/anulada."""
     cid = _make_cliente(client, admin_token)
     nv = _make_nv(client, admin_token, cid)
     factura = _make_factura_from_nv(client, admin_token, nv["id"])
-    assert factura["is_locked"] is True
+    assert factura["is_locked"] is False

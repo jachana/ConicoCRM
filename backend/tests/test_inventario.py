@@ -22,19 +22,31 @@ def test_stock_bajo_vacio(client, admin_token):
     assert r.json() == []
 
 
-def _crear_producto(client, token, nombre="Prod", stock_actual=10, stock_minimo=5):
-    r = client.post(
-        "/api/productos/",
-        json={"nombre": nombre, "precio_costo": 0, "precio_venta": 0,
-              "stock_minimo": stock_minimo, "stock_actual": stock_actual},
-        headers={"Authorization": f"Bearer {token}"},
+def _crear_producto(db, nombre="Prod", stock_actual=10, stock_minimo=5, precio_costo=500):
+    """Creates a Producto directly via the ORM session.
+
+    Uses `db` fixture to avoid spawning separate connections that contaminate the
+    SQLite pool. precio_costo is NOT exposed via ProductoCreate schema (inventario v2
+    derives it from LoteCosto) — we set it directly on the model for tests that
+    depend on the costo=0 guard in NV creation.
+    """
+    from decimal import Decimal
+    from app.models.producto import Producto
+    p = Producto(
+        nombre=nombre,
+        precio_venta=Decimal("1000"),
+        precio_costo=Decimal(str(precio_costo)),
+        stock_minimo=stock_minimo,
+        stock_actual=stock_actual,
     )
-    assert r.status_code == 201
-    return r.json()["id"]
+    db.add(p)
+    db.commit()
+    db.refresh(p)
+    return p.id
 
 
-def test_ajuste_suma_stock(client, admin_token):
-    pid = _crear_producto(client, admin_token, stock_actual=10)
+def test_ajuste_suma_stock(client, admin_token, db):
+    pid = _crear_producto(db, stock_actual=10)
     r = client.post(
         "/api/inventario/ajustes",
         json={"producto_id": pid, "cantidad": 5, "signo": 1, "motivo": "conteo_fisico"},
@@ -49,8 +61,8 @@ def test_ajuste_suma_stock(client, admin_token):
     assert prod["stock_actual"] == 15
 
 
-def test_ajuste_resta_stock(client, admin_token):
-    pid = _crear_producto(client, admin_token, stock_actual=10)
+def test_ajuste_resta_stock(client, admin_token, db):
+    pid = _crear_producto(db, stock_actual=10)
     r = client.post(
         "/api/inventario/ajustes",
         json={"producto_id": pid, "cantidad": 3, "signo": -1, "motivo": "merma"},
@@ -61,8 +73,8 @@ def test_ajuste_resta_stock(client, admin_token):
     assert prod["stock_actual"] == 7
 
 
-def test_ajuste_stock_negativo_rechazado(client, admin_token):
-    pid = _crear_producto(client, admin_token, stock_actual=5)
+def test_ajuste_stock_negativo_rechazado(client, admin_token, db):
+    pid = _crear_producto(db, stock_actual=5)
     r = client.post(
         "/api/inventario/ajustes",
         json={"producto_id": pid, "cantidad": 10, "signo": -1, "motivo": "merma"},
@@ -73,8 +85,8 @@ def test_ajuste_stock_negativo_rechazado(client, admin_token):
     assert prod["stock_actual"] == 5  # unchanged
 
 
-def test_ajuste_motivo_invalido(client, admin_token):
-    pid = _crear_producto(client, admin_token)
+def test_ajuste_motivo_invalido(client, admin_token, db):
+    pid = _crear_producto(db)
     r = client.post(
         "/api/inventario/ajustes",
         json={"producto_id": pid, "cantidad": 1, "signo": 1, "motivo": "inventado"},
@@ -92,9 +104,9 @@ def test_ajuste_vendedor_sin_permisos(client, vendedor_token):
     assert r.status_code == 403
 
 
-def test_stock_bajo_detecta_criticos(client, admin_token):
-    _crear_producto(client, admin_token, nombre="Critico", stock_actual=2, stock_minimo=10)
-    _crear_producto(client, admin_token, nombre="OK", stock_actual=20, stock_minimo=5)
+def test_stock_bajo_detecta_criticos(client, admin_token, db):
+    _crear_producto(db, nombre="Critico", stock_actual=2, stock_minimo=10)
+    _crear_producto(db, nombre="OK", stock_actual=20, stock_minimo=5)
     r = client.get("/api/inventario/stock-bajo", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
     nombres = [p["nombre"] for p in r.json()]
@@ -102,8 +114,8 @@ def test_stock_bajo_detecta_criticos(client, admin_token):
     assert "OK" not in nombres
 
 
-def test_listar_movimientos_paginado(client, admin_token):
-    pid = _crear_producto(client, admin_token)
+def test_listar_movimientos_paginado(client, admin_token, db):
+    pid = _crear_producto(db)
     client.post("/api/inventario/ajustes",
         json={"producto_id": pid, "cantidad": 1, "signo": 1, "motivo": "conteo_fisico"},
         headers={"Authorization": f"Bearer {admin_token}"})
@@ -115,8 +127,8 @@ def test_listar_movimientos_paginado(client, admin_token):
     assert len(data["items"]) >= 1
 
 
-def test_listar_movimientos_filtro_tipo(client, admin_token):
-    pid = _crear_producto(client, admin_token)
+def test_listar_movimientos_filtro_tipo(client, admin_token, db):
+    pid = _crear_producto(db)
     client.post("/api/inventario/ajustes",
         json={"producto_id": pid, "cantidad": 1, "signo": 1, "motivo": "otro"},
         headers={"Authorization": f"Bearer {admin_token}"})
@@ -127,7 +139,7 @@ def test_listar_movimientos_filtro_tipo(client, admin_token):
         assert item["tipo"] == "ajuste"
 
 
-def test_recepcion_oc_crea_movimiento_entrada(client, admin_token):
+def test_recepcion_oc_crea_movimiento_entrada(client, admin_token, db):
     # Create provider
     r = client.post(
         "/api/proveedores/",
@@ -137,7 +149,7 @@ def test_recepcion_oc_crea_movimiento_entrada(client, admin_token):
     assert r.status_code == 201, f"Provider creation failed: {r.status_code} - {r.json()}"
     pid_prov = r.json()["id"]
 
-    pid_prod = _crear_producto(client, admin_token, nombre="ProdOC", stock_actual=0)
+    pid_prod = _crear_producto(db, nombre="ProdOC", stock_actual=0)
 
     oc = client.post(
         "/api/ordenes-compra/",
@@ -197,8 +209,8 @@ def _crear_nv(client, token, producto_id: int, cantidad: int = 3):
         headers={"Authorization": f"Bearer {token}"}).json()
 
 
-def test_crear_nv_descuenta_stock(client, admin_token):
-    pid = _crear_producto(client, admin_token, nombre="ProdNV", stock_actual=20)
+def test_crear_nv_descuenta_stock(client, admin_token, db):
+    pid = _crear_producto(db, nombre="ProdNV", stock_actual=20)
     nv = _crear_nv(client, admin_token, pid, cantidad=3)
     prod = client.get(f"/api/productos/{pid}", headers={"Authorization": f"Bearer {admin_token}"}).json()
     assert prod["stock_actual"] == 17
@@ -213,8 +225,8 @@ def test_crear_nv_descuenta_stock(client, admin_token):
     assert m["referencia_id"] == nv["id"]
 
 
-def test_reemplazar_lineas_nv_ajusta_stock(client, admin_token):
-    pid = _crear_producto(client, admin_token, nombre="ProdLineas", stock_actual=20)
+def test_reemplazar_lineas_nv_ajusta_stock(client, admin_token, db):
+    pid = _crear_producto(db, nombre="ProdLineas", stock_actual=20)
     nv = _crear_nv(client, admin_token, pid, cantidad=3)
     # stock now 17; replace with cantidad=5 → delta +2 more sold → stock = 15
     client.put(f"/api/nota_ventas/{nv['id']}/lineas",
@@ -228,8 +240,8 @@ def test_reemplazar_lineas_nv_ajusta_stock(client, admin_token):
     assert movs["total"] == 2
 
 
-def test_cancelar_nv_restaura_stock(client, admin_token):
-    pid = _crear_producto(client, admin_token, nombre="ProdCancel", stock_actual=20)
+def test_cancelar_nv_restaura_stock(client, admin_token, db):
+    pid = _crear_producto(db, nombre="ProdCancel", stock_actual=20)
     nv = _crear_nv(client, admin_token, pid, cantidad=3)
     # stock now 17
     client.patch(f"/api/nota_ventas/{nv['id']}/estado",
@@ -242,8 +254,8 @@ def test_cancelar_nv_restaura_stock(client, admin_token):
     assert movs["total"] == 2  # salida + devolución
 
 
-def test_eliminar_nv_restaura_stock(client, admin_token):
-    pid = _crear_producto(client, admin_token, nombre="ProdDel", stock_actual=20)
+def test_eliminar_nv_restaura_stock(client, admin_token, db):
+    pid = _crear_producto(db, nombre="ProdDel", stock_actual=20)
     nv = _crear_nv(client, admin_token, pid, cantidad=3)
     # stock now 17
     client.delete(f"/api/nota_ventas/{nv['id']}",
@@ -252,8 +264,8 @@ def test_eliminar_nv_restaura_stock(client, admin_token):
     assert prod["stock_actual"] == 20
 
 
-def test_historial_por_producto(client, admin_token):
-    pid = _crear_producto(client, admin_token, nombre="ProdHistorial", stock_actual=10)
+def test_historial_por_producto(client, admin_token, db):
+    pid = _crear_producto(db, nombre="ProdHistorial", stock_actual=10)
     client.post("/api/inventario/ajustes",
         json={"producto_id": pid, "cantidad": 2, "signo": 1, "motivo": "otro"},
         headers={"Authorization": f"Bearer {admin_token}"})
