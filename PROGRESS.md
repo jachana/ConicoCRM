@@ -88,6 +88,15 @@
   - Vendedor ve datos filtrados automáticamente a sus propias ventas; sin acceso a widgets admin-only
   - Gráficos: KPI, barras, línea (Recharts); tablas inline
 
+- [x] **Tier A #5 — Tareas y Recordatorios**
+  - Modelo `Tarea` con 6 FKs nullables (CHECK: máx 1 entidad vinculada) + `ReglaTarea` con seed 6 reglas
+  - API CRUD + acciones (completar/descartar/reasignar) + `/mis-pendientes` + `/timeline/{tipo}/{id}`
+  - Permisos `tareas:view/view_all/create/admin` con defaults por rol
+  - Job Celery horario: 6 reglas auto-generadoras (cotizacion_vence, factura_vencida, aprobacion_pendiente, nv_despachada_sin_avanzar, cliente_sin_actividad, stock_bajo_minimo) con idempotencia vía `dedup_key` y auto-descarte cuando el evento se resuelve
+  - UI: página `/tareas` con tabs pendiente/hecha/descartada, widget "Mis pendientes" en sidebar, sección "Tareas relacionadas" en fichas (cotización, NV, factura), config admin `/admin/tareas/config`
+  - Hook: al desactivar usuario se reasignan sus tareas pendientes al primer admin activo; guard bloquea desactivar al último admin
+  - Tests: model, API, auto-gen por regla (8 tests), integration e2e; 473/473 tests no-smoke pasan
+
 ---
 
 ## Flujo de documentos
