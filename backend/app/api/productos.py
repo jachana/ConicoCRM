@@ -1,16 +1,17 @@
 import csv
 import io as _io
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
 
 import openpyxl
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.api.config import require_admin
 from app.api.deps import require_permission
+from app.models.factura import Factura, FacturaLinea
 from app.models.lista_precios import ListaPrecios, ListaPreciosItem
 from app.models.producto import Producto
 from app.models.system_config import SystemConfig
@@ -120,6 +121,57 @@ def buscar_productos(
     rows = query.order_by(Producto.nombre).limit(20).all()
     schema = ProductoBusquedaOutAdmin if user.role == "admin" else ProductoBusquedaOutPublic
     return [schema.model_validate(p).model_dump(mode="json") for p in rows]
+
+
+@router.get("/sugerencias")
+def sugerencias_productos(
+    cliente_id: int | None = Query(None),
+    empresa_id: int | None = Query(None),
+    perms: tuple[User, Session] = require_permission("catalogo", "view"),
+):
+    """Top 20 productos comprados por empresa (prevalece) o cliente en últimos 6 meses
+    según facturas no anuladas, ordenados por cantidad total descendente.
+    """
+    user, db = perms
+    if cliente_id is None and empresa_id is None:
+        return []
+
+    corte = date.today() - timedelta(days=180)
+    q = (
+        db.query(
+            FacturaLinea.producto_id,
+            func.sum(FacturaLinea.cantidad).label("total_qty"),
+            func.max(Factura.fecha).label("ultima_fecha"),
+        )
+        .join(Factura, FacturaLinea.factura_id == Factura.id)
+        .filter(
+            Factura.estado != "anulada",
+            Factura.fecha >= corte,
+            FacturaLinea.producto_id.is_not(None),
+        )
+    )
+    if empresa_id is not None:
+        q = q.filter(Factura.empresa_id == empresa_id)
+    else:
+        q = q.filter(Factura.cliente_id == cliente_id)
+
+    ranking = (
+        q.group_by(FacturaLinea.producto_id)
+        .having(func.sum(FacturaLinea.cantidad) > 0)
+        .order_by(func.sum(FacturaLinea.cantidad).desc(), func.max(Factura.fecha).desc())
+        .limit(20)
+        .all()
+    )
+    if not ranking:
+        return []
+
+    ids = [r.producto_id for r in ranking]
+    orden = {pid: i for i, pid in enumerate(ids)}
+    productos = db.query(Producto).filter(Producto.id.in_(ids)).all()
+    productos.sort(key=lambda p: orden[p.id])
+
+    schema = ProductoBusquedaOutAdmin if user.role == "admin" else ProductoBusquedaOutPublic
+    return [schema.model_validate(p).model_dump(mode="json") for p in productos]
 
 
 @router.get("/")
