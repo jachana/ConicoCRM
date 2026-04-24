@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -9,7 +9,7 @@ from app.api.deps import require_permission
 from app.core.permissions import has_permission
 from app.models.tarea import Tarea
 from app.models.user import User
-from app.schemas.tarea import TareaIn, TareaOut, TareaPatch
+from app.schemas.tarea import DescartarIn, MisPendientesOut, ReasignarIn, TareaIn, TareaOut, TareaPatch
 
 router = APIRouter()
 
@@ -165,6 +165,30 @@ def _require_owner_or_admin(t: Tarea, user: User, db: Session):
     raise HTTPException(403, detail="Sin acceso a esta tarea")
 
 
+@router.get("/mis-pendientes", response_model=MisPendientesOut)
+def mis_pendientes(perms: tuple[User, Session] = require_permission("tareas", "view")):
+    current_user, db = perms
+    today = date.today()
+
+    q = db.query(Tarea).options(joinedload(Tarea.asignado)).filter(
+        Tarea.asignado_id == current_user.id,
+        Tarea.estado == "pendiente",
+    )
+
+    tareas = q.order_by(Tarea.due_date.asc()).all()
+    vencidas = sum(1 for t in tareas if t.due_date < today)
+    hoy = sum(1 for t in tareas if t.due_date == today)
+    futuras = sum(1 for t in tareas if t.due_date > today)
+
+    return {
+        "vencidas": vencidas,
+        "hoy": hoy,
+        "futuras": futuras,
+        "total": len(tareas),
+        "tareas": [serialize_tarea(t) for t in tareas[:5]],
+    }
+
+
 @router.get("/{tarea_id}", response_model=TareaOut)
 def get_tarea(
     tarea_id: int,
@@ -229,3 +253,54 @@ def delete_tarea(
 
     db.delete(t)
     db.commit()
+
+
+@router.post("/{tarea_id}/completar", response_model=TareaOut)
+def completar(
+    tarea_id: int,
+    perms: tuple[User, Session] = require_permission("tareas", "view"),
+):
+    current_user, db = perms
+    t = _get_or_404(db, tarea_id)
+    _require_owner_or_admin(t, current_user, db)
+    if t.estado == "hecha":
+        return serialize_tarea(t)
+    t.estado = "hecha"
+    t.completada_at = datetime.now(timezone.utc)
+    t.completada_por_id = current_user.id
+    db.commit()
+    db.refresh(t)
+    return serialize_tarea(t)
+
+
+@router.post("/{tarea_id}/descartar", response_model=TareaOut)
+def descartar(
+    tarea_id: int,
+    payload: DescartarIn,
+    perms: tuple[User, Session] = require_permission("tareas", "view"),
+):
+    current_user, db = perms
+    t = _get_or_404(db, tarea_id)
+    _require_owner_or_admin(t, current_user, db)
+    t.estado = "descartada"
+    t.motivo_descarte = payload.motivo
+    db.commit()
+    db.refresh(t)
+    return serialize_tarea(t)
+
+
+@router.post("/{tarea_id}/reasignar", response_model=TareaOut)
+def reasignar(
+    tarea_id: int,
+    payload: ReasignarIn,
+    perms: tuple[User, Session] = require_permission("tareas", "admin"),
+):
+    current_user, db = perms
+    t = _get_or_404(db, tarea_id)
+    asignado = db.query(User).filter(User.id == payload.asignado_id, User.is_active.is_(True)).first()
+    if asignado is None:
+        raise HTTPException(422, detail="Usuario inválido")
+    t.asignado_id = payload.asignado_id
+    db.commit()
+    db.refresh(t)
+    return serialize_tarea(t)

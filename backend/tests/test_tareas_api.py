@@ -177,3 +177,69 @@ def test_delete_403_si_no_creador_ni_admin(client, vendedor_token, otro_vendedor
     resp = client.delete(f"/api/tareas/{t.id}",
                          headers={"Authorization": f"Bearer {vendedor_token}"})
     assert resp.status_code == 403
+
+
+def test_completar(client, admin_token, admin_user, db):
+    from app.models.tarea import Tarea
+    t = Tarea(titulo="x", due_date=date.today(), origen="manual", asignado_id=admin_user.id)
+    db.add(t); db.commit()
+    resp = client.post(f"/api/tareas/{t.id}/completar",
+                       headers={"Authorization": f"Bearer {admin_token}"})
+    assert resp.status_code == 200
+    assert resp.json()["estado"] == "hecha"
+    assert resp.json()["completada_at"] is not None
+
+
+def test_descartar_requiere_motivo(client, admin_token, admin_user, db):
+    from app.models.tarea import Tarea
+    t = Tarea(titulo="x", due_date=date.today(), origen="manual", asignado_id=admin_user.id)
+    db.add(t); db.commit()
+
+    # Sin motivo → 422
+    r1 = client.post(f"/api/tareas/{t.id}/descartar", json={},
+                     headers={"Authorization": f"Bearer {admin_token}"})
+    assert r1.status_code == 422
+
+    r2 = client.post(f"/api/tareas/{t.id}/descartar", json={"motivo": "ya no aplica"},
+                     headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 200
+    assert r2.json()["estado"] == "descartada"
+    assert r2.json()["motivo_descarte"] == "ya no aplica"
+
+
+def test_reasignar_solo_admin(client, vendedor_token, admin_token, admin_user, vendedor_user, otro_vendedor, db):
+    from app.models.tarea import Tarea
+    t = Tarea(titulo="x", due_date=date.today(), origen="manual", asignado_id=vendedor_user.id)
+    db.add(t); db.commit()
+
+    # Vendedor no puede reasignar
+    r1 = client.post(f"/api/tareas/{t.id}/reasignar", json={"asignado_id": otro_vendedor.id},
+                     headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert r1.status_code == 403
+
+    # Admin sí
+    r2 = client.post(f"/api/tareas/{t.id}/reasignar", json={"asignado_id": otro_vendedor.id},
+                     headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 200
+    assert r2.json()["asignado_id"] == otro_vendedor.id
+
+
+def test_mis_pendientes(client, vendedor_token, vendedor_user, db):
+    from app.models.tarea import Tarea
+    db.add(Tarea(titulo="ayer", due_date=date.today() - timedelta(days=1),
+                 origen="manual", asignado_id=vendedor_user.id))
+    db.add(Tarea(titulo="hoy", due_date=date.today(), origen="manual",
+                 asignado_id=vendedor_user.id))
+    db.add(Tarea(titulo="manana", due_date=date.today() + timedelta(days=1),
+                 origen="manual", asignado_id=vendedor_user.id))
+    db.commit()
+
+    resp = client.get("/api/tareas/mis-pendientes",
+                      headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["vencidas"] >= 1
+    assert data["hoy"] >= 1
+    assert data["futuras"] >= 1
+    assert data["total"] == data["vencidas"] + data["hoy"] + data["futuras"]
+    assert len(data["tareas"]) <= 5
