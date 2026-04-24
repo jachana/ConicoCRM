@@ -19,9 +19,6 @@ class MovimientoInventario(Base):
     usuario_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    lote_costo_id: Mapped[int | None] = mapped_column(
-        ForeignKey("lotes_costo.id", ondelete="SET NULL"), nullable=True
-    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -30,4 +27,3 @@ class MovimientoInventario(Base):
 
     producto: Mapped["Producto"] = relationship("Producto")
     usuario: Mapped["User | None"] = relationship("User")
-    lote_costo: Mapped["LoteCosto | None"] = relationship("LoteCosto")

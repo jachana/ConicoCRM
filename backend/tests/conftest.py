@@ -47,7 +47,6 @@ def setup_test_db():
     import app.models.banco_receptor  # noqa: F401
     import app.models.sede_despacho  # noqa: F401
     import app.models.marca  # noqa: F401
-    import app.models.lote_costo  # noqa: F401
     import app.models.producto_documento  # noqa: F401
     import app.models.lista_precios  # noqa: F401
     import app.models.tarea  # noqa: F401

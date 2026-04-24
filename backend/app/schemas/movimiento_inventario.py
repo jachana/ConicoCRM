@@ -53,7 +53,6 @@ class MovimientoOut(BaseModel):
     motivo: str | None = None
     nota: str | None = None
     usuario_id: int | None = None
-    lote_costo_id: int | None = None
     created_at: datetime
     producto: ProductoMinOut | None = None
     usuario: UsuarioMinOut | None = None
