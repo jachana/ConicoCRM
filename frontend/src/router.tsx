@@ -30,6 +30,7 @@ import NotasDebito from './pages/NotasDebito'
 import NotaDebitoDetalle from './pages/NotaDebitoDetalle'
 import NotaDebitoNueva from './pages/NotaDebitoNueva'
 import TareasPage from './pages/Tareas'
+import TareasConfigPage from './pages/TareasConfig'
 import { useAuthStore } from './stores/auth'
 import AppLayout from './components/layout/AppLayout'
 
@@ -79,6 +80,7 @@ export const router = createBrowserRouter([
       { path: 'cobranza', element: <Cobranza /> },
       { path: 'reportes', element: <Reportes /> },
       { path: 'tareas', element: <TareasPage /> },
+      { path: 'admin/tareas/config', element: <TareasConfigPage /> },
     ],
   },
 ])
