@@ -79,3 +79,27 @@ def test_parse_accepts_custom_column_names():
 def test_parse_rejects_unsupported_extension():
     with pytest.raises(ParseError):
         parse_lista_precios(b"irrelevant", "precios.txt")
+
+
+def test_parse_csv_trailing_blank_line_counts_as_invalid():
+    # A trailing blank row gets counted in filas_invalidas — documents
+    # current behavior so a future change to skip silently is a conscious choice.
+    data = b"sku,costo\nABC,100\nXYZ,50\n\n"
+    result = parse_lista_precios(data, "precios.csv")
+    assert [r.sku for r in result.rows] == ["ABC", "XYZ"]
+    assert result.filas_invalidas == 1
+
+
+def test_parse_header_only_returns_empty_result():
+    data = _build_csv([])  # only the header, no data rows
+    result = parse_lista_precios(data, "precios.csv")
+    assert result.rows == []
+    assert result.filas_invalidas == 0
+
+
+def test_parse_semicolon_delimited_csv_raises_parse_error():
+    # Chilean Excel defaults to ';' — the parser does not auto-detect and will raise.
+    # Pinning test: a future csv.Sniffer enhancement should break this and update the assertion.
+    data = b"sku;costo\nABC;100\n"
+    with pytest.raises(ParseError):
+        parse_lista_precios(data, "precios.csv")

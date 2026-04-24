@@ -69,6 +69,7 @@ def parse_lista_precios(
             invalid += 1
             continue
         try:
+            # str() route is load-bearing: openpyxl returns floats; Decimal(str(100.1)) -> '100.1', Decimal(100.1) -> '100.0999...'
             costo = Decimal(str(costo_val).strip())
         except (InvalidOperation, AttributeError):
             invalid += 1
@@ -89,8 +90,8 @@ def _read_csv(content: bytes) -> list[list]:
 
 def _read_xlsx(content: bytes) -> list[list]:
     wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
-    ws = wb.active
-    out: list[list] = []
-    for row in ws.iter_rows(values_only=True):
-        out.append(list(row))
-    return out
+    try:
+        ws = wb.active
+        return [list(row) for row in ws.iter_rows(values_only=True)]
+    finally:
+        wb.close()
