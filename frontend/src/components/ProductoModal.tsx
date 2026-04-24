@@ -4,9 +4,9 @@ import { api } from '../lib/api'
 import type { Producto, Marca } from '../types'
 import ProductoDocumentos from './ProductoDocumentos'
 import ProductoHistorial from './ProductoHistorial'
-import ProductoLotes from './ProductoLotes'
+import ProductoHistorialCostos from './ProductoHistorialCostos'
 
-type Tab = 'datos' | 'documentos' | 'historial' | 'lotes'
+type Tab = 'datos' | 'documentos' | 'historial' | 'historial_costos'
 
 type FormData = {
   nombre: string
@@ -103,7 +103,7 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
               <button className={tabClass('datos')} onClick={() => setTab('datos')}>Datos</button>
               <button className={tabClass('documentos')} onClick={() => setTab('documentos')}>Documentos</button>
               <button className={tabClass('historial')} onClick={() => setTab('historial')}>Historial</button>
-              {isAdmin && <button className={tabClass('lotes')} onClick={() => setTab('lotes')}>Lotes</button>}
+              {isAdmin && <button className={tabClass('historial_costos')} onClick={() => setTab('historial_costos')}>Historial costos</button>}
             </div>
           )}
         </div>
@@ -149,50 +149,65 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
 
-              {/* Costo (read-only) */}
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                  Precio costo ($) <span className="text-xs text-gray-400">(auto)</span>
-                </label>
-                <input type="text" readOnly value={editando ? formatPrecio(Number(editando.precio_costo ?? 0)) : '—'}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
-                {editando && (
-                  <p className="mt-0.5 text-xs text-gray-400">+IVA: {formatPrecio(Number(editando.costo_con_iva ?? 0))}</p>
-                )}
-              </div>
+              {isAdmin && (
+                <>
+                  {/* Costo (read-only) */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Precio costo ($) <span className="text-xs text-gray-400">(auto)</span>
+                    </label>
+                    <input type="text" readOnly value={editando ? formatPrecio(Number(editando.precio_costo ?? 0)) : '—'}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
+                    {editando && (
+                      <p className="mt-0.5 text-xs text-gray-400">+IVA: {formatPrecio(Number(editando.costo_con_iva ?? 0))}</p>
+                    )}
+                  </div>
 
-              {/* Venta */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Precio venta ($)</label>
-                <input type="number" min="0" step="0.01" value={form.precio_venta}
-                  onChange={e => {
-                    setFormDirty(true)
-                    const v = e.target.value
-                    setForm(f => ({ ...f, precio_venta: v, margen: calcMargen(costo, v) }))
-                  }}
-                  className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${priceError ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`} />
-                {editando && (
-                  <p className="mt-0.5 text-xs text-gray-400">+IVA: {formatPrecio(venta * 1.19)}</p>
-                )}
-                {priceError && <p className="mt-1 text-xs text-red-500">{priceError}</p>}
-              </div>
+                  {/* Venta */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Precio venta ($)</label>
+                    <input type="number" min="0" step="0.01" value={form.precio_venta}
+                      onChange={e => {
+                        setFormDirty(true)
+                        const v = e.target.value
+                        setForm(f => ({ ...f, precio_venta: v, margen: calcMargen(costo, v) }))
+                      }}
+                      className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${priceError ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`} />
+                    {editando && (
+                      <p className="mt-0.5 text-xs text-gray-400">+IVA: {formatPrecio(venta * 1.19)}</p>
+                    )}
+                    {priceError && <p className="mt-1 text-xs text-red-500">{priceError}</p>}
+                  </div>
 
-              {/* Margen */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Margen (%)</label>
-                <input type="number" min="0" max="99" step="0.01" value={form.margen}
-                  onChange={e => {
-                    setFormDirty(true)
-                    const m = parseFloat(e.target.value)
-                    setForm(f => {
-                      if (!isNaN(m) && m > 0 && m < 100 && costo > 0) {
-                        return { ...f, margen: e.target.value, precio_venta: (costo / (1 - m / 100)).toFixed(2) }
-                      }
-                      return { ...f, margen: e.target.value }
-                    })
-                  }}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
+                  {/* Margen */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Margen (%)</label>
+                    <input type="number" min="0" max="99" step="0.01" value={form.margen}
+                      onChange={e => {
+                        setFormDirty(true)
+                        const m = parseFloat(e.target.value)
+                        setForm(f => {
+                          if (!isNaN(m) && m > 0 && m < 100 && costo > 0) {
+                            return { ...f, margen: e.target.value, precio_venta: (costo / (1 - m / 100)).toFixed(2) }
+                          }
+                          return { ...f, margen: e.target.value }
+                        })
+                      }}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                  </div>
+
+                  <div className="col-span-2">
+                    {editando?.precio_costo_actualizado_en ? (
+                      <p className={`text-sm ${editando.costo_desactualizado ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                        Costo actualizado: {new Date(editando.precio_costo_actualizado_en).toLocaleDateString('es-CL')}
+                        {editando.costo_desactualizado && ' — ⚠ desactualizado'}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-red-600 font-semibold">Costo nunca actualizado desde una lista</p>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Stock mínimo</label>
@@ -228,9 +243,9 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
             </div>
           )}
 
-          {tab === 'lotes' && editando && isAdmin && (
+          {tab === 'historial_costos' && editando && isAdmin && (
             <div className="px-6 py-4">
-              <ProductoLotes productoId={editando.id} />
+              <ProductoHistorialCostos productoId={editando.id} />
             </div>
           )}
         </div>
