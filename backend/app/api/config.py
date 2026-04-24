@@ -20,6 +20,7 @@ INITIAL_CONFIG = {
     "empresa_tipo_cuenta": "",
     "empresa_numero_cuenta": "",
     "empresa_nombre_titular": "",
+    "dias_alerta_costo_desactualizado": "60",
 }
 
 
