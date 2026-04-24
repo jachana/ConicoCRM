@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import pytest
 from freezegun import freeze_time
@@ -92,3 +92,40 @@ def test_factura_vencida_genera_tarea(db, cliente_demo, empresa_demo, vendedor_u
     tareas = db.query(Tarea).filter(Tarea.tipo_regla == "factura_vencida").all()
     assert len(tareas) == 1
     assert tareas[0].factura_id == f.id
+
+
+@freeze_time("2026-05-01")
+def test_aprobacion_pendiente_credito(db, admin_user, vendedor_user, reglas_seeded):
+    from app.models.aprobacion_credito import AprobacionCredito
+    a = AprobacionCredito(
+        origen="directa",
+        estado="pendiente",
+        vendedor_id=vendedor_user.id,
+        created_at=datetime(2026, 4, 29, tzinfo=timezone.utc),
+    )
+    db.add(a); db.commit()
+
+    ejecutar_generacion(db)
+    tareas = db.query(Tarea).filter(Tarea.tipo_regla == "aprobacion_pendiente").all()
+    assert len(tareas) == 1
+    assert tareas[0].asignado_id == admin_user.id
+
+
+@freeze_time("2026-05-01")
+def test_nv_despachada_sin_avanzar(db, cliente_demo, vendedor_user, reglas_seeded):
+    from app.models.nota_venta import NotaVenta
+    nv = NotaVenta(
+        numero=5001,
+        cliente_id=cliente_demo.id,
+        vendedor_id=vendedor_user.id,
+        fecha=date(2026, 4, 25),
+        estado="despachada",
+        updated_at=datetime(2026, 4, 26, tzinfo=timezone.utc),
+        total=Decimal("10000"),
+    )
+    db.add(nv); db.commit()
+
+    ejecutar_generacion(db)
+    tareas = db.query(Tarea).filter(Tarea.tipo_regla == "nv_despachada_sin_avanzar").all()
+    assert len(tareas) == 1
+    assert tareas[0].nota_venta_id == nv.id

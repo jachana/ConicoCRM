@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 import logging
 from sqlalchemy.orm import Session
 
@@ -9,6 +9,9 @@ from app.models.tarea import Tarea
 from app.models.regla_tarea import ReglaTarea
 from app.models.cotizacion import Cotizacion
 from app.models.factura import Factura
+from app.models.aprobacion_credito import AprobacionCredito
+from app.models.aprobacion_margen import AprobacionMargen
+from app.models.nota_venta import NotaVenta
 from app.services.tareas_asignacion import resolver_asignado
 
 log = logging.getLogger(__name__)
@@ -118,9 +121,84 @@ def _generar_factura_vencida(db: Session, regla: ReglaTarea):
     _descartar_obsoletas(db, regla, _sigue)
 
 
+def _generar_aprobacion_pendiente(db: Session, regla: ReglaTarea):
+    cutoff_dt = datetime.now(timezone.utc) - timedelta(days=regla.offset_dias)
+
+    for model, tipo_label in [(AprobacionCredito, "credito"), (AprobacionMargen, "margen")]:
+        candidatos = db.query(model).filter(
+            model.estado == "pendiente",
+            model.created_at <= cutoff_dt,
+        ).all()
+        if len(candidatos) > MAX_CANDIDATOS:
+            log.warning(f"aprobacion_{tipo_label} excede {MAX_CANDIDATOS}")
+            continue
+        for a in candidatos:
+            key = f"aprobacion_{tipo_label}:{a.id}"
+            if _existe_pendiente(db, key):
+                continue
+            created_at = a.created_at if a.created_at.tzinfo else a.created_at.replace(tzinfo=timezone.utc)
+            dias = (datetime.now(timezone.utc) - created_at).days
+            asignado = resolver_asignado(db, regla.asignado_rol, None)
+            _crear_tarea(
+                db,
+                titulo=f"Aprobación pendiente desde hace {dias} días",
+                due_date=date.today(),
+                regla=regla,
+                dedup_key=key,
+                asignado_id=asignado,
+            )
+
+    def _sigue(db, t: Tarea) -> bool:
+        prefix, sep, rest = (t.dedup_key or "").partition(":")
+        if not rest:
+            return False
+        tipo = prefix.replace("aprobacion_", "")
+        model = AprobacionCredito if tipo == "credito" else AprobacionMargen
+        a = db.query(model).filter(model.id == int(rest)).first()
+        return a is not None and a.estado == "pendiente"
+    _descartar_obsoletas(db, regla, _sigue)
+
+
+def _generar_nv_despachada_sin_avanzar(db: Session, regla: ReglaTarea):
+    today = date.today()
+    cutoff_dt = datetime.now(timezone.utc) - timedelta(days=regla.offset_dias)
+    candidatos = db.query(NotaVenta).filter(
+        NotaVenta.estado == "despachada",
+        NotaVenta.updated_at <= cutoff_dt,
+    ).all()
+    if len(candidatos) > MAX_CANDIDATOS:
+        log.warning(f"nv_atascada excede {MAX_CANDIDATOS}, omitido")
+        return
+
+    for nv in candidatos:
+        key = f"nv_atascada:{nv.id}"
+        if _existe_pendiente(db, key):
+            continue
+        dias = (today - nv.updated_at.date()).days
+        asignado = resolver_asignado(db, regla.asignado_rol, nv.vendedor_id)
+        _crear_tarea(
+            db,
+            titulo=f"NV #{nv.numero} despachada hace {dias}d sin avanzar",
+            due_date=today,
+            regla=regla,
+            dedup_key=key,
+            asignado_id=asignado,
+            nota_venta_id=nv.id,
+        )
+
+    def _sigue(db, t: Tarea) -> bool:
+        if t.nota_venta_id is None:
+            return False
+        nv = db.query(NotaVenta).filter(NotaVenta.id == t.nota_venta_id).first()
+        return nv is not None and nv.estado == "despachada"
+    _descartar_obsoletas(db, regla, _sigue)
+
+
 GENERADORES = {
     "cotizacion_vence": _generar_cotizacion_vence,
     "factura_vencida": _generar_factura_vencida,
+    "aprobacion_pendiente": _generar_aprobacion_pendiente,
+    "nv_despachada_sin_avanzar": _generar_nv_despachada_sin_avanzar,
 }
 
 
