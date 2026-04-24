@@ -74,6 +74,37 @@ export interface DeudaBulkItem {
   deuda_vencida: number
 }
 
+export interface Marca {
+  id: number
+  nombre: string
+  activa: boolean
+  created_at: string
+}
+
+export interface LoteCosto {
+  id: number
+  producto_id: number
+  oc_linea_id: number | null
+  costo_unitario: number
+  cantidad_inicial: number
+  cantidad_restante: number
+  created_at: string
+}
+
+export interface ProductoDocumento {
+  id: number
+  producto_id: number
+  nombre: string
+  subido_en: string
+}
+
+export interface MovimientoPage {
+  items: MovimientoInventario[]
+  total: number
+  page: number
+  page_size: number
+}
+
 export interface Producto {
   id: number
   nombre: string
@@ -82,9 +113,15 @@ export interface Producto {
   formato: string | null
   precio_costo: number
   precio_venta: number
+  precio_con_iva: number
+  costo_con_iva: number
+  ultimo_costo_unitario: number
   stock_minimo: number
   stock_actual: number
   proveedor_id: number | null
+  marca_id: number | null
+  marca: { id: number; nombre: string } | null
+  volumen: number | null
   created_at: string
 }
 
@@ -414,14 +451,15 @@ export interface Pago {
 export interface MovimientoInventario {
   id: number
   producto_id: number
-  tipo: 'entrada' | 'salida' | 'ajuste'
+  tipo: string
   cantidad: number
   signo: number
-  referencia_tipo: 'orden_compra' | 'nota_venta' | 'ajuste_manual' | null
+  referencia_tipo: string | null
   referencia_id: number | null
-  motivo: 'conteo_fisico' | 'merma' | 'correccion' | 'otro' | null
+  motivo: string | null
   nota: string | null
   usuario_id: number | null
+  lote_costo_id: number | null
   created_at: string
   producto?: { id: number; nombre: string; sku: string | null } | null
   usuario?: { id: number; name: string } | null
