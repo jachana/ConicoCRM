@@ -166,3 +166,14 @@ def test_delete_solo_manual(client, admin_token, admin_user, db):
     assert r1.status_code == 204
     r2 = client.delete(f"/api/tareas/{t_auto.id}", headers={"Authorization": f"Bearer {admin_token}"})
     assert r2.status_code == 400
+
+
+def test_delete_403_si_no_creador_ni_admin(client, vendedor_token, otro_vendedor, db):
+    from app.models.tarea import Tarea
+    t = Tarea(titulo="x", due_date=date.today(), origen="manual",
+              asignado_id=otro_vendedor.id, creado_por_id=otro_vendedor.id)
+    db.add(t)
+    db.commit()
+    resp = client.delete(f"/api/tareas/{t.id}",
+                         headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert resp.status_code == 403
