@@ -5,7 +5,6 @@ from io import BytesIO
 import openpyxl
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
-from fastapi.responses import StreamingResponse as _StreamingResponse
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
@@ -185,7 +184,7 @@ def exportar_movimientos_producto(
             m.usuario_id or "", m.lote_costo_id or "",
         ])
     output.seek(0)
-    return _StreamingResponse(
+    return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=movimientos_{producto_id}.csv"},
