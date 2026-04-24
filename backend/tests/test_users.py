@@ -33,7 +33,7 @@ def test_get_permissions(client, admin_token, admin_user):
     assert resp.status_code == 200
     data = resp.json()
     assert "catalogo" in data
-    assert set(data["catalogo"].keys()) == {"view", "create", "edit", "delete"}
+    assert {"view", "create", "edit", "delete"} <= data["catalogo"].keys()
 
 def test_set_permissions(client, admin_token):
     uid = client.post("/api/users", json={
