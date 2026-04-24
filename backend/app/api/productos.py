@@ -1,5 +1,6 @@
 import csv
 import io as _io
+from datetime import datetime, timezone
 from io import BytesIO
 
 import openpyxl
@@ -13,12 +14,19 @@ from app.api.deps import require_permission
 from app.models.lista_precios import ListaPrecios, ListaPreciosItem
 from app.models.lote_costo import LoteCosto
 from app.models.producto import Producto
+from app.models.system_config import SystemConfig
 from app.models.tag import ProductoTag
 from app.models.user import User
 from app.models.movimiento_inventario import MovimientoInventario
 from app.schemas.lista_precios import HistorialCostoItem
 from app.schemas.lote_costo import LoteCostoOut
-from app.schemas.producto import ProductoBusquedaOut, ProductoCreate, ProductoOut, ProductoUpdate
+from app.schemas.producto import (
+    ProductoBusquedaOut,
+    ProductoCreate,
+    ProductoOutAdmin,
+    ProductoOutPublic,
+    ProductoUpdate,
+)
 from app.schemas.movimiento_inventario import MovimientoListOut
 
 
@@ -37,6 +45,25 @@ def _sync_tags(producto: Producto, tag_nombres: list[str], db: Session) -> None:
             db.add(t)
             tags.append(t)
     producto.tags = tags
+
+
+def _stale_cost(fecha: datetime | None, threshold_days: int, now: datetime) -> bool:
+    if fecha is None:
+        return True
+    if fecha.tzinfo is None:
+        fecha = fecha.replace(tzinfo=timezone.utc)
+    return (now - fecha).days > threshold_days
+
+
+def _serialize_producto(db: Session, producto: Producto, user: User):
+    if user.role != "admin":
+        return ProductoOutPublic.model_validate(producto).model_dump(mode="json")
+    cfg = db.get(SystemConfig, "dias_alerta_costo_desactualizado")
+    threshold_days = int(cfg.value) if cfg else 60
+    stale = _stale_cost(producto.precio_costo_actualizado_en, threshold_days, datetime.now(timezone.utc))
+    out = ProductoOutAdmin.model_validate(producto).model_dump(mode="json")
+    out["costo_desactualizado"] = stale
+    return out
 
 
 router = APIRouter()
@@ -83,12 +110,12 @@ def buscar_productos(
     return query.order_by(Producto.nombre).limit(20).all()
 
 
-@router.get("/", response_model=list[ProductoOut])
+@router.get("/")
 def listar_productos(
     q: str = Query("", description="Filtrar por nombre, SKU o tag"),
     perms: tuple[User, Session] = require_permission("catalogo", "view"),
 ):
-    _, db = perms
+    user, db = perms
     query = db.query(Producto).outerjoin(Producto.tags)
     if q:
         pattern = f"%{q}%"
@@ -99,15 +126,30 @@ def listar_productos(
                 ProductoTag.nombre.ilike(pattern),
             )
         ).distinct()
-    return query.order_by(Producto.nombre).all()
+    rows = query.order_by(Producto.nombre).all()
+
+    if user.role != "admin":
+        return [ProductoOutPublic.model_validate(p).model_dump(mode="json") for p in rows]
+
+    cfg = db.get(SystemConfig, "dias_alerta_costo_desactualizado")
+    threshold_days = int(cfg.value) if cfg else 60
+    now = datetime.now(timezone.utc)
+
+    def serialize(p: Producto):
+        stale = _stale_cost(p.precio_costo_actualizado_en, threshold_days, now)
+        out = ProductoOutAdmin.model_validate(p).model_dump(mode="json")
+        out["costo_desactualizado"] = stale
+        return out
+
+    return [serialize(p) for p in rows]
 
 
-@router.post("/", response_model=ProductoOut, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 def crear_producto(
     body: ProductoCreate,
     perms: tuple[User, Session] = require_permission("catalogo", "create"),
 ):
-    _, db = perms
+    user, db = perms
     data = body.model_dump(exclude={"tags"})
     producto = Producto(**data)
     db.add(producto)
@@ -115,28 +157,28 @@ def crear_producto(
     _sync_tags(producto, body.tags, db)
     db.commit()
     db.refresh(producto)
-    return producto
+    return _serialize_producto(db, producto, user)
 
 
-@router.get("/{producto_id}", response_model=ProductoOut)
+@router.get("/{producto_id}")
 def obtener_producto(
     producto_id: int,
     perms: tuple[User, Session] = require_permission("catalogo", "view"),
 ):
-    _, db = perms
+    user, db = perms
     p = db.get(Producto, producto_id)
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
-    return p
+    return _serialize_producto(db, p, user)
 
 
-@router.patch("/{producto_id}", response_model=ProductoOut)
+@router.patch("/{producto_id}")
 def actualizar_producto(
     producto_id: int,
     body: ProductoUpdate,
     perms: tuple[User, Session] = require_permission("catalogo", "edit"),
 ):
-    _, db = perms
+    user, db = perms
     p = db.get(Producto, producto_id)
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
@@ -146,7 +188,7 @@ def actualizar_producto(
         _sync_tags(p, body.tags, db)
     db.commit()
     db.refresh(p)
-    return p
+    return _serialize_producto(db, p, user)
 
 
 @router.delete("/{producto_id}", status_code=status.HTTP_204_NO_CONTENT)

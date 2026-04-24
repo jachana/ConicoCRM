@@ -46,17 +46,21 @@ class ProductoUpdate(BaseModel):
     tags: list[str] | None = None
 
 
-class ProductoOut(ProductoBase):
+class ProductoOutPublic(ProductoBase):
     id: int
     sku: str | None = None
     formato: str | None = None
-    precio_costo: Decimal = Decimal("0")
-    ultimo_costo_unitario: Decimal = Decimal("0")
     precio_con_iva: Decimal = Decimal("0")
-    costo_con_iva: Decimal = Decimal("0")
     marca: MarcaRef | None = None
     created_at: datetime
     model_config = {"from_attributes": True}
+
+
+class ProductoOutAdmin(ProductoOutPublic):
+    precio_costo: Decimal = Decimal("0")
+    costo_con_iva: Decimal = Decimal("0")
+    precio_costo_actualizado_en: datetime | None = None
+    costo_desactualizado: bool = False
 
 
 class ProductoBusquedaOut(BaseModel):
@@ -66,7 +70,7 @@ class ProductoBusquedaOut(BaseModel):
     sku: str | None = None
     formato: str | None = None
     precio_venta: Decimal
-    precio_costo: Decimal
+    precio_costo: Decimal  # admin-only endpoint (serializer trims on response)
     stock_actual: int
     marca_id: int | None = None
     tags: list[str] = []
