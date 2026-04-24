@@ -56,7 +56,7 @@ export default function ProductoHistorial({ productoId }: { productoId: number }
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {data!.items.map(m => (
+              {(data?.items ?? []).map(m => (
                 <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                   <td className="py-1.5 pr-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">
                     {new Date(m.created_at).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}

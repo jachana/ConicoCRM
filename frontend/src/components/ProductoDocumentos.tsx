@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import type { ProductoDocumento } from '../types'
@@ -8,6 +8,7 @@ const MAX_DOCS = 5
 export default function ProductoDocumentos({ productoId }: { productoId: number }) {
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
+  const [confirmandoId, setConfirmandoId] = useState<number | null>(null)
 
   const { data: docs = [], isLoading } = useQuery<ProductoDocumento[]>({
     queryKey: ['producto-documentos', productoId],
@@ -69,7 +70,15 @@ export default function ProductoDocumentos({ productoId }: { productoId: number 
             </div>
             <div className="flex gap-2">
               <button onClick={() => descargar(doc)} className="text-blue-600 hover:underline text-xs">Descargar</button>
-              <button onClick={() => eliminar.mutate(doc.id)} className="text-red-500 hover:underline text-xs">Eliminar</button>
+              {confirmandoId === doc.id ? (
+                <span className="flex items-center gap-1 text-xs">
+                  <span className="text-gray-600 dark:text-gray-400">¿Eliminar?</span>
+                  <button onClick={() => { eliminar.mutate(doc.id); setConfirmandoId(null) }} className="text-red-500 hover:underline">Sí</button>
+                  <button onClick={() => setConfirmandoId(null)} className="text-gray-500 hover:underline">No</button>
+                </span>
+              ) : (
+                <button onClick={() => setConfirmandoId(doc.id)} className="text-red-500 hover:underline text-xs">Eliminar</button>
+              )}
             </div>
           </li>
         ))}

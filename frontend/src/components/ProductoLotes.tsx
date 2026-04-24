@@ -20,7 +20,7 @@ export default function ProductoLotes({ productoId }: { productoId: number }) {
     <div>
       <p className="text-xs text-gray-400 mb-3">
         Lotes ordenados FIFO (el primero se consume primero).
-        El precio costo del producto = máximo costo entre estos lotes.
+        El precio costo del producto = costo del lote más antiguo con stock (próximo a consumirse).
       </p>
       <table className="w-full text-xs">
         <thead className="text-gray-500 dark:text-gray-400 uppercase tracking-wide">
