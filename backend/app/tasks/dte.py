@@ -8,6 +8,7 @@ from app.models.dte_emision import DteEmision
 from app.models.factura import Factura
 from app.models.nota_credito import NotaCredito
 from app.models.nota_debito import NotaDebito
+from app.models.boleta import Boleta
 from app.services.dte_service import DteService, get_dte_service
 
 
@@ -36,6 +37,15 @@ def _sync_dte_estado(db: Session, emision: DteEmision, estado: str) -> None:
         nd = db.get(NotaDebito, emision.nota_debito_id)
         if nd:
             nd.dte_estado = estado
+    elif emision.boleta_id:
+        b = db.get(Boleta, emision.boleta_id)
+        if b:
+            previous = b.dte_estado
+            b.dte_estado = estado
+            if estado == "rechazada" and previous != "rechazada" and b.estado != "anulada":
+                from app.services.boleta_stock import revertir_stock_boleta
+                revertir_stock_boleta(db, b, usuario_id=None, motivo="boleta_rechazo_sii")
+                b.estado = "anulada"
 
 
 def _process_emit(db: Session, emision: DteEmision, svc: DteService) -> None:
@@ -51,12 +61,20 @@ def _process_emit(db: Session, emision: DteEmision, svc: DteService) -> None:
             joinedload(NotaCredito.cliente),
         ).filter_by(id=emision.nota_credito_id).first()
         payload = svc.build_nc_payload(doc, db)
-    else:
+    elif emision.nota_debito_id:
         doc = db.query(NotaDebito).options(
             joinedload(NotaDebito.lineas),
             joinedload(NotaDebito.cliente),
         ).filter_by(id=emision.nota_debito_id).first()
         payload = svc.build_nd_payload(doc, db)
+    elif emision.boleta_id:
+        doc = db.query(Boleta).options(
+            joinedload(Boleta.lineas),
+            joinedload(Boleta.cliente),
+        ).filter_by(id=emision.boleta_id).first()
+        payload = svc.build_boleta_payload(doc, db)
+    else:
+        raise ValueError(f"DteEmision {emision.id} has no document FK set")
 
     result = svc.emit(payload)
     emision.track_id = result.get("track_id")

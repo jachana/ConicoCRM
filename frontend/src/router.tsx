@@ -26,6 +26,9 @@ import Reportes from './pages/Reportes'
 import NotasCredito from './pages/NotasCredito'
 import NotaCreditoDetalle from './pages/NotaCreditoDetalle'
 import NotaCreditoNueva from './pages/NotaCreditoNueva'
+import BoletaNueva from './pages/BoletaNueva'
+import BoletaDetalle from './pages/BoletaDetalle'
+import BoletasList from './pages/BoletasList'
 import NotasDebito from './pages/NotasDebito'
 import NotaDebitoDetalle from './pages/NotaDebitoDetalle'
 import NotaDebitoNueva from './pages/NotaDebitoNueva'
@@ -67,6 +70,9 @@ export const router = createBrowserRouter([
       { path: 'facturas', element: <Facturas /> },
       { path: 'facturas/nueva', element: <FacturaDetalle /> },
       { path: 'facturas/:id', element: <FacturaDetalle /> },
+      { path: 'boletas', element: <BoletasList /> },
+      { path: 'boletas/nueva', element: <BoletaNueva /> },
+      { path: 'boletas/:id', element: <BoletaDetalle /> },
       { path: 'notas-credito', element: <NotasCredito /> },
       { path: 'notas-credito/nueva', element: <NotaCreditoNueva /> },
       { path: 'notas-credito/:id', element: <NotaCreditoDetalle /> },

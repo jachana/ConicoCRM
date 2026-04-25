@@ -167,6 +167,20 @@
     - Schedule + retención configurables vía `BACKUP_SCHEDULE/KEEP_DAYS/KEEP_WEEKS/KEEP_MONTHS`; offsite opcional vía `S3_BUCKET` (skip graceful si vacío) — soporta S3, B2, Wasabi, MinIO
     - `scripts/restore.sh` con list/restore/dry-run, confirmación tipada, idempotente
     - Runbook `docs/runbooks/backup-restore.md` con flujos local + S3, verificación, rollback
+  - **W1-04 — Boleta DTE 39/41**
+    - Modelos `Boleta` / `BoletaLinea` standalone (independientes de NV); FK opcional `cliente_id`/`empresa_id`/`vendedor_id`
+    - Tipos DTE soportados: 39 (afecta, IVA 19%) y 41 (exenta); validación: tipo 41 obliga `exenta=true` en todas las líneas (422 si no)
+    - Receptor anónimo: campos opcionales `nombre_receptor`, `rut_receptor`, `email_envio`, `patente_vehiculo` (búsqueda dedicada por patente para flujo retail/automotor); RUT genérico SII `66666666-6` cuando no hay cliente
+    - Numeración correlativa propia con `SystemConfig.boleta_last_id` + `with_for_update()` lock
+    - Stock descuenta al emitir (`descontar_stock_boleta` crea `MovimientoInventario` salidas con `referencia_tipo='boleta'`); reversa automática si DTE rechazado o boleta anulada (idempotente, no duplica si ya está anulada manualmente)
+    - Pipeline DTE reutilizado: `DteEmision` + Celery `emit_dte` + `_sync_dte_estado`; tipos DTE Lioren `"039"` / `"041"`
+    - Anulación genera Nota de Crédito tipo 61 con `boleta_id`; permiso `boletas:delete` (admin/subadmin); migration `a6b7c8d9e0f1` relaja `notas_credito.cliente_id` a nullable para anular boletas anónimas
+    - PDF (WeasyPrint, template `boleta.html`), envío email SMTP, export Excel (12 columnas: número, fecha, tipo, receptor, RUT, patente, neto, IVA, total, método pago, estado, DTE, vendedor)
+    - Reportes `/api/reportes/ventas` agrega boletas en clave separada `boletas: { total, cantidad, ventas_diarias[] }` con mismo filtro vendedor-role
+    - Auditoría: `Boleta` + `BoletaLinea` agregados al whitelist (CRUD se logea con before/after diff)
+    - Permisos: vendedor view/create/edit; admin/subadmin full incluye anular
+    - Frontend: `/boletas/nueva` (form rápido toggle anónimo/cliente, tipo 39/41, líneas con exenta per-line, métodos pago, atajos Ctrl+Enter/Esc), `/boletas` (lista con filtro patente, fechas, estado, dte_estado, método, vendedor, paginación, export Excel, acciones por fila), `/boletas/:id` (detalle con polling 10s mientras procesando, modales reutilizables anular/email)
+    - Tests: 16 backend pytest (creación, listing, anulación, NC con boleta_id, stock descuento+reverso+race con sync_rechazada, email/PDF/Excel, permisos vendedor 403, audit log) + 1 skipped (concurrent numbering — Postgres-only) + 5 vitest (form, lista, detalle)
 
 - [x] **Tier A #7 — Búsqueda global Cmd+K**
   - Endpoint `/api/search` con fan-out a 8 entidades (productos, clientes, empresas, cotizaciones, NV, facturas, OC, empleados)

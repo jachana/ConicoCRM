@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: sans-serif; font-size: 11pt; margin: 0; padding: 12mm; }
+    .hdr { border-bottom: 1pt solid #000; padding-bottom: 6mm; margin-bottom: 6mm; }
+    .hdr h1 { margin: 0; font-size: 16pt; }
+    .hdr .folio { float: right; font-weight: bold; }
+    .meta { display: flex; justify-content: space-between; margin-bottom: 4mm; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 0.5pt solid #999; padding: 2mm; text-align: left; }
+    th { background: #eee; }
+    .totales { margin-top: 4mm; text-align: right; }
+    .totales .row { padding: 1mm 0; }
+    .totales .total { font-size: 13pt; font-weight: bold; border-top: 1pt solid #000; padding-top: 2mm; }
+    .pie { margin-top: 6mm; font-size: 9pt; color: #555; }
+  </style>
+</head>
+<body>
+  <div class="hdr">
+    <span class="folio">N° {{ boleta.folio_sii or boleta.numero }}</span>
+    <h1>Boleta Electrónica {{ "Afecta" if boleta.tipo_dte == "39" else "Exenta" }}</h1>
+    <div>{{ config.razon_social_emisor }} — RUT {{ config.rut_emisor }}</div>
+    <div>{{ config.direccion_emisor }} — {{ config.ciudad_emisor }}</div>
+  </div>
+
+  <div class="meta">
+    <div>
+      <strong>Receptor:</strong>
+      {{ boleta.cliente.nombre if boleta.cliente else (boleta.nombre_receptor or 'Consumidor Final') }}<br>
+      RUT: {{ boleta.cliente.rut if boleta.cliente else (boleta.rut_receptor or '66666666-6') }}<br>
+      {% if boleta.patente_vehiculo %}<strong>Patente:</strong> {{ boleta.patente_vehiculo }}<br>{% endif %}
+    </div>
+    <div>
+      <strong>Fecha:</strong> {{ boleta.fecha.strftime('%d/%m/%Y') }}<br>
+      <strong>Vendedor:</strong> {{ boleta.vendedor.name if boleta.vendedor else '' }}<br>
+      <strong>Pago:</strong> {{ boleta.metodo_pago | capitalize }}
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Descripción</th><th>Cant.</th><th>P. Unit.</th><th>Total</th></tr>
+    </thead>
+    <tbody>
+      {% for l in boleta.lineas %}
+      <tr>
+        <td>{{ l.descripcion }}{% if l.exenta %} (exento){% endif %}</td>
+        <td>{{ '{:.2f}'.format(l.cantidad) }}</td>
+        <td>${{ '{:,.0f}'.format(l.precio_unitario) }}</td>
+        <td>${{ '{:,.0f}'.format(l.total_linea) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totales">
+    {% if boleta.tipo_dte == "39" %}
+    <div class="row">Neto: ${{ '{:,.0f}'.format(boleta.total_neto) }}</div>
+    <div class="row">IVA (19%): ${{ '{:,.0f}'.format(boleta.total_iva) }}</div>
+    {% endif %}
+    <div class="row total">Total: ${{ '{:,.0f}'.format(boleta.total) }}</div>
+  </div>
+
+  <div class="pie">
+    {% if boleta.track_id %}Track ID Lioren: {{ boleta.track_id }}{% endif %}
+  </div>
+</body>
+</html>

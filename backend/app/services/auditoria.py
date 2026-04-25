@@ -55,6 +55,8 @@ _AUDITABLE_MODEL_NAMES: set[str] = {
     "NotaCreditoLinea",
     "NotaDebito",
     "NotaDebitoLinea",
+    "Boleta",
+    "BoletaLinea",
     "Producto",
     "ListaPrecios",
     "ListaPreciosItem",
