@@ -54,7 +54,7 @@ def test_healthz_db_down_returns_503(client):
     """When SELECT 1 fails the endpoint must return 503 with detail in body."""
     from app.api import health as health_module
 
-    def _broken_db(db):
+    def _broken_db():
         return {"name": "db", "status": "error", "error": "boom"}
 
     with patch.object(health_module, "_check_db", _broken_db):

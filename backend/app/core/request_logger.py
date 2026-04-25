@@ -19,6 +19,11 @@ from starlette.types import ASGIApp
 
 from app.core.logging import logger
 
+try:
+    from jose import jwt as _jwt  # type: ignore
+except ImportError:  # pragma: no cover — jose is a hard dep in prod, optional here
+    _jwt = None  # type: ignore[assignment]
+
 
 def _extract_user_id(request: Request) -> Any:
     """Best-effort user_id extraction from the JWT in Authorization header.
@@ -30,15 +35,12 @@ def _extract_user_id(request: Request) -> Any:
     if not auth.lower().startswith("bearer "):
         return None
     token = auth.split(" ", 1)[1].strip()
-    if not token:
+    if not token or _jwt is None:
         return None
     try:
-        # Local import to avoid circular import at module load
-        from jose import jwt  # type: ignore
-
         from app.config import settings
 
-        payload = jwt.decode(
+        payload = _jwt.decode(
             token, settings.secret_key, algorithms=["HS256"], options={"verify_exp": False}
         )
         return payload.get("sub")
