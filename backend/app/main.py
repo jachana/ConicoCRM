@@ -31,6 +31,7 @@ from app.api import productos_documentos
 from app.api import listas_precios
 from app.api import tareas as tareas_api
 from app.api import reglas_tarea as reglas_tarea_api
+from app.api import search as search_api
 
 app = FastAPI(title="Conico PMS")
 
@@ -73,3 +74,4 @@ app.include_router(productos_documentos.router, prefix="/api/productos", tags=["
 app.include_router(listas_precios.router, prefix="/api/listas-precios", tags=["listas_precios"])
 app.include_router(reglas_tarea_api.router, prefix="/api")
 app.include_router(tareas_api.router, prefix="/api/tareas", tags=["tareas"])
+app.include_router(search_api.router, prefix="/api/search", tags=["search"])

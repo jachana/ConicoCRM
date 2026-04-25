@@ -4,6 +4,12 @@ from app.database import get_db
 from app.models.user import User
 from app.models.permission import PermissionOverride
 from app.schemas.user import UserOut, UserCreate, UserUpdate
+from app.schemas.preferencias import (
+    DEFAULTS,
+    PreferenciasOut,
+    PreferenciasUpdate,
+    merge_with_defaults,
+)
 from app.core.security import get_password_hash
 from app.core.permissions import get_user_permissions, MODULES, ACTIONS
 from app.api.auth import get_current_user
@@ -79,6 +85,25 @@ def get_permissions(user_id: int, db: Session = Depends(get_db), _: User = Depen
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return get_user_permissions(db, user)
+
+@router.get("/me/preferencias", response_model=PreferenciasOut)
+def get_my_preferencias(current_user: User = Depends(get_current_user)):
+    return merge_with_defaults(current_user.preferencias)
+
+
+@router.patch("/me/preferencias", response_model=PreferenciasOut)
+def update_my_preferencias(
+    body: PreferenciasUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    payload = body.model_dump(exclude_unset=True)
+    merged = {**(current_user.preferencias or {}), **payload}
+    current_user.preferencias = merged
+    db.commit()
+    db.refresh(current_user)
+    return merge_with_defaults(current_user.preferencias)
+
 
 @router.put("/{user_id}/permissions")
 def set_permissions(
