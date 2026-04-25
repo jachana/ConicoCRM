@@ -50,12 +50,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-conico}
       POSTGRES_USER: ${POSTGRES_USER:-conico}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_EXTRA_OPTS: "-Z9 --schema=public --blobs"
+      POSTGRES_EXTRA_OPTS: "-Fp -Z9 --schema=public --blobs"
       SCHEDULE: ${BACKUP_SCHEDULE:-@daily}
       BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-7}
       BACKUP_KEEP_WEEKS: ${BACKUP_KEEP_WEEKS:-4}
       BACKUP_KEEP_MONTHS: ${BACKUP_KEEP_MONTHS:-6}
-      HEALTHCHECK_PORT: 8080
     volumes:
       - pgbackups:/backups
     depends_on:
@@ -79,9 +78,9 @@ services:
           echo "[offsite] S3_BUCKET not set — skipping offsite copy."
           exit 0
         fi
-        echo "[offsite] syncing /backups -> remote:$${S3_BUCKET}/$${S3_PREFIX:-conico}"
+        echo "[offsite] syncing /backups -> remote:$${S3_BUCKET}/$${S3_PREFIX:-conico-prod}"
         rclone --config /tmp/rclone.conf sync /backups \
-          "remote:$${S3_BUCKET}/$${S3_PREFIX:-conico}" \
+          "remote:$${S3_BUCKET}/$${S3_PREFIX:-conico-prod}" \
           --transfers=4 --checkers=8 --s3-no-check-bucket \
           --log-level INFO
         echo "[offsite] done."
@@ -94,7 +93,7 @@ services:
       RCLONE_CONFIG_REMOTE_REGION: ${S3_REGION:-us-east-1}
       RCLONE_CONFIG_REMOTE_ACL: private
       S3_BUCKET: ${S3_BUCKET:-}
-      S3_PREFIX: ${S3_PREFIX:-conico}
+      S3_PREFIX: ${S3_PREFIX:-conico-prod}
     volumes:
       - pgbackups:/backups:ro
     # Generate rclone config from env at runtime — no secret files baked in.

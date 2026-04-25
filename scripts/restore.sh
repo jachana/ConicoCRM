@@ -149,12 +149,11 @@ do_restore() {
     return
   fi
   # Pipe gzip-compressed SQL from the backups volume into psql in the db
-  # container. We resolve the volume name from compose to avoid hard-coding.
-  VOL_NAME="$(compose config --volumes | grep -E '^pgbackups$' || true)"
-  [ -n "$VOL_NAME" ] || die "pgbackups volume not declared in $COMPOSE_FILE"
-
-  # We use a one-shot helper container that mounts pgbackups read-only and
-  # streams the dump to the db service via docker exec.
+  # container. We use a one-shot helper container that mounts pgbackups
+  # read-only and streams the dump to the db service via docker exec.
+  # NOTE: this gunzip|psql pipe assumes plain-SQL dumps (pg_dump -Fp), pinned
+  # via POSTGRES_EXTRA_OPTS in docker-compose.prod.yml. If the dump format
+  # changes to custom (-Fc), this needs pg_restore instead.
   compose run --rm --no-deps -T "$BACKUPS_SERVICE" \
       sh -c "gunzip -c '$IN_CONTAINER_PATH'" \
     | compose exec -T "$DB_SERVICE" \

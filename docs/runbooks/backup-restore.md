@@ -48,13 +48,15 @@ Variables relevantes (ver `.env.prod.example`):
 
 ```env
 S3_BUCKET=conico-prod-backups
-S3_PREFIX=hostname-prod
+S3_PREFIX=conico-prod
 S3_ENDPOINT=https://s3.us-west-002.backblazeb2.com   # B2 ejemplo; vacío para AWS S3 nativo
 S3_REGION=us-west-002
 S3_PROVIDER=Other      # AWS / Wasabi / Other
 S3_KEY=AKIA...
 S3_SECRET=...
 ```
+
+> **Nota multi-host:** si varios entornos comparten el mismo bucket (ej. dos hosts de producción, o prod + staging), cada operador debe sobreescribir `S3_PREFIX` por host (ej. `conico-prod-cl1`, `conico-prod-cl2`, `conico-staging`) para que no se pisen los dumps entre sí.
 
 Trigger sugerido (host crontab):
 
