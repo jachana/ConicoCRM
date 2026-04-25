@@ -8,6 +8,7 @@ from app.models.dte_emision import DteEmision
 from app.models.factura import Factura
 from app.models.nota_credito import NotaCredito
 from app.models.nota_debito import NotaDebito
+from app.models.boleta import Boleta
 from app.services.dte_service import DteService, get_dte_service
 
 
@@ -36,6 +37,10 @@ def _sync_dte_estado(db: Session, emision: DteEmision, estado: str) -> None:
         nd = db.get(NotaDebito, emision.nota_debito_id)
         if nd:
             nd.dte_estado = estado
+    elif emision.boleta_id:
+        b = db.get(Boleta, emision.boleta_id)
+        if b:
+            b.dte_estado = estado
 
 
 def _process_emit(db: Session, emision: DteEmision, svc: DteService) -> None:
@@ -51,12 +56,18 @@ def _process_emit(db: Session, emision: DteEmision, svc: DteService) -> None:
             joinedload(NotaCredito.cliente),
         ).filter_by(id=emision.nota_credito_id).first()
         payload = svc.build_nc_payload(doc, db)
-    else:
+    elif emision.nota_debito_id:
         doc = db.query(NotaDebito).options(
             joinedload(NotaDebito.lineas),
             joinedload(NotaDebito.cliente),
         ).filter_by(id=emision.nota_debito_id).first()
         payload = svc.build_nd_payload(doc, db)
+    else:
+        doc = db.query(Boleta).options(
+            joinedload(Boleta.lineas),
+            joinedload(Boleta.cliente),
+        ).filter_by(id=emision.boleta_id).first()
+        payload = svc.build_boleta_payload(doc, db)
 
     result = svc.emit(payload)
     emision.track_id = result.get("track_id")
