@@ -36,6 +36,9 @@ from app.api import listas_precios
 from app.api import tareas as tareas_api
 from app.api import reglas_tarea as reglas_tarea_api
 from app.api import search as search_api
+from app.api import auditoria as auditoria_api
+from app.middleware.audit_context import AuditContextMiddleware
+from app.services.auditoria import register_listeners as register_audit_listeners
 
 # W1-06 — observability bootstrap. Order matters:
 #   1. Logging configured first so subsequent init steps log structurally.
@@ -58,7 +61,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Order (Starlette LIFO → outer wraps inner): RequestLogger → AuditContext → CORS → app.
+# Add CORS first, AuditContext second, RequestLogger last so the request_id
+# log line is the outermost wrapper and audit context is set before any handler.
+app.add_middleware(AuditContextMiddleware)
 app.add_middleware(RequestLoggerMiddleware)
+register_audit_listeners()
 
 # Health endpoints — no prefix, no auth.
 app.include_router(health_api.router)
@@ -95,3 +103,4 @@ app.include_router(listas_precios.router, prefix="/api/listas-precios", tags=["l
 app.include_router(reglas_tarea_api.router, prefix="/api")
 app.include_router(tareas_api.router, prefix="/api/tareas", tags=["tareas"])
 app.include_router(search_api.router, prefix="/api/search", tags=["search"])
+app.include_router(auditoria_api.router, prefix="/api/auditoria", tags=["auditoria"])
