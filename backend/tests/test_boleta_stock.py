@@ -101,3 +101,33 @@ def test_sync_rechazada_revierte_stock_y_anula_boleta(db):
     assert b.dte_estado == "rechazada"
     movs = db.query(MovimientoInventario).filter_by(referencia_tipo="boleta", referencia_id=b.id).count()
     assert movs == 2  # 1 salida + 1 entrada de reversa
+
+
+def test_sync_rechazada_no_revierte_si_ya_anulada_manualmente(db):
+    p = _crear_producto(db, "S5")
+    b = Boleta(
+        numero=204, fecha=date.today(), tipo_dte="39", vendedor_id=1,
+        metodo_pago="efectivo", estado="anulada",
+    )
+    b.lineas = [
+        BoletaLinea(orden=0, descripcion="A", producto_id=p.id, cantidad=Decimal("2"), precio_unitario=Decimal("100")),
+    ]
+    db.add(b)
+    db.flush()
+    descontar_stock_boleta(db, b, usuario_id=1)
+    revertir_stock_boleta(db, b, usuario_id=1, motivo="boleta_anulada")
+    db.flush()
+    movs_antes = db.query(MovimientoInventario).filter_by(referencia_tipo="boleta", referencia_id=b.id).count()
+    assert movs_antes == 2
+
+    em = DteEmision(tipo="039", boleta_id=b.id, monto_neto=200, monto_iva=38, monto_total=238)
+    db.add(em)
+    db.flush()
+
+    _sync_dte_estado(db, em, "rechazada")
+    db.flush()
+
+    assert b.dte_estado == "rechazada"
+    assert b.estado == "anulada"
+    movs_despues = db.query(MovimientoInventario).filter_by(referencia_tipo="boleta", referencia_id=b.id).count()
+    assert movs_despues == 2  # no se duplica la reversa
