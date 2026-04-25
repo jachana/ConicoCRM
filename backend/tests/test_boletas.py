@@ -301,3 +301,48 @@ def test_numeracion_concurrente_no_duplica(mock_emit, client, admin_token):
     assert len(results) == 8
     assert all(n is not None for n in results), f"some requests failed: {results}"
     assert len(set(results)) == 8, f"duplicate numero detected: {results}"
+
+
+@patch("app.api.boletas.emit_dte")
+def test_vendedor_sin_permiso_anular_recibe_403(mock_emit, client, admin_token, vendedor_token):
+    r = client.post(
+        "/api/boletas/",
+        json={
+            "tipo_dte": "39",
+            "metodo_pago": "efectivo",
+            "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "100"}],
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201, r.text
+    bid = r.json()["id"]
+
+    r2 = client.post(
+        f"/api/boletas/{bid}/anular",
+        json={"razon": "x"},
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert r2.status_code == 403, r2.text
+
+
+@patch("app.api.boletas.emit_dte")
+def test_crear_boleta_genera_audit_log(mock_emit, client, admin_token, db, audit_enabled):
+    r = client.post(
+        "/api/boletas/",
+        json={
+            "tipo_dte": "39",
+            "metodo_pago": "efectivo",
+            "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "100"}],
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201, r.text
+    bid = r.json()["id"]
+
+    from app.models.audit_log import AuditLog
+    logs = (
+        db.query(AuditLog)
+        .filter_by(entity_type="Boleta", entity_id=str(bid))
+        .all()
+    )
+    assert len(logs) >= 1, "expected at least one AuditLog row for the new boleta"
