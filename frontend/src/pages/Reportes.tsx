@@ -8,7 +8,9 @@ import type {
   ReportesCompras,
   ReportesMargenes,
   ReportesDte,
+  ReportesPorMarca,
 } from '../types'
+import ClienteMultiSelect from '../components/ClienteMultiSelect'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -37,18 +39,23 @@ function getPresetDates(preset: string): { from: string; to: string } {
   return { from: `${today.getFullYear()}-${pad(today.getMonth() + 1)}-01`, to: toStr }
 }
 
-async function exportFile(tab: string, format: 'excel' | 'pdf', dateFrom: string, dateTo: string) {
-  const ext = format === 'excel' ? 'xlsx' : 'pdf'
-  const response = await api.get(
-    `/api/reportes/${tab}/export/${format}?date_from=${dateFrom}&date_to=${dateTo}`,
-    { responseType: 'blob' }
-  )
-  const url = URL.createObjectURL(new Blob([response.data]))
+async function exportFile(
+  tab: string,
+  format: 'excel' | 'pdf' | 'csv',
+  dateFrom: string,
+  dateTo: string,
+  extraQuery = '',
+) {
+  const extMap = { excel: 'xlsx', pdf: 'pdf', csv: 'csv' } as const
+  const ext = extMap[format]
+  const url = `/api/reportes/${tab}/export/${format}?date_from=${dateFrom}&date_to=${dateTo}${extraQuery}`
+  const response = await api.get(url, { responseType: 'blob' })
+  const blobUrl = URL.createObjectURL(new Blob([response.data]))
   const a = document.createElement('a')
-  a.href = url
+  a.href = blobUrl
   a.download = `${tab}-${dateFrom}-${dateTo}.${ext}`
   a.click()
-  URL.revokeObjectURL(url)
+  URL.revokeObjectURL(blobUrl)
 }
 
 // ── Shared sub-components ────────────────────────────────────────────────────
@@ -437,6 +444,154 @@ function MargenesTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string })
   )
 }
 
+// ── Por Marca Tab ─────────────────────────────────────────────────────────────
+
+function MarcaTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
+  const [clienteIds, setClienteIds] = useState<number[]>([])
+  const [data, setData] = useState<ReportesPorMarca | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [subtab, setSubtab] = useState<'marca' | 'marca_cliente'>('marca')
+
+  const extraQuery = clienteIds.map(id => `&cliente_id=${id}`).join('')
+
+  useEffect(() => {
+    setLoading(true)
+    api.get<ReportesPorMarca>(
+      `/api/reportes/por-marca?date_from=${dateFrom}&date_to=${dateTo}${extraQuery}`
+    )
+      .then(r => setData(r.data))
+      .finally(() => setLoading(false))
+  }, [dateFrom, dateTo, extraQuery])
+
+  if (loading) return <div className="text-gray-500 text-sm py-8 text-center">Cargando...</div>
+  if (!data) return <div className="text-red-400 text-sm py-8 text-center">Error al cargar datos</div>
+
+  const fmt = (n: number) => `$${n.toLocaleString('es-CL', { maximumFractionDigits: 0 })}`
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center gap-3 flex-wrap">
+        <span className="text-xs text-gray-500">Clientes:</span>
+        <ClienteMultiSelect selected={clienteIds} onChange={setClienteIds} />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <KpiCard label="Neto total" value={fmt(data.kpis.total_neto)} />
+        <KpiCard label="Ganancia total" value={fmt(data.kpis.ganancia_total)} />
+        <KpiCard label="Margen promedio" value={`${data.kpis.margen_promedio_pct.toFixed(1)}%`} />
+        <KpiCard label="Facturas" value={data.kpis.num_facturas} />
+        <KpiCard label="Marcas" value={data.kpis.num_marcas} />
+        <KpiCard label="Ticket promedio" value={fmt(data.kpis.ticket_promedio)} />
+        <KpiCard label="Cantidad total" value={data.kpis.cantidad_total.toLocaleString('es-CL')} />
+        <KpiCard label="Bruto total" value={fmt(data.kpis.total_bruto)} />
+      </div>
+
+      <div className="flex gap-1 border-b border-white/[0.06] mb-3">
+        {(['marca', 'marca_cliente'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setSubtab(t)}
+            className={`px-3 py-1.5 text-xs font-medium ${
+              subtab === t
+                ? 'border-b-2 border-amber-400 text-amber-400'
+                : 'text-gray-500 hover:text-gray-300 border-b-2 border-transparent'
+            }`}
+          >
+            {t === 'marca' ? 'Por Marca' : 'Marca + Cliente'}
+          </button>
+        ))}
+      </div>
+
+      {subtab === 'marca' && (
+        <SectionCard>
+          <table className="w-full text-xs">
+            <thead className="text-gray-500">
+              <tr>
+                <th className="text-left py-1.5">Marca</th>
+                <th className="text-right">Cantidad</th>
+                <th className="text-right">Neto</th>
+                <th className="text-right">Ganancia</th>
+                <th className="text-right">Margen %</th>
+                <th className="text-right">Facturas</th>
+                <th className="text-right">Clientes</th>
+                <th className="text-right">Ticket prom.</th>
+              </tr>
+            </thead>
+            <tbody className="text-gray-300">
+              {data.por_marca.map(m => (
+                <tr key={m.marca_id} className="border-t border-white/[0.04]">
+                  <td className="py-1.5">{m.nombre}</td>
+                  <td className="text-right">{m.cantidad.toLocaleString('es-CL')}</td>
+                  <td className="text-right">{fmt(m.neto)}</td>
+                  <td className="text-right">{fmt(m.ganancia)}</td>
+                  <td className="text-right">{m.margen_pct.toFixed(1)}%</td>
+                  <td className="text-right">{m.num_facturas}</td>
+                  <td className="text-right">{m.num_clientes}</td>
+                  <td className="text-right">{fmt(m.ticket_promedio)}</td>
+                </tr>
+              ))}
+              {data.sin_marca.neto > 0 && (
+                <tr className="border-t border-white/[0.04] text-gray-500 italic">
+                  <td className="py-1.5">(Sin marca)</td>
+                  <td className="text-right">{data.sin_marca.cantidad.toLocaleString('es-CL')}</td>
+                  <td className="text-right">{fmt(data.sin_marca.neto)}</td>
+                  <td className="text-right">{fmt(data.sin_marca.ganancia)}</td>
+                  <td className="text-right">—</td>
+                  <td className="text-right">—</td>
+                  <td className="text-right">—</td>
+                  <td className="text-right">—</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </SectionCard>
+      )}
+
+      {subtab === 'marca_cliente' && (
+        <SectionCard>
+          <table className="w-full text-xs">
+            <thead className="text-gray-500">
+              <tr>
+                <th className="text-left py-1.5">Marca</th>
+                <th className="text-left">Cliente</th>
+                <th className="text-right">Cantidad</th>
+                <th className="text-right">Neto</th>
+                <th className="text-right">Ganancia</th>
+                <th className="text-right">Margen %</th>
+                <th className="text-right">Facturas</th>
+              </tr>
+            </thead>
+            <tbody className="text-gray-300">
+              {data.por_marca_cliente.map(r => (
+                <tr key={`${r.marca_id}-${r.cliente_id}`} className="border-t border-white/[0.04]">
+                  <td className="py-1.5">{r.marca_nombre}</td>
+                  <td>{r.cliente_nombre}</td>
+                  <td className="text-right">{r.cantidad.toLocaleString('es-CL')}</td>
+                  <td className="text-right">{fmt(r.neto)}</td>
+                  <td className="text-right">{fmt(r.ganancia)}</td>
+                  <td className="text-right">{r.margen_pct.toFixed(1)}%</td>
+                  <td className="text-right">{r.num_facturas}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </SectionCard>
+      )}
+
+      <div className="flex justify-end gap-2 mt-4">
+        <button
+          onClick={() => exportFile('por-marca', 'excel', dateFrom, dateTo, extraQuery)}
+          className="bg-gray-900 border border-white/[0.1] text-gray-300 px-3 py-1.5 rounded-lg text-xs hover:bg-gray-800"
+        >↓ Excel</button>
+        <button
+          onClick={() => exportFile('por-marca', 'csv', dateFrom, dateTo, extraQuery)}
+          className="bg-gray-900 border border-white/[0.1] text-gray-300 px-3 py-1.5 rounded-lg text-xs hover:bg-gray-800"
+        >↓ CSV</button>
+      </div>
+    </div>
+  )
+}
+
 // ── DTE Tab ───────────────────────────────────────────────────────────────────
 
 function DteTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
@@ -517,7 +672,7 @@ function DteTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-type Tab = 'ventas' | 'cobranza' | 'inventario' | 'compras' | 'margenes' | 'dte'
+type Tab = 'ventas' | 'cobranza' | 'inventario' | 'compras' | 'margenes' | 'por_marca' | 'dte'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'ventas', label: 'Ventas' },
@@ -525,6 +680,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'inventario', label: 'Inventario' },
   { id: 'compras', label: 'Compras' },
   { id: 'margenes', label: 'Márgenes' },
+  { id: 'por_marca', label: 'Por Marca' },
   { id: 'dte', label: 'DTE' },
 ]
 
@@ -622,6 +778,7 @@ export default function Reportes() {
         {activeTab === 'inventario' && <InventarioTab dateFrom={dateFrom} dateTo={dateTo} />}
         {activeTab === 'compras' && <ComprasTab dateFrom={dateFrom} dateTo={dateTo} />}
         {activeTab === 'margenes' && <MargenesTab dateFrom={dateFrom} dateTo={dateTo} />}
+        {activeTab === 'por_marca' && <MarcaTab dateFrom={dateFrom} dateTo={dateTo} />}
         {activeTab === 'dte' && <DteTab dateFrom={dateFrom} dateTo={dateTo} />}
 
       </div>

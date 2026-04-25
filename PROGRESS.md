@@ -122,6 +122,14 @@
   - Expiración de cotización: bloquear creación de NV desde cotización vencida (409)
   - ClienteSelectModal scope por empresa con query invalidation
 
+- [x] **Reportes por Marca**
+  - Endpoint `/api/reportes/por-marca` con agregación por marca y por marca+cliente, filtro multi-cliente y filtro por marca
+  - Bucket `sin_marca` separado para líneas cuyo producto no tiene marca asignada
+  - KPIs: total_neto, total_bruto, ganancia_total, margen_promedio_pct, num_facturas, num_marcas, ticket_promedio, cantidad_total
+  - Exports Excel (4 hojas: KPIs, Por Marca, Marca+Cliente, Sin Marca) y CSV (con BOM UTF-8)
+  - Vendedor scoping respetado; estado != "anulada" excluido
+  - UI: tab "Por Marca" en /reportes con multi-cliente picker, sub-tabs (marca / marca+cliente), botones Excel/CSV
+
 - [x] **Tier A #5 — Tareas y Recordatorios**
   - Modelo `Tarea` con 6 FKs nullables (CHECK: máx 1 entidad vinculada) + `ReglaTarea` con seed 6 reglas
   - API CRUD + acciones (completar/descartar/reasignar) + `/mis-pendientes` + `/timeline/{tipo}/{id}`

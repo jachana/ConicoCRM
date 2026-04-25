@@ -1,9 +1,10 @@
 """Reportes — JSON endpoints for Ventas, Cobranza, and Inventario."""
 from __future__ import annotations
 
+import csv
 from datetime import date, timedelta
 from decimal import Decimal
-from io import BytesIO
+from io import BytesIO, StringIO
 
 import openpyxl
 from fastapi import APIRouter, HTTPException, Query
@@ -599,6 +600,326 @@ def reporte_margenes(
         "por_producto": por_producto,
         "por_factura": por_factura_list,
     }
+
+
+# ---------------------------------------------------------------------------
+# GET /por-marca
+# ---------------------------------------------------------------------------
+
+def _get_por_marca(
+    date_from: date,
+    date_to: date,
+    db: Session,
+    vendedor_id: int | None,
+    cliente_ids: list[int] | None,
+    marca_ids: list[int] | None,
+) -> dict:
+    """Return por-marca aggregation dict. Used by both JSON endpoint and exports."""
+    base_q = (
+        db.query(Factura)
+        .options(
+            joinedload(Factura.cliente),
+            joinedload(Factura.lineas)
+            .joinedload(FacturaLinea.producto)
+            .joinedload(Producto.marca),
+        )
+        .filter(
+            Factura.fecha >= date_from,
+            Factura.fecha <= date_to,
+            Factura.estado != "anulada",
+        )
+    )
+    if vendedor_id is not None:
+        base_q = base_q.filter(Factura.vendedor_id == vendedor_id)
+    if cliente_ids:
+        base_q = base_q.filter(Factura.cliente_id.in_(cliente_ids))
+    facturas: list[Factura] = base_q.all()
+
+    marca_map: dict[int, dict] = {}
+    marca_cliente_map: dict[tuple[int, int], dict] = {}
+    sin_marca = {"cantidad": _ZERO, "neto": _ZERO, "ganancia": _ZERO}
+    facturas_con_data: set[int] = set()
+    total_neto = _ZERO
+    ganancia_total = _ZERO
+    cantidad_total = _ZERO
+
+    for f in facturas:
+        cliente_nombre = f.cliente.nombre if f.cliente else ""
+        for ln in f.lineas:
+            if ln.producto_id is None or ln.producto is None:
+                continue
+            qty = Decimal(str(ln.cantidad))
+            neto = ln.valor_neto or _ZERO
+            ganancia = (ln.margen * neto) if ln.margen is not None else _ZERO
+            marca_id_val = ln.producto.marca_id
+
+            if marca_id_val is None:
+                sin_marca["cantidad"] += qty
+                sin_marca["neto"] += neto
+                sin_marca["ganancia"] += ganancia
+                continue
+
+            if marca_ids and marca_id_val not in marca_ids:
+                continue
+
+            facturas_con_data.add(f.id)
+            total_neto += neto
+            ganancia_total += ganancia
+            cantidad_total += qty
+
+            marca_nombre = ln.producto.marca.nombre if ln.producto.marca else ""
+            entry = marca_map.setdefault(
+                marca_id_val,
+                {
+                    "marca_id": marca_id_val,
+                    "nombre": marca_nombre,
+                    "cantidad": _ZERO,
+                    "neto": _ZERO,
+                    "ganancia": _ZERO,
+                    "facturas": set(),
+                    "clientes": set(),
+                },
+            )
+            entry["cantidad"] += qty
+            entry["neto"] += neto
+            entry["ganancia"] += ganancia
+            entry["facturas"].add(f.id)
+            if f.cliente_id is not None:
+                entry["clientes"].add(f.cliente_id)
+
+            if f.cliente_id is not None:
+                mc_key = (marca_id_val, f.cliente_id)
+                mc_entry = marca_cliente_map.setdefault(
+                    mc_key,
+                    {
+                        "marca_id": marca_id_val,
+                        "marca_nombre": marca_nombre,
+                        "cliente_id": f.cliente_id,
+                        "cliente_nombre": cliente_nombre,
+                        "cantidad": _ZERO,
+                        "neto": _ZERO,
+                        "ganancia": _ZERO,
+                        "facturas": set(),
+                    },
+                )
+                mc_entry["cantidad"] += qty
+                mc_entry["neto"] += neto
+                mc_entry["ganancia"] += ganancia
+                mc_entry["facturas"].add(f.id)
+
+    total_bruto = total_neto * Decimal("1.19")
+
+    por_marca: list[dict] = []
+    for e in marca_map.values():
+        neto_m = e["neto"]
+        margen_pct = float(e["ganancia"] / neto_m * 100) if neto_m > _ZERO else 0.0
+        num_fact = len(e["facturas"])
+        ticket = float(neto_m / num_fact) if num_fact else 0.0
+        por_marca.append(
+            {
+                "marca_id": e["marca_id"],
+                "nombre": e["nombre"],
+                "cantidad": float(e["cantidad"]),
+                "neto": float(neto_m),
+                "ganancia": float(e["ganancia"]),
+                "margen_pct": round(margen_pct, 2),
+                "num_facturas": num_fact,
+                "num_clientes": len(e["clientes"]),
+                "ticket_promedio": round(ticket, 2),
+            }
+        )
+    por_marca.sort(key=lambda r: r["neto"], reverse=True)
+
+    por_marca_cliente: list[dict] = []
+    for e in marca_cliente_map.values():
+        neto_m = e["neto"]
+        margen_pct = float(e["ganancia"] / neto_m * 100) if neto_m > _ZERO else 0.0
+        por_marca_cliente.append(
+            {
+                "marca_id": e["marca_id"],
+                "marca_nombre": e["marca_nombre"],
+                "cliente_id": e["cliente_id"],
+                "cliente_nombre": e["cliente_nombre"],
+                "cantidad": float(e["cantidad"]),
+                "neto": float(neto_m),
+                "ganancia": float(e["ganancia"]),
+                "margen_pct": round(margen_pct, 2),
+                "num_facturas": len(e["facturas"]),
+            }
+        )
+    por_marca_cliente.sort(key=lambda r: r["neto"], reverse=True)
+
+    num_facturas = len(facturas_con_data)
+    ticket_promedio = float(total_neto / num_facturas) if num_facturas else 0.0
+    margen_promedio_pct = (
+        float(ganancia_total / total_neto * 100) if total_neto > _ZERO else 0.0
+    )
+
+    return {
+        "kpis": {
+            "total_neto": float(total_neto),
+            "total_bruto": float(total_bruto),
+            "ganancia_total": float(ganancia_total),
+            "margen_promedio_pct": round(margen_promedio_pct, 2),
+            "num_facturas": num_facturas,
+            "num_marcas": len(marca_map),
+            "ticket_promedio": round(ticket_promedio, 2),
+            "cantidad_total": float(cantidad_total),
+        },
+        "por_marca": por_marca,
+        "por_marca_cliente": por_marca_cliente,
+        "sin_marca": {
+            "cantidad": float(sin_marca["cantidad"]),
+            "neto": float(sin_marca["neto"]),
+            "ganancia": float(sin_marca["ganancia"]),
+        },
+    }
+
+
+@router.get("/por-marca")
+def reporte_por_marca(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    cliente_id: list[int] | None = Query(None),
+    marca_id: list[int] | None = Query(None),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    current_user, db = perms
+    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    return _get_por_marca(date_from, date_to, db, vendedor_id, cliente_id, marca_id)
+
+
+@router.get("/por-marca/export/excel")
+def exportar_por_marca_excel(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    cliente_id: list[int] | None = Query(None),
+    marca_id: list[int] | None = Query(None),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    current_user, db = perms
+    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    data = _get_por_marca(date_from, date_to, db, vendedor_id, cliente_id, marca_id)
+
+    wb = openpyxl.Workbook()
+
+    ws_k = wb.active
+    ws_k.title = "KPIs"
+    ws_k.append(["Métrica", "Valor"])
+    for k, v in data["kpis"].items():
+        ws_k.append([k, v])
+
+    ws1 = wb.create_sheet("Por Marca")
+    ws1.append([
+        "Marca",
+        "Cantidad",
+        "Neto",
+        "Ganancia",
+        "Margen %",
+        "Facturas",
+        "Clientes",
+        "Ticket Promedio",
+    ])
+    for row in data["por_marca"]:
+        ws1.append([
+            row["nombre"],
+            row["cantidad"],
+            row["neto"],
+            row["ganancia"],
+            row["margen_pct"],
+            row["num_facturas"],
+            row["num_clientes"],
+            row["ticket_promedio"],
+        ])
+
+    ws2 = wb.create_sheet("Marca + Cliente")
+    ws2.append([
+        "Marca",
+        "Cliente",
+        "Cantidad",
+        "Neto",
+        "Ganancia",
+        "Margen %",
+        "Facturas",
+    ])
+    for row in data["por_marca_cliente"]:
+        ws2.append([
+            row["marca_nombre"],
+            row["cliente_nombre"],
+            row["cantidad"],
+            row["neto"],
+            row["ganancia"],
+            row["margen_pct"],
+            row["num_facturas"],
+        ])
+
+    ws3 = wb.create_sheet("Sin Marca")
+    ws3.append(["Métrica", "Valor"])
+    for k, v in data["sin_marca"].items():
+        ws3.append([k, v])
+
+    return _excel_response(wb, "por-marca", date_from, date_to)
+
+
+@router.get("/por-marca/export/csv")
+def exportar_por_marca_csv(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    cliente_id: list[int] | None = Query(None),
+    marca_id: list[int] | None = Query(None),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    current_user, db = perms
+    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    data = _get_por_marca(date_from, date_to, db, vendedor_id, cliente_id, marca_id)
+
+    buf = StringIO()
+    writer = csv.writer(buf)
+
+    writer.writerow(["## KPIs"])
+    writer.writerow(["metrica", "valor"])
+    for k, v in data["kpis"].items():
+        writer.writerow([k, v])
+    writer.writerow([])
+
+    writer.writerow(["## Por Marca"])
+    writer.writerow([
+        "marca", "cantidad", "neto", "ganancia",
+        "margen_pct", "num_facturas", "num_clientes", "ticket_promedio",
+    ])
+    for row in data["por_marca"]:
+        writer.writerow([
+            row["nombre"], row["cantidad"], row["neto"], row["ganancia"],
+            row["margen_pct"], row["num_facturas"], row["num_clientes"], row["ticket_promedio"],
+        ])
+    writer.writerow([])
+
+    writer.writerow(["## Marca + Cliente"])
+    writer.writerow([
+        "marca", "cliente", "cantidad", "neto", "ganancia", "margen_pct", "num_facturas",
+    ])
+    for row in data["por_marca_cliente"]:
+        writer.writerow([
+            row["marca_nombre"], row["cliente_nombre"], row["cantidad"],
+            row["neto"], row["ganancia"], row["margen_pct"], row["num_facturas"],
+        ])
+    writer.writerow([])
+
+    writer.writerow(["## Sin Marca"])
+    writer.writerow(["metrica", "valor"])
+    for k, v in data["sin_marca"].items():
+        writer.writerow([k, v])
+
+    body = "﻿" + buf.getvalue()  # BOM for Excel UTF-8
+    filename = f"por-marca-{date_from}-{date_to}.csv"
+    return StreamingResponse(
+        iter([body]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 # ---------------------------------------------------------------------------

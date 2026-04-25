@@ -665,6 +665,46 @@ export interface ReportesDte {
   emisiones: { id: number; tipo: string; folio: number | null; estado: string; monto_total: number; created_at: string | null; detalle_rechazo: string | null }[]
 }
 
+export interface ReportesPorMarca {
+  kpis: {
+    total_neto: number
+    total_bruto: number
+    ganancia_total: number
+    margen_promedio_pct: number
+    num_facturas: number
+    num_marcas: number
+    ticket_promedio: number
+    cantidad_total: number
+  }
+  por_marca: {
+    marca_id: number
+    nombre: string
+    cantidad: number
+    neto: number
+    ganancia: number
+    margen_pct: number
+    num_facturas: number
+    num_clientes: number
+    ticket_promedio: number
+  }[]
+  por_marca_cliente: {
+    marca_id: number
+    marca_nombre: string
+    cliente_id: number
+    cliente_nombre: string
+    cantidad: number
+    neto: number
+    ganancia: number
+    margen_pct: number
+    num_facturas: number
+  }[]
+  sin_marca: {
+    cantidad: number
+    neto: number
+    ganancia: number
+  }
+}
+
 export interface EmpresaListItem extends Empresa {
   ultima_compra: string | null
 }
