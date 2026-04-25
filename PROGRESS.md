@@ -131,6 +131,13 @@
   - Hook: al desactivar usuario se reasignan sus tareas pendientes al primer admin activo; guard bloquea desactivar al último admin
   - Tests: model, API, auto-gen por regla (8 tests), integration e2e
 
+- [x] **Tier A #7 — Búsqueda global Cmd+K**
+  - Endpoint `/api/search` con fan-out a 8 entidades (productos, clientes, empresas, cotizaciones, NV, facturas, OC, empleados)
+  - Permission-aware: omite categorías sin permiso; vendedor solo ve documentos propios
+  - Modal cmdk con grupos por categoría, recientes en localStorage, debounce 200ms, AbortController
+  - Atajo configurable (Ctrl+K / Ctrl+P / Ctrl+Shift+F / Alt+S) con detección Mac (⌘ vs Ctrl)
+  - Botón en header configurable por usuario; sección `/configuracion` guardada en `users.preferencias` JSON
+
 ---
 
 ## Flujo de documentos
