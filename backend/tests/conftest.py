@@ -21,6 +21,37 @@ TestingSession = sessionmaker(autocommit=False, autoflush=False, bind=test_engin
 
 
 @pytest.fixture(autouse=True)
+def _audit_disabled_by_default():
+    """Disable global audit listeners for all tests by default.
+
+    Audit listeners are registered on the SQLAlchemy `Session` class globally
+    (matches prod behavior). For tests that mutate auditable models, this
+    silently inserts `audit_logs` rows on every flush — flaky for any test
+    that asserts `session.dirty` size or counts rows.
+
+    We toggle the per-session `audit_disabled` flag via the sessionmaker's
+    `info` default. Tests that need audit behavior must request the
+    `audit_enabled` fixture to opt back in.
+    """
+    TestingSession.configure(info={"audit_disabled": True})
+    yield
+    TestingSession.configure(info={"audit_disabled": True})
+
+
+@pytest.fixture
+def audit_enabled():
+    """Opt-in: re-enable audit listeners for the duration of the test.
+
+    Use in tests that explicitly verify audit log behavior (e.g.
+    `test_auditoria.py`). Resets `TestingSession`'s `info` so new sessions
+    do NOT carry `audit_disabled=True`.
+    """
+    TestingSession.configure(info={})
+    yield
+    TestingSession.configure(info={"audit_disabled": True})
+
+
+@pytest.fixture(autouse=True)
 def setup_test_db():
     from app.database import Base
     import app.models.user  # noqa: F401 — registers User with Base.metadata

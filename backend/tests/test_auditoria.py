@@ -15,6 +15,16 @@ from __future__ import annotations
 import json
 from datetime import date
 
+import pytest
+
+
+# All tests in this module need audit listeners enabled — the conftest
+# autouse fixture disables them by default to avoid spurious `audit_logs`
+# rows in unrelated tests.
+@pytest.fixture(autouse=True)
+def _enable_audit(audit_enabled):
+    yield
+
 
 # ---------------------------------------------------------------------------
 # Helpers

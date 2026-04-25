@@ -16,6 +16,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
+from loguru import logger
 from sqlalchemy import event, inspect
 from sqlalchemy.orm import Session
 
@@ -195,92 +196,98 @@ def _before_flush(session: Session, flush_context, instances):
     if session.info.get("audit_disabled"):
         return
 
-    rows: list[Any] = []
+    try:
+        rows: list[Any] = []
 
-    # UPDATE
-    for inst in list(session.dirty):
-        if not _is_auditable(inst):
-            continue
-        if not session.is_modified(inst, include_collections=False):
-            continue
-        before, after, changed = _changed_snapshot(inst)
-        if not changed:
-            continue
-        ent_id = _entity_id_str(inst)
-        if ent_id is None:
-            continue
-        rows.append(
-            _make_log_row(
-                session,
-                action="update",
-                entity_type=type(inst).__name__,
-                entity_id=ent_id,
-                diff={"before": before, "after": after, "changed": changed},
+        # UPDATE
+        for inst in list(session.dirty):
+            if not _is_auditable(inst):
+                continue
+            if not session.is_modified(inst, include_collections=False):
+                continue
+            before, after, changed = _changed_snapshot(inst)
+            if not changed:
+                continue
+            ent_id = _entity_id_str(inst)
+            if ent_id is None:
+                continue
+            rows.append(
+                _make_log_row(
+                    session,
+                    action="update",
+                    entity_type=type(inst).__name__,
+                    entity_id=ent_id,
+                    diff={"before": before, "after": after, "changed": changed},
+                )
             )
-        )
 
-    # DELETE
-    for inst in list(session.deleted):
-        if not _is_auditable(inst):
-            continue
-        before = _snapshot(inst)
-        ent_id = _entity_id_str(inst)
-        if ent_id is None:
-            continue
-        rows.append(
-            _make_log_row(
-                session,
-                action="delete",
-                entity_type=type(inst).__name__,
-                entity_id=ent_id,
-                diff={"before": before},
+        # DELETE
+        for inst in list(session.deleted):
+            if not _is_auditable(inst):
+                continue
+            before = _snapshot(inst)
+            ent_id = _entity_id_str(inst)
+            if ent_id is None:
+                continue
+            rows.append(
+                _make_log_row(
+                    session,
+                    action="delete",
+                    entity_type=type(inst).__name__,
+                    entity_id=ent_id,
+                    diff={"before": before},
+                )
             )
-        )
 
-    # INSERT — capturamos los instances pendientes en session.info y resolvemos PK
-    # post-flush (vía `after_flush_postexec`) para tener entity_id real.
-    pending: list[Any] = session.info.setdefault(_PENDING_INSERTS_KEY, [])
-    for inst in list(session.new):
-        if not _is_auditable(inst):
-            continue
-        pending.append(inst)
+        # INSERT — capturamos los instances pendientes en session.info y resolvemos PK
+        # post-flush (vía `after_flush_postexec`) para tener entity_id real.
+        pending: list[Any] = session.info.setdefault(_PENDING_INSERTS_KEY, [])
+        for inst in list(session.new):
+            if not _is_auditable(inst):
+                continue
+            pending.append(inst)
 
-    for r in rows:
-        session.add(r)
+        for r in rows:
+            session.add(r)
+    except Exception as exc:  # noqa: BLE001 — audit must never block business ops
+        logger.exception("audit.listener_failed event=before_flush")
 
 
 def _after_flush_postexec(session: Session, flush_context):
     """Resuelve INSERT logs ahora que las PKs están asignadas."""
     if session.info.get("audit_disabled"):
         return
-    pending: list[Any] = session.info.pop(_PENDING_INSERTS_KEY, [])
-    if not pending:
-        return
-    rows = []
-    for inst in pending:
-        ent_id = _entity_id_str(inst)
-        if ent_id is None:
-            continue
-        after = _snapshot(inst)
-        rows.append(
-            _make_log_row(
-                session,
-                action="create",
-                entity_type=type(inst).__name__,
-                entity_id=ent_id,
-                diff={"after": after},
+    try:
+        pending: list[Any] = session.info.pop(_PENDING_INSERTS_KEY, [])
+        if not pending:
+            return
+        rows = []
+        for inst in pending:
+            ent_id = _entity_id_str(inst)
+            if ent_id is None:
+                continue
+            after = _snapshot(inst)
+            rows.append(
+                _make_log_row(
+                    session,
+                    action="create",
+                    entity_type=type(inst).__name__,
+                    entity_id=ent_id,
+                    diff={"after": after},
+                )
             )
-        )
-    if rows:
-        # Marcar audit_disabled durante el sub-add para evitar que el
-        # próximo `before_flush` re-procese estos AuditLog.
-        prev = session.info.get("audit_disabled", False)
-        session.info["audit_disabled"] = True
-        try:
-            for r in rows:
-                session.add(r)
-        finally:
-            session.info["audit_disabled"] = prev
+        if rows:
+            # Marcar audit_disabled durante el sub-add para evitar que el
+            # próximo `before_flush` re-procese estos AuditLog.
+            prev = session.info.get("audit_disabled", False)
+            session.info["audit_disabled"] = True
+            try:
+                for r in rows:
+                    session.add(r)
+            finally:
+                session.info["audit_disabled"] = prev
+    except Exception as exc:  # noqa: BLE001 — audit must never block business ops
+        logger.exception("audit.listener_failed event=after_flush_postexec")
 
 
 _LISTENERS_REGISTERED = False
