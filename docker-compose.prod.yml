@@ -36,5 +36,70 @@ services:
     depends_on:
       - backend
 
+  # ----------------------------------------------------------------------
+  # W1-02: Backups Postgres automáticos
+  # ----------------------------------------------------------------------
+  # Daily pg_dump, retention configurable, stored on `pgbackups` volume.
+  # Image: prodrigestivill/postgres-backup-local — mature, widely used.
+  # Schedule via SCHEDULE env (cron-like). Default: 03:00 every day.
+  backups:
+    image: prodrigestivill/postgres-backup-local:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB:-conico}
+      POSTGRES_USER: ${POSTGRES_USER:-conico}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_EXTRA_OPTS: "-Fp -Z9 --schema=public --blobs"
+      SCHEDULE: ${BACKUP_SCHEDULE:-@daily}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-7}
+      BACKUP_KEEP_WEEKS: ${BACKUP_KEEP_WEEKS:-4}
+      BACKUP_KEEP_MONTHS: ${BACKUP_KEEP_MONTHS:-6}
+    volumes:
+      - pgbackups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Offsite copy: rclone-based uploader. Supports S3, Backblaze B2, Wasabi,
+  # GCS, Azure Blob, etc. — change RCLONE_CONFIG_REMOTE_TYPE accordingly.
+  # If S3_BUCKET is empty, the container exits 0 immediately (no-op).
+  # Schedule controlled by host cron OR run manually:
+  #   docker compose -f docker-compose.prod.yml run --rm backups-offsite
+  backups-offsite:
+    image: rclone/rclone:1.65
+    restart: "no"
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -eu
+        if [ -z "$${S3_BUCKET:-}" ]; then
+          echo "[offsite] S3_BUCKET not set — skipping offsite copy."
+          exit 0
+        fi
+        echo "[offsite] syncing /backups -> remote:$${S3_BUCKET}/$${S3_PREFIX:-conico-prod}"
+        rclone --config /tmp/rclone.conf sync /backups \
+          "remote:$${S3_BUCKET}/$${S3_PREFIX:-conico-prod}" \
+          --transfers=4 --checkers=8 --s3-no-check-bucket \
+          --log-level INFO
+        echo "[offsite] done."
+    environment:
+      RCLONE_CONFIG_REMOTE_TYPE: s3
+      RCLONE_CONFIG_REMOTE_PROVIDER: ${S3_PROVIDER:-Other}
+      RCLONE_CONFIG_REMOTE_ACCESS_KEY_ID: ${S3_KEY:-}
+      RCLONE_CONFIG_REMOTE_SECRET_ACCESS_KEY: ${S3_SECRET:-}
+      RCLONE_CONFIG_REMOTE_ENDPOINT: ${S3_ENDPOINT:-}
+      RCLONE_CONFIG_REMOTE_REGION: ${S3_REGION:-us-east-1}
+      RCLONE_CONFIG_REMOTE_ACL: private
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_PREFIX: ${S3_PREFIX:-conico-prod}
+    volumes:
+      - pgbackups:/backups:ro
+    # Generate rclone config from env at runtime — no secret files baked in.
+    # rclone reads RCLONE_CONFIG_* env vars natively; the --config flag
+    # above just keeps it from trying to write to $HOME inside the container.
+
 volumes:
   pgdata:
+  pgbackups:

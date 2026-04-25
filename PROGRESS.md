@@ -146,22 +146,76 @@
   - Atajo configurable (Ctrl+K / Ctrl+P / Ctrl+Shift+F / Alt+S) con detección Mac (⌘ vs Ctrl)
   - Botón en header configurable por usuario; sección `/configuracion` guardada en `users.preferencias` JSON
 
+- [x] **Notas de Crédito y Notas de Débito**
+  - Modelos `NotaCredito` / `NotaDebito` con líneas, razón, numeración correlativa propia
+  - Páginas list + nueva + detalle; vinculación opcional a Factura
+  - Integración DTE (61 NC, 56 ND) vía DteEmision
+
+- [x] **Pagos múltiples por Factura**
+  - Modelo `Pago` 1..N por Factura; método, fecha, monto, banco receptor
+  - Estado factura: `emitida → parcial → pagada`
+  - Página `/pagos` y registro inline desde FacturaDetalle
+
+- [x] **Cobranza**
+  - Modelo `CobranzaConfig` por empresa (frecuencia recordatorios)
+  - Página `/cobranza` con bandejas: vencidas, próximas, antigüedad de saldos
+  - Campo `ultimo_recordatorio` en Factura (envío manual; envío automático pendiente)
+
+- [x] **DTE / SII (parcial)**
+  - `DteService` (httpx) integrado con Lioren como proveedor SII
+  - Soporta: factura 33, NC 61, ND 56
+  - Modelo `DteEmision` con tracking de folio, estado, respuesta SII, intentos de poll
+  - Webhook entrante validado con HMAC SHA256
+  - Celery task `tasks/dte.py` con polling de estado
+  - **Pendiente:** boleta 39/41, guía de despacho 52, factura exenta 34, factura de compra 46, libros, intercambio DTE recepción
+
 ---
 
 ## Flujo de documentos
 
 ```
-Cotización → Nota de Venta → Factura
+Cotización → Nota de Venta → Factura → Pago(s)
+                                ↓
+                          NotaCredito / NotaDebito
+                                ↓
+                            DteEmision (SII)
 ```
 
 Cada etapa hereda datos de la anterior (editables), tiene PDF y email propio. Al crear el documento downstream, el upstream queda bloqueado (inmutable).
 
 ---
 
+## Estado vs roadmap CRM
+
+Ver `docs/state-of-product.html` para snapshot ejecutivo y `docs/backlog.md` para tareas accionables.
+
+### Pendientes de Tier A original
+- [ ] **#4 Timeline unificado por cliente/empresa** (parcial: tareas tienen timeline propio; falta vista que une cotis + NV + facturas + notas + llamadas)
+- [ ] **#6 Pipeline / Oportunidades** (no iniciado; bloqueante: etapas fijas vs configurables)
+- [ ] **#8 Notificaciones in-app + email digest** (no iniciado; tareas suplen parcialmente)
+
+### Hardening producción (Wave 1 — ver backlog)
+- [ ] Audit log global
+- [x] **W1-02 — Backups Postgres automáticos + restore documentado**
+  - Servicio `backups` (prodrigestivill/postgres-backup-local:15) en `docker-compose.prod.yml` con dump diario y rotación 7d/4w/6m configurable por env
+  - Servicio `backups-offsite` (rclone/rclone:1.65) con copy a S3/B2/Wasabi; skip graceful si `S3_BUCKET` vacío
+  - `scripts/restore.sh`: list/restore con confirmación, target-db parametrizado, dry-run, idempotente
+  - Runbook `docs/runbooks/backup-restore.md` con flujos local + offsite, smoke checks y rollback
+  - `.env.prod.example` extendido con placeholders de retención y S3
+- [ ] CI (lint + tests + build Docker)
+- [ ] Boleta electrónica 39/41
+- [ ] Guía de despacho electrónica 52
+- [ ] Observabilidad (Sentry + structured logs + healthz)
+- [ ] 2FA TOTP + reset password
+
+---
+
 ## Fuera de scope (v1)
 
-- Integración SII / factura electrónica DTE
-- App móvil
-- Multi-empresa / multi-sucursal
-- API pública
-- Notificaciones en tiempo real
+- Multi-empresa / multi-tenant SaaS *(ver Wave 6 si se decide pivotear a SaaS)*
+- App móvil nativa *(PWA en Wave 6)*
+- API pública *(Wave 6)*
+- Notificaciones push tiempo real
+- POS / códigos de barras *(Wave 5)*
+- Conciliación bancaria *(Wave 4)*
+- Multi-moneda / UF *(Wave 4)*
