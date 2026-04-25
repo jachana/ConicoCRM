@@ -11,7 +11,9 @@ class NotaCredito(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     numero: Mapped[int] = mapped_column(Integer, unique=True, index=True)
     fecha: Mapped[date] = mapped_column(Date, default=date.today)
-    cliente_id: Mapped[int] = mapped_column(ForeignKey("clientes.id", ondelete="RESTRICT"))
+    cliente_id: Mapped[int | None] = mapped_column(
+        ForeignKey("clientes.id", ondelete="RESTRICT"), nullable=True
+    )
     boleta_id: Mapped[int | None] = mapped_column(
         ForeignKey("boletas.id", ondelete="SET NULL"), nullable=True
     )
@@ -30,7 +32,7 @@ class NotaCredito(Base):
         kwargs.setdefault("dte_estado", "no_emitida")
         super().__init__(**kwargs)
 
-    cliente: Mapped["Cliente"] = relationship("Cliente")
+    cliente: Mapped["Cliente | None"] = relationship("Cliente")
     lineas: Mapped[list["NotaCreditoLinea"]] = relationship(
         "NotaCreditoLinea",
         back_populates="nota_credito",

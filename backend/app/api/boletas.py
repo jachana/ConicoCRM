@@ -2,15 +2,18 @@ from datetime import date
 from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_permission
+from app.api.dte import _next_numero
 from app.models.boleta import Boleta, BoletaLinea
 from app.models.dte_emision import DteEmision
+from app.models.nota_credito import NotaCredito, NotaCreditoLinea
 from app.models.system_config import SystemConfig
 from app.models.user import User
 from app.schemas.boleta import BoletaCreate, BoletaListOut, BoletaOut, BoletaUpdate
-from app.services.boleta_stock import descontar_stock_boleta
+from app.services.boleta_stock import descontar_stock_boleta, revertir_stock_boleta
 from app.tasks.dte import emit_dte
 
 router = APIRouter()
@@ -225,6 +228,52 @@ def actualizar_boleta(
 
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(boleta, field, value)
+
+    db.commit()
+    db.refresh(boleta)
+    return boleta
+
+
+class BoletaAnularBody(BaseModel):
+    razon: str
+
+
+@router.post("/{boleta_id}/anular", response_model=BoletaOut)
+def anular_boleta(
+    boleta_id: int,
+    body: BoletaAnularBody,
+    perms: tuple[User, Session] = require_permission("boletas", "delete"),
+):
+    current_user, db = perms
+    boleta = _load_boleta(db, boleta_id)
+    if boleta.estado == "anulada":
+        raise HTTPException(status_code=409, detail="Boleta ya anulada")
+
+    nc = NotaCredito(
+        numero=_next_numero(db, "nc_last_id"),
+        fecha=date.today(),
+        cliente_id=boleta.cliente_id,
+        boleta_id=boleta.id,
+        razon=body.razon,
+        monto_neto=boleta.total_neto,
+        monto_iva=boleta.total_iva,
+        monto_total=boleta.total,
+    )
+    nc.lineas = [
+        NotaCreditoLinea(
+            orden=l.orden,
+            descripcion=l.descripcion,
+            cantidad=l.cantidad,
+            precio_unitario=l.precio_unitario,
+            subtotal=l.total_neto,
+        )
+        for l in boleta.lineas
+    ]
+    db.add(nc)
+    db.flush()
+
+    revertir_stock_boleta(db, boleta, usuario_id=current_user.id, motivo="boleta_anulada")
+    boleta.estado = "anulada"
 
     db.commit()
     db.refresh(boleta)

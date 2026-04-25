@@ -191,3 +191,38 @@ def test_patch_bloqueado_si_dte_aceptada(mock_emit, client, admin_token, db):
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r2.status_code == 409
+
+
+@patch("app.api.boletas.emit_dte")
+def test_anular_boleta_genera_nc_y_revierte_stock(mock_emit, client, admin_token, db):
+    prod = _create_producto(client, admin_token)
+    r = client.post("/api/boletas/", json={
+        "tipo_dte": "39", "metodo_pago": "efectivo",
+        "lineas": [{"orden": 0, "producto_id": prod["id"], "descripcion": "x", "cantidad": "2", "precio_unitario": "100"}],
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    bid = r.json()["id"]
+
+    r2 = client.post(
+        f"/api/boletas/{bid}/anular",
+        json={"razon": "Cliente cambió de opinión"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r2.status_code == 200, r2.text
+
+    from app.models.boleta import Boleta
+    from app.models.nota_credito import NotaCredito
+    from app.models.movimiento_inventario import MovimientoInventario
+
+    b = db.get(Boleta, bid)
+    db.refresh(b)
+    assert b.estado == "anulada"
+
+    nc = db.query(NotaCredito).filter_by(boleta_id=bid).first()
+    assert nc is not None
+    assert nc.razon.startswith("Cliente")
+
+    movs = db.query(MovimientoInventario).filter_by(referencia_tipo="boleta", referencia_id=bid).all()
+    salidas = [m for m in movs if m.signo == -1]
+    entradas = [m for m in movs if m.signo == 1]
+    assert len(salidas) == 1
+    assert len(entradas) == 1
