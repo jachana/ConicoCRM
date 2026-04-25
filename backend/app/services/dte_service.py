@@ -140,6 +140,59 @@ class DteService:
             },
         }
 
+    def build_boleta_payload(self, boleta: "Boleta", db: Session) -> dict:
+        cfg = _get_config(db)
+        if boleta.cliente:
+            receptor = {
+                "rut": boleta.cliente.rut or "",
+                "razon_social": boleta.cliente.nombre,
+                "giro": "",
+                "direccion": getattr(boleta.cliente, "direccion_despacho", "") or "",
+                "ciudad": getattr(boleta.cliente, "comuna", "") or "",
+                "comuna": getattr(boleta.cliente, "comuna", "") or "",
+            }
+        else:
+            receptor = {
+                "rut": boleta.rut_receptor or "66666666-6",
+                "razon_social": boleta.nombre_receptor or "Consumidor Final",
+                "giro": "",
+                "direccion": "",
+                "ciudad": "",
+                "comuna": "",
+            }
+
+        detalle = [
+            {
+                "nombre": l.descripcion,
+                "cantidad": float(l.cantidad),
+                "precio_unitario": int(l.precio_unitario),
+                "descuento_porcentaje": float(l.descuento_pct or 0),
+                "exenta": bool(l.exenta),
+            }
+            for l in boleta.lineas
+        ]
+
+        payload = {
+            "tipo_dte": int(boleta.tipo_dte),
+            "fecha_emision": (boleta.fecha or date.today()).isoformat(),
+            "emisor": self._emisor(cfg),
+            "receptor": receptor,
+            "detalle": detalle,
+            "totales": {
+                "monto_neto": int(boleta.total_neto),
+                "tasa_iva": 19 if boleta.tipo_dte == "39" else 0,
+                "iva": int(boleta.total_iva),
+                "monto_total": int(boleta.total),
+            },
+        }
+
+        if boleta.patente_vehiculo:
+            payload["referencias"] = [
+                {"tipo": "PATENTE", "valor": boleta.patente_vehiculo}
+            ]
+
+        return payload
+
     def emit(self, payload: dict) -> dict:
         resp = httpx.post(
             f"{self.api_url}/documentos",
