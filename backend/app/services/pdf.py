@@ -31,3 +31,10 @@ def generar_pdf_factura(factura, config: dict) -> bytes:
     template = env.get_template("factura.html")
     html_str = template.render(factura=factura, config=config)
     return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()
+
+
+def generar_pdf_boleta(boleta, config: dict) -> bytes:
+    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+    template = env.get_template("boleta.html")
+    html_str = template.render(boleta=boleta, config=config)
+    return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()

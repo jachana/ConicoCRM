@@ -1,9 +1,12 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
+from io import BytesIO
 
+import openpyxl
 from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import require_permission
 from app.api.dte import _next_numero
@@ -14,6 +17,8 @@ from app.models.system_config import SystemConfig
 from app.models.user import User
 from app.schemas.boleta import BoletaCreate, BoletaListOut, BoletaOut, BoletaUpdate
 from app.services.boleta_stock import descontar_stock_boleta, revertir_stock_boleta
+from app.services.email import EmailNotConfiguredError, enviar_boleta as _enviar_boleta_email
+from app.services.pdf import generar_pdf_boleta
 from app.tasks.dte import emit_dte
 
 router = APIRouter()
@@ -204,6 +209,58 @@ def listar_boletas(
     )
 
 
+def _config_dict(db: Session) -> dict:
+    return {r.key: r.value for r in db.query(SystemConfig).all()}
+
+
+@router.get("/export/excel")
+def exportar_excel(
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    estado: list[str] | None = Query(None),
+    perms: tuple[User, Session] = require_permission("boletas", "view"),
+):
+    _, db = perms
+    q = db.query(Boleta).options(
+        joinedload(Boleta.cliente),
+        joinedload(Boleta.vendedor),
+        selectinload(Boleta.lineas),
+    )
+    if fecha_desde:
+        q = q.filter(Boleta.fecha >= fecha_desde)
+    if fecha_hasta:
+        q = q.filter(Boleta.fecha <= fecha_hasta)
+    if estado:
+        q = q.filter(Boleta.estado.in_(estado))
+    boletas = q.order_by(Boleta.numero.desc()).all()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Boletas"
+    ws.append([
+        "N", "Fecha", "Tipo", "Receptor", "RUT", "Patente",
+        "Total Neto", "IVA", "Total", "Metodo Pago", "Estado", "DTE", "Vendedor",
+    ])
+    for b in boletas:
+        receptor = b.cliente.nombre if b.cliente else (b.nombre_receptor or "Consumidor Final")
+        rut = b.cliente.rut if b.cliente else (b.rut_receptor or "66666666-6")
+        ws.append([
+            b.numero, b.fecha.strftime("%d/%m/%Y"), b.tipo_dte, receptor, rut,
+            b.patente_vehiculo or "", float(b.total_neto), float(b.total_iva), float(b.total),
+            b.metodo_pago, b.estado, b.dte_estado, b.vendedor.name if b.vendedor else "",
+        ])
+
+    today = date.today().strftime("%Y-%m-%d")
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=boletas-{today}.xlsx"},
+    )
+
+
 @router.get("/{boleta_id}", response_model=BoletaOut)
 def obtener_boleta(
     boleta_id: int,
@@ -275,6 +332,47 @@ def anular_boleta(
     revertir_stock_boleta(db, boleta, usuario_id=current_user.id, motivo="boleta_anulada")
     boleta.estado = "anulada"
 
+    db.commit()
+    db.refresh(boleta)
+    return boleta
+
+
+@router.get("/{boleta_id}/pdf")
+def descargar_pdf(
+    boleta_id: int,
+    perms: tuple[User, Session] = require_permission("boletas", "view"),
+):
+    _, db = perms
+    boleta = _load_boleta(db, boleta_id)
+    pdf_bytes = generar_pdf_boleta(boleta, _config_dict(db))
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="boleta-{boleta.numero}.pdf"'},
+    )
+
+
+class BoletaEmailBody(BaseModel):
+    email: str | None = None
+
+
+@router.post("/{boleta_id}/email", response_model=BoletaOut)
+def enviar_email_boleta(
+    boleta_id: int,
+    body: BoletaEmailBody,
+    perms: tuple[User, Session] = require_permission("boletas", "edit"),
+):
+    _, db = perms
+    boleta = _load_boleta(db, boleta_id)
+    destino = body.email or boleta.email_envio
+    if not destino:
+        raise HTTPException(status_code=422, detail="No hay email destino")
+    pdf_bytes = generar_pdf_boleta(boleta, _config_dict(db))
+    try:
+        _enviar_boleta_email(boleta, pdf_bytes, destino)
+    except EmailNotConfiguredError:
+        raise HTTPException(status_code=503, detail="Email no configurado")
+    boleta.email_enviado_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(boleta)
     return boleta

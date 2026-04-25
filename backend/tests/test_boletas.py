@@ -226,3 +226,45 @@ def test_anular_boleta_genera_nc_y_revierte_stock(mock_emit, client, admin_token
     entradas = [m for m in movs if m.signo == 1]
     assert len(salidas) == 1
     assert len(entradas) == 1
+
+
+@patch("app.api.boletas.emit_dte")
+def test_pdf_endpoint_devuelve_bytes(mock_emit, client, admin_token):
+    r = client.post("/api/boletas/", json={
+        "tipo_dte": "39", "metodo_pago": "efectivo",
+        "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "100"}],
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    bid = r.json()["id"]
+    r2 = client.get(f"/api/boletas/{bid}/pdf", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 200
+    assert r2.headers["content-type"] == "application/pdf"
+    assert r2.content[:4] == b"%PDF"
+
+
+@patch("app.api.boletas.emit_dte")
+@patch("app.api.boletas._enviar_boleta_email")
+def test_email_endpoint_marca_timestamp(mock_email, mock_emit, client, admin_token):
+    r = client.post("/api/boletas/", json={
+        "tipo_dte": "39", "metodo_pago": "efectivo", "email_envio": "x@y.cl",
+        "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "100"}],
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    bid = r.json()["id"]
+    r2 = client.post(
+        f"/api/boletas/{bid}/email",
+        json={"email": "otro@y.cl"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r2.status_code == 200
+    assert r2.json()["email_enviado_at"] is not None
+    mock_email.assert_called_once()
+
+
+@patch("app.api.boletas.emit_dte")
+def test_export_excel(mock_emit, client, admin_token):
+    client.post("/api/boletas/", json={
+        "tipo_dte": "39", "metodo_pago": "efectivo",
+        "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "100"}],
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get("/api/boletas/export/excel", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert "spreadsheet" in r.headers["content-type"]
