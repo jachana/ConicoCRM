@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.models.factura import Factura
 from app.models.nota_credito import NotaCredito
 from app.models.nota_debito import NotaDebito
+from app.models.boleta import Boleta
 from app.models.system_config import SystemConfig
 
 
@@ -140,7 +141,7 @@ class DteService:
             },
         }
 
-    def build_boleta_payload(self, boleta: "Boleta", db: Session) -> dict:
+    def build_boleta_payload(self, boleta: Boleta, db: Session) -> dict:
         cfg = _get_config(db)
         if boleta.cliente:
             receptor = {
