@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, joinedload
 from weasyprint import HTML
 
 from app.api.deps import require_permission
+from app.models.boleta import Boleta
 from app.models.dte_emision import DteEmision
 from app.models.factura import Factura, FacturaLinea
 from app.models.movimiento_inventario import MovimientoInventario
@@ -164,6 +165,27 @@ def reporte_ventas(
     for v in por_vendedor:
         v["total"] = float(v["total"])
 
+    # --- Boletas (aggregated separately from facturas) ---
+    boletas_q = db.query(Boleta).filter(
+        Boleta.fecha >= date_from,
+        Boleta.fecha <= date_to,
+        Boleta.estado != "anulada",
+    )
+    if current_user.role == "vendedor":
+        boletas_q = boletas_q.filter(Boleta.vendedor_id == current_user.id)
+    boletas = boletas_q.all()
+
+    total_boletas = sum((b.total for b in boletas), _ZERO)
+    cantidad_boletas = len(boletas)
+
+    daily_map_boletas: dict[date, Decimal] = {}
+    for b in boletas:
+        daily_map_boletas[b.fecha] = daily_map_boletas.get(b.fecha, _ZERO) + b.total
+    ventas_diarias_boletas = [
+        {"fecha": str(d), "monto": float(m)}
+        for d, m in sorted(daily_map_boletas.items())
+    ]
+
     return {
         "kpis": {
             "total_vendido": float(total_vendido),
@@ -175,6 +197,11 @@ def reporte_ventas(
         "ventas_diarias": ventas_diarias,
         "top_clientes": top_clientes,
         "por_vendedor": por_vendedor,
+        "boletas": {
+            "total": float(total_boletas),
+            "cantidad": cantidad_boletas,
+            "ventas_diarias": ventas_diarias_boletas,
+        },
     }
 
 

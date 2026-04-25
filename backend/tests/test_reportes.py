@@ -1,5 +1,8 @@
 """Tests for /api/reportes endpoints (ventas, cobranza, inventario)."""
 
+from datetime import date
+from unittest.mock import patch
+
 
 def test_ventas_returns_valid_structure(client, admin_token):
     r = client.get(
@@ -204,3 +207,53 @@ def test_cobranza_pdf_export(client, admin_token):
     assert r.status_code == 200
     assert r.headers["content-type"] == "application/pdf"
     assert "cobranza-" in r.headers["content-disposition"]
+
+
+def test_ventas_includes_boletas_key(client, admin_token):
+    r = client.get(
+        "/api/reportes/ventas",
+        params={"date_from": "2000-01-01", "date_to": "2000-12-31"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert "boletas" in data
+    boletas = data["boletas"]
+    assert "total" in boletas
+    assert "cantidad" in boletas
+    assert "ventas_diarias" in boletas
+    assert boletas["total"] == 0
+    assert boletas["cantidad"] == 0
+    assert boletas["ventas_diarias"] == []
+
+
+@patch("app.api.boletas.emit_dte")
+def test_reporte_ventas_aggregates_boletas(mock_emit, client, admin_token):
+    r = client.post(
+        "/api/boletas/",
+        json={
+            "tipo_dte": "39",
+            "metodo_pago": "efectivo",
+            "lineas": [
+                {
+                    "orden": 0,
+                    "descripcion": "x",
+                    "cantidad": "1",
+                    "precio_unitario": "1190",
+                }
+            ],
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201, r.text
+    hoy = date.today().isoformat()
+    r2 = client.get(
+        "/api/reportes/ventas",
+        params={"date_from": hoy, "date_to": hoy},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r2.status_code == 200
+    body = r2.json()
+    assert body["boletas"]["cantidad"] >= 1
+    assert body["boletas"]["total"] >= 1190
+    assert any(d["fecha"] == hoy for d in body["boletas"]["ventas_diarias"])
