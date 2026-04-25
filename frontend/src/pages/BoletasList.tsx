@@ -5,7 +5,6 @@ import { Eye, Download, Mail, Trash2, Plus, FileSpreadsheet } from 'lucide-react
 import {
   listarBoletas,
   exportarBoletasExcel,
-  pdfBoletaUrl,
   enviarEmailBoleta,
   anularBoleta,
   type BoletaListFilters,
@@ -14,6 +13,7 @@ import {
   type BoletaDteEstado,
   type BoletaMetodoPago,
 } from '../api/boletas'
+import { openPdf } from '../lib/pdf'
 import DteBadge from '../components/DteBadge'
 import BoletaAnularModal from '../components/BoletaAnularModal'
 import BoletaEmailModal from '../components/BoletaEmailModal'
@@ -134,7 +134,7 @@ export default function BoletasList() {
   }
 
   function handleDownloadPdf(id: number) {
-    window.open(pdfBoletaUrl(id), '_blank')
+    openPdf(`/api/boletas/${id}/pdf`).catch(() => showToast('Error al abrir PDF', false))
   }
 
   async function handleSendEmail(b: BoletaListItem) {
