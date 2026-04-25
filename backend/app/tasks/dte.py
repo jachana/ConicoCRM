@@ -40,7 +40,12 @@ def _sync_dte_estado(db: Session, emision: DteEmision, estado: str) -> None:
     elif emision.boleta_id:
         b = db.get(Boleta, emision.boleta_id)
         if b:
+            previous = b.dte_estado
             b.dte_estado = estado
+            if estado == "rechazada" and previous != "rechazada":
+                from app.services.boleta_stock import revertir_stock_boleta
+                revertir_stock_boleta(db, b, usuario_id=None, motivo="boleta_rechazo_sii")
+                b.estado = "anulada"
 
 
 def _process_emit(db: Session, emision: DteEmision, svc: DteService) -> None:
