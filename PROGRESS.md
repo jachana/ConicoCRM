@@ -139,6 +139,20 @@
   - Hook: al desactivar usuario se reasignan sus tareas pendientes al primer admin activo; guard bloquea desactivar al último admin
   - Tests: model, API, auto-gen por regla (8 tests), integration e2e
 
+- [x] **Wave 1 — Hardening producción**
+  - **W1-01 — Audit log global**
+    - Modelo `AuditLog(id, user_id, action, entity_type, entity_id, diff_json, ip, user_agent, created_at)` con índices compuestos por (entity_type, entity_id) y por created_at
+    - SQLAlchemy event listeners (`before_flush` + `after_flush_postexec`) capturan create/update/delete sobre 18 modelos auditables (Cotizacion, NotaVenta, Factura, NotaCredito, NotaDebito + líneas, Producto, ListaPrecios + items, Empresa, Cliente, User, PermissionOverride, SystemConfig)
+    - Diff legible: create → `{after}`, update → `{before, after, changed[]}`, delete → `{before}`
+    - Campos sensibles excluidos del diff: passwords, hashed_passwords, tokens, secrets (denylist explícita)
+    - Middleware ASGI `AuditContextMiddleware` extrae user_id (vía JWT), IP (X-Forwarded-For leftmost) y User-Agent en `ContextVar` por request
+    - API `GET /api/auditoria` con filtros (user_id, entity_type, action, entity_id, from_date, to_date) + paginación (limit ≤200, offset)
+    - Export `GET /api/auditoria/export.csv` con BOM UTF-8 para Excel
+    - Permiso: `usuarios:admin` (vendedor 403)
+    - Frontend `/admin/auditoria` con tabla, filtros, paginación y modal de diff (JSON pretty); botón Exportar CSV con auth bearer
+    - Sidebar: entry "Auditoría" admin-only
+    - 9 tests pytest cubren las 5 mutaciones requeridas + omisión de password + permission guard + filtros/paginación + export CSV; 3 tests vitest para la página
+
 - [x] **Tier A #7 — Búsqueda global Cmd+K**
   - Endpoint `/api/search` con fan-out a 8 entidades (productos, clientes, empresas, cotizaciones, NV, facturas, OC, empleados)
   - Permission-aware: omite categorías sin permiso; vendedor solo ve documentos propios

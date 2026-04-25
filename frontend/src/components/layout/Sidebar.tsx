@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Users, Package, ShoppingCart,
   Warehouse, Truck, UserCog, Building2, CreditCard,
-  ChevronLeft, ChevronRight, ChevronDown, LogOut, Sun, Moon, X, ClipboardList, Settings, Banknote, BarChart2, CheckSquare, AlarmClock,
+  ChevronLeft, ChevronRight, ChevronDown, LogOut, Sun, Moon, X, ClipboardList, Settings, Banknote, BarChart2, CheckSquare, AlarmClock, ShieldCheck,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth'
 import { useTheme } from './ThemeProvider'
@@ -62,6 +62,7 @@ const NAV: NavItem[] = [
   { to: '/usuarios',       icon: Users,           label: 'Usuarios',          module: 'usuarios' },
   { to: '/configuracion',  icon: Settings,        label: 'Configuración',     adminOnly: true },
   { to: '/admin/tareas/config', icon: AlarmClock, label: 'Reglas de tareas',  adminOnly: true },
+  { to: '/admin/auditoria',     icon: ShieldCheck, label: 'Auditoría',         adminOnly: true },
 ]
 
 export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) {

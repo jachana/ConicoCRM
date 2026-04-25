@@ -27,3 +27,4 @@ from app.models.orden_compra import OrdenCompra, OrdenCompraLinea  # noqa: F401
 from app.models.producto_documento import ProductoDocumento  # noqa: F401
 from app.models.tarea import Tarea  # noqa: F401
 from app.models.regla_tarea import ReglaTarea  # noqa: F401
+from app.models.audit_log import AuditLog  # noqa: F401
