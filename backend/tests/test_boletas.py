@@ -1,4 +1,6 @@
+import os
 import random
+import threading
 from decimal import Decimal
 import pytest
 from unittest.mock import patch
@@ -268,3 +270,34 @@ def test_export_excel(mock_emit, client, admin_token):
     r = client.get("/api/boletas/export/excel", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
     assert "spreadsheet" in r.headers["content-type"]
+
+
+@pytest.mark.skipif(
+    "sqlite" in os.environ.get("DATABASE_URL", "sqlite"),
+    reason="row-level lock with_for_update requires Postgres",
+)
+@patch("app.api.boletas.emit_dte")
+def test_numeracion_concurrente_no_duplica(mock_emit, client, admin_token):
+    payload = {
+        "tipo_dte": "39",
+        "metodo_pago": "efectivo",
+        "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "100"}],
+    }
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    results: list[int | None] = []
+    lock = threading.Lock()
+
+    def crear():
+        r = client.post("/api/boletas/", json=payload, headers=headers)
+        with lock:
+            results.append(r.json().get("numero") if r.status_code == 201 else None)
+
+    threads = [threading.Thread(target=crear) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert len(results) == 8
+    assert all(n is not None for n in results), f"some requests failed: {results}"
+    assert len(set(results)) == 8, f"duplicate numero detected: {results}"
