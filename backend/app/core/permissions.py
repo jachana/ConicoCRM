@@ -4,7 +4,7 @@ from app.models.permission import PermissionOverride
 
 MODULES = [
     "catalogo", "clientes", "proveedores", "empresas", "cotizaciones", "nota_venta",
-    "facturas", "ordenes_compra", "inventario", "rrhh", "dashboard", "usuarios",
+    "facturas", "boletas", "ordenes_compra", "inventario", "rrhh", "dashboard", "usuarios",
     "tareas",
 ]
 ACTIONS = ["view", "create", "edit", "delete", "view_all", "admin"]
@@ -19,6 +19,7 @@ _DEFAULT: dict[str, dict[str, dict[str, bool]]] = {
         "cotizaciones":   {"view": True,  "create": True,  "edit": True,  "delete": True},
         "nota_venta":     {"view": True,  "create": True,  "edit": True,  "delete": True},
         "facturas":       {"view": True,  "create": True,  "edit": True,  "delete": True},
+        "boletas":        {"view": True,  "create": True,  "edit": True,  "delete": True},
         "ordenes_compra": {"view": True,  "create": True,  "edit": True,  "delete": True},
         "inventario":     {"view": True,  "create": True,  "edit": True,  "delete": True},
         "dashboard":      {"view": True,  "create": False, "edit": False, "delete": False},
@@ -34,6 +35,7 @@ _DEFAULT: dict[str, dict[str, dict[str, bool]]] = {
         "cotizaciones":   {"view": True,  "create": True,  "edit": True,  "delete": False},
         "nota_venta":     {"view": True,  "create": True,  "edit": True,  "delete": False},
         "facturas":       {"view": True,  "create": False, "edit": False, "delete": False},
+        "boletas":        {"view": True,  "create": True,  "edit": True,  "delete": False},
         "ordenes_compra": {"view": False, "create": False, "edit": False, "delete": False},
         "inventario":     {"view": False, "create": False, "edit": False, "delete": False},
         "dashboard":      {"view": True,  "create": False, "edit": False, "delete": False},
