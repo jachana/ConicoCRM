@@ -1,9 +1,10 @@
 """Reportes — JSON endpoints for Ventas, Cobranza, and Inventario."""
 from __future__ import annotations
 
+import csv
 from datetime import date, timedelta
 from decimal import Decimal
-from io import BytesIO
+from io import BytesIO, StringIO
 
 import openpyxl
 from fastapi import APIRouter, HTTPException, Query
@@ -860,6 +861,65 @@ def exportar_por_marca_excel(
         ws3.append([k, v])
 
     return _excel_response(wb, "por-marca", date_from, date_to)
+
+
+@router.get("/por-marca/export/csv")
+def exportar_por_marca_csv(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    cliente_id: list[int] | None = Query(None),
+    marca_id: list[int] | None = Query(None),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    current_user, db = perms
+    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    data = _get_por_marca(date_from, date_to, db, vendedor_id, cliente_id, marca_id)
+
+    buf = StringIO()
+    writer = csv.writer(buf)
+
+    writer.writerow(["## KPIs"])
+    writer.writerow(["metrica", "valor"])
+    for k, v in data["kpis"].items():
+        writer.writerow([k, v])
+    writer.writerow([])
+
+    writer.writerow(["## Por Marca"])
+    writer.writerow([
+        "marca", "cantidad", "neto", "ganancia",
+        "margen_pct", "num_facturas", "num_clientes", "ticket_promedio",
+    ])
+    for row in data["por_marca"]:
+        writer.writerow([
+            row["nombre"], row["cantidad"], row["neto"], row["ganancia"],
+            row["margen_pct"], row["num_facturas"], row["num_clientes"], row["ticket_promedio"],
+        ])
+    writer.writerow([])
+
+    writer.writerow(["## Marca + Cliente"])
+    writer.writerow([
+        "marca", "cliente", "cantidad", "neto", "ganancia", "margen_pct", "num_facturas",
+    ])
+    for row in data["por_marca_cliente"]:
+        writer.writerow([
+            row["marca_nombre"], row["cliente_nombre"], row["cantidad"],
+            row["neto"], row["ganancia"], row["margen_pct"], row["num_facturas"],
+        ])
+    writer.writerow([])
+
+    writer.writerow(["## Sin Marca"])
+    writer.writerow(["metrica", "valor"])
+    for k, v in data["sin_marca"].items():
+        writer.writerow([k, v])
+
+    body = "﻿" + buf.getvalue()  # BOM for Excel UTF-8
+    filename = f"por-marca-{date_from}-{date_to}.csv"
+    return StreamingResponse(
+        iter([body]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 # ---------------------------------------------------------------------------

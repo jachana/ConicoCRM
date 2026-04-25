@@ -275,3 +275,19 @@ def test_por_marca_excel_export(client, admin_token):
     )
     assert "por-marca" in r.headers["content-disposition"]
     assert len(r.content) > 0
+
+
+def test_por_marca_csv_export(client, admin_token):
+    r = client.get(
+        "/api/reportes/por-marca/export/csv",
+        params={"date_from": "2026-01-01", "date_to": "2026-04-30"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/csv")
+    assert "por-marca" in r.headers["content-disposition"].lower()
+    body = r.content.decode("utf-8-sig")
+    assert "## KPIs" in body
+    assert "## Por Marca" in body
+    assert "## Marca + Cliente" in body
+    assert "## Sin Marca" in body
