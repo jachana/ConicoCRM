@@ -56,6 +56,7 @@ def upgrade() -> None:
         sa.Column('email_enviado_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.CheckConstraint("tipo_dte IN ('39','41')", name='ck_boletas_tipo_dte'),
     )
     op.create_index('ix_boletas_numero', 'boletas', ['numero'], unique=True)
     op.create_index('ix_boletas_fecha', 'boletas', ['fecha'])
