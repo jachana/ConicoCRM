@@ -41,11 +41,9 @@ def upgrade() -> None:
     op.create_index('ix_audit_logs_entity_type', 'audit_logs', ['entity_type'])
     op.create_index('ix_audit_logs_created_at', 'audit_logs', ['created_at'])
     op.create_index('ix_audit_logs_entity', 'audit_logs', ['entity_type', 'entity_id'])
-    op.create_index('ix_audit_logs_created_desc', 'audit_logs', ['created_at'])
 
 
 def downgrade() -> None:
-    op.drop_index('ix_audit_logs_created_desc', table_name='audit_logs')
     op.drop_index('ix_audit_logs_entity', table_name='audit_logs')
     op.drop_index('ix_audit_logs_created_at', table_name='audit_logs')
     op.drop_index('ix_audit_logs_entity_type', table_name='audit_logs')

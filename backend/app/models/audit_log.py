@@ -34,5 +34,4 @@ class AuditLog(Base):
 
     __table_args__ = (
         Index("ix_audit_logs_entity", "entity_type", "entity_id"),
-        Index("ix_audit_logs_created_desc", "created_at"),
     )

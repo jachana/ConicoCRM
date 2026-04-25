@@ -41,7 +41,12 @@ def _resolve_user_id(request: Request) -> int | None:
     if not auth.lower().startswith("bearer "):
         return None
     token = auth[7:].strip()
-    payload = decode_token(token)
+    # decode_token puede lanzar ante tokens malformados; el middleware NUNCA
+    # debe 500 una request por contexto de auditoría → swallow silently.
+    try:
+        payload = decode_token(token)
+    except Exception:
+        return None
     if not payload or payload.get("type") != "access":
         return None
     sub = payload.get("sub")

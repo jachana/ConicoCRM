@@ -38,11 +38,6 @@ SENSITIVE_FIELDS: set[str] = {
 }
 
 
-# Mapeo nombre de modelo (camelCase) → identificador legible (lo que va a entity_type).
-# Se popula lazy en `_register_listeners`.
-_AUDITABLE_TABLES: set[str] = set()
-
-
 def _is_auditable(instance: Any) -> bool:
     return type(instance).__name__ in _AUDITABLE_MODEL_NAMES
 

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { listarAuditoria, exportarAuditoriaCsvUrl, type AuditLog, type AuditFiltros } from '../api/auditoria'
 import { useAuthStore } from '../stores/auth'
 
@@ -28,32 +29,22 @@ export default function AdminAuditoria() {
   const user = useAuthStore(s => s.user)
   const isAdmin = user?.role === 'admin'
   const [filtros, setFiltros] = useState<AuditFiltros>({ limit: PAGE_SIZE, offset: 0 })
-  const [items, setItems] = useState<AuditLog[]>([])
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [diffViewing, setDiffViewing] = useState<AuditLog | null>(null)
 
-  async function cargar(f: AuditFiltros) {
-    setLoading(true)
-    setError(null)
-    try {
-      const page = await listarAuditoria(f)
-      setItems(page.items)
-      setTotal(page.total)
-    } catch (e: unknown) {
-      const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
-      setError(typeof detail === 'string' ? detail : 'Error al cargar auditoría')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['auditoria', filtros],
+    queryFn: () => listarAuditoria(filtros),
+    enabled: isAdmin,
+  })
 
-  useEffect(() => {
-    if (!isAdmin) return
-    cargar(filtros)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtros.entity_type, filtros.action, filtros.user_id, filtros.from_date, filtros.to_date, filtros.entity_id, filtros.offset, isAdmin])
+  const items: AuditLog[] = data?.items ?? []
+  const total = data?.total ?? 0
+  const errorMsg = isError
+    ? (() => {
+        const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
+        return typeof detail === 'string' ? detail : 'Error al cargar auditoría'
+      })()
+    : null
 
   function setFiltro<K extends keyof AuditFiltros>(k: K, v: AuditFiltros[K]) {
     setFiltros(prev => ({ ...prev, [k]: v, offset: 0 }))
@@ -162,7 +153,7 @@ export default function AdminAuditoria() {
         />
       </div>
 
-      {error && <div className="bg-red-100 text-red-700 p-2 rounded mb-3">{error}</div>}
+      {errorMsg && <div className="bg-red-100 text-red-700 p-2 rounded mb-3">{errorMsg}</div>}
 
       {/* Tabla */}
       <div className="overflow-x-auto border rounded">
@@ -179,10 +170,10 @@ export default function AdminAuditoria() {
             </tr>
           </thead>
           <tbody>
-            {loading && (
+            {isLoading && (
               <tr><td colSpan={7} className="px-3 py-6 text-center text-gray-500">Cargando…</td></tr>
             )}
-            {!loading && items.length === 0 && (
+            {!isLoading && items.length === 0 && (
               <tr><td colSpan={7} className="px-3 py-6 text-center text-gray-500">Sin registros</td></tr>
             )}
             {items.map(it => (

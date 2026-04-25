@@ -153,34 +153,52 @@ def exportar_auditoria_csv(
         to_date=td,
     ).order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
 
-    items = q.all()
-    rows = _attach_user_info(db, items)
+    # Pre-compute user_map una sola vez con un subquery de user_ids distintos
+    # del resultado filtrado. Evita N+1 sin materializar todos los AuditLog en memoria.
+    distinct_user_ids_select = (
+        q.with_entities(AuditLog.user_id)
+        .filter(AuditLog.user_id.isnot(None))
+        .distinct()
+        .subquery()
+        .select()
+    )
+    users = db.query(User).filter(User.id.in_(distinct_user_ids_select)).all()
+    user_map: dict[int, tuple[str, str]] = {u.id: (u.name, u.email) for u in users}
 
-    buf = io.StringIO()
-    # BOM para que Excel reconozca UTF-8.
-    buf.write("﻿")
-    writer = csv.writer(buf)
-    writer.writerow([
-        "id", "created_at", "user_id", "user_name", "user_email",
-        "action", "entity_type", "entity_id", "ip", "user_agent", "diff_json",
-    ])
-    for r in rows:
+    def _stream():
+        buf = io.StringIO()
+        # BOM para que Excel reconozca UTF-8.
+        buf.write("﻿")
+        writer = csv.writer(buf)
         writer.writerow([
-            r["id"],
-            r["created_at"].isoformat() if r["created_at"] else "",
-            r["user_id"] or "",
-            r["user_name"] or "",
-            r["user_email"] or "",
-            r["action"],
-            r["entity_type"],
-            r["entity_id"],
-            r["ip"] or "",
-            r["user_agent"] or "",
-            json.dumps(r["diff_json"], ensure_ascii=False) if r["diff_json"] else "",
+            "id", "created_at", "user_id", "user_name", "user_email",
+            "action", "entity_type", "entity_id", "ip", "user_agent", "diff_json",
         ])
-    buf.seek(0)
+        yield buf.getvalue()
+        buf.seek(0)
+        buf.truncate(0)
+
+        for it in q.yield_per(500):
+            name, email = user_map.get(it.user_id, (None, None)) if it.user_id else (None, None)
+            writer.writerow([
+                it.id,
+                it.created_at.isoformat() if it.created_at else "",
+                it.user_id or "",
+                name or "",
+                email or "",
+                it.action,
+                it.entity_type,
+                it.entity_id,
+                it.ip or "",
+                it.user_agent or "",
+                json.dumps(it.diff_json, ensure_ascii=False) if it.diff_json else "",
+            ])
+            yield buf.getvalue()
+            buf.seek(0)
+            buf.truncate(0)
+
     return StreamingResponse(
-        iter([buf.getvalue()]),
+        _stream(),
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": "attachment; filename=auditoria.csv"},
     )
