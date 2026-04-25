@@ -139,6 +139,17 @@
   - Hook: al desactivar usuario se reasignan sus tareas pendientes al primer admin activo; guard bloquea desactivar al último admin
   - Tests: model, API, auto-gen por regla (8 tests), integration e2e
 
+- [x] **Wave 1 #6 — Observabilidad (W1-06)**
+  - Logs estructurados con `loguru` controlados por `LOG_FORMAT` (json en prod, pretty en dev) y `LOG_LEVEL`
+  - Middleware `RequestLoggerMiddleware` emite una línea por request con `request_id` (uuid4 generado o tomado de header `x-request-id`), `user_id` (decodificado del JWT, `None` si no autenticado), `route` (path template `/api/clientes/{id}`), `method`, `status`, `latency_ms`; ERROR para 5xx, INFO para el resto
+  - Echo del `x-request-id` en la respuesta para correlación cliente↔servidor
+  - Sentry backend (`sentry-sdk[fastapi]`) inicializado en `app/core/observability.py`; DSN, env, sample rate y release vía settings; init no-op cuando `SENTRY_DSN` está vacío
+  - Sentry frontend (`@sentry/react`) inicializado en `src/sentry.ts`; `ErrorBoundary` reenvía excepciones a `Sentry.captureException`; DSN vacío = no-op
+  - Endpoints `/healthz` y `/readyz` (sin auth, fuera de schema) con ping a Postgres + Redis; 200 si todo ok / 503 si DB falla; Redis no configurado se reporta `skipped` sin tumbar la respuesta
+  - Settings nuevas: `SENTRY_DSN`, `SENTRY_ENV`, `SENTRY_TRACES_SAMPLE_RATE`, `LOG_FORMAT`, `LOG_LEVEL`
+  - `frontend/.env.example` con `VITE_SENTRY_DSN`, `VITE_SENTRY_ENV`, `VITE_SENTRY_TRACES_SAMPLE_RATE`
+  - Tests (`tests/test_observabilidad.py`): healthz ok / db down 503 / redis skipped no-503 / readyz; log-line trae todos los campos requeridos; user_id presente con auth; 5xx logs en ERROR; init Sentry sin DSN no crashea; LOG_FORMAT=json emite JSON parseable
+
 - [x] **Tier A #7 — Búsqueda global Cmd+K**
   - Endpoint `/api/search` con fan-out a 8 entidades (productos, clientes, empresas, cotizaciones, NV, facturas, OC, empleados)
   - Permission-aware: omite categorías sin permiso; vendedor solo ve documentos propios

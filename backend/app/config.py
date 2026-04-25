@@ -17,4 +17,12 @@ class Settings(BaseSettings):
     lioren_api_key: str = ""
     lioren_webhook_secret: str = ""
 
+    # Observability (W1-06)
+    sentry_dsn: str = ""
+    sentry_env: str = "production"
+    sentry_traces_sample_rate: float = 0.0
+    sentry_release: str = ""
+    log_format: str = "pretty"  # "json" | "pretty"
+    log_level: str = "INFO"
+
 settings = Settings()

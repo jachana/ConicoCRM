@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+from app.core.logging import configure_logging
+from app.core.observability import init_sentry
+from app.core.request_logger import RequestLoggerMiddleware
 from app.api import auth, users
+from app.api import health as health_api
 from app.api import proveedores
 from app.api import productos
 from app.api import clientes
@@ -33,8 +37,20 @@ from app.api import tareas as tareas_api
 from app.api import reglas_tarea as reglas_tarea_api
 from app.api import search as search_api
 
+# W1-06 — observability bootstrap. Order matters:
+#   1. Logging configured first so subsequent init steps log structurally.
+#   2. Sentry initialized (no-op if DSN empty).
+#   3. RequestLoggerMiddleware added BEFORE CORS/auth so unauthenticated
+#      requests (401s, 403s) still produce an access log line.
+configure_logging()
+init_sentry()
+
 app = FastAPI(title="Conico PMS")
 
+# Note on middleware order: Starlette/FastAPI runs middlewares LIFO relative
+# to add order, so the LAST add_middleware wraps the OUTERMOST. We add the
+# request logger LAST so it sees every response (including CORS-rejected ones)
+# and assigns a request_id at the very entry of the stack.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in settings.cors_origins.split(",")],
@@ -42,6 +58,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestLoggerMiddleware)
+
+# Health endpoints — no prefix, no auth.
+app.include_router(health_api.router)
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])

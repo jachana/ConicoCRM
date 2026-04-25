@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { Sentry } from '../sentry'
 
 interface Props { children: ReactNode }
 interface State { error: Error | null }
@@ -12,6 +13,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary]', error, info.componentStack)
+    // Forward to Sentry. captureException is a no-op when Sentry was not
+    // initialized (DSN empty), so this is safe in local/dev.
+    Sentry.captureException(error, {
+      contexts: { react: { componentStack: info.componentStack } },
+    })
   }
 
   render() {
