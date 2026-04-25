@@ -64,9 +64,10 @@ Modal de búsqueda global accesible vía atajo de teclado, que permita encontrar
 
 ### Permisos
 
-- Endpoint hace fan-out validando cada categoría con `require_permission` correspondiente (no falla, solo omite)
+- El endpoint usa un helper soft `has_permission(user, modulo, accion) -> bool` (no levanta 403); si retorna `False`, la categoría se omite del fan-out
 - Si el user no tiene `rrhh:view`, la key `empleados` **se omite por completo** de la respuesta (no aparece como `[]`)
 - Para vendedor, queries en cotizaciones/NV filtran por `vendedor_id = current_user.id`; facturas filtran transitivamente vía `nota_venta.vendedor_id`
+- Si el helper soft no existe aún, la implementación lo agrega como utilidad junto al `require_permission` existente (extracción del check booleano subyacente)
 
 ## API contracts
 
