@@ -135,11 +135,15 @@ Sin cambios. Endpoint `/api/dte/webhook` ya despacha por `emision_id`.
 
 ### Anulación
 
-Anular boleta → genera NC tipo 61 referenciando boleta (FK `boleta_id` agregada a `notas_credito`). NC al emitirse exitosamente revierte stock vía `MovimientoInventario(tipo='nc_anulacion_boleta', cantidad=+N)`.
+Anular boleta → genera NC tipo 61 referenciando boleta (FK `boleta_id` agregada a `notas_credito`). Al confirmarse la emisión exitosa de la NC, revertir stock vía `MovimientoInventario(tipo='nc_anulacion_boleta', cantidad=+N)` por cada línea original. Boleta pasa a `estado='anulada'`.
 
 ### Stock
 
-Al confirmar emisión exitosa (track_id obtenido), crear `MovimientoInventario(tipo='boleta_emit', boleta_id=X, cantidad=-N)` por línea. Si SII rechaza vía webhook (`dte_estado='rechazada'`) → revertir movimientos automáticamente.
+Crear `MovimientoInventario(tipo='boleta_emit', boleta_id=X, cantidad=-N)` por línea **sincrónicamente al crear la boleta**, antes de encolar `emit_dte`. Razón: mercadería sale físicamente al emitir; no podemos esperar la respuesta async del SII para reservar inventario, sino se vendería dos veces el mismo stock entre creación y aceptación.
+
+Si SII rechaza vía webhook (`dte_estado='rechazada'`) → revertir movimientos automáticamente vía hook en `_sync_dte_estado` y dejar boleta en estado `anulada`.
+
+Si la boleta queda `dte_estado='procesando'` indefinidamente (sin respuesta SII), el stock permanece descontado — operación manual reconciliará. Documentar en runbook.
 
 ## 6. Frontend
 
