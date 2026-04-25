@@ -173,3 +173,9 @@ def test_desactivar_ultimo_admin_rechazado(client, admin_token, admin_user, db):
     )
     assert resp.status_code == 400
     assert "admin" in resp.json()["detail"].lower()
+
+
+def test_user_has_preferencias_default_empty_dict(db, admin_user):
+    from app.models.user import User
+    fresh = db.get(User, admin_user.id)
+    assert fresh.preferencias == {}
