@@ -124,3 +124,70 @@ def test_post_boleta_41_con_linea_afecta_falla(mock_emit, client, admin_token):
     )
     assert r.status_code == 422
     assert "exent" in r.text.lower()
+
+
+@patch("app.api.boletas.emit_dte")
+def test_listar_filtra_por_patente(mock_emit, client, admin_token):
+    client.post("/api/boletas/", json={
+        "tipo_dte": "39", "metodo_pago": "efectivo", "patente_vehiculo": "XYZ99",
+        "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "100"}],
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    client.post("/api/boletas/", json={
+        "tipo_dte": "39", "metodo_pago": "efectivo", "patente_vehiculo": "ABC11",
+        "lineas": [{"orden": 0, "descripcion": "y", "cantidad": "1", "precio_unitario": "200"}],
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+
+    r = client.get("/api/boletas/?patente=xyz99", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    items = r.json()
+    assert len(items) == 1
+    assert items[0]["patente_vehiculo"] == "XYZ99"
+
+
+@patch("app.api.boletas.emit_dte")
+def test_detalle_devuelve_lineas(mock_emit, client, admin_token):
+    r = client.post("/api/boletas/", json={
+        "tipo_dte": "39", "metodo_pago": "efectivo",
+        "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "100"}],
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    bid = r.json()["id"]
+    r2 = client.get(f"/api/boletas/{bid}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r2.status_code == 200
+    assert len(r2.json()["lineas"]) == 1
+
+
+@patch("app.api.boletas.emit_dte")
+def test_patch_actualiza_email_y_patente(mock_emit, client, admin_token):
+    r = client.post("/api/boletas/", json={
+        "tipo_dte": "39", "metodo_pago": "efectivo",
+        "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "100"}],
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    bid = r.json()["id"]
+    r2 = client.patch(
+        f"/api/boletas/{bid}",
+        json={"email_envio": "x@y.cl", "patente_vehiculo": "PP-22"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r2.status_code == 200
+    assert r2.json()["email_envio"] == "x@y.cl"
+    assert r2.json()["patente_vehiculo"] == "PP22"
+
+
+@patch("app.api.boletas.emit_dte")
+def test_patch_bloqueado_si_dte_aceptada(mock_emit, client, admin_token, db):
+    r = client.post("/api/boletas/", json={
+        "tipo_dte": "39", "metodo_pago": "efectivo",
+        "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "100"}],
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    bid = r.json()["id"]
+    from app.models.boleta import Boleta
+    b = db.get(Boleta, bid)
+    b.dte_estado = "aceptada"
+    db.commit()
+
+    r2 = client.patch(
+        f"/api/boletas/{bid}",
+        json={"email_envio": "x@y.cl"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r2.status_code == 409

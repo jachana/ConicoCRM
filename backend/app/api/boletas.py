@@ -1,15 +1,15 @@
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, Query, status
+from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_permission
 from app.models.boleta import Boleta, BoletaLinea
 from app.models.dte_emision import DteEmision
 from app.models.system_config import SystemConfig
 from app.models.user import User
-from app.schemas.boleta import BoletaCreate, BoletaOut
+from app.schemas.boleta import BoletaCreate, BoletaListOut, BoletaOut, BoletaUpdate
 from app.services.boleta_stock import descontar_stock_boleta
 from app.tasks.dte import emit_dte
 
@@ -71,6 +71,22 @@ def _validar_boleta_41(payload: BoletaCreate) -> None:
                 status_code=422,
                 detail="Boleta exenta (DTE 41) no admite líneas afectas. Marcá todas las líneas como exenta=true."
             )
+
+
+def _load_boleta(db: Session, boleta_id: int) -> Boleta:
+    boleta = (
+        db.query(Boleta)
+        .options(
+            joinedload(Boleta.cliente),
+            joinedload(Boleta.vendedor),
+            joinedload(Boleta.lineas),
+        )
+        .filter(Boleta.id == boleta_id)
+        .first()
+    )
+    if not boleta:
+        raise HTTPException(status_code=404, detail="Boleta no encontrada")
+    return boleta
 
 
 @router.post("/", response_model=BoletaOut, status_code=status.HTTP_201_CREATED)
@@ -138,4 +154,78 @@ def crear_boleta(
 
     emit_dte.delay(emision.id)
 
+    return boleta
+
+
+@router.get("/", response_model=list[BoletaListOut])
+def listar_boletas(
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    cliente_id: int | None = Query(None),
+    patente: str | None = Query(None),
+    estado: list[str] | None = Query(None),
+    dte_estado: list[str] | None = Query(None),
+    metodo_pago: str | None = Query(None),
+    vendedor_id: int | None = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    perms: tuple[User, Session] = require_permission("boletas", "view"),
+):
+    _, db = perms
+    q = db.query(Boleta).options(
+        joinedload(Boleta.cliente),
+        joinedload(Boleta.vendedor),
+    )
+    if fecha_desde:
+        q = q.filter(Boleta.fecha >= fecha_desde)
+    if fecha_hasta:
+        q = q.filter(Boleta.fecha <= fecha_hasta)
+    if cliente_id:
+        q = q.filter(Boleta.cliente_id == cliente_id)
+    if patente:
+        normalizada = patente.replace(" ", "").replace("-", "").upper()
+        q = q.filter(Boleta.patente_vehiculo == normalizada)
+    if estado:
+        q = q.filter(Boleta.estado.in_(estado))
+    if dte_estado:
+        q = q.filter(Boleta.dte_estado.in_(dte_estado))
+    if metodo_pago:
+        q = q.filter(Boleta.metodo_pago == metodo_pago)
+    if vendedor_id:
+        q = q.filter(Boleta.vendedor_id == vendedor_id)
+    return (
+        q.order_by(Boleta.numero.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+
+
+@router.get("/{boleta_id}", response_model=BoletaOut)
+def obtener_boleta(
+    boleta_id: int,
+    perms: tuple[User, Session] = require_permission("boletas", "view"),
+):
+    _, db = perms
+    return _load_boleta(db, boleta_id)
+
+
+@router.patch("/{boleta_id}", response_model=BoletaOut)
+def actualizar_boleta(
+    boleta_id: int,
+    body: BoletaUpdate,
+    perms: tuple[User, Session] = require_permission("boletas", "edit"),
+):
+    _, db = perms
+    boleta = _load_boleta(db, boleta_id)
+    if boleta.dte_estado == "aceptada":
+        raise HTTPException(status_code=409, detail="Boleta ya aceptada por SII; no se puede modificar")
+    if boleta.estado == "anulada":
+        raise HTTPException(status_code=409, detail="Boleta anulada; no se puede modificar")
+
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(boleta, field, value)
+
+    db.commit()
+    db.refresh(boleta)
     return boleta
