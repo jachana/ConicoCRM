@@ -25,6 +25,8 @@ function fmtDate(iso: string) {
 
 export default function AdminAuditoria() {
   const accessToken = useAuthStore(s => s.accessToken)
+  const user = useAuthStore(s => s.user)
+  const isAdmin = user?.role === 'admin'
   const [filtros, setFiltros] = useState<AuditFiltros>({ limit: PAGE_SIZE, offset: 0 })
   const [items, setItems] = useState<AuditLog[]>([])
   const [total, setTotal] = useState(0)
@@ -48,9 +50,10 @@ export default function AdminAuditoria() {
   }
 
   useEffect(() => {
+    if (!isAdmin) return
     cargar(filtros)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtros.entity_type, filtros.action, filtros.user_id, filtros.from_date, filtros.to_date, filtros.entity_id, filtros.offset])
+  }, [filtros.entity_type, filtros.action, filtros.user_id, filtros.from_date, filtros.to_date, filtros.entity_id, filtros.offset, isAdmin])
 
   function setFiltro<K extends keyof AuditFiltros>(k: K, v: AuditFiltros[K]) {
     setFiltros(prev => ({ ...prev, [k]: v, offset: 0 }))
@@ -77,6 +80,17 @@ export default function AdminAuditoria() {
   const offset = filtros.offset ?? 0
   const limit = filtros.limit ?? PAGE_SIZE
   const lastPageOffset = Math.max(0, Math.floor((total - 1) / limit) * limit)
+
+  if (!isAdmin) {
+    return (
+      <div className="p-6">
+        <h1 className="text-xl font-semibold mb-2">Auditoría</h1>
+        <div className="bg-red-100 text-red-700 p-3 rounded">
+          No tienes permiso para acceder a esta sección.
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6">

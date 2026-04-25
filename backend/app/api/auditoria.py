@@ -28,8 +28,12 @@ def _parse_iso(s: str | None, field: str) -> datetime | None:
     if not s:
         return None
     try:
-        # Permite tanto "YYYY-MM-DD" como ISO completo.
+        # Permite tanto "YYYY-MM-DD" como ISO completo. Para `to_date`
+        # date-only, lo tratamos como fin-de-día (inclusivo) para que
+        # `to_date=2026-04-24` incluya logs de ese día.
         if len(s) == 10:
+            if field == "to_date":
+                return datetime.fromisoformat(s + "T23:59:59.999999")
             return datetime.fromisoformat(s + "T00:00:00")
         return datetime.fromisoformat(s)
     except ValueError:

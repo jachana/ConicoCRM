@@ -206,3 +206,76 @@ def test_filtros_y_paginacion(client, admin_token):
     assert data["total"] >= 1
     for item in data["items"]:
         assert item["entity_id"] == str(ids[0])
+
+
+# ---------------------------------------------------------------------------
+# Regresión: ListaPreciosItem (typo de classname → no se auditaba)
+# ---------------------------------------------------------------------------
+
+
+def test_lista_precios_item_insert_writes_audit_log(client, admin_token, admin_user):
+    """Regresión spec review #1: el classname auditable era `ListaPrecioItem`
+    (singular) pero el modelo real es `ListaPreciosItem` (plural). Sin esta
+    fix, los inserts de líneas de listas de precio nunca generaban audit log.
+    """
+    from decimal import Decimal
+    from app.models.lista_precios import ListaPrecios, ListaPreciosItem
+    from tests.conftest import TestingSession
+
+    session = TestingSession()
+    try:
+        # Crea la lista (también debe auditarse).
+        lista = ListaPrecios(
+            nombre_archivo="lista_test.csv",
+            ruta_archivo="/tmp/lista_test.csv",
+            subida_por_id=admin_user.id,
+        )
+        session.add(lista)
+        session.flush()
+
+        # Inserta el ítem — éste es el que la fix debe auditar.
+        item = ListaPreciosItem(
+            lista_id=lista.id,
+            sku="SKU-AUDIT-1",
+            costo_unitario=Decimal("123.45"),
+        )
+        session.add(item)
+        session.commit()
+    finally:
+        session.close()
+
+    data = _list_logs(client, admin_token, entity_type="ListaPreciosItem", action="create")
+    assert data["total"] >= 1, "ListaPreciosItem insert should have produced an audit log row"
+    log = data["items"][0]
+    assert log["entity_type"] == "ListaPreciosItem"
+    assert log["action"] == "create"
+    assert log["diff_json"] is not None
+    assert "after" in log["diff_json"]
+    assert log["diff_json"]["after"]["sku"] == "SKU-AUDIT-1"
+
+
+# ---------------------------------------------------------------------------
+# Regresión: to_date inclusive end-of-day
+# ---------------------------------------------------------------------------
+
+
+def test_to_date_same_day_is_inclusive(client, admin_token):
+    """Regresión spec review #3: `to_date=YYYY-MM-DD` parseaba a T00:00:00,
+    excluyendo logs creados el mismo día. Debe interpretarse como fin-de-día.
+    """
+    from datetime import date
+
+    # Genera al menos un log hoy.
+    r = client.post(
+        "/api/empresas/",
+        json={"nombre": "Empresa Same-Day Filter"},
+        headers=_bearer(admin_token),
+    )
+    assert r.status_code in (200, 201)
+
+    today = date.today().isoformat()
+    data = _list_logs(client, admin_token, entity_type="Empresa", action="create", to_date=today)
+    # Si to_date fuera exclusivo at-midnight, este match sería 0.
+    assert data["total"] >= 1
+    matched = [it for it in data["items"] if it["diff_json"]["after"].get("nombre") == "Empresa Same-Day Filter"]
+    assert len(matched) >= 1, "Log creado hoy debe estar incluido cuando to_date == hoy"
