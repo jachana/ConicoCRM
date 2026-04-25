@@ -82,3 +82,14 @@ def test_sync_dte_estado_boleta_aceptada(db):
     db.flush()
     _sync_dte_estado(db, emision, "aceptada")
     assert boleta.dte_estado == "aceptada"
+
+
+def test_process_emit_raises_when_no_document_fk(db):
+    from app.models.dte_emision import DteEmision
+    from app.tasks.dte import _process_emit
+    import pytest
+
+    emision = DteEmision(tipo="033", monto_neto=0, monto_iva=0, monto_total=0)
+
+    with pytest.raises(ValueError, match="no document FK"):
+        _process_emit(db, emision, MagicMock())

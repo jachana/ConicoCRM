@@ -62,12 +62,14 @@ def _process_emit(db: Session, emision: DteEmision, svc: DteService) -> None:
             joinedload(NotaDebito.cliente),
         ).filter_by(id=emision.nota_debito_id).first()
         payload = svc.build_nd_payload(doc, db)
-    else:
+    elif emision.boleta_id:
         doc = db.query(Boleta).options(
             joinedload(Boleta.lineas),
             joinedload(Boleta.cliente),
         ).filter_by(id=emision.boleta_id).first()
         payload = svc.build_boleta_payload(doc, db)
+    else:
+        raise ValueError(f"DteEmision {emision.id} has no document FK set")
 
     result = svc.emit(payload)
     emision.track_id = result.get("track_id")
