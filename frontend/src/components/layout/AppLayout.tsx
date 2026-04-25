@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
 import { LayoutDashboard, FileText, ShoppingCart, Users, Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
+import GlobalSearchModal from '../search/GlobalSearchModal'
+import SearchButton from '../search/SearchButton'
+import { useGlobalShortcut } from '../../hooks/useGlobalShortcut'
+import { usePreferencesStore } from '../../stores/preferences'
 
 const BOTTOM_TABS = [
   { to: '/',             icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -13,6 +17,9 @@ const BOTTOM_TABS = [
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const atajo = usePreferencesStore(s => s.preferencias.busqueda_atajo)
+  useGlobalShortcut(atajo, () => setSearchOpen(true))
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-[#0B0F1A] overflow-hidden">
@@ -52,7 +59,12 @@ export default function AppLayout() {
             <Menu size={20} />
           </button>
           <span className="text-sm font-bold tracking-widest text-white">CONICO</span>
-          <div className="w-8" />
+          <SearchButton onClick={() => setSearchOpen(true)} />
+        </header>
+
+        {/* Desktop header strip */}
+        <header className="hidden md:flex items-center justify-end gap-2 h-10 px-4 border-b border-gray-200 dark:border-white/5 bg-white dark:bg-[#0f1422] flex-shrink-0">
+          <SearchButton onClick={() => setSearchOpen(true)} />
         </header>
 
         {/* Page content — extra bottom padding on mobile for bottom nav */}
@@ -91,6 +103,8 @@ export default function AppLayout() {
           </button>
         </div>
       </nav>
+
+      <GlobalSearchModal open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   )
 }

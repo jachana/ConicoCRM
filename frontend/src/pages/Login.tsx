@@ -1,6 +1,8 @@
 import { useState, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { getPreferencias } from '../api/preferencias'
+import { usePreferencesStore } from '../stores/preferences'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -16,6 +18,12 @@ export default function Login() {
     setLoading(true)
     try {
       await login(email, password)
+      try {
+        const prefs = await getPreferencias()
+        usePreferencesStore.getState().setAll(prefs)
+      } catch {
+        // keep defaults
+      }
       navigate('/')
     } catch {
       setError('Credenciales incorrectas. Intenta de nuevo.')
