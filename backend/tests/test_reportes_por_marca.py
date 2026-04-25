@@ -261,3 +261,17 @@ def test_por_marca_filters_by_marca(client, admin_token, db):
     data = r.json()
     marcas = {m["nombre"] for m in data["por_marca"]}
     assert marcas == {"MarcaA-TST"}
+
+
+def test_por_marca_excel_export(client, admin_token):
+    r = client.get(
+        "/api/reportes/por-marca/export/excel",
+        params={"date_from": "2026-01-01", "date_to": "2026-04-30"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    assert "por-marca" in r.headers["content-disposition"]
+    assert len(r.content) > 0

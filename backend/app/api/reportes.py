@@ -789,6 +789,79 @@ def reporte_por_marca(
     return _get_por_marca(date_from, date_to, db, vendedor_id, cliente_id, marca_id)
 
 
+@router.get("/por-marca/export/excel")
+def exportar_por_marca_excel(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    cliente_id: list[int] | None = Query(None),
+    marca_id: list[int] | None = Query(None),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    _validate_dates(date_from, date_to)
+    current_user, db = perms
+    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    data = _get_por_marca(date_from, date_to, db, vendedor_id, cliente_id, marca_id)
+
+    wb = openpyxl.Workbook()
+
+    ws_k = wb.active
+    ws_k.title = "KPIs"
+    ws_k.append(["Métrica", "Valor"])
+    for k, v in data["kpis"].items():
+        ws_k.append([k, v])
+
+    ws1 = wb.create_sheet("Por Marca")
+    ws1.append([
+        "Marca",
+        "Cantidad",
+        "Neto",
+        "Ganancia",
+        "Margen %",
+        "Facturas",
+        "Clientes",
+        "Ticket Promedio",
+    ])
+    for row in data["por_marca"]:
+        ws1.append([
+            row["nombre"],
+            row["cantidad"],
+            row["neto"],
+            row["ganancia"],
+            row["margen_pct"],
+            row["num_facturas"],
+            row["num_clientes"],
+            row["ticket_promedio"],
+        ])
+
+    ws2 = wb.create_sheet("Marca + Cliente")
+    ws2.append([
+        "Marca",
+        "Cliente",
+        "Cantidad",
+        "Neto",
+        "Ganancia",
+        "Margen %",
+        "Facturas",
+    ])
+    for row in data["por_marca_cliente"]:
+        ws2.append([
+            row["marca_nombre"],
+            row["cliente_nombre"],
+            row["cantidad"],
+            row["neto"],
+            row["ganancia"],
+            row["margen_pct"],
+            row["num_facturas"],
+        ])
+
+    ws3 = wb.create_sheet("Sin Marca")
+    ws3.append(["Métrica", "Valor"])
+    for k, v in data["sin_marca"].items():
+        ws3.append([k, v])
+
+    return _excel_response(wb, "por-marca", date_from, date_to)
+
+
 # ---------------------------------------------------------------------------
 # GET /dte
 # ---------------------------------------------------------------------------
