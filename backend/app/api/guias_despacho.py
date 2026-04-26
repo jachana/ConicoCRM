@@ -1,22 +1,31 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import require_permission
 from app.api.dte import _next_numero
 from app.models.dte_emision import DteEmision
 from app.models.guia_despacho import GuiaDespacho, GuiaDespachoLinea
+from app.models.system_config import SystemConfig
 from app.models.user import User
 from app.schemas.guia_despacho import (
     GuiaDespachoCreate,
     GuiaDespachoListOut,
     GuiaDespachoOut,
     GuiaDespachoUpdate,
+    GuiaEmailBody,
 )
+from app.services.email import EmailNotConfiguredError, enviar_guia_despacho as _enviar_guia_email
+from app.services.pdf import generar_pdf_guia_despacho
 from app.tasks.dte import emit_dte
 
 router = APIRouter()
+
+
+def _config_dict(db: Session) -> dict:
+    return {r.key: r.value for r in db.query(SystemConfig).all()}
 
 
 def _calcular_lineas_y_totales_guia(guia: GuiaDespacho) -> None:
@@ -201,3 +210,47 @@ def eliminar_guia(
     except Exception:
         db.rollback()
         raise
+
+
+@router.get("/{guia_id}/pdf")
+def descargar_pdf_guia(
+    guia_id: int,
+    perms: tuple[User, Session] = require_permission("guias_despacho", "view"),
+):
+    _, db = perms
+    guia = _load_guia(db, guia_id)
+    pdf_bytes = generar_pdf_guia_despacho(guia, _config_dict(db))
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="guia-{guia.numero}.pdf"',
+        },
+    )
+
+
+@router.post("/{guia_id}/email", response_model=GuiaDespachoOut)
+def enviar_email_guia(
+    guia_id: int,
+    body: GuiaEmailBody,
+    perms: tuple[User, Session] = require_permission("guias_despacho", "edit"),
+):
+    _, db = perms
+    guia = _load_guia(db, guia_id)
+    destino = (body.email or guia.email_envio or
+               (guia.cliente.email if guia.cliente and getattr(guia.cliente, "email", None) else None))
+    if not destino:
+        raise HTTPException(status_code=422, detail="No hay email destino")
+    pdf_bytes = generar_pdf_guia_despacho(guia, _config_dict(db))
+    try:
+        _enviar_guia_email(guia, pdf_bytes, destino)
+    except EmailNotConfiguredError:
+        raise HTTPException(status_code=503, detail="Email no configurado")
+    try:
+        guia.email_enviado_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(guia)
+    except Exception:
+        db.rollback()
+        raise
+    return guia
