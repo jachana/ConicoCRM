@@ -27,7 +27,12 @@
   3. El endpoint genera PDF (WeasyPrint) descargable y envía email SMTP al receptor cuando se solicita.
   4. Se puede anular una guía generando una NC tipo 61 vinculada (`guia_despacho_id` nullable en NC); la guía queda marcada como anulada.
   5. Toda mutación sobre `GuiaDespacho` y `GuiaDespachoLinea` queda registrada en `audit_log` con diff before/after.
-**Plans**: TBD
+**Plans**: 5 plans
+  - [ ] 01-01-PLAN.md — Modelos GuiaDespacho/Linea, schemas Pydantic, extensión DteEmision/NC, migración Alembic monolítica
+  - [ ] 01-02-PLAN.md — Router /api/guias-despacho CRUD, permissions seed, audit whitelist, main.py wiring
+  - [ ] 01-03-PLAN.md — Pipeline DTE: emitir endpoint, build_guia_payload Lioren, branches en tasks/dte.py (incl. NC anula guía)
+  - [ ] 01-04-PLAN.md — PDF WeasyPrint, email SMTP, template guia_despacho.html, endpoints /pdf y /email
+  - [ ] 01-05-PLAN.md — Suite tests test_guias_despacho.py (CRUD, permisos, stock invariante, anulación NC, audit log, PDF)
 
 ### Phase 2: Guía de Despacho 52 — Frontend
 **Goal**: El usuario puede gestionar guías de despacho 52 desde la UI con flujo lista → crear → detalle con polling de estado DTE.
