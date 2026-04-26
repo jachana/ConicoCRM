@@ -8,6 +8,7 @@ from app.models.factura import Factura
 from app.models.nota_credito import NotaCredito
 from app.models.nota_debito import NotaDebito
 from app.models.boleta import Boleta
+from app.models.guia_despacho import GuiaDespacho
 from app.models.system_config import SystemConfig
 
 
@@ -192,6 +193,58 @@ class DteService:
                 {"tipo": "PATENTE", "valor": boleta.patente_vehiculo}
             ]
 
+        return payload
+
+    def build_guia_payload(self, guia: GuiaDespacho, db: Session) -> dict:
+        """Construye el payload Lioren para Guía de Despacho DTE 52.
+
+        Field names ind_traslado / destino son hipótesis (LOW confidence — A2/A3 en RESEARCH.md).
+        TODO(W1-05-sandbox): validar contra Lioren sandbox antes de merge a producción.
+        Si Lioren retorna 422 por campos faltantes (Res. 154 SII: RUTChofer, Patente, FchSalida),
+        extender modelo GuiaDespacho con esos campos opcionales (A4).
+        """
+        cfg = _get_config(db)
+        receptor: dict = {}
+        if guia.cliente:
+            receptor = {
+                "rut": guia.cliente.rut or "",
+                "razon_social": guia.cliente.nombre,
+                "giro": "",
+                "direccion": getattr(guia.cliente, "direccion_despacho", "") or "",
+                "ciudad": getattr(guia.cliente, "comuna", "") or "",
+                "comuna": getattr(guia.cliente, "comuna", "") or "",
+            }
+
+        detalle = [
+            {
+                "nombre": l.descripcion,
+                "cantidad": float(l.cantidad),
+                "precio_unitario": int(l.precio_unitario),  # bruto, igual que boleta (A1)
+                "descuento_porcentaje": float(l.descuento_pct or 0),
+                "exenta": bool(l.exenta),
+            }
+            for l in guia.lineas
+        ]
+
+        payload = {
+            "tipo_dte": 52,
+            "fecha_emision": (guia.fecha or date.today()).isoformat(),
+            "emisor": self._emisor(cfg),
+            "receptor": receptor,
+            "detalle": detalle,
+            "totales": {
+                "monto_neto": int(guia.total_neto),
+                "tasa_iva": 19,
+                "iva": int(guia.total_iva),
+                "monto_total": int(guia.total),
+            },
+            # Campos específicos DTE 52 — nombres [ASSUMED, validar sandbox Lioren]:
+            "ind_traslado": guia.motivo_traslado,  # 1..9
+            "destino": {
+                "direccion": guia.direccion_destino or "",
+                "comuna": guia.comuna_destino or "",
+            },
+        }
         return payload
 
     def emit(self, payload: dict) -> dict:
