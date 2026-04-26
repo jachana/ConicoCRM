@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom'
 
 // jsdom doesn't implement ResizeObserver; cmdk uses it internally
-global.ResizeObserver = class ResizeObserver {
+globalThis.ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}
