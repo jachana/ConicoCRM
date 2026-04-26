@@ -31,8 +31,8 @@
   **Wave 1**
   - [x] 01-01-PLAN.md — Modelos GuiaDespacho/Linea, schemas Pydantic, extensión DteEmision/NC, migración Alembic monolítica (DTE-01, DTE-04)
   **Wave 2** *(blocked on Wave 1 completion)*
-  - [ ] 01-02-PLAN.md — Router /api/guias-despacho CRUD, permissions seed, audit whitelist, main.py wiring (DTE-01, DTE-06, DTE-07)
-  - [ ] 01-03-PLAN.md — Pipeline DTE: emitir endpoint, build_guia_payload Lioren, branches en tasks/dte.py (incl. NC anula guía) *(autonomous: false — Task 4 = checkpoint:human-action validación sandbox Lioren)* (DTE-01, DTE-02, DTE-04)
+  - [x] 01-02-PLAN.md — Router /api/guias-despacho CRUD, permissions seed, audit whitelist, main.py wiring (DTE-01, DTE-06, DTE-07)
+  - [~] 01-03-PLAN.md — Pipeline DTE: emitir endpoint, build_guia_payload Lioren, branches en tasks/dte.py (incl. NC anula guía) — Tasks 1-3 done, **Task 4 DEFERRED** (checkpoint:human-action validación sandbox Lioren con credenciales reales) (DTE-01, DTE-02, DTE-04)
   **Wave 3** *(blocked on Wave 2 completion)*
   - [ ] 01-04-PLAN.md — PDF WeasyPrint, email SMTP, template guia_despacho.html, endpoints /pdf y /email (DTE-03)
   **Wave 4** *(blocked on Wave 3 completion)*
