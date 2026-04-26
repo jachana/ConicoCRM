@@ -15,6 +15,7 @@ from app.api import cotizaciones
 from app.api import nota_ventas
 from app.api import facturas
 from app.api import boletas
+from app.api import guias_despacho
 from app.api import empleados
 from app.api import empleados_documentos
 from app.api import empleados_vacaciones
@@ -83,6 +84,7 @@ app.include_router(cotizaciones.router, prefix="/api/cotizaciones", tags=["cotiz
 app.include_router(nota_ventas.router, prefix="/api/nota_ventas", tags=["nota_ventas"])
 app.include_router(facturas.router, prefix="/api/facturas", tags=["facturas"])
 app.include_router(boletas.router, prefix="/api/boletas", tags=["boletas"])
+app.include_router(guias_despacho.router, prefix="/api/guias-despacho", tags=["guias-despacho"])
 app.include_router(empleados.router, prefix="/api/empleados", tags=["rrhh"])
 app.include_router(empleados_documentos.router, prefix="/api/empleados", tags=["rrhh"])
 app.include_router(empleados_vacaciones.router, prefix="/api/empleados", tags=["rrhh"])
