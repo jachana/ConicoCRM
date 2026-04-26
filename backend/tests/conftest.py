@@ -75,6 +75,8 @@ def setup_test_db():
     import app.models.aprobacion_margen  # noqa: F401
     import app.models.cobranza_config  # noqa: F401
     import app.models.boleta  # noqa: F401
+    import app.models.guia_despacho  # noqa: F401 — registers GuiaDespacho with Base.metadata
+    import app.models.nota_credito  # noqa: F401 — registers NotaCredito with Base.metadata
     import app.models.dte_emision  # noqa: F401
     import app.models.banco_receptor  # noqa: F401
     import app.models.sede_despacho  # noqa: F401
