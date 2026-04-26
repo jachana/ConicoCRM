@@ -34,7 +34,7 @@
   - [x] 01-02-PLAN.md — Router /api/guias-despacho CRUD, permissions seed, audit whitelist, main.py wiring (DTE-01, DTE-06, DTE-07)
   - [~] 01-03-PLAN.md — Pipeline DTE: emitir endpoint, build_guia_payload Lioren, branches en tasks/dte.py (incl. NC anula guía) — Tasks 1-3 done, **Task 4 DEFERRED** (checkpoint:human-action validación sandbox Lioren con credenciales reales) (DTE-01, DTE-02, DTE-04)
   **Wave 3** *(blocked on Wave 2 completion)*
-  - [ ] 01-04-PLAN.md — PDF WeasyPrint, email SMTP, template guia_despacho.html, endpoints /pdf y /email (DTE-03)
+  - [x] 01-04-PLAN.md — PDF WeasyPrint, email SMTP, template guia_despacho.html, endpoints /pdf y /email (DTE-03)
   **Wave 4** *(blocked on Wave 3 completion)*
   - [ ] 01-05-PLAN.md — Suite tests test_guias_despacho.py (CRUD, permisos, stock invariante, anulación NC, audit log, PDF) (DTE-01..04, 06, 07)
 
