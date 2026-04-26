@@ -633,26 +633,28 @@ def emitir_guia_despacho(
 
 ```python
 # Source: backend/app/services/pdf.py:36-40 [VERIFIED]
-def generar_pdf_guia_despacho(guia, config: dict) -> bytes:
+def generar_pdf_guia_despacho(guia_despacho, config: dict) -> bytes:
     env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
     template = env.get_template("guia_despacho.html")
-    html_str = template.render(guia=guia, config=config)
+    html_str = template.render(guia_despacho=guia_despacho, config=config)
     return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()
 ```
+
+NOTA W-7: la variable canónica del template y de la función es `guia_despacho` (consistente con PATTERNS.md y el template `{{ guia_despacho.* }}`). Ignorar el ejemplo previo que usaba `guia=guia` — fue corregido a `guia_despacho=guia_despacho`.
 
 ### Verificado: `enviar_guia_despacho` en `email.py`
 
 ```python
 # Source: backend/app/services/email.py:enviar_boleta patrón [VERIFIED]
-def enviar_guia_despacho(guia, pdf_bytes: bytes, destinatario: str) -> None:
+def enviar_guia_despacho(guia_despacho, pdf_bytes: bytes, destinatario: str) -> None:
     cfg = _get_smtp_config()  # raises EmailNotConfiguredError si no configurado
     empresa_nombre = "Conico"
-    numero_str = f"GD-{guia.numero:05d}"
-    fecha_str = guia.fecha.strftime("%d/%m/%Y") if guia.fecha else ""
-    cliente_nombre = guia.cliente.nombre if guia.cliente else "Sin cliente"
+    numero_str = f"GD-{guia_despacho.numero:05d}"
+    fecha_str = guia_despacho.fecha.strftime("%d/%m/%Y") if guia_despacho.fecha else ""
+    cliente_nombre = guia_despacho.cliente.nombre if guia_despacho.cliente else "Sin cliente"
     # Asunto (D-20): "Guía de Despacho N°{numero} - {emisor}"
     msg = MIMEMultipart()
-    msg["Subject"] = f"Guía de Despacho N°{guia.numero} — {empresa_nombre}"
+    msg["Subject"] = f"Guía de Despacho N°{guia_despacho.numero} — {empresa_nombre}"
     # ... cuerpo + attachment pattern igual a enviar_boleta
 ```
 
@@ -701,22 +703,13 @@ def eliminar_guia(
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **¿`precio_unitario` en GuiaDespachoLinea es bruto o neto?**
-   - What we know: boleta usa bruto; factura usa neto; guía puede ir a consumidores o empresas.
-   - What's unclear: la UI de Phase 2 no está diseñada aún.
-   - Recommendation: seguir patrón boleta (bruto) para consistencia. Si Phase 2 lo necesita diferente, el cálculo se adapta en el frontend.
+1. **¿`precio_unitario` en GuiaDespachoLinea es bruto o neto?** — RESOLVED: bruto, patrón boleta (D-03 / A1). Frontend en Phase 2 ingresará bruto, backend divide por 1.19 para neto. Implementado en `_calcular_lineas_y_totales_guia` (Plan 02 Task 2).
 
-2. **¿Campos obligatorios Resolución 154 en Lioren v1?**
-   - What we know: SII requiere Patente, RUTChofer, DirDest, etc. para guías que transportan mercancías.
-   - What's unclear: Lioren puede abstraerlos como opcionales o hacer validación propia.
-   - Recommendation: Tarea explícita de validación sandbox con payload mínimo. Si falla, extender modelo con campos opcionales.
+2. **¿Campos obligatorios Resolución 154 en Lioren v1?** — RESOLVED: diferido a sandbox. Capturado por Plan 03 Task 4 (`checkpoint:manual`, autonomous: false): developer valida payload contra sandbox Lioren (`POST https://api.lioren.cl/v1/documentos`) con fixture y, si Lioren rechaza, ajusta `build_guia_payload` con field names reales del error y elimina el TODO marker. Acceptance: response Lioren pegado en PR description o comment del task.
 
-3. **¿Test de concurrencia entra en este sprint?**
-   - What we know: D-28 lo describe como opcional con `@pytest.mark.smoke`. Deadline 2026-04-30.
-   - What's unclear: Cuánto tiempo toma setup Postgres para CI local.
-   - Recommendation: Diferir con `# TODO(W1-05-followup): test_numeracion_concurrente_guias`. El risk es bajo (Lioren rechaza folios duplicados como backstop).
+3. **¿Test de concurrencia entra en este sprint?** — RESOLVED: diferido con `pytest.mark.skipif(sqlite)` y TODO(W1-05-followup); ya capturado en Plan 05 Task 1 como esqueleto skipped. Postgres-only; risk bajo (Lioren rechaza folios duplicados como backstop). Re-abrir post-M1 si CI Postgres está disponible.
 
 ---
 
