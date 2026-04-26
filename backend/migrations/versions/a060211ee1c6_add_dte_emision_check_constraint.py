@@ -21,17 +21,19 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
     conn = op.get_bind()
-    result = conn.execute(sa.text(
-        "SELECT 1 FROM pg_constraint WHERE conname = 'ck_dte_emision_one_document'"
-    )).fetchone()
-    if not result:
-        op.create_check_constraint(
-            "ck_dte_emision_one_document",
-            "dte_emisiones",
-            "(CASE WHEN factura_id IS NOT NULL THEN 1 ELSE 0 END) + "
-            "(CASE WHEN nota_credito_id IS NOT NULL THEN 1 ELSE 0 END) + "
-            "(CASE WHEN nota_debito_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
-        )
+    if conn.dialect.name == "postgresql":
+        result = conn.execute(sa.text(
+            "SELECT 1 FROM pg_constraint WHERE conname = 'ck_dte_emision_one_document'"
+        )).fetchone()
+        if not result:
+            op.create_check_constraint(
+                "ck_dte_emision_one_document",
+                "dte_emisiones",
+                "(CASE WHEN factura_id IS NOT NULL THEN 1 ELSE 0 END) + "
+                "(CASE WHEN nota_credito_id IS NOT NULL THEN 1 ELSE 0 END) + "
+                "(CASE WHEN nota_debito_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
+            )
+    # SQLite: check constraints are not enforced; skip creation (idempotent no-op)
 
 
 def downgrade() -> None:
