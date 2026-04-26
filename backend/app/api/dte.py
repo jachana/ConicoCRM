@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.api.deps import require_permission
 from app.models.dte_emision import DteEmision
 from app.models.factura import Factura
+from app.models.guia_despacho import GuiaDespacho
 from app.models.nota_credito import NotaCredito, NotaCreditoLinea
 from app.models.nota_debito import NotaDebito, NotaDebitoLinea
 from app.models.system_config import SystemConfig
@@ -250,6 +251,44 @@ def emitir_nd(
     nd.dte_estado = "pendiente"
     db.commit()
     db.refresh(emision)
+    emit_dte.delay(emision.id)
+    return emision
+
+
+# ── Guías de Despacho ─────────────────────────────────────────────────────────
+
+@router.post("/guias-despacho/{guia_id}/emitir", response_model=DteEmisionOut)
+def emitir_guia_despacho(
+    guia_id: int,
+    perms: tuple[User, Session] = require_permission("guias_despacho", "create"),
+):
+    _, db = perms
+    guia = db.query(GuiaDespacho).filter_by(id=guia_id).first()
+    if not guia:
+        raise HTTPException(status_code=404, detail="Guía no encontrada")
+    if guia.dte_estado != "no_emitida":
+        raise HTTPException(
+            status_code=409,
+            detail=f"Guía ya en estado DTE: {guia.dte_estado}",
+        )
+    existing = db.query(DteEmision).filter_by(guia_despacho_id=guia_id).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Ya existe una emisión para esta guía")
+    try:
+        emision = DteEmision(
+            tipo="052",
+            guia_despacho_id=guia.id,
+            monto_neto=int(guia.total_neto),
+            monto_iva=int(guia.total_iva),
+            monto_total=int(guia.total),
+        )
+        db.add(emision)
+        guia.dte_estado = "pendiente"
+        db.commit()
+        db.refresh(emision)
+    except Exception:
+        db.rollback()
+        raise
     emit_dte.delay(emision.id)
     return emision
 
