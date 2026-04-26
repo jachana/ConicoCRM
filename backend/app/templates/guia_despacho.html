@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Guía de Despacho Electrónica</title>
+  <style>
+    body { font-family: sans-serif; font-size: 11pt; margin: 0; padding: 12mm; }
+    .hdr { border-bottom: 1pt solid #000; padding-bottom: 6mm; margin-bottom: 6mm; }
+    .hdr h1 { margin: 0; font-size: 16pt; }
+    .hdr .folio { float: right; font-weight: bold; }
+    .meta { display: flex; justify-content: space-between; margin-bottom: 4mm; }
+    .meta-block { margin-bottom: 4mm; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 0.5pt solid #999; padding: 2mm; text-align: left; }
+    th { background: #eee; }
+    .totales { margin-top: 4mm; text-align: right; }
+    .totales .row { padding: 1mm 0; }
+    .totales .total { font-size: 13pt; font-weight: bold; border-top: 1pt solid #000; padding-top: 2mm; }
+    .footer { margin-top: 6mm; font-size: 9pt; color: #555; }
+  </style>
+</head>
+<body>
+  <div class="hdr">
+    <span class="folio">N° {{ guia_despacho.folio_sii or guia_despacho.numero }}</span>
+    <h1>Guía de Despacho Electrónica</h1>
+    <div>{{ config.razon_social_emisor }} — RUT {{ config.rut_emisor }}</div>
+    <div>{{ config.direccion_emisor }} — {{ config.ciudad_emisor }}</div>
+  </div>
+
+  <div class="meta">
+    <div>
+      <strong>Receptor:</strong>
+      {{ guia_despacho.cliente.nombre if guia_despacho.cliente else 'Sin cliente' }}<br>
+      RUT: {{ guia_despacho.cliente.rut if guia_despacho.cliente else '—' }}<br>
+    </div>
+    <div>
+      <strong>Fecha:</strong> {{ guia_despacho.fecha.strftime('%d/%m/%Y') if guia_despacho.fecha else '—' }}<br>
+      <strong>Vendedor:</strong> {{ guia_despacho.vendedor.name if guia_despacho.vendedor else '' }}<br>
+    </div>
+  </div>
+
+  <div class="meta-block">
+    <p><strong>Motivo de Traslado:</strong> {{ guia_despacho.motivo_traslado }}</p>
+    {% if guia_despacho.direccion_destino %}
+    <p><strong>Dirección destino:</strong> {{ guia_despacho.direccion_destino }}{% if guia_despacho.comuna_destino %}, {{ guia_despacho.comuna_destino }}{% endif %}</p>
+    {% endif %}
+    {% if guia_despacho.nota_venta_id %}
+    <p><strong>Nota de Venta vinculada:</strong> N°{{ guia_despacho.nota_venta_id }}</p>
+    {% endif %}
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Descripción</th><th>Cant.</th><th>P. Unit.</th><th>Total</th></tr>
+    </thead>
+    <tbody>
+      {% for l in guia_despacho.lineas %}
+      <tr>
+        <td>{{ l.descripcion }}{% if l.exenta %} (exento){% endif %}</td>
+        <td>{{ '{:.2f}'.format(l.cantidad) }}</td>
+        <td>${{ '{:,.0f}'.format(l.precio_unitario) }}</td>
+        <td>${{ '{:,.0f}'.format(l.total_linea) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totales">
+    <div class="row">Neto: ${{ '{:,.0f}'.format(guia_despacho.total_neto) }}</div>
+    <div class="row">IVA (19%): ${{ '{:,.0f}'.format(guia_despacho.total_iva) }}</div>
+    <div class="row total">Total: ${{ '{:,.0f}'.format(guia_despacho.total) }}</div>
+  </div>
+
+  <div class="footer">
+    <p>Folio SII: {{ guia_despacho.folio_sii or '—' }}</p>
+    <p>Track ID: {{ guia_despacho.track_id or '—' }}</p>
+  </div>
+</body>
+</html>

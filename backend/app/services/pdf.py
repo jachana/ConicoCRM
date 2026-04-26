@@ -38,3 +38,10 @@ def generar_pdf_boleta(boleta, config: dict) -> bytes:
     template = env.get_template("boleta.html")
     html_str = template.render(boleta=boleta, config=config)
     return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()
+
+
+def generar_pdf_guia_despacho(guia_despacho, config: dict) -> bytes:
+    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+    template = env.get_template("guia_despacho.html")
+    html_str = template.render(guia_despacho=guia_despacho, config=config)
+    return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()

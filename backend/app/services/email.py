@@ -212,6 +212,38 @@ def enviar_boleta(boleta, pdf_bytes: bytes, destinatario: str) -> None:
         server.sendmail(cfg["from"], destinatario, msg.as_string())
 
 
+def enviar_guia_despacho(guia_despacho, pdf_bytes: bytes, destinatario: str) -> None:
+    cfg = _get_smtp_config()
+    if not destinatario:
+        raise ValueError("La guía no tiene correo de destino")
+
+    numero_str = f"GD-{guia_despacho.folio_sii or guia_despacho.numero:05d}"
+    fecha_str = guia_despacho.fecha.strftime("%d/%m/%Y") if guia_despacho.fecha else ""
+
+    msg = MIMEMultipart()
+    msg["From"] = cfg["from"]
+    msg["To"] = destinatario
+    msg["Subject"] = f"Guía de Despacho N°{guia_despacho.numero} — Conico"  # D-20
+
+    body = (
+        f"Adjuntamos la Guía de Despacho electrónica {numero_str} "
+        f"de fecha {fecha_str} por un total de $ {int(guia_despacho.total):,}.\n\n"
+        f"Saludos,\nConico"
+    )
+    msg.attach(MIMEText(body, "plain", "utf-8"))
+
+    filename = f"{numero_str} {fecha_str}.pdf".strip().replace("  ", " ")
+    attachment = MIMEApplication(pdf_bytes, _subtype="pdf")
+    attachment.add_header("Content-Disposition", "attachment", filename=filename)
+    msg.attach(attachment)
+
+    with smtplib.SMTP(cfg["host"], cfg["port"]) as server:
+        server.ehlo()
+        server.starttls()
+        server.login(cfg["user"], cfg["password"])
+        server.sendmail(cfg["from"], destinatario, msg.as_string())
+
+
 def enviar_recordatorio(to: str, subject: str, body: str) -> None:
     cfg = _get_smtp_config()
     if not to:
