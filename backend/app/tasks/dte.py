@@ -6,6 +6,7 @@ from app.celery_app import celery_app
 from app.database import SessionLocal
 from app.models.dte_emision import DteEmision
 from app.models.factura import Factura
+from app.models.guia_despacho import GuiaDespacho
 from app.models.nota_credito import NotaCredito
 from app.models.nota_debito import NotaDebito
 from app.models.boleta import Boleta
@@ -33,6 +34,11 @@ def _sync_dte_estado(db: Session, emision: DteEmision, estado: str) -> None:
         nc = db.get(NotaCredito, emision.nota_credito_id)
         if nc:
             nc.dte_estado = estado
+            # D-16: solo NC aceptada por SII anula legalmente la guía
+            if estado == "aceptada" and nc.guia_despacho_id:
+                guia = db.get(GuiaDespacho, nc.guia_despacho_id)
+                if guia:
+                    guia.estado = "anulada"
     elif emision.nota_debito_id:
         nd = db.get(NotaDebito, emision.nota_debito_id)
         if nd:
@@ -46,6 +52,12 @@ def _sync_dte_estado(db: Session, emision: DteEmision, estado: str) -> None:
                 from app.services.boleta_stock import revertir_stock_boleta
                 revertir_stock_boleta(db, b, usuario_id=None, motivo="boleta_rechazo_sii")
                 b.estado = "anulada"
+    elif emision.guia_despacho_id:
+        guia = db.get(GuiaDespacho, emision.guia_despacho_id)
+        if guia:
+            guia.dte_estado = estado
+            # D-12 / D-13: Guía DTE 52 NO descuenta stock — NO llamar revertir_stock_boleta
+            # cuando estado == "rechazada" (a diferencia de boleta).
 
 
 def _process_emit(db: Session, emision: DteEmision, svc: DteService) -> None:
@@ -73,6 +85,19 @@ def _process_emit(db: Session, emision: DteEmision, svc: DteService) -> None:
             joinedload(Boleta.cliente),
         ).filter_by(id=emision.boleta_id).first()
         payload = svc.build_boleta_payload(doc, db)
+    elif emision.guia_despacho_id:
+        doc = (
+            db.query(GuiaDespacho)
+            .options(
+                joinedload(GuiaDespacho.lineas),
+                joinedload(GuiaDespacho.cliente),
+            )
+            .filter_by(id=emision.guia_despacho_id)
+            .first()
+        )
+        if not doc:
+            raise ValueError(f"GuiaDespacho {emision.guia_despacho_id} no encontrada")
+        payload = svc.build_guia_payload(doc, db)
     else:
         raise ValueError(f"DteEmision {emision.id} has no document FK set")
 
