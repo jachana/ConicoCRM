@@ -28,11 +28,20 @@
   4. Se puede anular una guía generando una NC tipo 61 vinculada (`guia_despacho_id` nullable en NC); la guía queda marcada como anulada.
   5. Toda mutación sobre `GuiaDespacho` y `GuiaDespachoLinea` queda registrada en `audit_log` con diff before/after.
 **Plans**: 5 plans
-  - [ ] 01-01-PLAN.md — Modelos GuiaDespacho/Linea, schemas Pydantic, extensión DteEmision/NC, migración Alembic monolítica
-  - [ ] 01-02-PLAN.md — Router /api/guias-despacho CRUD, permissions seed, audit whitelist, main.py wiring
-  - [ ] 01-03-PLAN.md — Pipeline DTE: emitir endpoint, build_guia_payload Lioren, branches en tasks/dte.py (incl. NC anula guía)
-  - [ ] 01-04-PLAN.md — PDF WeasyPrint, email SMTP, template guia_despacho.html, endpoints /pdf y /email
-  - [ ] 01-05-PLAN.md — Suite tests test_guias_despacho.py (CRUD, permisos, stock invariante, anulación NC, audit log, PDF)
+  **Wave 1**
+  - [ ] 01-01-PLAN.md — Modelos GuiaDespacho/Linea, schemas Pydantic, extensión DteEmision/NC, migración Alembic monolítica (DTE-01, DTE-04)
+  **Wave 2** *(blocked on Wave 1 completion)*
+  - [ ] 01-02-PLAN.md — Router /api/guias-despacho CRUD, permissions seed, audit whitelist, main.py wiring (DTE-01, DTE-06, DTE-07)
+  - [ ] 01-03-PLAN.md — Pipeline DTE: emitir endpoint, build_guia_payload Lioren, branches en tasks/dte.py (incl. NC anula guía) *(autonomous: false — Task 4 = checkpoint:human-action validación sandbox Lioren)* (DTE-01, DTE-02, DTE-04)
+  **Wave 3** *(blocked on Wave 2 completion)*
+  - [ ] 01-04-PLAN.md — PDF WeasyPrint, email SMTP, template guia_despacho.html, endpoints /pdf y /email (DTE-03)
+  **Wave 4** *(blocked on Wave 3 completion)*
+  - [ ] 01-05-PLAN.md — Suite tests test_guias_despacho.py (CRUD, permisos, stock invariante, anulación NC, audit log, PDF) (DTE-01..04, 06, 07)
+
+  **Cross-cutting constraints:**
+  - Stock invariant D-13: guía 52 no descuenta ni revierte stock — Plans 02, 03, 05.
+  - Auditoría zero-code D-25: agregar a `_AUDITABLE_MODEL_NAMES` suficiente — Plans 02, 05.
+  - XOR NC anulación D-15: `model_validator` activo aunque `factura_id` aún no expuesto — Plan 01.
 
 ### Phase 2: Guía de Despacho 52 — Frontend
 **Goal**: El usuario puede gestionar guías de despacho 52 desde la UI con flujo lista → crear → detalle con polling de estado DTE.
