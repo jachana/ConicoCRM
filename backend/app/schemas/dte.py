@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class NotaCreditoLineaCreate(BaseModel):
@@ -21,6 +21,16 @@ class NotaCreditoCreate(BaseModel):
     cliente_id: int
     razon: str
     lineas: list[NotaCreditoLineaCreate] = []
+    guia_despacho_id: int | None = None  # D-15: NC puede anular guía
+
+    @model_validator(mode="after")
+    def _xor_anulacion(self):
+        # D-15: una NC anula UNA cosa. Hoy `factura_id` no está en el schema, así
+        # que esto es no-op. Cuando aparezca, el guard se activa automáticamente.
+        fid = getattr(self, "factura_id", None)
+        if fid and self.guia_despacho_id:
+            raise ValueError("Una NC anula UNA cosa: factura_id XOR guia_despacho_id")
+        return self
 
 
 class NotaCreditoOut(BaseModel):
