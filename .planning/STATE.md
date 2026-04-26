@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: active
-last_updated: "2026-04-26T21:00:00.000Z"
+last_updated: "2026-04-26T22:00:00.000Z"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 5
-  completed_plans: 0
-  percent: 0
+  completed_plans: 4
+  percent: 20
 ---
 
 # Conico PMS — STATE
@@ -30,11 +30,11 @@ progress:
 
 ## Current Position
 
-- **Phase:** 1 — Guía de Despacho 52 — Backend
-- **Plan:** 5 plans (01-01 .. 01-05) — Executing
-- **Status:** executing
+- **Phase:** 1 — Guía de Despacho 52 — Backend (verified, SC-2 Lioren sandbox pending)
+- **Plan:** 4/5 done — 01-03 Task 4 (Lioren sandbox) deferred as `checkpoint:human-action`
+- **Status:** verified-partial
 - **Paused:** false
-- **Progress:** [░░░░░░░░░░] 0% (0/4 phases complete)
+- **Progress:** [██░░░░░░░░] 20% (~0.8/4 phases complete — Phase 1 awaits Lioren sandbox validation)
 
 ---
 
@@ -62,7 +62,8 @@ progress:
 ### Open Todos
 
 - [x] Plan Phase 1 (`/gsd-plan-phase 1`) — 5 plans created, verification passed (1 revision iter)
-- [ ] Execute Phase 1 (`/gsd-execute-phase 1`) — Plan 03 Task 4 is `checkpoint:human-action` (Lioren sandbox validation)
+- [x] Execute Phase 1 (`/gsd-execute-phase 1`) — 4/5 SC verified, 12 tests pass; SC-2 Lioren sandbox = checkpoint:human-action pending
+- [ ] **CHECKPOINT:** validar payload DTE 52 contra Lioren sandbox con credenciales reales — ver `01-03-SUMMARY.md` y `VERIFICATION.md`
 - [ ] Plan Phase 3 in parallel (`/gsd-plan-phase 3`) — different code area, no conflicts expected
 - [ ] After Phase 1 done: plan Phase 2 (depends on backend contracts)
 - [ ] Verify before Phase 4: all phases merged, smoke tests passing locally

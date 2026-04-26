@@ -8,7 +8,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: Guía de Despacho 52 — Backend** — Modelo, API, pipeline DTE Lioren, anulación vía NC, permisos y auditoría
+- [~] **Phase 1: Guía de Despacho 52 — Backend** — Modelo, API, pipeline DTE Lioren, anulación vía NC, permisos y auditoría — *4/5 SC verificadas; SC-2 sandbox Lioren queda como `checkpoint:human-action` pendiente (validación payload tipo 52 con credenciales reales)*
 - [ ] **Phase 2: Guía de Despacho 52 — Frontend** — UI lista/nueva/detalle con polling DTE
 - [ ] **Phase 3: Stock-on-Emit Refactor** — Consolidar descuento de stock en emisión tributaria, limpiar movimientos huérfanos
 - [ ] **Phase 4: Go-Live Conico** — Deploy producción, smoke tests, backups verificados, runbook rollback
