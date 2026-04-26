@@ -17,6 +17,9 @@ class NotaCredito(Base):
     boleta_id: Mapped[int | None] = mapped_column(
         ForeignKey("boletas.id", ondelete="SET NULL"), nullable=True
     )
+    guia_despacho_id: Mapped[int | None] = mapped_column(
+        ForeignKey("guias_despacho.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     razon: Mapped[str] = mapped_column(String(500))
     monto_neto: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     monto_iva: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
