@@ -57,7 +57,7 @@ class ClienteMinOut(BaseModel):
 
 class VendedorMinOut(BaseModel):
     id: int
-    username: str
+    name: str
     model_config = ConfigDict(from_attributes=True)
 
 
