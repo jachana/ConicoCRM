@@ -36,7 +36,7 @@
   **Wave 3** *(blocked on Wave 2 completion)*
   - [x] 01-04-PLAN.md — PDF WeasyPrint, email SMTP, template guia_despacho.html, endpoints /pdf y /email (DTE-03)
   **Wave 4** *(blocked on Wave 3 completion)*
-  - [ ] 01-05-PLAN.md — Suite tests test_guias_despacho.py (CRUD, permisos, stock invariante, anulación NC, audit log, PDF) (DTE-01..04, 06, 07)
+  - [x] 01-05-PLAN.md — Suite tests test_guias_despacho.py (CRUD, permisos, stock invariante, anulación NC, audit log, PDF) (DTE-01..04, 06, 07)
 
   **Cross-cutting constraints:**
   - Stock invariant D-13: guía 52 no descuenta ni revierte stock — Plans 02, 03, 05.
