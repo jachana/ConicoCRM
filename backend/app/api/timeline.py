@@ -12,6 +12,7 @@ from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_permission
@@ -27,6 +28,11 @@ from app.models.nota_venta import NotaVenta
 from app.models.pago import Pago
 from app.models.tarea import Tarea
 from app.models.user import User
+
+# ---------------------------------------------------------------------------
+# Role constants
+# ---------------------------------------------------------------------------
+ROLE_VENDEDOR = "vendedor"
 
 router = APIRouter()
 
@@ -167,7 +173,7 @@ def _build_event(tipo: str, row: Any) -> dict:
             "estado": row.estado,
             "link": f"/boletas/{row.id}",
         }
-    raise ValueError(f"Tipo desconocido: {tipo}")  # pragma: no cover
+    raise AssertionError(f"Tipo desconocido: {tipo}")  # pragma: no cover — programmer error
 
 
 # ---------------------------------------------------------------------------
@@ -182,7 +188,7 @@ def _query_cliente(
     current_user: User,
 ) -> list[Any]:
     """Return all rows of `tipo` for a given cliente_id."""
-    is_vendedor = current_user.role == "vendedor"
+    is_vendedor = current_user.role == ROLE_VENDEDOR
 
     if tipo == "cotizacion":
         q = db.query(Cotizacion).filter(Cotizacion.cliente_id == cliente_id)
@@ -261,7 +267,7 @@ def _query_empresa(
     current_user: User,
 ) -> list[Any]:
     """Return all rows of `tipo` for a given empresa_id."""
-    is_vendedor = current_user.role == "vendedor"
+    is_vendedor = current_user.role == ROLE_VENDEDOR
 
     if tipo == "cotizacion":
         q = db.query(Cotizacion).filter(Cotizacion.empresa_id == empresa_id)
@@ -285,18 +291,44 @@ def _query_empresa(
         # Vendedor scope para NC/ND/Pago se evaluará en W2-02-followup; por ahora oculto a vendedores
         if is_vendedor:
             return []
-        # NC has cliente_id; resolve via Cliente.empresa_id
-        return (
+        # NC.cliente_id is nullable: two paths must be unioned to avoid silently
+        # dropping boleta-anulación NCs (tipo 61) where cliente_id IS NULL.
+        # Path A: cliente_id IS NOT NULL → resolve via Cliente.empresa_id
+        # Path B: cliente_id IS NULL AND boleta_id IS NOT NULL → resolve via Boleta.empresa_id
+        path_a = (
             db.query(NotaCredito)
             .join(Cliente, NotaCredito.cliente_id == Cliente.id)
-            .filter(Cliente.empresa_id == empresa_id)
+            .filter(
+                NotaCredito.cliente_id.isnot(None),
+                Cliente.empresa_id == empresa_id,
+            )
             .all()
         )
+        path_b = (
+            db.query(NotaCredito)
+            .join(Boleta, NotaCredito.boleta_id == Boleta.id)
+            .filter(
+                NotaCredito.cliente_id.is_(None),
+                NotaCredito.boleta_id.isnot(None),
+                Boleta.empresa_id == empresa_id,
+            )
+            .all()
+        )
+        # Merge; deduplicate by id in case an NC somehow matches both paths
+        seen: set[int] = set()
+        result: list[Any] = []
+        for nc in path_a + path_b:
+            if nc.id not in seen:
+                seen.add(nc.id)
+                result.append(nc)
+        return result
 
     if tipo == "nota_debito":
         # Vendedor scope para NC/ND/Pago se evaluará en W2-02-followup; por ahora oculto a vendedores
         if is_vendedor:
             return []
+        # ND.cliente_id is NON-NULLABLE (FK without nullable=True in NotaDebito model),
+        # so the Cliente join is safe — no boleta_id path needed here.
         return (
             db.query(NotaDebito)
             .join(Cliente, NotaDebito.cliente_id == Cliente.id)
@@ -360,6 +392,7 @@ def _build_timeline(
     limit: int,
     offset: int,
 ) -> dict:
+    # TODO(W2-02): replace per-tipo loop with single UNION ALL query when load justifies
     all_events: list[dict] = []
     for tipo in tipos:
         rows = query_fn(db, tipo, entity_id, current_user)
@@ -369,6 +402,8 @@ def _build_timeline(
     # Sort fecha DESC, id DESC
     all_events.sort(key=_sort_key, reverse=True)
 
+    # NOTE: total = full cross-type count, computed before slice.
+    # Bounded by limit=200 per tipo means worst case ~1800 rows in memory, acceptable for current scale.
     total = len(all_events)
     page = all_events[offset : offset + limit]
     return {

@@ -281,22 +281,19 @@ def test_timeline_paginacion(client, admin_token):
 # ---------------------------------------------------------------------------
 
 
-def test_timeline_vendedor_solo_ve_propios(client, admin_token, vendedor_token, vendedor_user):
+def test_timeline_vendedor_solo_ve_propios(client, admin_token, vendedor_token, vendedor_user, db):
     """vendedor_a creates a cotizacion; unrelated vendedor_b requests timeline → 0 items."""
-    from tests.conftest import TestingSession
     from app.models.user import User
     from app.core.security import get_password_hash
 
-    db2 = TestingSession()
     vendedor_b = User(
         email="vendedor_b_scope@conico.cl",
         name="Vendedor B Scope",
         hashed_password=get_password_hash("secret123"),
         role="vendedor",
     )
-    db2.add(vendedor_b)
-    db2.commit()
-    db2.close()
+    db.add(vendedor_b)
+    db.commit()
 
     # Login vendedor_b
     resp_b = client.post("/api/auth/login", data={"username": "vendedor_b_scope@conico.cl", "password": "secret123"})
@@ -407,3 +404,63 @@ def test_timeline_link_y_titulo_correctos(client, admin_token):
     assert cot_item["link"] == f"/cotizaciones/{cot['id']}"
     assert fac_item["titulo"] == f"Factura #{fac['id']}"
     assert fac_item["link"] == f"/facturas/{fac['id']}"
+
+
+# ---------------------------------------------------------------------------
+# 13. Regression: boleta anónima NC aparece en empresa timeline
+# ---------------------------------------------------------------------------
+
+
+def test_timeline_empresa_incluye_nc_de_boleta_anonima(client, admin_token, db):
+    """NC created via boleta-anulacion path (cliente_id=None, boleta_id=B) must appear
+    on the empresa timeline even though there is no Cliente to join through."""
+    from decimal import Decimal
+    from app.models.boleta import Boleta
+    from app.models.empresa import Empresa
+    from app.models.nota_credito import NotaCredito
+
+    # Create empresa directly in DB
+    emp = Empresa(nombre="EmpresaBoletaAnon")
+    db.add(emp)
+    db.commit()
+    db.refresh(emp)
+
+    # Create boleta with empresa_id set but cliente_id=None (anonymous/walk-in sale)
+    boleta = Boleta(
+        numero=random.randint(100000, 999999),
+        tipo_dte="39",
+        cliente_id=None,
+        empresa_id=emp.id,
+        total=Decimal("1190"),
+        total_neto=Decimal("1000"),
+        total_iva=Decimal("190"),
+        estado="anulada",
+    )
+    db.add(boleta)
+    db.commit()
+    db.refresh(boleta)
+
+    # Create NC linked to boleta only (no cliente_id) — simulates boleta-anulacion NC
+    nc = NotaCredito(
+        numero=random.randint(100000, 999999),
+        cliente_id=None,
+        boleta_id=boleta.id,
+        razon="Anulación boleta anónima",
+        monto_total=Decimal("1190"),
+        monto_neto=Decimal("1000"),
+        monto_iva=Decimal("190"),
+    )
+    db.add(nc)
+    db.commit()
+    db.refresh(nc)
+
+    # Verify NC appears on empresa timeline
+    r = client.get(
+        f"/api/empresas/{emp.id}/timeline?tipos=nota_credito",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["total"] >= 1, "NC de boleta anónima debe aparecer en timeline empresa"
+    nc_ids = [item["id"] for item in data["items"] if item["tipo"] == "nota_credito"]
+    assert nc.id in nc_ids, f"NC id={nc.id} no encontrada en items: {data['items']}"
