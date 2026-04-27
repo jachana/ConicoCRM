@@ -278,7 +278,7 @@ export default function ClienteSelectModal({ open, empresaId, empresaNombre, onS
                 <label htmlFor="modal_es_nuevo" className="text-sm text-gray-700 dark:text-gray-300">Es nuevo</label>
               </div>
 
-              {formError && <p className="col-span-2 text-xs text-red-500">{formError}</p>}
+              {formError && <p className="col-span-2 text-xs text-danger-500">{formError}</p>}
             </div>
 
             <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
@@ -287,7 +287,7 @@ export default function ClienteSelectModal({ open, empresaId, empresaNombre, onS
                 Cancelar
               </button>
               <button type="submit" disabled={crear.isPending}
-                className="px-4 py-2 text-sm bg-brand-500 hover:bg-brand-400 text-gray-900 font-semibold rounded-lg disabled:opacity-50 transition-colors">
+                className="px-4 py-2 text-sm bg-brand-500 hover:bg-brand-400 text-gray-900 font-semibold rounded-lg disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
                 {crear.isPending ? 'Guardando...' : 'Guardar y seleccionar'}
               </button>
             </div>

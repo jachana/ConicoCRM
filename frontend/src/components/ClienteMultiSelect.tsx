@@ -69,6 +69,7 @@ export default function ClienteMultiSelect({ selected, onChange }: Props) {
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); toggle(id) }}
+              aria-label="Quitar cliente"
               className="text-amber-200/70 hover:text-amber-100"
             >×</button>
           </span>

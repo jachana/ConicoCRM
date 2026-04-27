@@ -92,6 +92,7 @@ export default function EmpresaFilters({
           </button>
           {sector && (
             <button onClick={e => { e.stopPropagation(); onSectorChange(null) }}
+              aria-label="Limpiar sector"
               className="pr-2 pl-0.5 py-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
               <X size={13} />
             </button>
@@ -125,6 +126,7 @@ export default function EmpresaFilters({
           </button>
           {productoIds.length > 0 && (
             <button onClick={e => { e.stopPropagation(); onProductosChange([], []) }}
+              aria-label="Limpiar productos"
               className="pr-2 pl-0.5 py-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
               <X size={13} />
             </button>

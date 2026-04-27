@@ -106,7 +106,7 @@ export default function ExportPreviewPanel({
             <button key={col.key} onClick={() => toggleKey(col.key)}
               className={`px-2 py-1 rounded text-xs font-medium transition-colors border ${
                 active
-                  ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                  ? 'bg-info-100 dark:bg-info-900/40 text-info-700 dark:text-info-300 border-info-300 dark:border-info-700'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700'
               }`}>
               {active ? '✓ ' : ''}{col.label}
@@ -158,11 +158,11 @@ export default function ExportPreviewPanel({
         </span>
         <div className="flex flex-col items-end gap-1">
           {exportError && (
-            <span className="text-xs text-red-500">{exportError}</span>
+            <span className="text-xs text-danger-500">{exportError}</span>
           )}
           <button onClick={handleExport}
             disabled={isExporting || visibleKeys.length === 0 || lines.length === 0}
-            className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
+            className="flex items-center gap-1.5 px-3 py-2 bg-success-600 hover:bg-success-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
             <Download size={15} />
             {isExporting ? 'Exportando...' : 'Exportar Excel'}
           </button>

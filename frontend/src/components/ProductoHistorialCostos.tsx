@@ -24,7 +24,7 @@ export default function ProductoHistorialCostos({ productoId }: { productoId: nu
             <td className="px-3 py-2">{new Date(r.fecha_subida).toLocaleString('es-CL')}</td>
             <td className="px-3 py-2 text-right">${Number(r.costo_unitario).toLocaleString('es-CL')}</td>
             <td className="px-3 py-2">
-              <a className="text-blue-600 hover:underline" href={`/api/listas-precios/${r.lista_id}/download`} target="_blank" rel="noreferrer">
+              <a className="text-info-600 hover:underline" href={`/api/listas-precios/${r.lista_id}/download`} target="_blank" rel="noreferrer">
                 {r.nombre_archivo}
               </a>
             </td>

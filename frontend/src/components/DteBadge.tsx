@@ -2,11 +2,11 @@ type DteEstado = 'no_emitida' | 'pendiente' | 'procesando' | 'aceptada' | 'recha
 
 const CONFIG: Record<DteEstado, { label: string; className: string }> = {
   no_emitida:  { label: 'Sin emitir',  className: 'bg-gray-800 text-gray-400 border-gray-700' },
-  pendiente:   { label: 'Enviando...', className: 'bg-yellow-900/40 text-yellow-400 border-yellow-800' },
-  procesando:  { label: 'Enviando...', className: 'bg-yellow-900/40 text-yellow-400 border-yellow-800' },
-  aceptada:    { label: 'DTE OK',      className: 'bg-green-900/40 text-green-400 border-green-800' },
-  rechazada:   { label: 'Rechazada',   className: 'bg-red-900/40 text-red-400 border-red-800' },
-  timeout:     { label: 'Timeout',     className: 'bg-orange-900/40 text-orange-400 border-orange-800' },
+  pendiente:   { label: 'Enviando...', className: 'bg-warning-900/40 text-warning-400 border-warning-800' },
+  procesando:  { label: 'Enviando...', className: 'bg-warning-900/40 text-warning-400 border-warning-800' },
+  aceptada:    { label: 'DTE OK',      className: 'bg-success-900/40 text-success-400 border-success-800' },
+  rechazada:   { label: 'Rechazada',   className: 'bg-danger-900/40 text-danger-400 border-danger-800' },
+  timeout:     { label: 'Timeout',     className: 'bg-warning-900/40 text-warning-300 border-warning-700' },
 }
 
 export default function DteBadge({ estado }: { estado: string }) {

@@ -64,7 +64,7 @@ export default function CreditWarningModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400 text-xl font-bold">
+          <div className="w-10 h-10 rounded-full bg-danger-100 dark:bg-danger-900/30 flex items-center justify-center text-danger-600 dark:text-danger-400 text-xl font-bold">
             !
           </div>
           <div>
@@ -80,7 +80,7 @@ export default function CreditWarningModal({
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">Crédito usado</span>
-            <span className="font-medium text-red-600 dark:text-red-400">{fmtMoney(credito.credito_usado)}</span>
+            <span className="font-medium text-danger-600 dark:text-danger-400">{fmtMoney(credito.credito_usado)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">Disponible</span>
@@ -99,7 +99,7 @@ export default function CreditWarningModal({
               Cancelar
             </button>
             <button onClick={onConfirm}
-              className="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors font-medium">
+              className="px-4 py-2 text-sm bg-warning-500 hover:bg-warning-600 text-white rounded-lg transition-colors font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
               Guardar de todas formas
             </button>
           </div>
@@ -115,16 +115,16 @@ export default function CreditWarningModal({
               value={nota}
               onChange={e => setNota(e.target.value)}
               rows={2}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-3"
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-info-500 resize-none mb-3"
             />
-            {submitError && <p className="text-xs text-red-600 dark:text-red-400 mb-2">{submitError}</p>}
+            {submitError && <p className="text-xs text-danger-600 dark:text-danger-400 mb-2">{submitError}</p>}
             <div className="flex gap-2 justify-end">
               <button onClick={onCancel}
                 className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 Cancelar
               </button>
               <button onClick={handleSolicitar} disabled={submitting}
-                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg transition-colors font-medium">
+                className="px-4 py-2 text-sm bg-info-600 hover:bg-info-700 disabled:opacity-50 text-white rounded-lg transition-colors font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
                 {submitting ? 'Enviando...' : 'Solicitar Aprobación'}
               </button>
             </div>

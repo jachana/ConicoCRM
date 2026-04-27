@@ -113,7 +113,7 @@ export default function TareaModal({ onClose, onSaved, vincularA }: Props) {
               htmlFor="tarea-titulo"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
-              Título <span className="text-red-500">*</span>
+              Título <span className="text-danger-500">*</span>
             </label>
             <input
               id="tarea-titulo"
@@ -148,7 +148,7 @@ export default function TareaModal({ onClose, onSaved, vincularA }: Props) {
               htmlFor="tarea-due"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
-              Fecha de vencimiento <span className="text-red-500">*</span>
+              Fecha de vencimiento <span className="text-danger-500">*</span>
             </label>
             <input
               id="tarea-due"
@@ -161,7 +161,7 @@ export default function TareaModal({ onClose, onSaved, vincularA }: Props) {
           </div>
 
           {error && (
-            <div className="px-3 py-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg">
+            <div role="alert" className="px-3 py-2 text-sm text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-900 rounded-lg">
               {error}
             </div>
           )}

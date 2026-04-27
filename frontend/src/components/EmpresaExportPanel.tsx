@@ -87,7 +87,7 @@ export default function EmpresaExportPanel<T>({
             <button key={col.key} onClick={() => toggleKey(col.key)}
               className={`px-2 py-1 rounded text-xs font-medium transition-colors border ${
                 active
-                  ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                  ? 'bg-info-100 dark:bg-info-900/40 text-info-700 dark:text-info-300 border-info-300 dark:border-info-700'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700'
               }`}>
               {active ? '✓ ' : ''}{col.label}
@@ -138,23 +138,23 @@ export default function EmpresaExportPanel<T>({
             : `${rows.length} fila${rows.length !== 1 ? 's' : ''}`}
         </span>
         <div className="flex flex-col items-end gap-1">
-          {exportError && <span className="text-xs text-red-500">{exportError}</span>}
+          {exportError && <span className="text-xs text-danger-500">{exportError}</span>}
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => handleExport('xlsx')}
               disabled={isExporting || visibleKeys.length === 0 || rows.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-success-600 hover:bg-success-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors">
               <Download size={13} />
               Excel
             </button>
             <button onClick={() => handleExport('csv')}
               disabled={isExporting || visibleKeys.length === 0 || rows.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-info-600 hover:bg-info-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors">
               <Download size={13} />
               CSV
             </button>
             <button onClick={() => handleExport('pdf')}
               disabled={isExporting || visibleKeys.length === 0 || rows.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-danger-600 hover:bg-danger-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors">
               <Download size={13} />
               PDF
             </button>

@@ -42,7 +42,7 @@ function buildParams(w: WidgetConfig) {
 function KpiCard({ value, label }: { value: string; label: string }) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-1 px-2">
-      <span className="text-3xl font-bold text-blue-500 dark:text-blue-400 w-full text-center break-all leading-tight">{value}</span>
+      <span className="text-3xl font-bold text-info-500 dark:text-info-400 w-full text-center break-all leading-tight">{value}</span>
       <span className="text-xs text-gray-500 dark:text-gray-400 text-center">{label}</span>
     </div>
   )
@@ -141,7 +141,7 @@ function RenderStockCritico({ data }: { data: StockCriticoItem[] }) {
         <tbody>{data.map((r, i) => (
           <tr key={i} className="border-b border-gray-100 dark:border-gray-800">
             <td className="py-1 px-2 truncate max-w-[130px] dark:text-gray-200">{r.nombre}</td>
-            <td className="py-1 px-2 text-right text-red-600 font-medium dark:text-gray-200">{r.stock_actual}</td>
+            <td className="py-1 px-2 text-right text-danger-600 font-medium dark:text-gray-200">{r.stock_actual}</td>
             <td className="py-1 px-2 text-right text-gray-500 dark:text-gray-400">{r.stock_minimo}</td>
           </tr>
         ))}</tbody>
@@ -153,7 +153,7 @@ function RenderStockCritico({ data }: { data: StockCriticoItem[] }) {
 function RenderNVPorCobrar({ data, chart }: { data: NVPorCobrarOut; chart: string }) {
   if (chart === 'kpi') return (
     <div className="flex flex-col items-center justify-center h-full gap-1 px-2">
-      <span className="text-3xl font-bold text-orange-500 dark:text-orange-400 w-full text-center break-all leading-tight">{formatMoney(data.total_monto)}</span>
+      <span className="text-3xl font-bold text-warning-500 dark:text-warning-400 w-full text-center break-all leading-tight">{formatMoney(data.total_monto)}</span>
       <span className="text-xs text-gray-500 dark:text-gray-400 text-center">{data.count} NV por cobrar</span>
     </div>
   )
@@ -239,13 +239,15 @@ export default function Widget({ widget, editMode, onConfigure, onRemove }: Widg
           <div className="flex gap-1 flex-shrink-0 ml-2 relative z-20">
             <button
               onClick={() => onConfigure(widget.id)}
+              aria-label="Configurar widget"
               className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
             >
               <Settings size={13} />
             </button>
             <button
               onClick={() => onRemove(widget.id)}
-              className="p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500"
+              aria-label="Quitar widget"
+              className="p-0.5 rounded hover:bg-danger-100 dark:hover:bg-danger-900/30 text-gray-400 hover:text-danger-500"
             >
               <X size={13} />
             </button>
@@ -259,7 +261,7 @@ export default function Widget({ widget, editMode, onConfigure, onRemove }: Widg
           </div>
         )}
         {isError && (
-          <div className="flex items-center justify-center h-full text-xs text-red-400">
+          <div className="flex items-center justify-center h-full text-xs text-danger-400">
             Error al cargar datos
           </div>
         )}

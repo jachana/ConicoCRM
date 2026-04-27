@@ -24,8 +24,8 @@ const ESTADO_LABEL: Record<Tarea['estado'], string> = {
 };
 
 const ESTADO_CLASS: Record<Tarea['estado'], string> = {
-  pendiente: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  hecha: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  pendiente: 'bg-warning-100 text-warning-800 dark:bg-warning-900/30 dark:text-warning-300',
+  hecha: 'bg-success-100 text-success-800 dark:bg-success-900/30 dark:text-success-300',
   descartada: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
 };
 
@@ -196,7 +196,7 @@ export default function TareaDrawer({ tarea, onClose, onChanged }: Props) {
           </dl>
 
           {error && (
-            <div className="px-3 py-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg">
+            <div role="alert" className="px-3 py-2 text-sm text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-900 rounded-lg">
               {error}
             </div>
           )}
@@ -211,7 +211,7 @@ export default function TareaDrawer({ tarea, onClose, onChanged }: Props) {
                 onClick={handleEliminar}
                 disabled={busy}
                 aria-label="Eliminar tarea"
-                className="inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg px-4 py-2 text-sm transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 bg-danger-600 hover:bg-danger-700 text-white rounded-lg px-4 py-2 text-sm transition-colors disabled:opacity-50"
               >
                 <Trash2 size={15} />
                 Eliminar

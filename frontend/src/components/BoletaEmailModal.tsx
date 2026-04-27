@@ -19,15 +19,18 @@ export default function BoletaEmailModal({ boleta, onCancel, onConfirm, isPendin
           Enviar boleta {String(boleta.numero).padStart(5, '0')}
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No hay email asociado. Ingresa el destinatario.</p>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email *</label>
+        <label htmlFor="boleta-email-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email *</label>
         <input
+          id="boleta-email-input"
           autoFocus
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
+          aria-invalid={!!error}
+          aria-describedby={error ? 'boleta-email-input-error' : undefined}
           className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         />
-        {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
+        {error && <p id="boleta-email-input-error" className="text-sm text-danger-500 mt-2">{error}</p>}
         <div className="flex justify-end gap-2 mt-4">
           <button
             onClick={onCancel}
@@ -39,7 +42,7 @@ export default function BoletaEmailModal({ boleta, onCancel, onConfirm, isPendin
           <button
             onClick={() => onConfirm(email)}
             disabled={!canSubmit}
-            className="px-3 py-1.5 text-sm bg-brand-500 hover:bg-brand-600 text-white rounded-lg disabled:opacity-50"
+            className="px-3 py-1.5 text-sm bg-brand-500 hover:bg-brand-600 text-white rounded-lg disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
           >
             {isPending ? 'Enviando...' : 'Enviar'}
           </button>

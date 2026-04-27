@@ -58,7 +58,7 @@ export default function TareasRelacionadas({ tipo, id }: Props) {
       {expanded && (
         <div className="mt-4">
           {isError ? (
-            <div className="px-3 py-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg">
+            <div role="alert" className="px-3 py-2 text-sm text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-900 rounded-lg">
               Error al cargar tareas
             </div>
           ) : tareas.length === 0 ? (

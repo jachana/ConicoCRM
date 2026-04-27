@@ -51,7 +51,7 @@ export default function ProductoDocumentos({ productoId }: { productoId: number 
         <button
           onClick={() => fileRef.current?.click()}
           disabled={docs.length >= MAX_DOCS}
-          className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-lg"
+          className="px-3 py-1.5 text-xs bg-info-600 hover:bg-info-700 disabled:opacity-40 text-white rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
           Subir PDF
         </button>
@@ -69,15 +69,15 @@ export default function ProductoDocumentos({ productoId }: { productoId: number 
               <div className="text-xs text-gray-400">{new Date(doc.subido_en).toLocaleDateString('es-CL')}</div>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => descargar(doc)} className="text-blue-600 hover:underline text-xs">Descargar</button>
+              <button onClick={() => descargar(doc)} className="text-info-600 hover:underline text-xs">Descargar</button>
               {confirmandoId === doc.id ? (
                 <span className="flex items-center gap-1 text-xs">
                   <span className="text-gray-600 dark:text-gray-400">¿Eliminar?</span>
-                  <button onClick={() => { eliminar.mutate(doc.id); setConfirmandoId(null) }} className="text-red-500 hover:underline">Sí</button>
+                  <button onClick={() => { eliminar.mutate(doc.id); setConfirmandoId(null) }} className="text-danger-500 hover:underline">Sí</button>
                   <button onClick={() => setConfirmandoId(null)} className="text-gray-500 hover:underline">No</button>
                 </span>
               ) : (
-                <button onClick={() => setConfirmandoId(doc.id)} className="text-red-500 hover:underline text-xs">Eliminar</button>
+                <button onClick={() => setConfirmandoId(doc.id)} className="text-danger-500 hover:underline text-xs">Eliminar</button>
               )}
             </div>
           </li>

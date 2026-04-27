@@ -77,6 +77,7 @@ function FilterPill({ label, active, summary, isOpen, onToggle, onClear, childre
         </button>
         {active && (
           <button onClick={(e) => { e.stopPropagation(); onClear() }}
+            aria-label="Limpiar filtro"
             className="pr-2 pl-0.5 py-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
             <X size={13} />
           </button>
@@ -327,7 +328,10 @@ export default function Facturas() {
                 {productos.map(p => (
                   <span key={p.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-500/15 text-brand-700 dark:text-brand-300 rounded-full text-xs">
                     {p.sku ?? p.nombre}
-                    <button onClick={() => setProductos(prev => prev.filter(x => x.id !== p.id))}>
+                    <button
+                      onClick={() => setProductos(prev => prev.filter(x => x.id !== p.id))}
+                      aria-label="Quitar producto"
+                    >
                       <X size={11} />
                     </button>
                   </span>
