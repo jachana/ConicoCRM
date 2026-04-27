@@ -1,5 +1,6 @@
 import { useEffect, useState, FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { Trash2, Plus, Save, Send } from 'lucide-react'
 import {
   crearGuiaDespacho,
@@ -9,6 +10,7 @@ import {
   type GuiaLineaInput,
   type MotivoTraslado,
 } from '../api/guiasDespacho'
+import { api } from '../lib/api'
 import ClienteSelectModal from '../components/ClienteSelectModal'
 import type { Cliente } from '../types'
 
@@ -35,8 +37,7 @@ export default function GuiaDespachoNueva() {
 
   const [clienteId, setClienteId] = useState<number | null>(null)
   const [clienteNombre, setClienteNombre] = useState('')
-  const [clienteEmpresaId, setClienteEmpresaId] = useState<number>(0)
-  const [clienteEmpresaNombre, setClienteEmpresaNombre] = useState('')
+  const [empresaId, setEmpresaId] = useState<number>(0)
   const [showClienteModal, setShowClienteModal] = useState(false)
   const [motivo, setMotivo] = useState<MotivoTraslado>(1)
   const [direccion, setDireccion] = useState('')
@@ -46,6 +47,18 @@ export default function GuiaDespachoNueva() {
   const [notaVentaId, setNotaVentaId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  const { data: empresas = [] } = useQuery<{ id: number; nombre: string }[]>({
+    queryKey: ['empresas'],
+    queryFn: () => api.get('/api/empresas/').then(r => r.data),
+  })
+
+  // Auto-select default empresa when there is exactly one
+  useEffect(() => {
+    if (empresas.length === 1 && empresaId === 0) {
+      setEmpresaId(empresas[0].id)
+    }
+  }, [empresas, empresaId])
 
   useEffect(() => {
     if (nvIdParam) {
@@ -68,8 +81,10 @@ export default function GuiaDespachoNueva() {
   function handleClienteSelect(cliente: Cliente) {
     setClienteId(cliente.id)
     setClienteNombre(cliente.nombre)
-    setClienteEmpresaId(cliente.empresa_id ?? 0)
-    setClienteEmpresaNombre(cliente.empresa?.nombre ?? '')
+    // Sync empresa from client if it differs (rare but keep consistent)
+    if (cliente.empresa_id && cliente.empresa_id !== empresaId) {
+      setEmpresaId(cliente.empresa_id)
+    }
     // Pre-fill address if available
     if (cliente.direccion_despacho) setDireccion(cliente.direccion_despacho)
     if (cliente.comuna) setComuna(cliente.comuna)
@@ -114,6 +129,7 @@ export default function GuiaDespachoNueva() {
     try {
       const payload: GuiaCreatePayload = {
         cliente_id: clienteId!,
+        ...(empresaId ? { empresa_id: empresaId } : {}),
         motivo_traslado: motivo,
         direccion_destino: direccion.trim(),
         comuna_destino: comuna.trim(),
@@ -178,13 +194,41 @@ export default function GuiaDespachoNueva() {
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
             Receptor
           </h2>
-          <button
-            type="button"
-            onClick={() => setShowClienteModal(true)}
-            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-          >
-            {clienteNombre ? `Cliente: ${clienteNombre}` : 'Seleccionar cliente'}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <div>
+              <label htmlFor="empresa-select" className={lblCls}>
+                Empresa
+              </label>
+              <select
+                id="empresa-select"
+                value={empresaId}
+                onChange={e => {
+                  setEmpresaId(Number(e.target.value))
+                  setClienteId(null)
+                  setClienteNombre('')
+                }}
+                className={inputCls + ' min-w-[180px]'}
+              >
+                <option value={0}>— Seleccionar empresa —</option>
+                {empresas.map(emp => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col">
+              <span className={lblCls}>&nbsp;</span>
+              <button
+                type="button"
+                onClick={() => setShowClienteModal(true)}
+                disabled={!empresaId}
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {clienteNombre ? `Cliente: ${clienteNombre}` : 'Seleccionar cliente'}
+              </button>
+            </div>
+          </div>
         </section>
 
         <section className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -355,8 +399,8 @@ export default function GuiaDespachoNueva() {
       {showClienteModal && (
         <ClienteSelectModal
           open={showClienteModal}
-          empresaId={clienteEmpresaId}
-          empresaNombre={clienteEmpresaNombre}
+          empresaId={empresaId}
+          empresaNombre={empresas.find(e => e.id === empresaId)?.nombre ?? ''}
           onClose={() => setShowClienteModal(false)}
           onSelect={(cliente: Cliente) => {
             handleClienteSelect(cliente)

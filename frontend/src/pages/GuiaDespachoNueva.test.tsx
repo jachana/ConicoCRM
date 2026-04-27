@@ -9,6 +9,17 @@ import type { Cliente } from '../types'
 
 vi.mock('../api/guiasDespacho')
 
+vi.mock('../lib/api', () => ({
+  api: {
+    get: vi.fn((url: string) => {
+      if (url === '/api/empresas/') {
+        return Promise.resolve({ data: [{ id: 1, nombre: 'Test SpA' }] })
+      }
+      return Promise.resolve({ data: [] })
+    }),
+  },
+}))
+
 // ClienteSelectModal.onSelect takes a single (cliente: Cliente) object.
 // empresaId, empresaNombre, and open are required props — we accept them and ignore in the mock.
 vi.mock('../components/ClienteSelectModal', () => ({
@@ -69,6 +80,7 @@ describe('GuiaDespachoNueva', () => {
 
   it('blocks submit without lineas válidas', async () => {
     renderPage()
+    await waitFor(() => expect(screen.getByRole('button', { name: /seleccionar cliente/i })).not.toBeDisabled())
     await userEvent.click(screen.getByRole('button', { name: /seleccionar cliente/i }))
     await userEvent.click(screen.getByText('pick-cliente'))
     await userEvent.type(screen.getByLabelText(/dirección destino/i), 'Av Test 123')
@@ -81,6 +93,7 @@ describe('GuiaDespachoNueva', () => {
     vi.mocked(apiGuias.crearGuiaDespacho).mockResolvedValue({ id: 42 } as apiGuias.GuiaDespacho)
     vi.mocked(apiGuias.emitirGuiaDespachoDte).mockResolvedValue({ id: 42 } as apiGuias.GuiaDespacho)
     renderPage()
+    await waitFor(() => expect(screen.getByRole('button', { name: /seleccionar cliente/i })).not.toBeDisabled())
     await userEvent.click(screen.getByRole('button', { name: /seleccionar cliente/i }))
     await userEvent.click(screen.getByText('pick-cliente'))
     await userEvent.type(screen.getByLabelText(/dirección destino/i), 'Av Test 123')
