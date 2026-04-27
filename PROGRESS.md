@@ -212,6 +212,19 @@
   - Celery task `tasks/dte.py` con polling de estado
   - **Pendiente:** boleta 39/41, guía de despacho 52, factura exenta 34, factura de compra 46, libros, intercambio DTE recepción
 
+- [ ] **Design System v2 — Refined SaaS migration** *(en progreso, ver `docs/design-system-migration-prd.md`)*
+  - **Phase 0 — Foundation** (`07c5f7f`): paleta semántica (brand=amber, success=emerald, warning=amber, danger=rose, info=sky 50-950), shadow-elev-1..4, `font-num` tabular, primitivas en `components/ui/*` (Button, Input, Textarea, FormField, Select, Modal, Card, Table, Badge, EmptyState, Skeleton, Tabs, Tooltip, Popover), sonner `<Toaster />` montado en `main.tsx`
+  - **Phase 1.1 — Dashboard** (`b91e5e4`)
+  - **Phase 1.2a — NotasVenta list** (`06dd343`)
+  - **Phase 1.3 — Inventario + ProductoModal + ProductoHistorial** (`8cf5960`)
+  - **Phase 1.4a — Clientes** (`d6fa479`); **1.4b — Empresas list/detail/4 tabs** (`df202e4`)
+  - **Phase 1.6a — BoletasList** (`9394195`)
+  - **Sidebar polish** (`94cffaa`): tokens `bg-gray-900`, badges `danger-500`/`warning-500`, logout hover `danger`, aria-labels reflejando estado, eliminado branch `pending` muerto
+  - **NotaVentaDetalle** (`5f2e2c1`): header buttons + Card shells, popover "Cambiar estado", Badge variants por estado, Table primitives en líneas, sonner reemplaza emailToast, `<Lock>`/`<Receipt>`/`<Truck>` icons, `font-num` en celdas monetarias
+  - **Cotizaciones list** (`18c9524`): mobile cards, desktop table interactive, Tooltip-wrapped actions, MargenBadge en tokens, modales delete/export/discard
+  - **CotizacionDetalle** (`fe7b967`): subagent-driven; banners Lock/AlertTriangle, autocomplete con shadow-elev-3, Empresa+UserPlus row con `Button size="icon-sm"`, "Crear NV" como `variant="success"`, modal solicitud-margenes en Table primitive
+  - **Pendiente** (ver PRD para inventario completo): Facturas + FacturaDetalle, BoletaDetalle/BoletaNueva, Guías despacho trio, Notas crédito/débito sextet, Phase B (Pagos, Cobranza, OC, Proveedores, Reportes, Empresas), Phase C (Tareas, Aprobaciones, RRHH, Auditoría, Configuración), Phase D (auth pages), Phase E (visual QA pass + Storybook opcional)
+
 ---
 
 ## Flujo de documentos
