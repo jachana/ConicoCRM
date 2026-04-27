@@ -1,14 +1,21 @@
 import { openPdf } from '../lib/pdf'
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, FileText, Mail, ArrowLeft, ExternalLink, Receipt, Truck } from 'lucide-react'
+import { toast } from 'sonner'
+import { Plus, Trash2, FileText, Mail, ArrowLeft, ExternalLink, Receipt, Truck, Lock } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { NotaVenta, NotaVentaLinea, Cliente, User, Producto, Empresa, SedeDespacho } from '../types'
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 import UnsavedChangesModal from '../components/UnsavedChangesModal'
 import TareasRelacionadas from '../components/TareasRelacionadas'
+import {
+  Button, Input, Textarea, FormField, Badge, Card, CardContent,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Popover, PopoverTrigger, PopoverContent,
+  Table, THead, TBody, TR, TH, TD,
+} from '../components/ui'
 
 type LineaLocal = Omit<NotaVentaLinea, 'id'> & { id?: number; _key: string }
 
@@ -20,12 +27,12 @@ const ESTADO_LABELS: Record<string, string> = {
   cancelada:  'Cancelada',
 }
 
-const ESTADO_COLORS: Record<string, string> = {
-  pendiente:  'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-  despachada: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  entregada:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-  pagada:     'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  cancelada:  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+const ESTADO_VARIANT: Record<string, 'neutral' | 'info' | 'warning' | 'success' | 'danger'> = {
+  pendiente:  'neutral',
+  despachada: 'info',
+  entregada:  'warning',
+  pagada:     'success',
+  cancelada:  'danger',
 }
 
 function getValidTransitions(estado: string, isAdmin: boolean): string[] {
@@ -121,8 +128,7 @@ export default function NotaVentaDetalle() {
   const [empresaId, setEmpresaId] = useState<number | ''>('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [emailToast, setEmailToast] = useState<{ msg: string; ok: boolean } | null>(null)
-  const [showEstadoMenu, setShowEstadoMenu] = useState(false)
+  const [estadoMenuOpen, setEstadoMenuOpen] = useState(false)
   const [creditModal, setCreditModal] = useState<{
     credito: CreditoInfo
     aprobacionPayload?: AprobacionPayload
@@ -446,24 +452,18 @@ export default function NotaVentaDetalle() {
       api.patch(`/api/nota_ventas/${id}/estado`, { estado: nuevoEstado }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['nota_venta', id] })
-      setShowEstadoMenu(false)
+      setEstadoMenuOpen(false)
     },
     onError: (err: any) => {
       setError(err?.response?.data?.detail || 'Error al cambiar estado')
-      setShowEstadoMenu(false)
+      setEstadoMenuOpen(false)
     },
   })
 
   const emailMut = useMutation({
     mutationFn: () => api.post(`/api/nota_ventas/${id}/email`),
-    onSuccess: () => {
-      setEmailToast({ msg: 'Email enviado correctamente', ok: true })
-      setTimeout(() => setEmailToast(null), 3500)
-    },
-    onError: (err: any) => {
-      setEmailToast({ msg: err?.response?.data?.detail || 'Error al enviar email', ok: false })
-      setTimeout(() => setEmailToast(null), 4000)
-    },
+    onSuccess: () => toast.success('Email enviado correctamente'),
+    onError: (err: any) => toast.error(err?.response?.data?.detail || 'Error al enviar email'),
   })
 
   const genFacturaMut = useMutation({
@@ -472,48 +472,54 @@ export default function NotaVentaDetalle() {
   })
 
   const validTransitions = !isNew && nv ? getValidTransitions(nv.estado, isAdmin) : []
+  const dirtyBorder = 'border-warning-400 dark:border-warning-500'
 
   return (
     <div className="p-4 md:p-6 max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/notas-venta')}
-            className="p-1.5 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded transition-colors">
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            onClick={() => navigate('/notas-venta')}
+            aria-label="Volver"
+          >
             <ArrowLeft size={18} />
-          </button>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+          </Button>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white font-num">
             {isNew ? 'Nueva nota de venta' : `NV-${String(nv?.numero ?? '').padStart(5, '0')}`}
           </h1>
           {!isNew && nv && (
-            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${ESTADO_COLORS[nv.estado] ?? ''}`}>
+            <Badge variant={ESTADO_VARIANT[nv.estado] ?? 'neutral'} size="sm">
               {ESTADO_LABELS[nv.estado] ?? nv.estado}
-            </span>
+            </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {!isNew && nv && validTransitions.length > 0 && (
-            <div className="relative">
-              <button
-                onClick={() => setShowEstadoMenu(v => !v)}
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                Cambiar estado
-              </button>
-              {showEstadoMenu && (
-                <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[160px]">
-                  {validTransitions.map(t => (
-                    <button key={t} onClick={() => estadoMut.mutate(t)}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-gray-700 dark:text-gray-300">
-                      → {ESTADO_LABELS[t]}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Popover open={estadoMenuOpen} onOpenChange={setEstadoMenuOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">Cambiar estado</Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="p-1 min-w-[160px]">
+                {validTransitions.map(t => (
+                  <button
+                    key={t}
+                    onClick={() => estadoMut.mutate(t)}
+                    className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                  >
+                    → {ESTADO_LABELS[t]}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
           )}
           {!isNew && (
             <>
-              <button
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={<FileText />}
                 onClick={() => {
                   if (lineasErrors.length > 0) return
                   if (isDirty) { setPendingAction('pdf'); setUnsavedModal(true); return }
@@ -521,61 +527,65 @@ export default function NotaVentaDetalle() {
                 }}
                 disabled={lineasErrors.length > 0}
                 title={lineasErrors.length > 0 ? lineasErrors.join(' | ') : undefined}
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <FileText size={15} />
                 PDF
-              </button>
-              <button
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={<Mail />}
                 onClick={() => {
                   if (lineasErrors.length > 0) return
                   if (isDirty) { setPendingAction('email'); setUnsavedModal(true); return }
                   emailMut.mutate()
                 }}
                 disabled={emailMut.isPending || lineasErrors.length > 0}
+                loading={emailMut.isPending}
                 title={lineasErrors.length > 0 ? lineasErrors.join(' | ') : undefined}
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Mail size={15} />
-                {emailMut.isPending ? 'Enviando...' : 'Email'}
-              </button>
+                Email
+              </Button>
               {nv?.factura_id == null && (
-                <button
+                <Button
+                  size="sm"
+                  leftIcon={<Receipt />}
                   onClick={() => genFacturaMut.mutate()}
-                  disabled={genFacturaMut.isPending}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                  loading={genFacturaMut.isPending}
                 >
-                  <Receipt size={15} /> Generar Factura
-                </button>
+                  Generar Factura
+                </Button>
               )}
               {nv && nv.estado !== 'cancelada' && (
-                <button
+                <Button
+                  size="sm"
+                  leftIcon={<Truck />}
                   onClick={() => navigate(`/guias-despacho/nueva?nv_id=${nv.id}`)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
                   title="Crear guía de despacho desde esta NV"
                 >
-                  <Truck size={15} /> Generar guía
-                </button>
+                  Generar guía
+                </Button>
               )}
               {nv?.factura_id != null && (
-                <Link
-                  to={`/facturas/${nv.factura_id}`}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200"
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  leftIcon={<Receipt />}
+                  onClick={() => navigate(`/facturas/${nv.factura_id}`)}
                 >
-                  <Receipt size={15} /> Ver Factura
-                </Link>
+                  Ver Factura
+                </Button>
               )}
             </>
           )}
           {!isLocked && (
-            <button
+            <Button
               onClick={handleSave}
-              disabled={saving || lineasErrors.length > 0}
+              loading={saving}
+              disabled={lineasErrors.length > 0}
               title={lineasErrors.length > 0 ? lineasErrors.join(' | ') : undefined}
-              className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
             >
-              {saving ? 'Guardando...' : 'Guardar'}
-            </button>
+              Guardar
+            </Button>
           )}
         </div>
       </div>
@@ -585,7 +595,7 @@ export default function NotaVentaDetalle() {
           <span className="text-xs text-gray-500 dark:text-gray-400">Originada desde cotización:</span>
           <button
             onClick={() => navigate(`/cotizaciones/${nv.cotizacion_id}`)}
-            className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline font-num"
           >
             COT-{String(nv.cotizacion?.numero ?? nv.cotizacion_id).padStart(5, '0')}
             <ExternalLink size={11} />
@@ -594,254 +604,310 @@ export default function NotaVentaDetalle() {
       )}
 
       {isLocked && (
-        <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300">
+        <div className="mb-4 rounded-lg border border-warning-300 bg-warning-50 dark:border-warning-700 dark:bg-warning-500/10 px-4 py-3 text-sm text-warning-800 dark:text-warning-300 flex items-center gap-2">
+          <Lock size={15} />
           Este documento está bloqueado — se generó una Factura desde esta nota de venta.
         </div>
       )}
 
       {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
+        <div className="mb-4 px-4 py-3 bg-danger-50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-800 rounded-lg text-sm text-danger-600 dark:text-danger-400">
           {error}
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 mb-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Cliente *</label>
-            <select value={clienteId} onChange={e => handleClienteChange(e.target.value ? Number(e.target.value) : '')}
-              disabled={isLocked}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('clienteId', clienteId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}>
-              <option value="">Seleccionar cliente...</option>
-              {clientes.map(c => (
-                <option key={c.id} value={c.id}>{c.nombre}{c.rut ? ` · ${c.rut}` : ''}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Empresa</label>
-            <select value={empresaId} onChange={e => { setEmpresaId(e.target.value ? Number(e.target.value) : ''); setSedeDespachoId(null) }}
-              disabled={isLocked}
-              className={`w-full px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60 disabled:cursor-not-allowed ${df('empresaId', empresaId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600'}`}>
-              <option value="">— Sin empresa —</option>
-              {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-            </select>
-          </div>
-          {empresaId !== '' && (
-            <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Términos de pago
-              </label>
-              {empresaSinCredito ? (
-                <>
-                  <div className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 cursor-not-allowed">
-                    Al contado
-                  </div>
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                    Esta empresa no tiene línea de crédito.
-                  </p>
-                </>
-              ) : (
-                <div className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                  {nv?.terminos_pago ?? '—'}
+      <Card className="mb-5">
+        <CardContent className="p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <FormField label="Cliente" required>
+              <Select
+                value={clienteId ? String(clienteId) : ''}
+                onValueChange={v => handleClienteChange(v ? Number(v) : '')}
+                disabled={isLocked}
+              >
+                <SelectTrigger className={df('clienteId', clienteId) ? dirtyBorder : ''}>
+                  <SelectValue placeholder="Seleccionar cliente..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientes.map(c => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.nombre}{c.rut ? ` · ${c.rut}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            <FormField label="Empresa">
+              <Select
+                value={empresaId ? String(empresaId) : 'none'}
+                onValueChange={v => { setEmpresaId(v === 'none' ? '' : Number(v)); setSedeDespachoId(null) }}
+                disabled={isLocked}
+              >
+                <SelectTrigger className={df('empresaId', empresaId) ? dirtyBorder : ''}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Sin empresa —</SelectItem>
+                  {empresas.map(e => (
+                    <SelectItem key={e.id} value={String(e.id)}>{e.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            {empresaId !== '' && (
+              <FormField
+                label="Términos de pago"
+                hint={empresaSinCredito ? 'Esta empresa no tiene línea de crédito.' : undefined}
+              >
+                <div className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
+                  {empresaSinCredito ? 'Al contado' : (nv?.terminos_pago ?? '—')}
                 </div>
+              </FormField>
+            )}
+
+            <FormField label="Contacto">
+              <Input
+                value={contacto}
+                onChange={e => setContacto(e.target.value)}
+                disabled={isLocked}
+                placeholder="Nombre del contacto"
+                className={df('contacto', contacto) ? dirtyBorder : ''}
+              />
+            </FormField>
+
+            <FormField label="Correo">
+              <Input
+                type="email"
+                value={correo}
+                onChange={e => setCorreo(e.target.value)}
+                disabled={isLocked}
+                placeholder="email@ejemplo.com"
+                className={df('correo', correo) ? dirtyBorder : ''}
+              />
+            </FormField>
+
+            <FormField label="Fecha">
+              <Input
+                type="date"
+                value={fecha}
+                onChange={e => setFecha(e.target.value)}
+                disabled={isLocked}
+                className={df('fecha', fecha) ? dirtyBorder : ''}
+              />
+            </FormField>
+
+            {isAdmin && (
+              <FormField label="Encargado">
+                <Select
+                  value={vendedorId ? String(vendedorId) : ''}
+                  onValueChange={v => setVendedorId(v ? Number(v) : '')}
+                  disabled={isLocked}
+                >
+                  <SelectTrigger className={df('vendedorId', vendedorId) ? dirtyBorder : ''}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {usuarios.map(u => (
+                      <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
+
+            <FormField label="Nota / Observaciones" className="sm:col-span-2 lg:col-span-3">
+              <Textarea
+                value={nota}
+                onChange={e => setNota(e.target.value)}
+                rows={2}
+                disabled={isLocked}
+                placeholder="Notas internas o para el cliente..."
+                className={df('nota', nota) ? dirtyBorder : ''}
+              />
+            </FormField>
+
+            <div className="sm:col-span-2 lg:col-span-3 space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={retiroEnConico}
+                  disabled={isLocked}
+                  onChange={e => {
+                    setRetiroEnConico(e.target.checked)
+                    if (e.target.checked) setSedeDespachoId(null)
+                  }}
+                  className="rounded border-gray-300 accent-brand-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                />
+                <span className={`text-sm font-medium ${df('retiroEnConico', retiroEnConico) ? 'text-warning-600 dark:text-warning-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                  Retiro en Conico
+                </span>
+              </label>
+              {!retiroEnConico && (
+                <FormField label="Sede de despacho">
+                  <Select
+                    value={sedeDespachoId ? String(sedeDespachoId) : 'none'}
+                    onValueChange={v => setSedeDespachoId(v === 'none' ? null : Number(v))}
+                    disabled={isLocked}
+                  >
+                    <SelectTrigger className={df('sedeDespachoId', sedeDespachoId) ? dirtyBorder : ''}>
+                      <SelectValue placeholder={sedes.length === 0 ? 'Sin sedes registradas' : '— Seleccionar sede —'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Seleccionar sede —</SelectItem>
+                      {sedes.map(s => (
+                        <SelectItem key={s.id} value={String(s.id)}>{s.nombre} — {s.direccion}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
               )}
             </div>
-          )}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Contacto</label>
-            <input type="text" value={contacto} onChange={e => setContacto(e.target.value)}
-              disabled={isLocked}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('contacto', contacto) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
-              placeholder="Nombre del contacto" />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Correo</label>
-            <input type="email" value={correo} onChange={e => setCorreo(e.target.value)}
-              disabled={isLocked}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('correo', correo) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
-              placeholder="email@ejemplo.com" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
-            <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-              disabled={isLocked}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('fecha', fecha) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`} />
-          </div>
-          {isAdmin && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Encargado</label>
-              <select value={vendedorId} onChange={e => setVendedorId(e.target.value ? Number(e.target.value) : '')}
-                disabled={isLocked}
-                className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('vendedorId', vendedorId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}>
-                {usuarios.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
-            </div>
-          )}
-          <div className="sm:col-span-2 lg:col-span-3">
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Nota / Observaciones</label>
-            <textarea value={nota} onChange={e => setNota(e.target.value)} rows={2}
-              disabled={isLocked}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-60 disabled:cursor-not-allowed ${df('nota', nota) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
-              placeholder="Notas internas o para el cliente..." />
-          </div>
-          {/* Despacho */}
-          <div className="sm:col-span-2 lg:col-span-3 space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={retiroEnConico}
-                disabled={isLocked}
-                onChange={e => {
-                  setRetiroEnConico(e.target.checked)
-                  if (e.target.checked) setSedeDespachoId(null)
-                }}
-                className="rounded border-gray-300 disabled:opacity-60 disabled:cursor-not-allowed"
-              />
-              <span className={`text-sm font-medium ${df('retiroEnConico', retiroEnConico) ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                Retiro en Conico
-              </span>
-            </label>
-            {!retiroEnConico && (
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                  Sede de despacho
-                </label>
-                <select
-                  value={sedeDespachoId ?? ''}
-                  disabled={isLocked}
-                  onChange={e => setSedeDespachoId(e.target.value ? Number(e.target.value) : null)}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed ${df('sedeDespachoId', sedeDespachoId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
-                >
-                  <option value="">
-                    {sedes.length === 0 ? 'Sin sedes registradas' : '— Seleccionar sede —'}
-                  </option>
-                  {sedes.map(s => (
-                    <option key={s.id} value={s.id}>{s.nombre} — {s.direccion}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto mb-4">
-        <table className="w-full text-sm min-w-[900px]">
-          <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
-            <tr>
-              <th className="px-3 py-3 font-medium text-center w-10">Nº</th>
-              <th className="px-3 py-3 font-medium w-24">SKU</th>
-              <th className="px-3 py-3 font-medium">Descripción</th>
-              <th className="px-3 py-3 font-medium w-28">Formato</th>
-              <th className="px-3 py-3 font-medium text-right w-20">Cant.</th>
-              <th className="px-3 py-3 font-medium text-right w-28">Valor Neto</th>
-              <th className="px-3 py-3 font-medium text-right w-28">Total Neto</th>
-              <th className="px-3 py-3 font-medium text-right w-24">IVA</th>
-              <th className="px-3 py-3 font-medium text-right w-28">Total</th>
-              <th className="px-3 py-3 font-medium text-right w-20">Margen</th>
-              <th className="px-3 py-3 w-10"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+      <Card className="mb-4 overflow-x-auto">
+        <Table density="compact">
+          <THead>
+            <TR>
+              <TH className="text-center w-10">Nº</TH>
+              <TH className="w-24">SKU</TH>
+              <TH>Descripción</TH>
+              <TH className="w-28">Formato</TH>
+              <TH className="text-right w-20">Cant.</TH>
+              <TH className="text-right w-28">Valor Neto</TH>
+              <TH className="text-right w-28">Total Neto</TH>
+              <TH className="text-right w-24">IVA</TH>
+              <TH className="text-right w-28">Total</TH>
+              <TH className="text-right w-20">Margen</TH>
+              <TH className="w-10" />
+            </TR>
+          </THead>
+          <TBody>
             {lineas.map((linea, idx) => (
-              <tr key={linea._key} className={lineaDirty(idx) ? 'bg-amber-50 dark:bg-amber-900/10' : ''}>
-                <td className="px-3 py-2 text-center text-gray-500 dark:text-gray-400">{idx + 1}</td>
-                <td className="px-3 py-2">
-                  <input type="text" value={linea.sku ?? ''} onChange={e => updateLinea(idx, { sku: e.target.value || null })}
+              <TR key={linea._key} className={lineaDirty(idx) ? 'bg-warning-50 dark:bg-warning-500/5' : ''}>
+                <TD className="text-center text-gray-500 dark:text-gray-400 font-num">{idx + 1}</TD>
+                <TD>
+                  <Input
+                    size="sm"
+                    value={linea.sku ?? ''}
+                    onChange={e => updateLinea(idx, { sku: e.target.value || null })}
                     disabled={isLocked}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
-                    placeholder="SKU" />
-                </td>
-                <td className="px-3 py-2 relative">
-                  <input type="text" value={linea.descripcion}
-                    disabled={isLocked}
+                    placeholder="SKU"
+                  />
+                </TD>
+                <TD className="relative">
+                  <Input
+                    size="sm"
+                    value={linea.descripcion}
                     onChange={e => handleDescripcionChange(idx, e.target.value)}
                     onBlur={() => setTimeout(() => { setAutocompleteIdx(null); setAutocompleteResults([]) }, 200)}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
-                    placeholder="Descripción..." />
+                    disabled={isLocked}
+                    placeholder="Descripción..."
+                  />
                   {autocompleteIdx === idx && autocompleteResults.length > 0 && (
-                    <div className="absolute z-20 left-3 right-3 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                    <div className="absolute z-20 left-3 right-3 top-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-elev-3 overflow-hidden">
                       {autocompleteResults.slice(0, 8).map(p => (
-                        <button key={p.id} type="button" onMouseDown={() => selectProducto(idx, p)}
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                        <button
+                          key={p.id}
+                          type="button"
+                          onMouseDown={() => selectProducto(idx, p)}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-brand-50 dark:hover:bg-brand-500/10 border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+                        >
                           <div className="font-medium text-gray-900 dark:text-white">{p.nombre}</div>
-                          <div className="text-gray-500">{p.sku ? `SKU: ${p.sku}` : ''}{p.formato ? ` · ${p.formato}` : ''} · $ {p.precio_venta.toLocaleString('es-CL')}</div>
+                          <div className="text-gray-500 dark:text-gray-400 font-num">
+                            {p.sku ? `SKU: ${p.sku}` : ''}{p.formato ? ` · ${p.formato}` : ''} · $ {p.precio_venta.toLocaleString('es-CL')}
+                          </div>
                         </button>
                       ))}
                     </div>
                   )}
-                </td>
-                <td className="px-3 py-2">
-                  <input type="text" value={linea.formato ?? ''} onChange={e => updateLinea(idx, { formato: e.target.value || null })}
+                </TD>
+                <TD>
+                  <Input
+                    size="sm"
+                    value={linea.formato ?? ''}
+                    onChange={e => updateLinea(idx, { formato: e.target.value || null })}
                     disabled={isLocked}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
-                    placeholder="Formato" />
-                </td>
-                <td className="px-3 py-2">
-                  <input type="number" min="1" value={linea.cantidad}
-                    disabled={isLocked}
+                    placeholder="Formato"
+                  />
+                </TD>
+                <TD>
+                  <Input
+                    size="sm"
+                    type="number"
+                    min="1"
+                    className="text-right"
+                    value={linea.cantidad}
                     onChange={e => updateLinea(idx, { cantidad: Math.max(1, parseInt(e.target.value) || 1) })}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right disabled:opacity-60 disabled:cursor-not-allowed" />
-                </td>
-                <td className="px-3 py-2">
-                  <input type="number" min="0" value={linea.valor_neto}
                     disabled={isLocked}
+                  />
+                </TD>
+                <TD>
+                  <Input
+                    size="sm"
+                    type="number"
+                    min="0"
+                    className="text-right"
+                    value={linea.valor_neto}
                     onChange={e => updateLinea(idx, { valor_neto: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right disabled:opacity-60 disabled:cursor-not-allowed" />
-                </td>
-                <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300 text-xs font-medium">{fmtMoney(linea.total_neto)}</td>
-                <td className="px-3 py-2 text-right text-gray-500 dark:text-gray-400 text-xs">{fmtMoney(linea.iva)}</td>
-                <td className="px-3 py-2 text-right text-gray-900 dark:text-white text-xs font-medium">{fmtMoney(linea.total)}</td>
-                <td className="px-3 py-2 text-right text-xs">
+                    disabled={isLocked}
+                  />
+                </TD>
+                <TD className="text-right text-gray-700 dark:text-gray-300 font-num font-medium">{fmtMoney(linea.total_neto)}</TD>
+                <TD className="text-right text-gray-500 dark:text-gray-400 font-num">{fmtMoney(linea.iva)}</TD>
+                <TD className="text-right text-gray-900 dark:text-white font-num font-medium">{fmtMoney(linea.total)}</TD>
+                <TD className="text-right font-num">
                   {linea.margen !== null
-                    ? <span className={linea.margen >= 0.15 ? 'text-green-600 dark:text-green-400' : 'text-orange-500'}>{(linea.margen * 100).toFixed(1)}%</span>
+                    ? <span className={linea.margen >= 0.15 ? 'text-success-600 dark:text-success-400' : 'text-warning-600 dark:text-warning-400'}>{(linea.margen * 100).toFixed(1)}%</span>
                     : <span className="text-gray-400">—</span>}
-                </td>
-                <td className="px-3 py-2">
-                  <button onClick={() => removeLinea(idx)} className="p-1 text-gray-400 hover:text-red-500 transition-colors" disabled={lineas.length === 1 || isLocked}>
+                </TD>
+                <TD>
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    onClick={() => removeLinea(idx)}
+                    disabled={lineas.length === 1 || isLocked}
+                    aria-label="Eliminar línea"
+                    className="text-gray-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                  >
                     <Trash2 size={14} />
-                  </button>
-                </td>
-              </tr>
+                  </Button>
+                </TD>
+              </TR>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TBody>
+        </Table>
+      </Card>
 
-      <div className="flex items-start justify-between">
-        {!isLocked && (
-          <button onClick={addLinea}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
-            <Plus size={15} />
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        {!isLocked ? (
+          <Button variant="ghost" size="sm" leftIcon={<Plus />} onClick={addLinea}>
             Agregar línea
-          </button>
-        )}
-        {isLocked && <div />}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 min-w-[260px]">
-          <div className="space-y-1.5 text-sm">
-            <div className="flex justify-between text-gray-600 dark:text-gray-400">
-              <span>Total Neto</span><span className="font-medium">{fmtMoney(totalNeto)}</span>
+          </Button>
+        ) : <div />}
+        <Card className="min-w-[260px]">
+          <CardContent className="p-4">
+            <div className="space-y-1.5 text-sm font-num">
+              <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                <span>Total Neto</span><span className="font-medium">{fmtMoney(totalNeto)}</span>
+              </div>
+              <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                <span>IVA (19%)</span><span className="font-medium">{fmtMoney(totalIva)}</span>
+              </div>
+              <div className="flex justify-between border-t border-gray-200 dark:border-gray-800 pt-1.5 font-bold text-gray-900 dark:text-white text-base">
+                <span>Total</span><span>{fmtMoney(total)}</span>
+              </div>
             </div>
-            <div className="flex justify-between text-gray-600 dark:text-gray-400">
-              <span>IVA (19%)</span><span className="font-medium">{fmtMoney(totalIva)}</span>
-            </div>
-            <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-1.5 font-bold text-gray-900 dark:text-white text-base">
-              <span>Total</span><span>{fmtMoney(total)}</span>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {!isNew && nv && (
         <div className="mt-5">
           <TareasRelacionadas tipo="nota_venta" id={nv.id} />
-        </div>
-      )}
-
-      {emailToast && (
-        <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-          {emailToast.msg}
         </div>
       )}
 
