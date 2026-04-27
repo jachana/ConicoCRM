@@ -44,7 +44,8 @@ const NAV: NavItem[] = [
     children: [
       { to: '/cobranza',       icon: Banknote,    label: 'Cobranza' },
       { to: '/facturas',       icon: FileText,    label: 'Facturas' },
-      { to: '/boletas',        icon: FileText,    label: 'Boletas' },
+      { to: '/boletas',         icon: FileText,    label: 'Boletas' },
+      { to: '/guias-despacho', icon: Truck,       label: 'Guías de Despacho' },
       { to: '/notas-credito',  icon: FileText,    label: 'Notas de Crédito' },
       { to: '/notas-debito',   icon: FileText,    label: 'Notas de Débito' },
       { to: '/pagos',          icon: CreditCard,  label: 'Pagos' },
@@ -73,7 +74,7 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
   const location = useLocation()
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => ({
-    Cobranza: ['/cobranza', '/facturas', '/boletas', '/notas-credito', '/notas-debito', '/pagos'].some(p => location.pathname.startsWith(p)),
+    Cobranza: ['/cobranza', '/facturas', '/boletas', '/guias-despacho', '/notas-credito', '/notas-debito', '/pagos'].some(p => location.pathname.startsWith(p)),
     Compras:  ['/ordenes-compra', '/proveedores'].some(p => location.pathname.startsWith(p)),
   }))
 
