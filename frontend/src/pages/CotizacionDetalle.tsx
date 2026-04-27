@@ -3,7 +3,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, RotateCcw, ExternalLink, UserPlus } from 'lucide-react'
+import { toast } from 'sonner'
+import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, RotateCcw, ExternalLink, UserPlus, Lock, AlertTriangle } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta } from '../types'
@@ -11,6 +12,13 @@ import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '..
 import UnsavedChangesModal from '../components/UnsavedChangesModal'
 import ClienteSelectModal from '../components/ClienteSelectModal'
 import TareasRelacionadas from '../components/TareasRelacionadas'
+import {
+  Button, Input, Textarea, FormField, Card, CardContent,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter,
+  Table, THead, TBody, TR, TH, TD,
+  Tooltip,
+} from '../components/ui'
 
 type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string; _stock?: number | null; _costo?: number | null; descuento: number }
 
@@ -114,13 +122,10 @@ export default function CotizacionDetalle() {
   const [empresaId, setEmpresaId] = useState<number | ''>('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [emailToast, setEmailToast] = useState<{ msg: string; ok: boolean } | null>(null)
 
   const [autocompleteIdx, setAutocompleteIdx] = useState<number | null>(null)
   const [autocompleteResults, setAutocompleteResults] = useState<Producto[]>([])
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number; above: boolean } | null>(null)
-  const [marginOverrideIdx, setMarginOverrideIdx] = useState<number | null>(null)
-  const [marginOverrideInput, setMarginOverrideInput] = useState('')
   const [propuestas, setPropuestas] = useState<Record<number, { margenPropuesto: number; valorNetoPropuesto: number }>>({})
   const [solicitudMargenModal, setSolicitudMargenModal] = useState(false)
   const [notaSolicitud, setNotaSolicitud] = useState('')
@@ -141,6 +146,7 @@ export default function CotizacionDetalle() {
   } | null>(null)
 
   const [revokeDialog, setRevokeDialog] = useState<{ pendingChange: () => void } | null>(null)
+  const [revoking, setRevoking] = useState(false)
 
   const [unsavedModal, setUnsavedModal] = useState(false)
   const [clienteModalOpen, setClienteModalOpen] = useState(false)
@@ -414,12 +420,15 @@ export default function CotizacionDetalle() {
 
   async function confirmRevoke() {
     if (!revokeDialog || !marginStatus?.aprobacion_id) return
+    setRevoking(true)
     revokeDialog.pendingChange()
     setRevokeDialog(null)
     setMarginStatus(prev => prev ? { ...prev, blocked: true, estado: 'revocada' } : prev)
     try {
       await api.patch(`/api/aprobaciones_margen/${marginStatus.aprobacion_id}`, { accion: 'revocar' })
     } catch {
+    } finally {
+      setRevoking(false)
     }
   }
 
@@ -644,14 +653,8 @@ export default function CotizacionDetalle() {
 
   const emailMut = useMutation({
     mutationFn: () => api.post(`/api/cotizaciones/${id}/email`),
-    onSuccess: () => {
-      setEmailToast({ msg: 'Email enviado correctamente', ok: true })
-      setTimeout(() => setEmailToast(null), 3500)
-    },
-    onError: (err: any) => {
-      setEmailToast({ msg: err?.response?.data?.detail || 'Error al enviar email', ok: false })
-      setTimeout(() => setEmailToast(null), 4000)
-    },
+    onSuccess: () => toast.success('Email enviado correctamente'),
+    onError: (err: any) => toast.error(err?.response?.data?.detail || 'Error al enviar email'),
   })
 
   const crearNvMut = useMutation({
@@ -676,103 +679,117 @@ export default function CotizacionDetalle() {
     },
   })
 
+  const dirtyBorder = 'border-warning-400 dark:border-warning-500'
+
+  const pdfDisabledTitle =
+    lineasErrors.length > 0 ? lineasErrors.join(' | ')
+    : (!isAdmin && marginStatus?.blocked) ? 'Requiere aprobación de márgenes'
+    : tpBlocked ? 'Requiere aprobación de términos de pago'
+    : undefined
+
+  const crearNvDisabledTitle =
+    cotizacion?.estado === 'cerrada_fv' ? 'Ya existe una nota de venta para esta cotización'
+    : isExpired ? 'Cotización expirada — cambie la fecha de emisión'
+    : lineasErrors.length > 0 ? lineasErrors.join(' | ')
+    : isDirty ? 'Guarda los cambios antes de crear la NV'
+    : undefined
+
   return (
     <div className="p-4 md:p-6 max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/cotizaciones')} className="p-1.5 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded transition-colors">
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Volver"
+            onClick={() => navigate('/cotizaciones')}
+          >
             <ArrowLeft size={18} />
-          </button>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+          </Button>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white font-num">
             {isNew ? 'Nueva cotización' : `COT-${String(cotizacion?.numero ?? '').padStart(5, '0')}`}
           </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {!isNew && (
             <>
-              <button
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={<FileText />}
                 onClick={() => {
                   if (lineasErrors.length > 0) return
                   if (isDirty) { setPendingAction('pdf'); setUnsavedModal(true); return }
                   openPdf(`/api/cotizaciones/${id}/pdf`)
                 }}
                 disabled={(!isAdmin && !!marginStatus?.blocked) || tpBlocked || lineasErrors.length > 0}
-                title={
-                  lineasErrors.length > 0 ? lineasErrors.join(' | ')
-                  : (!isAdmin && marginStatus?.blocked) ? 'Requiere aprobación de márgenes'
-                  : tpBlocked ? 'Requiere aprobación de términos de pago'
-                  : undefined
-                }
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title={pdfDisabledTitle}
               >
-                <FileText size={15} />
                 PDF
-              </button>
-              <button
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={<Mail />}
                 onClick={() => {
                   if (lineasErrors.length > 0) return
                   if (isDirty) { setPendingAction('email'); setUnsavedModal(true); return }
                   emailMut.mutate()
                 }}
                 disabled={emailMut.isPending || (!isAdmin && !!marginStatus?.blocked) || tpBlocked || lineasErrors.length > 0}
-                title={
-                  lineasErrors.length > 0 ? lineasErrors.join(' | ')
-                  : (!isAdmin && marginStatus?.blocked) ? 'Requiere aprobación de márgenes'
-                  : tpBlocked ? 'Requiere aprobación de términos de pago'
-                  : undefined
-                }
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                loading={emailMut.isPending}
+                title={pdfDisabledTitle}
               >
-                <Mail size={15} />
-                {emailMut.isPending ? 'Enviando...' : 'Email'}
-              </button>
-              <button
+                Email
+              </Button>
+              <Button
+                size="sm"
+                variant="success"
+                leftIcon={<Plus />}
                 onClick={() => checkCredit(total, 'request', () => crearNvMut.mutate(), { empresa_id: Number(empresaId), total, origen: 'cotizacion', cotizacion_id: Number(id) })}
                 disabled={crearNvMut.isPending || lineasErrors.length > 0 || isDirty || cotizacion?.estado === 'cerrada_fv' || isExpired}
-                title={
-                  cotizacion?.estado === 'cerrada_fv' ? 'Ya existe una nota de venta para esta cotización'
-                  : isExpired ? 'Cotización expirada — cambie la fecha de emisión'
-                  : lineasErrors.length > 0 ? lineasErrors.join(' | ')
-                  : isDirty ? 'Guarda los cambios antes de crear la NV'
-                  : undefined
-                }
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                loading={crearNvMut.isPending}
+                title={crearNvDisabledTitle}
               >
-                {crearNvMut.isPending ? 'Creando...' : 'Crear NV'}
-              </button>
+                Crear NV
+              </Button>
             </>
           )}
           {!isAdmin && !isNew && Object.keys(propuestas).length > 0 && (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => setSolicitudMargenModal(true)}
-              className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors"
             >
               Solicitar ajuste de márgenes
-            </button>
+            </Button>
           )}
           {!isLocked && (
-            <button
+            <Button
               onClick={handleSave}
+              loading={saving}
               disabled={saving || lineasErrors.length > 0}
               title={lineasErrors.length > 0 ? lineasErrors.join(' | ') : undefined}
-              className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
             >
-              {saving ? 'Guardando...' : 'Guardar'}
-            </button>
+              Guardar
+            </Button>
           )}
         </div>
       </div>
 
-      {error && <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">{error}</div>}
+      {error && (
+        <div className="mb-4 px-4 py-3 bg-danger-50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-800 rounded-lg text-sm text-danger-600 dark:text-danger-400">
+          {error}
+        </div>
+      )}
 
       {!isNew && aprobacionCredito && (
-        <div className={`mb-4 px-4 py-3 rounded-lg text-sm flex items-center justify-between gap-3 ${
+        <div className={`mb-4 px-4 py-3 rounded-lg text-sm flex items-center justify-between gap-3 border ${
           aprobacionCredito.estado === 'pendiente'
-            ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
+            ? 'bg-info-50 dark:bg-info-500/10 border-info-200 dark:border-info-800 text-info-700 dark:text-info-300'
             : aprobacionCredito.estado === 'aprobada'
-            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300'
-            : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400'
+            ? 'bg-success-50 dark:bg-success-500/10 border-success-200 dark:border-success-800 text-success-700 dark:text-success-300'
+            : 'bg-danger-50 dark:bg-danger-500/10 border-danger-200 dark:border-danger-800 text-danger-600 dark:text-danger-400'
         }`}>
           <span>
             {aprobacionCredito.estado === 'pendiente' && 'Solicitud de crédito enviada — pendiente de aprobación'}
@@ -791,12 +808,12 @@ export default function CotizacionDetalle() {
       )}
 
       {!isNew && aprobacionMargen && (
-        <div className={`mb-4 px-4 py-3 rounded-lg text-sm ${
+        <div className={`mb-4 px-4 py-3 rounded-lg text-sm border ${
           aprobacionMargen.estado === 'pendiente'
-            ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
+            ? 'bg-info-50 dark:bg-info-500/10 border-info-200 dark:border-info-800 text-info-700 dark:text-info-300'
             : aprobacionMargen.estado === 'aprobada'
-            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300'
-            : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400'
+            ? 'bg-success-50 dark:bg-success-500/10 border-success-200 dark:border-success-800 text-success-700 dark:text-success-300'
+            : 'bg-danger-50 dark:bg-danger-500/10 border-danger-200 dark:border-danger-800 text-danger-600 dark:text-danger-400'
         }`}>
           {aprobacionMargen.estado === 'pendiente' && 'Solicitud de ajuste de márgenes enviada — pendiente de aprobación'}
           {aprobacionMargen.estado === 'aprobada' && 'Solicitud aprobada — los precios han sido actualizados'}
@@ -807,8 +824,8 @@ export default function CotizacionDetalle() {
       {!isAdmin && marginStatus?.blocked && (
         <div className={`mb-4 px-4 py-3 rounded-lg text-sm border flex items-center gap-2 ${
           marginStatus.estado === 'pendiente'
-            ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400'
-            : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400'
+            ? 'bg-warning-50 dark:bg-warning-500/10 border-warning-200 dark:border-warning-800 text-warning-700 dark:text-warning-300'
+            : 'bg-danger-50 dark:bg-danger-500/10 border-danger-200 dark:border-danger-800 text-danger-600 dark:text-danger-400'
         }`}>
           {marginStatus.estado === 'pendiente'
             ? 'Precios modificados — solicitud de aprobacion pendiente. PDF y email deshabilitados.'
@@ -817,377 +834,469 @@ export default function CotizacionDetalle() {
       )}
 
       {!isAdmin && !isNew && tpBlocked && (
-        <div className="mb-4 px-4 py-3 rounded-lg text-sm border flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400">
+        <div className="mb-4 px-4 py-3 rounded-lg text-sm border flex items-center gap-2 bg-warning-50 dark:bg-warning-500/10 border-warning-200 dark:border-warning-800 text-warning-700 dark:text-warning-300">
           {terminosPagoEstado === 'pendiente'
             ? 'Términos de pago extendidos — pendiente de aprobación. PDF y email deshabilitados.'
             : 'Los términos de pago requieren aprobación antes de generar PDF o enviar email.'}
         </div>
       )}
       {!isAdmin && !isNew && terminosPagoEstado === 'rechazado' && (
-        <div className="mb-4 px-4 py-3 rounded-lg text-sm border flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400">
+        <div className="mb-4 px-4 py-3 rounded-lg text-sm border flex items-center gap-2 bg-danger-50 dark:bg-danger-500/10 border-danger-200 dark:border-danger-800 text-danger-600 dark:text-danger-400">
           Términos de pago rechazados por el administrador. Actualiza los términos y guarda.
         </div>
       )}
       {isAdmin && !isNew && cotizacion?.terminos_pago_estado === 'pendiente' && (
-        <div className="mb-4 px-4 py-3 rounded-lg text-sm bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 flex items-center justify-between gap-3">
+        <div className="mb-4 px-4 py-3 rounded-lg text-sm bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-800 text-warning-700 dark:text-warning-300 flex items-center justify-between gap-3">
           <span>Términos de pago extendidos requieren aprobación: <strong>{cotizacion.terminos_pago}</strong></span>
           <div className="flex gap-2">
-            <button
+            <Button
+              size="xs"
+              variant="success"
               onClick={() => approveTerminosPagoMut.mutate('aprobado')}
               disabled={approveTerminosPagoMut.isPending}
-              className="px-3 py-1 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+              loading={approveTerminosPagoMut.isPending}
             >
               Aprobar
-            </button>
-            <button
+            </Button>
+            <Button
+              size="xs"
+              variant="danger"
               onClick={() => approveTerminosPagoMut.mutate('rechazado')}
               disabled={approveTerminosPagoMut.isPending}
-              className="px-3 py-1 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 transition-colors"
             >
               Rechazar
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {isExpired && !isLocked && (
-        <div className="mb-4 rounded-lg border border-orange-300 bg-orange-50 px-4 py-3 text-sm text-orange-800 dark:border-orange-700 dark:bg-orange-900/20 dark:text-orange-300">
+        <div className="mb-4 rounded-lg border border-warning-300 bg-warning-50 px-4 py-3 text-sm text-warning-800 dark:border-warning-700 dark:bg-warning-500/10 dark:text-warning-300 flex items-center gap-2">
+          <AlertTriangle size={15} />
           Esta cotización está expirada. Cambie la fecha de emisión para poder generar una NV.
         </div>
       )}
       {isLocked && (
-        <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300">
+        <div className="mb-4 rounded-lg border border-warning-300 bg-warning-50 dark:border-warning-700 dark:bg-warning-500/10 px-4 py-3 text-sm text-warning-800 dark:text-warning-300 flex items-center gap-2">
+          <Lock size={15} />
           Este documento está bloqueado — se generó una Nota de Venta desde esta cotización.
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 mb-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Cliente *</label>
-            <select
-              value={clienteId}
-              onChange={e => handleClienteChange(e.target.value ? Number(e.target.value) : '')}
-              disabled={isLocked}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('clienteId', clienteId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
-            >
-              <option value="">Seleccionar cliente...</option>
-              {clientes.map(c => (
-                <option key={c.id} value={c.id}>{c.nombre}{c.rut ? ` · ${c.rut}` : ''}</option>
-              ))}
-            </select>
-          </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Empresa</label>
-                <div className="flex gap-1.5">
-                  <select
-                    value={empresaId}
-                    onChange={e => handleEmpresaChange(e.target.value ? Number(e.target.value) : '')}
+      <Card className="mb-5">
+        <CardContent className="p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <FormField label="Cliente" required>
+              <Select
+                value={clienteId ? String(clienteId) : ''}
+                onValueChange={v => handleClienteChange(v ? Number(v) : '')}
+                disabled={isLocked}
+              >
+                <SelectTrigger className={df('clienteId', clienteId) ? dirtyBorder : ''}>
+                  <SelectValue placeholder="Seleccionar cliente..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientes.map(c => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.nombre}{c.rut ? ` · ${c.rut}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            <FormField label="Empresa">
+              <div className="flex gap-1.5">
+                <div className="flex-1">
+                  <Select
+                    value={empresaId ? String(empresaId) : 'none'}
+                    onValueChange={v => handleEmpresaChange(v === 'none' ? '' : Number(v))}
                     disabled={!!clienteId || isLocked}
-                    className={`flex-1 px-3 py-1.5 text-sm border rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none ${df('empresaId', empresaId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600'} ${clienteId ? 'bg-gray-50 dark:bg-gray-800/50 cursor-default' : 'bg-white dark:bg-gray-800'}`}
                   >
-                    <option value="">— Sin empresa —</option>
-                    {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-                  </select>
-                  {empresaId && !isLocked && (
-                    <button
+                    <SelectTrigger className={df('empresaId', empresaId) ? dirtyBorder : ''}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Sin empresa —</SelectItem>
+                      {empresas.map(e => (
+                        <SelectItem key={e.id} value={String(e.id)}>{e.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {empresaId && !isLocked && (
+                  <Tooltip label="Seleccionar cliente de esta empresa">
+                    <Button
                       type="button"
+                      size="icon-sm"
+                      variant="outline"
                       onClick={() => setClienteModalOpen(true)}
-                      title="Seleccionar cliente de esta empresa"
-                      className="flex-shrink-0 px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-400 dark:hover:border-blue-500 bg-white dark:bg-gray-800 transition-colors"
+                      aria-label="Seleccionar cliente de esta empresa"
                     >
                       <UserPlus size={15} />
-                    </button>
+                    </Button>
+                  </Tooltip>
+                )}
+              </div>
+            </FormField>
+
+            {selectedCliente && (
+              <div className="sm:col-span-2 lg:col-span-3">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 px-3 py-2.5 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300">
+                  {selectedCliente.empresa && (
+                    <span className="flex items-center gap-1.5"><Building2 size={12} className="text-gray-400" />{selectedCliente.empresa.nombre}</span>
                   )}
+                  <span className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-200">{selectedCliente.nombre}</span>
+                  {selectedCliente.telefono && (
+                    <span className="flex items-center gap-1.5"><Phone size={12} className="text-gray-400" />{selectedCliente.telefono}</span>
+                  )}
+                  {selectedCliente.email && (
+                    <span className="flex items-center gap-1.5"><Mail size={12} className="text-gray-400" />{selectedCliente.email}</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/clientes')}
+                    className="ml-auto flex items-center gap-1 text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+                    title="Editar cliente"
+                  >
+                    <ExternalLink size={11} /> Editar cliente
+                  </button>
                 </div>
               </div>
-          {selectedCliente && (
-            <div className="sm:col-span-2 lg:col-span-3">
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 px-3 py-2.5 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300">
-                {selectedCliente.empresa && (
-                  <span className="flex items-center gap-1.5"><Building2 size={12} className="text-gray-400" />{selectedCliente.empresa.nombre}</span>
-                )}
-                <span className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-200">{selectedCliente.nombre}</span>
-                {selectedCliente.telefono && (
-                  <span className="flex items-center gap-1.5"><Phone size={12} className="text-gray-400" />{selectedCliente.telefono}</span>
-                )}
-                {selectedCliente.email && (
-                  <span className="flex items-center gap-1.5"><Mail size={12} className="text-gray-400" />{selectedCliente.email}</span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => navigate('/clientes')}
-                  className="ml-auto flex items-center gap-1 text-blue-500 hover:text-blue-600 dark:text-blue-400"
-                  title="Editar cliente"
-                >
-                  <ExternalLink size={11} /> Editar cliente
-                </button>
-              </div>
-            </div>
-          )}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
-            <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-              disabled={isLocked}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('fecha', fecha) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`} />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Estado</label>
-            <select value={estado} onChange={e => setEstado(e.target.value)}
-              disabled={isLocked}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('estado', estado) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}>
-              {ESTADOS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
-            </select>
-          </div>
-          {isAdmin && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Encargado</label>
-              <select value={vendedorId} onChange={e => setVendedorId(e.target.value ? Number(e.target.value) : '')}
-                disabled={isLocked}
-                className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('vendedorId', vendedorId) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}>
-                {usuarios.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
-            </div>
-          )}
-          <div className="sm:col-span-2 lg:col-span-3">
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Nota / Observaciones</label>
-            <textarea value={nota} onChange={e => setNota(e.target.value)} rows={2}
-              disabled={isLocked}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${df('nota', nota) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
-              placeholder="Notas internas o para el cliente..." />
-          </div>
-          <div className="sm:col-span-2 lg:col-span-2">
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-              Términos de Pago
-              {!empresaSinCredito && terminosPagoNeedsApproval && (
-                <span className="ml-2 px-1.5 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded font-medium">
-                  Requiere aprobación
-                </span>
-              )}
-            </label>
-            {empresaSinCredito ? (
-              <>
-                <select
-                  value="al_contado"
-                  disabled
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 cursor-not-allowed"
-                >
-                  <option value="al_contado">Al contado</option>
-                </select>
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                  Esta empresa no tiene línea de crédito.
-                </p>
-              </>
-            ) : (
-              <>
-                <select
-                  value={terminosPago}
-                  onChange={e => setTerminosPago(e.target.value)}
-                  disabled={isLocked}
-                  className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('terminosPago', terminosPago) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
-                >
-                  <option value="">— Seleccionar —</option>
-                  <option value="Al contado">Al contado</option>
-                  <option value="30 Días">30 Días</option>
-                  <option value="60 Días">60 Días</option>
-                  <option value="90 Días">90 Días</option>
-                  <option value="120 Días">120 Días</option>
-                </select>
-                {adminTerminosWarning && (
-                  <p className="mt-1 flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0">
-                      <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                    </svg>
-                    Plazo supera el límite de la empresa ({empresaPlazo})
-                  </p>
-                )}
-              </>
             )}
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Validez (días)</label>
-            <input
-              type="number"
-              min={1}
-              value={validezDias}
-              onChange={e => setValidezDias(Number(e.target.value))}
-              disabled={isLocked}
-              className={`w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${df('validezDias', validezDias) ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-700'}`}
-            />
-            {cotizacion?.fecha_expiracion && (
-              <p className={`text-xs mt-1 ${isExpired ? 'text-orange-500 dark:text-orange-400 font-medium' : 'text-gray-400'}`}>
-                Válido hasta:{' '}
-                {new Date(cotizacion.fecha_expiracion + 'T00:00:00').toLocaleDateString('es-CL')}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto mb-4">
-        <table className="w-full text-sm min-w-[640px]">
-          <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
-            <tr>
-              <th className="px-3 py-3 font-medium text-center w-8">#</th>
-              <th className="px-3 py-3 font-medium">Producto</th>
-              <th className="px-3 py-3 font-medium text-right w-20">Cant.</th>
-              <th className="px-3 py-3 font-medium text-right w-32">Precio Unit.</th>
-              <th className="text-right text-xs font-medium text-gray-500 uppercase px-2 py-2 w-20">Desc %</th>
-              <th className="px-3 py-3 font-medium text-right w-32">Total Neto</th>
-              <th className="px-3 py-3 font-medium text-right w-20">Margen</th>
-              <th className="px-3 py-3 w-8"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            <FormField label="Fecha">
+              <Input
+                type="date"
+                value={fecha}
+                onChange={e => setFecha(e.target.value)}
+                disabled={isLocked}
+                className={df('fecha', fecha) ? dirtyBorder : ''}
+              />
+            </FormField>
+
+            <FormField label="Estado">
+              <Select
+                value={estado}
+                onValueChange={v => setEstado(v)}
+                disabled={isLocked}
+              >
+                <SelectTrigger className={df('estado', estado) ? dirtyBorder : ''}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ESTADOS.map(e => (
+                    <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            {isAdmin && (
+              <FormField label="Encargado">
+                <Select
+                  value={vendedorId ? String(vendedorId) : ''}
+                  onValueChange={v => setVendedorId(v ? Number(v) : '')}
+                  disabled={isLocked}
+                >
+                  <SelectTrigger className={df('vendedorId', vendedorId) ? dirtyBorder : ''}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {usuarios.map(u => (
+                      <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
+
+            <FormField label="Nota / Observaciones" className="sm:col-span-2 lg:col-span-3">
+              <Textarea
+                value={nota}
+                onChange={e => setNota(e.target.value)}
+                rows={2}
+                disabled={isLocked}
+                placeholder="Notas internas o para el cliente..."
+                className={df('nota', nota) ? dirtyBorder : ''}
+              />
+            </FormField>
+
+            <FormField
+              label={
+                <span className="flex items-center gap-2">
+                  Términos de Pago
+                  {!empresaSinCredito && terminosPagoNeedsApproval && (
+                    <span className="px-1.5 py-0.5 text-[10px] bg-warning-100 dark:bg-warning-500/20 text-warning-700 dark:text-warning-300 rounded font-medium">
+                      Requiere aprobación
+                    </span>
+                  )}
+                </span>
+              }
+              className="sm:col-span-2 lg:col-span-2"
+              hint={empresaSinCredito ? 'Esta empresa no tiene línea de crédito.' : undefined}
+            >
+              {empresaSinCredito ? (
+                <Select value="al_contado" disabled onValueChange={() => {}}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="al_contado">Al contado</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <>
+                  <Select
+                    value={terminosPago || 'none'}
+                    onValueChange={v => setTerminosPago(v === 'none' ? '' : v)}
+                    disabled={isLocked}
+                  >
+                    <SelectTrigger className={df('terminosPago', terminosPago) ? dirtyBorder : ''}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Seleccionar —</SelectItem>
+                      <SelectItem value="Al contado">Al contado</SelectItem>
+                      <SelectItem value="30 Días">30 Días</SelectItem>
+                      <SelectItem value="60 Días">60 Días</SelectItem>
+                      <SelectItem value="90 Días">90 Días</SelectItem>
+                      <SelectItem value="120 Días">120 Días</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {adminTerminosWarning && (
+                    <p className="mt-1 flex items-center gap-1 text-xs text-warning-600 dark:text-warning-400">
+                      <AlertTriangle size={14} className="shrink-0" />
+                      Plazo supera el límite de la empresa ({empresaPlazo})
+                    </p>
+                  )}
+                </>
+              )}
+            </FormField>
+
+            <FormField
+              label="Validez (días)"
+              hint={
+                cotizacion?.fecha_expiracion
+                  ? `Válido hasta: ${new Date(cotizacion.fecha_expiracion + 'T00:00:00').toLocaleDateString('es-CL')}`
+                  : undefined
+              }
+            >
+              <Input
+                type="number"
+                min={1}
+                value={validezDias}
+                onChange={e => setValidezDias(Number(e.target.value))}
+                disabled={isLocked}
+                className={df('validezDias', validezDias) ? dirtyBorder : ''}
+              />
+              {isExpired && cotizacion?.fecha_expiracion && (
+                <p className="text-xs mt-1 text-warning-600 dark:text-warning-400 font-medium">
+                  Cotización expirada
+                </p>
+              )}
+            </FormField>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-4 overflow-x-auto">
+        <Table density="compact">
+          <THead>
+            <TR>
+              <TH className="text-center w-8">#</TH>
+              <TH>Producto</TH>
+              <TH className="text-right w-20">Cant.</TH>
+              <TH className="text-right w-32">Precio Unit.</TH>
+              <TH className="text-right w-20">Desc %</TH>
+              <TH className="text-right w-32">Total Neto</TH>
+              <TH className="text-right w-20">Margen</TH>
+              <TH className="w-8" />
+            </TR>
+          </THead>
+          <TBody>
             {lineas.map((linea, idx) => (
-              <tr key={linea._key} className={`align-top ${lineaDirty(idx) ? 'bg-amber-50 dark:bg-amber-900/10' : ''}`}>
-                <td className="px-3 py-3 text-center text-gray-400 text-xs">{idx + 1}</td>
-                <td className="px-3 py-2 relative">
-                  <input type="text" value={linea.descripcion}
+              <TR key={linea._key} className={`align-top ${lineaDirty(idx) ? 'bg-warning-50 dark:bg-warning-500/5' : ''}`}>
+                <TD className="text-center text-gray-400 font-num">{idx + 1}</TD>
+                <TD className="relative">
+                  <Input
+                    size="sm"
+                    type="text"
+                    value={linea.descripcion}
                     onChange={e => handleDescripcionChange(idx, e.target.value, e)}
                     onFocus={e => handleDescripcionFocus(idx, linea.descripcion, e)}
                     onBlur={() => setTimeout(() => { setAutocompleteIdx(null); setAutocompleteResults([]) }, 150)}
                     disabled={isLocked}
-                    className="w-full px-2.5 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="Buscar en catálogo..." />
+                    placeholder="Buscar en catálogo..."
+                  />
                   {linea.producto_id && (
-                    <div className="mt-1 flex flex-wrap gap-x-3 text-[11px] text-gray-400 dark:text-gray-500 px-1">
+                    <div className="mt-1 flex flex-wrap gap-x-3 text-[11px] text-gray-400 dark:text-gray-500 px-1 font-num">
                       {linea.sku && <span>SKU: {linea.sku}</span>}
                       {linea.formato && <span>{linea.formato}</span>}
                       {linea._stock != null && (
-                        <span className={linea.cantidad > linea._stock ? 'text-orange-500' : ''}>
+                        <span className={linea.cantidad > linea._stock ? 'text-warning-600 dark:text-warning-400' : ''}>
                           Stock: {linea._stock}
                         </span>
                       )}
                     </div>
                   )}
-                </td>
-                <td className="px-3 py-2">
-                  <input type="number" min="1" value={linea.cantidad}
+                </TD>
+                <TD>
+                  <Input
+                    size="sm"
+                    type="number"
+                    min="1"
+                    value={linea.cantidad}
                     onChange={e => withRevokeGuard(() => updateLinea(idx, { cantidad: Math.max(1, parseInt(e.target.value) || 1) }))}
                     disabled={isLocked}
-                    className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right ${linea._stock != null && linea.cantidad > linea._stock ? 'border-orange-400 dark:border-orange-500' : 'border-gray-200 dark:border-gray-700'}`} />
-                </td>
-                <td className="px-3 py-2">
+                    className={`text-right font-num ${linea._stock != null && linea.cantidad > linea._stock ? 'border-warning-400 dark:border-warning-500' : ''}`}
+                  />
+                </TD>
+                <TD>
                   <div className="flex items-center justify-end gap-1">
                     {linea.producto_id && (
-                      <button type="button" onClick={() => handleResetPrecio(idx)}
-                        className="p-0.5 text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
-                        title="Restablecer precio">
-                        <RotateCcw size={10} />
-                      </button>
+                      <Tooltip label="Restablecer precio">
+                        <Button
+                          type="button"
+                          size="icon-xs"
+                          variant="ghost"
+                          onClick={() => handleResetPrecio(idx)}
+                          aria-label="Restablecer precio"
+                          className="text-gray-400 hover:text-brand-600"
+                        >
+                          <RotateCcw size={12} />
+                        </Button>
+                      </Tooltip>
                     )}
                     {isAdmin ? (
-                      <input type="text" inputMode="numeric" min="0"
+                      <Input
+                        size="sm"
+                        type="text"
+                        inputMode="numeric"
                         value={focusedPrecioIdx === idx ? String(linea.valor_neto) : Math.round(Number(linea.valor_neto) || 0).toLocaleString('es-CL')}
                         onFocus={() => setFocusedPrecioIdx(idx)}
                         onBlur={() => setFocusedPrecioIdx(null)}
                         onChange={e => handleValorNetoChange(idx, e.target.value)}
                         disabled={isLocked}
-                        className="w-28 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                        className="w-28 text-right font-num"
+                      />
                     ) : (
                       <div className="text-right">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white font-num">
                           {fmtMoney(linea.valor_neto)}
                         </span>
                         {linea.id != null && propuestas[linea.id] != null && (
-                          <div className="text-xs text-blue-600 dark:text-blue-400">
+                          <div className="text-xs text-info-600 dark:text-info-400 font-num">
                             → {fmtMoney(propuestas[linea.id].valorNetoPropuesto)}
                           </div>
                         )}
                       </div>
                     )}
                   </div>
-                </td>
-                <td className="px-2 py-1 w-20">
+                </TD>
+                <TD>
                   {isLocked ? (
-                    <span className="block text-right text-sm text-gray-900 dark:text-white pr-1">
+                    <span className="block text-right text-sm text-gray-900 dark:text-white pr-1 font-num">
                       {Number(linea.descuento ?? 0) > 0 ? `${linea.descuento}%` : '—'}
                     </span>
                   ) : (
-                    <input
+                    <Input
+                      size="sm"
                       type="number"
                       min={0}
                       max={100}
                       step={0.1}
                       value={linea.descuento ?? 0}
                       onChange={e => updateLinea(idx, { descuento: Number(e.target.value) })}
-                      className="w-16 text-right border border-gray-300 rounded-lg px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-16 text-right font-num"
                     />
                   )}
-                </td>
-                <td className="px-3 py-3 text-right text-gray-700 dark:text-gray-300 text-sm font-medium">{fmtMoney(linea.total_neto)}</td>
-                <td className="px-3 py-2">
+                </TD>
+                <TD className="text-right text-gray-700 dark:text-gray-300 text-sm font-medium font-num">{fmtMoney(linea.total_neto)}</TD>
+                <TD>
                   <div className="flex items-center justify-end gap-0.5">
                     {isAdmin ? (
-                      <input
-                        type="number" step="0.1"
+                      <Input
+                        size="sm"
+                        type="number"
+                        step="0.1"
                         value={linea.margen !== null ? linea.margen * 100 : ''}
                         onChange={e => handleMargenChange(idx, e.target.value)}
                         placeholder="—"
                         disabled={isLocked}
-                        className={`w-16 px-1.5 py-1.5 text-xs border rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 ${linea.margen !== null && Number(linea.margen) < 0.15 ? 'border-orange-400 dark:border-orange-500 text-orange-500' : 'border-gray-200 dark:border-gray-700 text-green-600 dark:text-green-400'}`}
+                        className={`w-16 text-right font-num ${linea.margen !== null && Number(linea.margen) < 0.15 ? 'border-warning-400 dark:border-warning-500 text-warning-600 dark:text-warning-400' : 'text-success-600 dark:text-success-400'}`}
                       />
                     ) : linea.id != null ? (
-                      <input
-                        type="number" step="0.1"
+                      <Input
+                        size="sm"
+                        type="number"
+                        step="0.1"
                         value={linea.id != null && propuestas[linea.id] != null
                           ? (propuestas[linea.id].margenPropuesto * 100).toFixed(1)
                           : (linea.margen !== null ? (Number(linea.margen) * 100).toFixed(1) : '')}
                         onChange={e => linea.id != null && handleMargenPropuesta(linea.id, e.target.value)}
                         placeholder="—"
                         disabled={isLocked}
-                        className={`w-16 px-1.5 py-1.5 text-xs border-2 border-dashed rounded-lg text-right focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white dark:bg-gray-800 ${
-                          linea.id != null && propuestas[linea.id] != null
-                            ? 'border-blue-400 text-blue-600 dark:text-blue-400'
-                            : linea.margen !== null && Number(linea.margen) < 0.15
-                            ? 'border-orange-300 text-orange-500'
-                            : 'border-gray-300 dark:border-gray-600 text-green-600 dark:text-green-400'
-                        }`}
                         title="Proponer cambio de margen"
+                        className={`w-16 text-right font-num border-dashed ${
+                          linea.id != null && propuestas[linea.id] != null
+                            ? 'border-info-400 text-info-600 dark:text-info-400'
+                            : linea.margen !== null && Number(linea.margen) < 0.15
+                            ? 'border-warning-300 text-warning-600 dark:text-warning-400'
+                            : 'text-success-600 dark:text-success-400'
+                        }`}
                       />
                     ) : (
-                      <span className={`text-xs ${linea.margen !== null && Number(linea.margen) < 0.15 ? 'text-orange-500' : 'text-green-600 dark:text-green-400'}`}>
+                      <span className={`text-xs font-num ${linea.margen !== null && Number(linea.margen) < 0.15 ? 'text-warning-600 dark:text-warning-400' : 'text-success-600 dark:text-success-400'}`}>
                         {linea.margen !== null ? `${(Number(linea.margen) * 100).toFixed(1)}` : '—'}
                       </span>
                     )}
                     <span className="text-xs text-gray-400">%</span>
                   </div>
-                </td>
-                <td className="px-3 py-2">
+                </TD>
+                <TD>
                   {!isLocked && (
-                    <button onClick={() => removeLinea(idx)} className="p-1 text-gray-400 hover:text-red-500 transition-colors" disabled={lineas.length === 1}>
-                      <Trash2 size={14} />
-                    </button>
+                    <Tooltip label="Eliminar línea">
+                      <Button
+                        size="icon-xs"
+                        variant="ghost"
+                        onClick={() => removeLinea(idx)}
+                        disabled={lineas.length === 1}
+                        aria-label="Eliminar línea"
+                        className="text-gray-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </Tooltip>
                   )}
-                </td>
-              </tr>
+                </TD>
+              </TR>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TBody>
+        </Table>
+      </Card>
 
-      <div className="flex items-start justify-between">
-        {!isLocked && (
-          <button onClick={addLinea} className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
-            <Plus size={15} />
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        {!isLocked ? (
+          <Button variant="ghost" size="sm" leftIcon={<Plus />} onClick={addLinea}>
             Agregar línea
-          </button>
-        )}
-        {isLocked && <div />}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 min-w-[260px]">
-          <div className="space-y-1.5 text-sm">
-            <div className="flex justify-between text-gray-600 dark:text-gray-400">
-              <span>Total Neto</span><span className="font-medium">{fmtMoney(totalNeto)}</span>
+          </Button>
+        ) : <div />}
+        <Card className="min-w-[260px]">
+          <CardContent className="p-4">
+            <div className="space-y-1.5 text-sm font-num">
+              <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                <span>Total Neto</span><span className="font-medium">{fmtMoney(totalNeto)}</span>
+              </div>
+              <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                <span>IVA (19%)</span><span className="font-medium">{fmtMoney(totalIva)}</span>
+              </div>
+              <div className="flex justify-between border-t border-gray-200 dark:border-gray-800 pt-1.5 font-bold text-gray-900 dark:text-white text-base">
+                <span>Total</span><span>{fmtMoney(total)}</span>
+              </div>
             </div>
-            <div className="flex justify-between text-gray-600 dark:text-gray-400">
-              <span>IVA (19%)</span><span className="font-medium">{fmtMoney(totalIva)}</span>
-            </div>
-            <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-1.5 font-bold text-gray-900 dark:text-white text-base">
-              <span>Total</span><span>{fmtMoney(total)}</span>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {!isNew && cotizacion && (
@@ -1196,38 +1305,20 @@ export default function CotizacionDetalle() {
         </div>
       )}
 
-      {emailToast && (
-        <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-          {emailToast.msg}
-        </div>
-      )}
-
-      {revokeDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 max-w-md w-full mx-4 shadow-xl">
-            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
-              Revocar aprobacion de margenes
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">
+      <Modal open={!!revokeDialog} onOpenChange={open => { if (!open) setRevokeDialog(null) }}>
+        <ModalContent size="sm">
+          <ModalHeader>
+            <ModalTitle>Revocar aprobacion de margenes</ModalTitle>
+            <ModalDescription>
               Esta cotizacion tiene aprobacion de margenes vigente. Modificarla revocara la aprobacion y bloqueara el PDF y email. Continuar?
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setRevokeDialog(null)}
-                className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmRevoke}
-                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-              >
-                Continuar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </ModalDescription>
+          </ModalHeader>
+          <ModalFooter>
+            <Button variant="outline" onClick={() => setRevokeDialog(null)}>Cancelar</Button>
+            <Button variant="danger" onClick={confirmRevoke} loading={revoking}>Continuar</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {creditModal && (
         <CreditWarningModal
@@ -1250,66 +1341,76 @@ export default function CotizacionDetalle() {
         onClose={() => setClienteModalOpen(false)}
       />
 
-      {solicitudMargenModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-lg mx-4">
-            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-              Solicitar ajuste de márgenes
-            </h2>
-            <table className="w-full text-xs mb-4">
-              <thead>
-                <tr className="text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                  <th className="pb-2 text-left font-medium">Producto</th>
-                  <th className="pb-2 text-right font-medium">Precio actual</th>
-                  <th className="pb-2 text-right font-medium">Precio propuesto</th>
-                  <th className="pb-2 text-right font-medium">Margen prop.</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+      <Modal
+        open={solicitudMargenModal}
+        onOpenChange={open => {
+          if (!open) {
+            setSolicitudMargenModal(false)
+            setSolicitudMargenError('')
+            setNotaSolicitud('')
+          }
+        }}
+      >
+        <ModalContent size="lg">
+          <ModalHeader>
+            <ModalTitle>Solicitar ajuste de márgenes</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <Table density="compact">
+              <THead>
+                <TR>
+                  <TH>Producto</TH>
+                  <TH className="text-right">Precio actual</TH>
+                  <TH className="text-right">Precio propuesto</TH>
+                  <TH className="text-right">Margen prop.</TH>
+                </TR>
+              </THead>
+              <TBody>
                 {lineas
                   .filter(l => l.id != null && propuestas[l.id!] != null)
                   .map(l => (
-                    <tr key={l._key}>
-                      <td className="py-2 text-gray-900 dark:text-white truncate max-w-[180px]">{l.descripcion}</td>
-                      <td className="py-2 text-right text-gray-600 dark:text-gray-400">{fmtMoney(l.valor_neto)}</td>
-                      <td className="py-2 text-right text-blue-600 dark:text-blue-400 font-medium">
+                    <TR key={l._key}>
+                      <TD className="text-gray-900 dark:text-white truncate max-w-[180px]">{l.descripcion}</TD>
+                      <TD className="text-right text-gray-600 dark:text-gray-400 font-num">{fmtMoney(l.valor_neto)}</TD>
+                      <TD className="text-right text-info-600 dark:text-info-400 font-medium font-num">
                         {fmtMoney(propuestas[l.id!].valorNetoPropuesto)}
-                      </td>
-                      <td className="py-2 text-right text-blue-600 dark:text-blue-400 font-medium">
+                      </TD>
+                      <TD className="text-right text-info-600 dark:text-info-400 font-medium font-num">
                         {(propuestas[l.id!].margenPropuesto * 100).toFixed(1)}%
-                      </td>
-                    </tr>
+                      </TD>
+                    </TR>
                   ))}
-              </tbody>
-            </table>
-            <textarea
-              placeholder="Nota para el administrador (opcional)..."
-              value={notaSolicitud}
-              onChange={e => setNotaSolicitud(e.target.value)}
-              rows={2}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-3"
-            />
-            {solicitudMargenError && (
-              <p className="text-xs text-red-600 dark:text-red-400 mb-2">{solicitudMargenError}</p>
-            )}
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => { setSolicitudMargenModal(false); setSolicitudMargenError(''); setNotaSolicitud('') }}
-                className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleEnviarSolicitudMargen}
-                disabled={enviandoSolicitud}
-                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg transition-colors font-medium"
-              >
-                {enviandoSolicitud ? 'Enviando...' : 'Enviar solicitud'}
-              </button>
+              </TBody>
+            </Table>
+            <div className="mt-4">
+              <Textarea
+                placeholder="Nota para el administrador (opcional)..."
+                value={notaSolicitud}
+                onChange={e => setNotaSolicitud(e.target.value)}
+                rows={2}
+              />
             </div>
-          </div>
-        </div>
-      )}
+            {solicitudMargenError && (
+              <p className="text-xs text-danger-600 dark:text-danger-400 mt-2">{solicitudMargenError}</p>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="outline"
+              onClick={() => { setSolicitudMargenModal(false); setSolicitudMargenError(''); setNotaSolicitud('') }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleEnviarSolicitudMargen}
+              disabled={enviandoSolicitud}
+              loading={enviandoSolicitud}
+            >
+              Enviar solicitud
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       <UnsavedChangesModal
         open={unsavedModal}
@@ -1331,19 +1432,19 @@ export default function CotizacionDetalle() {
               : { top: dropdownRect.top + 4 }),
             zIndex: 9999,
           }}
-          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden max-h-64 overflow-y-auto"
+          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-elev-3 overflow-hidden max-h-64 overflow-y-auto"
         >
           {autocompleteResults.map(p => (
             <button key={p.id} type="button"
               onMouseDown={() => { selectProducto(autocompleteIdx, p); setAutocompleteIdx(null); setAutocompleteResults([]) }}
-              className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+              className="w-full text-left px-3 py-2.5 hover:bg-brand-50 dark:hover:bg-brand-500/10 border-b border-gray-100 dark:border-gray-800 last:border-b-0"
             >
               <div className="text-sm font-medium text-gray-900 dark:text-white">{p.nombre}</div>
-              <div className="flex gap-3 mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex gap-3 mt-0.5 text-xs text-gray-500 dark:text-gray-400 font-num">
                 {p.sku && <span>SKU: {p.sku}</span>}
                 {p.formato && <span>{p.formato}</span>}
                 <span className="ml-auto font-medium text-gray-700 dark:text-gray-300">{fmtMoney(p.precio_venta)}</span>
-                <span className={p.stock_actual > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}>Stock: {p.stock_actual}</span>
+                <span className={p.stock_actual > 0 ? 'text-success-600 dark:text-success-400' : 'text-danger-600 dark:text-danger-400'}>Stock: {p.stock_actual}</span>
               </div>
             </button>
           ))}
