@@ -2,9 +2,14 @@
 import React, { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, Inbox } from 'lucide-react'
+import { toast } from 'sonner'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
+import {
+  Badge, Button, Card, EmptyState, Skeleton, Tooltip,
+  Table, THead, TBody, TR, TH, TD,
+} from '../components/ui'
 
 interface CreditAprobacion {
   tipo: 'credito'
@@ -41,6 +46,14 @@ interface MargenAprobacion {
 
 type AnyAprobacion = CreditAprobacion | MargenAprobacion
 
+interface TerminoPendiente {
+  id: number
+  numero: number
+  terminos_pago: string | null
+  empresa?: { id: number; nombre: string } | null
+  vendedor?: { id: number; name: string; email: string } | null
+}
+
 const fmtMoney = (n: number) => `$ ${Math.round(n).toLocaleString('es-CL')}`
 const fmtFecha = (s: string) => s.split('T')[0]
 const fmtPct = (n: number) => `${(n * 100).toFixed(1)}%`
@@ -56,7 +69,7 @@ export default function Aprobaciones() {
     queryKey: ['aprobaciones-credito-pendientes'],
     queryFn: () =>
       api.get('/api/aprobaciones/?estado=pendiente').then(r =>
-        r.data.map((a: any) => ({ ...a, tipo: 'credito' }))
+        (r.data as Omit<CreditAprobacion, 'tipo'>[]).map(a => ({ ...a, tipo: 'credito' as const }))
       ),
     enabled: isAdminUser,
   })
@@ -65,18 +78,12 @@ export default function Aprobaciones() {
     queryKey: ['aprobaciones-margen-pendientes'],
     queryFn: () =>
       api.get('/api/aprobaciones_margen/?estado=pendiente').then(r =>
-        r.data.map((a: any) => ({ ...a, tipo: 'margen' }))
+        (r.data as Omit<MargenAprobacion, 'tipo'>[]).map(a => ({ ...a, tipo: 'margen' as const }))
       ),
     enabled: isAdminUser,
   })
 
-  const { data: terminosPendientes = [], isLoading: loadingTerminos } = useQuery<{
-    id: number
-    numero: number
-    terminos_pago: string | null
-    empresa?: { id: number; nombre: string } | null
-    vendedor?: { id: number; name: string; email: string } | null
-  }[]>({
+  const { data: terminosPendientes = [] } = useQuery<TerminoPendiente[]>({
     queryKey: ['cotizaciones-terminos-pendientes'],
     queryFn: () =>
       api.get('/api/cotizaciones/?terminos_pago_estado=pendiente').then(r => r.data),
@@ -92,31 +99,43 @@ export default function Aprobaciones() {
   const creditMutation = useMutation({
     mutationFn: ({ id, accion }: { id: number; accion: 'aprobar' | 'denegar' }) =>
       api.patch(`/api/aprobaciones/${id}`, { accion }),
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ['aprobaciones-credito-pendientes'] })
       setActingKey(null)
+      toast.success(vars.accion === 'aprobar' ? 'Aprobado' : 'Denegado')
     },
-    onError: () => setActingKey(null),
+    onError: () => {
+      setActingKey(null)
+      toast.error('Error al procesar')
+    },
   })
 
   const margenMutation = useMutation({
     mutationFn: ({ id, accion }: { id: number; accion: 'aprobar' | 'denegar' }) =>
       api.patch(`/api/aprobaciones_margen/${id}`, { accion }),
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ['aprobaciones-margen-pendientes'] })
       setActingKey(null)
+      toast.success(vars.accion === 'aprobar' ? 'Aprobado' : 'Denegado')
     },
-    onError: () => setActingKey(null),
+    onError: () => {
+      setActingKey(null)
+      toast.error('Error al procesar')
+    },
   })
 
   const terminosMutation = useMutation({
     mutationFn: ({ id, accion }: { id: number; accion: 'aprobado' | 'rechazado' }) =>
       api.patch(`/api/cotizaciones/${id}`, { terminos_pago_estado: accion }),
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ['cotizaciones-terminos-pendientes'] })
       setActingKey(null)
+      toast.success(vars.accion === 'aprobado' ? 'Aprobado' : 'Rechazado')
     },
-    onError: () => setActingKey(null),
+    onError: () => {
+      setActingKey(null)
+      toast.error('Error al procesar')
+    },
   })
 
   function handleAccion(a: AnyAprobacion, accion: 'aprobar' | 'denegar') {
@@ -131,91 +150,92 @@ export default function Aprobaciones() {
   return (
     <div className="p-4 md:p-6 max-w-6xl">
       <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Aprobaciones</h1>
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+
+      <Card className="overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">Cargando...</div>
-        ) : all.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            No hay solicitudes pendientes.
+          <div className="p-4 space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 rounded-md" />)}
           </div>
+        ) : all.length === 0 ? (
+          <EmptyState icon={<Inbox />} title="No hay solicitudes pendientes" />
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
-              <tr>
-                <th className="px-4 py-3 text-left">Tipo</th>
-                <th className="px-4 py-3 text-left">Vendedor</th>
-                <th className="px-4 py-3 text-left">Empresa / Cotización</th>
-                <th className="px-4 py-3 text-right">Total</th>
-                <th className="px-4 py-3 text-left">Nota</th>
-                <th className="px-4 py-3 text-left">Fecha</th>
-                <th className="px-4 py-3 text-left">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+          <Table density="compact">
+            <THead>
+              <TR>
+                <TH>Tipo</TH>
+                <TH>Vendedor</TH>
+                <TH>Empresa / Cotización</TH>
+                <TH className="text-right">Total</TH>
+                <TH>Nota</TH>
+                <TH>Fecha</TH>
+                <TH>Acciones</TH>
+              </TR>
+            </THead>
+            <TBody>
               {all.map(a => {
                 const key = `${a.tipo}-${a.id}`
                 const isExpanded = expanded === key
                 const acting = actingKey === key
                 return (
                   <React.Fragment key={key}>
-                    <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                          a.tipo === 'credito'
-                            ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                        }`}>
-                          {a.tipo === 'credito' ? 'Crédito' : 'Margen'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        {a.vendedor?.name ?? '—'}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                    <TR>
+                      <TD>
+                        {a.tipo === 'credito' ? (
+                          <Badge variant="warning">Crédito</Badge>
+                        ) : (
+                          <Badge variant="info">Margen</Badge>
+                        )}
+                      </TD>
+                      <TD>{a.vendedor?.name ?? <span className="text-gray-400">—</span>}</TD>
+                      <TD>
                         {a.tipo === 'credito'
                           ? (a.empresa?.nombre ?? '—')
                           : `COT-${String(a.cotizacion_id ?? '').padStart(5, '0')}`}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-medium">
+                      </TD>
+                      <TD className="text-right font-medium text-gray-900 dark:text-white font-num">
                         {a.tipo === 'credito' ? fmtMoney(a.total) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                      </TD>
+                      <TD className="text-gray-600 dark:text-gray-400 max-w-xs truncate">
                         {a.nota ?? '—'}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                      </TD>
+                      <TD className="text-gray-500 dark:text-gray-400 font-num whitespace-nowrap">
                         {fmtFecha(a.created_at)}
-                      </td>
-                      <td className="px-4 py-3">
+                      </TD>
+                      <TD>
                         <div className="flex items-center gap-2">
                           {a.tipo === 'margen' && (
-                            <button
-                              onClick={() => setExpanded(isExpanded ? null : key)}
-                              className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-                              title="Ver detalle"
-                            >
-                              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                            </button>
+                            <Tooltip label={isExpanded ? 'Ocultar detalle' : 'Ver detalle'}>
+                              <Button
+                                size="icon-sm"
+                                variant="ghost"
+                                onClick={() => setExpanded(isExpanded ? null : key)}
+                              >
+                                {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                              </Button>
+                            </Tooltip>
                           )}
-                          <button
-                            onClick={() => handleAccion(a, 'aprobar')}
+                          <Button
+                            variant="success"
+                            size="sm"
                             disabled={acting}
-                            className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                            onClick={() => handleAccion(a, 'aprobar')}
                           >
                             Aprobar
-                          </button>
-                          <button
-                            onClick={() => handleAccion(a, 'denegar')}
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
                             disabled={acting}
-                            className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                            onClick={() => handleAccion(a, 'denegar')}
                           >
                             Denegar
-                          </button>
+                          </Button>
                         </div>
-                      </td>
-                    </tr>
+                      </TD>
+                    </TR>
                     {a.tipo === 'margen' && isExpanded && (
-                      <tr key={`${key}-detail`} className="bg-blue-50/50 dark:bg-blue-900/10">
-                        <td colSpan={7} className="px-6 py-3">
+                      <TR key={`${key}-detail`} className="bg-info-50/50 dark:bg-info-500/10">
+                        <TD colSpan={7} className="px-6 py-3">
                           <table className="w-full text-xs">
                             <thead>
                               <tr className="text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
@@ -230,26 +250,27 @@ export default function Aprobaciones() {
                               {a.lineas_propuestas.map((lp, i) => (
                                 <tr key={i} className="border-t border-gray-100 dark:border-gray-800">
                                   <td className="py-1.5 text-gray-700 dark:text-gray-300">{lp.descripcion}</td>
-                                  <td className="py-1.5 text-right text-gray-600 dark:text-gray-400">{fmtMoney(lp.valor_neto_actual)}</td>
-                                  <td className="py-1.5 text-right text-gray-600 dark:text-gray-400">
+                                  <td className="py-1.5 text-right text-gray-600 dark:text-gray-400 font-num">{fmtMoney(lp.valor_neto_actual)}</td>
+                                  <td className="py-1.5 text-right text-gray-600 dark:text-gray-400 font-num">
                                     {lp.margen_actual != null ? fmtPct(lp.margen_actual) : '—'}
                                   </td>
-                                  <td className="py-1.5 text-right font-medium text-blue-700 dark:text-blue-300">{fmtMoney(lp.valor_neto_propuesto)}</td>
-                                  <td className="py-1.5 text-right font-medium text-blue-700 dark:text-blue-300">{fmtPct(lp.margen_propuesto)}</td>
+                                  <td className="py-1.5 text-right font-medium text-info-700 dark:text-info-300 font-num">{fmtMoney(lp.valor_neto_propuesto)}</td>
+                                  <td className="py-1.5 text-right font-medium text-info-700 dark:text-info-300 font-num">{fmtPct(lp.margen_propuesto)}</td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
-                        </td>
-                      </tr>
+                        </TD>
+                      </TR>
                     )}
                   </React.Fragment>
                 )
               })}
-            </tbody>
-          </table>
+            </TBody>
+          </Table>
         )}
-      </div>
+      </Card>
+
       {terminosPendientes.length > 0 && (
         <div className="mt-6">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
@@ -258,8 +279,9 @@ export default function Aprobaciones() {
           <div className="space-y-3">
             {terminosPendientes.map(cot => {
               const key = `terminos-${cot.id}`
+              const acting = actingKey === key
               return (
-                <div key={cot.id} className="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 dark:border-amber-800 p-4">
+                <Card key={cot.id} padded className="border-warning-500/30">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -267,36 +289,38 @@ export default function Aprobaciones() {
                         {cot.empresa && <span className="ml-2 text-gray-500 font-normal">— {cot.empresa.nombre}</span>}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Términos solicitados: <strong className="text-amber-700 dark:text-amber-400">{cot.terminos_pago}</strong>
+                        Términos solicitados: <strong className="text-warning-700 dark:text-warning-400">{cot.terminos_pago}</strong>
                       </div>
                       {cot.vendedor && (
                         <div className="text-xs text-gray-400 mt-0.5">Vendedor: {cot.vendedor.name}</div>
                       )}
                     </div>
                     <div className="flex gap-2 shrink-0">
-                      <button
+                      <Button
+                        variant="success"
+                        size="sm"
+                        disabled={acting}
                         onClick={() => {
                           setActingKey(key)
                           terminosMutation.mutate({ id: cot.id, accion: 'aprobado' })
                         }}
-                        disabled={actingKey === key}
-                        className="px-3 py-1 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 transition-colors"
                       >
                         Aprobar
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        disabled={acting}
                         onClick={() => {
                           setActingKey(key)
                           terminosMutation.mutate({ id: cot.id, accion: 'rechazado' })
                         }}
-                        disabled={actingKey === key}
-                        className="px-3 py-1 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 transition-colors"
                       >
                         Rechazar
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                </div>
+                </Card>
               )
             })}
           </div>
