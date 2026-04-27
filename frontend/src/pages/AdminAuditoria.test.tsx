@@ -71,7 +71,7 @@ describe('AdminAuditoria', () => {
     // 'Admin Test' es único; 'Sistema' aparece solo cuando user_id es null.
     await waitFor(() => expect(screen.getByText('Admin Test')).toBeInTheDocument())
     expect(screen.getByText('Sistema')).toBeInTheDocument()
-    expect(screen.getAllByText('Ver diff')).toHaveLength(2)
+    expect(screen.getAllByLabelText('Ver diff')).toHaveLength(2)
     // Las celdas de tabla incluyen los entity_type (también aparecen en el select).
     expect(screen.getAllByText('Cliente').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Empresa').length).toBeGreaterThanOrEqual(1)
@@ -81,8 +81,8 @@ describe('AdminAuditoria', () => {
     vi.mocked(apiModule.api.get).mockResolvedValue({ data: MOCK_PAGE })
     render(wrap(<AdminAuditoria />))
 
-    await waitFor(() => expect(screen.getAllByText('Ver diff')).toHaveLength(2))
-    fireEvent.click(screen.getAllByText('Ver diff')[0])
+    await waitFor(() => expect(screen.getAllByLabelText('Ver diff')).toHaveLength(2))
+    fireEvent.click(screen.getAllByLabelText('Ver diff')[0])
 
     await waitFor(() =>
       expect(screen.getByText(/"changed"/)).toBeInTheDocument(),

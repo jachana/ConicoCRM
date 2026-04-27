@@ -1,14 +1,55 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Eye,
+  Inbox,
+  Lock,
+} from 'lucide-react'
 import { listarAuditoria, exportarAuditoriaCsvUrl, type AuditLog, type AuditFiltros } from '../api/auditoria'
 import { useAuthStore } from '../stores/auth'
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  FormField,
+  Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Skeleton,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  Table,
+  Tooltip,
+} from '../components/ui'
 
 const ENTITY_OPTIONS = [
-  '', 'Cotizacion', 'NotaVenta', 'Factura', 'NotaCredito', 'NotaDebito',
+  'Cotizacion', 'NotaVenta', 'Factura', 'NotaCredito', 'NotaDebito',
   'Producto', 'ListaPrecios', 'Empresa', 'Cliente', 'User',
   'PermissionOverride', 'SystemConfig',
 ]
-const ACTION_OPTIONS = ['', 'create', 'update', 'delete']
+const ACTION_OPTIONS = ['create', 'update', 'delete']
+
+const ACTION_VARIANT: Record<string, 'info' | 'warning' | 'danger' | 'neutral'> = {
+  create: 'info',
+  update: 'warning',
+  delete: 'danger',
+}
 
 const PAGE_SIZE = 50
 
@@ -75,10 +116,14 @@ export default function AdminAuditoria() {
   if (!isAdmin) {
     return (
       <div className="p-6">
-        <h1 className="text-xl font-semibold mb-2">Auditoría</h1>
-        <div className="bg-red-100 text-red-700 p-3 rounded">
-          No tienes permiso para acceder a esta sección.
-        </div>
+        <h1 className="text-xl font-semibold mb-4">Auditoría</h1>
+        <Card padded>
+          <EmptyState
+            icon={<Lock />}
+            title="Acceso restringido"
+            description="No tienes permiso para acceder a esta sección."
+          />
+        </Card>
       </div>
     )
   }
@@ -87,159 +132,207 @@ export default function AdminAuditoria() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold">Auditoría</h1>
-        <button
+        <Button
+          variant="outline"
+          size="sm"
+          leftIcon={<Download />}
           onClick={descargarCsv}
-          className="px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm rounded"
         >
           Exportar CSV
-        </button>
+        </Button>
       </div>
 
       {/* Filtros */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-2 mb-4">
-        <select
-          value={filtros.entity_type ?? ''}
-          onChange={e => setFiltro('entity_type', e.target.value || undefined)}
-          className="border rounded px-2 py-1 text-sm bg-white dark:bg-gray-800"
-          aria-label="Entidad"
-        >
-          {ENTITY_OPTIONS.map(o => (
-            <option key={o} value={o}>{o || 'Todas las entidades'}</option>
-          ))}
-        </select>
+      <Card className="mb-4 p-3">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <FormField label="Entidad">
+            <Select
+              value={filtros.entity_type ?? 'all'}
+              onValueChange={v => setFiltro('entity_type', v === 'all' ? undefined : v)}
+            >
+              <SelectTrigger size="sm" aria-label="Entidad"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las entidades</SelectItem>
+                {ENTITY_OPTIONS.map(o => (
+                  <SelectItem key={o} value={o}>{o}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
 
-        <select
-          value={filtros.action ?? ''}
-          onChange={e => setFiltro('action', e.target.value || undefined)}
-          className="border rounded px-2 py-1 text-sm bg-white dark:bg-gray-800"
-          aria-label="Acción"
-        >
-          {ACTION_OPTIONS.map(o => (
-            <option key={o} value={o}>{o || 'Todas las acciones'}</option>
-          ))}
-        </select>
+          <FormField label="Acción">
+            <Select
+              value={filtros.action ?? 'all'}
+              onValueChange={v => setFiltro('action', v === 'all' ? undefined : v)}
+            >
+              <SelectTrigger size="sm" aria-label="Acción"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las acciones</SelectItem>
+                {ACTION_OPTIONS.map(o => (
+                  <SelectItem key={o} value={o}>{o}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
 
-        <input
-          type="number"
-          placeholder="user_id"
-          value={filtros.user_id ?? ''}
-          onChange={e => setFiltro('user_id', e.target.value ? Number(e.target.value) : undefined)}
-          className="border rounded px-2 py-1 text-sm bg-white dark:bg-gray-800"
-          aria-label="Usuario"
-        />
+          <FormField label="Usuario">
+            <Input
+              type="number"
+              size="sm"
+              placeholder="user_id"
+              value={filtros.user_id ?? ''}
+              onChange={e => setFiltro('user_id', e.target.value ? Number(e.target.value) : undefined)}
+              aria-label="Usuario"
+            />
+          </FormField>
 
-        <input
-          type="text"
-          placeholder="entity_id"
-          value={filtros.entity_id ?? ''}
-          onChange={e => setFiltro('entity_id', e.target.value || undefined)}
-          className="border rounded px-2 py-1 text-sm bg-white dark:bg-gray-800"
-          aria-label="ID de entidad"
-        />
+          <FormField label="ID de entidad">
+            <Input
+              type="text"
+              size="sm"
+              placeholder="entity_id"
+              value={filtros.entity_id ?? ''}
+              onChange={e => setFiltro('entity_id', e.target.value || undefined)}
+              aria-label="ID de entidad"
+            />
+          </FormField>
 
-        <input
-          type="date"
-          value={filtros.from_date ?? ''}
-          onChange={e => setFiltro('from_date', e.target.value || undefined)}
-          className="border rounded px-2 py-1 text-sm bg-white dark:bg-gray-800"
-          aria-label="Desde"
-        />
-        <input
-          type="date"
-          value={filtros.to_date ?? ''}
-          onChange={e => setFiltro('to_date', e.target.value || undefined)}
-          className="border rounded px-2 py-1 text-sm bg-white dark:bg-gray-800"
-          aria-label="Hasta"
-        />
-      </div>
+          <FormField label="Desde">
+            <Input
+              type="date"
+              size="sm"
+              value={filtros.from_date ?? ''}
+              onChange={e => setFiltro('from_date', e.target.value || undefined)}
+              aria-label="Desde"
+            />
+          </FormField>
 
-      {errorMsg && <div className="bg-red-100 text-red-700 p-2 rounded mb-3">{errorMsg}</div>}
+          <FormField label="Hasta">
+            <Input
+              type="date"
+              size="sm"
+              value={filtros.to_date ?? ''}
+              onChange={e => setFiltro('to_date', e.target.value || undefined)}
+              aria-label="Hasta"
+            />
+          </FormField>
+        </div>
+      </Card>
+
+      {errorMsg && (
+        <div className="bg-danger-50 dark:bg-danger-500/10 text-danger-600 dark:text-danger-400 border border-danger-500/30 p-2 rounded mb-3 text-sm">
+          {errorMsg}
+        </div>
+      )}
 
       {/* Tabla */}
-      <div className="overflow-x-auto border rounded">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-800/40">
-            <tr>
-              <th className="text-left px-3 py-2">Timestamp</th>
-              <th className="text-left px-3 py-2">Usuario</th>
-              <th className="text-left px-3 py-2">Acción</th>
-              <th className="text-left px-3 py-2">Entidad</th>
-              <th className="text-left px-3 py-2">ID</th>
-              <th className="text-left px-3 py-2">IP</th>
-              <th className="text-left px-3 py-2">Diff</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && (
-              <tr><td colSpan={7} className="px-3 py-6 text-center text-gray-500">Cargando…</td></tr>
-            )}
-            {!isLoading && items.length === 0 && (
-              <tr><td colSpan={7} className="px-3 py-6 text-center text-gray-500">Sin registros</td></tr>
-            )}
-            {items.map(it => (
-              <tr key={it.id} className="border-t">
-                <td className="px-3 py-2 whitespace-nowrap">{fmtDate(it.created_at)}</td>
-                <td className="px-3 py-2">{it.user_name ?? (it.user_id ? `#${it.user_id}` : 'Sistema')}</td>
-                <td className="px-3 py-2">{it.action}</td>
-                <td className="px-3 py-2">{it.entity_type}</td>
-                <td className="px-3 py-2">{it.entity_id}</td>
-                <td className="px-3 py-2">{it.ip ?? ''}</td>
-                <td className="px-3 py-2">
-                  <button
-                    onClick={() => setDiffViewing(it)}
-                    className="text-brand-600 hover:underline text-xs"
-                  >
-                    Ver diff
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10" />)}
+        </div>
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={<Inbox />}
+          title="Sin registros"
+          description="No hay registros de auditoría para los filtros aplicados."
+        />
+      ) : (
+        <Card className="overflow-x-auto">
+          <Table density="compact">
+            <THead>
+              <TR>
+                <TH>Timestamp</TH>
+                <TH>Usuario</TH>
+                <TH>Acción</TH>
+                <TH>Entidad</TH>
+                <TH>ID</TH>
+                <TH>IP</TH>
+                <TH className="text-right">Diff</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {items.map(it => (
+                <TR key={it.id}>
+                  <TD className="font-num text-gray-600 dark:text-gray-400 whitespace-nowrap">{fmtDate(it.created_at)}</TD>
+                  <TD className="text-gray-900 dark:text-gray-100">
+                    {it.user_name ?? (it.user_id ? `#${it.user_id}` : 'Sistema')}
+                  </TD>
+                  <TD>
+                    <Badge variant={ACTION_VARIANT[it.action] ?? 'neutral'} size="sm">
+                      {it.action}
+                    </Badge>
+                  </TD>
+                  <TD className="text-gray-700 dark:text-gray-300">{it.entity_type}</TD>
+                  <TD className="font-num text-gray-600 dark:text-gray-400">{it.entity_id}</TD>
+                  <TD className="font-mono text-xs text-gray-500 dark:text-gray-400">{it.ip ?? ''}</TD>
+                  <TD className="text-right">
+                    <Tooltip label="Ver diff">
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        onClick={() => setDiffViewing(it)}
+                        aria-label="Ver diff"
+                      >
+                        <Eye />
+                      </Button>
+                    </Tooltip>
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </Card>
+      )}
 
       {/* Paginación */}
       <div className="flex items-center justify-between mt-3 text-sm">
-        <span className="text-gray-500">
+        <span className="text-gray-500 dark:text-gray-400">
           {total} registros · página {Math.floor(offset / limit) + 1} de {Math.max(1, Math.floor(lastPageOffset / limit) + 1)}
         </span>
         <div className="flex gap-2">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<ChevronLeft />}
             disabled={offset <= 0}
             onClick={() => setFiltros(f => ({ ...f, offset: Math.max(0, (f.offset ?? 0) - limit) }))}
-            className="px-2 py-1 border rounded disabled:opacity-40"
           >
             Anterior
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            rightIcon={<ChevronRight />}
             disabled={offset + limit >= total}
             onClick={() => setFiltros(f => ({ ...f, offset: (f.offset ?? 0) + limit }))}
-            className="px-2 py-1 border rounded disabled:opacity-40"
           >
             Siguiente
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Modal diff */}
-      {diffViewing && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setDiffViewing(null)}>
-          <div
-            className="bg-white dark:bg-gray-900 rounded p-4 max-w-3xl max-h-[80vh] overflow-auto w-full mx-4"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-semibold">
-                Diff · {diffViewing.entity_type} #{diffViewing.entity_id} · {diffViewing.action}
-              </h2>
-              <button onClick={() => setDiffViewing(null)} className="text-gray-500 hover:text-gray-700">Cerrar</button>
-            </div>
-            <pre className="text-xs bg-gray-50 dark:bg-gray-800 p-3 rounded overflow-auto whitespace-pre-wrap">
-              {JSON.stringify(diffViewing.diff_json, null, 2)}
+      <Modal open={diffViewing !== null} onOpenChange={(open) => { if (!open) setDiffViewing(null) }}>
+        <ModalContent size="xl">
+          <ModalHeader>
+            <ModalTitle>
+              {diffViewing
+                ? `Diff · ${diffViewing.entity_type} #${diffViewing.entity_id} · ${diffViewing.action}`
+                : 'Diff'}
+            </ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <pre className="text-xs bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 p-3 rounded overflow-auto whitespace-pre-wrap font-mono">
+              {diffViewing ? JSON.stringify(diffViewing.diff_json, null, 2) : ''}
             </pre>
-          </div>
-        </div>
-      )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="outline" onClick={() => setDiffViewing(null)}>
+              Cerrar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   )
 }
