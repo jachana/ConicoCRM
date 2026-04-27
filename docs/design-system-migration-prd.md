@@ -76,7 +76,7 @@ Each scale: `50 → 950`. Shadows: `shadow-elev-1` (resting) → `shadow-elev-4`
 - [x] **A8 — NotasCredito list + Nueva + Detalle, NotasDebito list + Nueva + Detalle** (`6074a1b`)
 
 ### Phase B — Money & catalog
-- [ ] Pagos
+- [x] **B1 — Pagos** (`ae72135`)
 - [ ] Cobranza
 - [ ] OrdenesCompra list + Detalle
 - [ ] Proveedores
