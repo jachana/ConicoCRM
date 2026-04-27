@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import { Plus, Search, FileSpreadsheet, Inbox } from 'lucide-react'
 import { api } from '../lib/api'
 import type { Cliente, Empresa } from '../types'
+import {
+  Button, Input, Textarea, FormField, Badge, EmptyState, Skeleton,
+  Table, THead, TBody, TR, TH, TD,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalTitle,
+  Card,
+} from '../components/ui'
 
 type FormData = {
   nombre: string; rut: string; email: string; telefono: string
@@ -16,10 +24,6 @@ const EMPTY_FORM: FormData = {
   empresa_id: null, recibe_correo: true, despacho_o_retiro: '',
   comuna: '', ultimo_contacto: '', forma_captacion: '', compromiso: '', es_nuevo: false,
 }
-
-const INPUT_CLS = "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 outline-none"
-const LABEL_CLS = "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-const READONLY_CLS = "w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400"
 
 export default function Clientes() {
   const qc = useQueryClient()
@@ -86,49 +90,60 @@ export default function Clientes() {
     onError: (e: any) => setDeleteError(e?.response?.data?.detail ?? 'Error al eliminar'),
   })
 
-  if (isLoading) return <div className="p-6 text-gray-500 text-sm">Cargando...</div>
+  function exportExcel() {
+    api.get('/api/clientes/export/excel', { responseType: 'blob' }).then(r => {
+      const url = URL.createObjectURL(r.data)
+      const a = document.createElement('a'); a.href = url; a.download = 'clientes.xlsx'; a.click()
+      URL.revokeObjectURL(url)
+    })
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-6xl">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Clientes</h1>
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Clientes</h1>
         <div className="flex gap-2">
-          <button
-            onClick={() => api.get('/api/clientes/export/excel', { responseType: 'blob' }).then(r => {
-              const url = URL.createObjectURL(r.data)
-              const a = document.createElement('a'); a.href = url; a.download = 'clientes.xlsx'; a.click()
-              URL.revokeObjectURL(url)
-            })}
-            className="hidden sm:block px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
+          <Button variant="outline" size="sm" leftIcon={<FileSpreadsheet />} onClick={exportExcel} className="hidden sm:inline-flex">
             Exportar Excel
-          </button>
-          <button onClick={abrirCrear}
-            className="px-3 md:px-4 py-2 text-sm bg-brand-500 hover:bg-brand-400 text-gray-900 font-semibold rounded-lg transition-colors">
-            Agregar
-          </button>
+          </Button>
+          <Button leftIcon={<Plus />} onClick={abrirCrear}>Agregar</Button>
         </div>
       </div>
 
-      <input
+      <Input
         type="text"
         placeholder="Buscar por nombre o RUT..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
-        className="mb-4 w-full max-w-sm px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 outline-none"
+        leftAddon={<Search />}
+        className="mb-4 max-w-sm"
       />
 
-      {clientes.length === 0 ? (
-        <div className="text-gray-400 py-12 text-center text-sm">Sin clientes registrados</div>
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12" />)}
+        </div>
+      ) : clientes.length === 0 ? (
+        <Card className="p-0">
+          <EmptyState
+            icon={<Inbox />}
+            title={busqueda ? 'Sin resultados' : 'Sin clientes registrados'}
+            description={busqueda ? 'No hay clientes que coincidan con la búsqueda.' : 'Comienza agregando tu primer cliente.'}
+            action={!busqueda ? <Button leftIcon={<Plus />} onClick={abrirCrear}>Agregar cliente</Button> : null}
+          />
+        </Card>
       ) : (
         <>
-          {/* ── Mobile cards ── */}
+          {/* Mobile cards */}
           <div className="md:hidden space-y-2">
             {clientes.map(c => (
-              <div key={c.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+              <Card key={c.id} className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{c.nombre}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm truncate">{c.nombre}</p>
+                      {c.es_nuevo && <Badge variant="brand" size="sm">Nuevo</Badge>}
+                    </div>
                     {c.empresa?.nombre && (
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{c.empresa.nombre}</p>
                     )}
@@ -139,186 +154,192 @@ export default function Clientes() {
                     </div>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
-                    <button onClick={() => abrirEditar(c)}
-                      className="text-xs text-brand-600 dark:text-brand-400 font-medium hover:underline">
-                      Editar
-                    </button>
-                    <button onClick={() => { setEliminandoId(c.id); setDeleteError(null) }}
-                      className="text-xs text-red-500 hover:underline">
+                    <Button size="xs" variant="link" onClick={() => abrirEditar(c)}>Editar</Button>
+                    <Button
+                      size="xs"
+                      variant="link"
+                      className="text-danger-600 dark:text-danger-400 hover:text-danger-700"
+                      onClick={() => { setEliminandoId(c.id); setDeleteError(null) }}
+                    >
                       Borrar
-                    </button>
+                    </Button>
                   </div>
                 </div>
                 {eliminandoId === c.id && (
                   <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs">
                     {deleteError
-                      ? <span className="text-red-500">{deleteError}</span>
+                      ? <span className="text-danger-600 dark:text-danger-400">{deleteError}</span>
                       : <span className="text-gray-500 dark:text-gray-400">¿Confirmar eliminación?</span>}
-                    <div className="flex gap-3">
-                      <button onClick={() => eliminar.mutate(c.id)} disabled={eliminar.isPending}
-                        className="text-red-600 font-semibold disabled:opacity-50">Sí</button>
-                      <button onClick={() => { setEliminandoId(null); setDeleteError(null) }}
-                        className="text-gray-500">No</button>
+                    <div className="flex gap-2">
+                      <Button size="xs" variant="danger" loading={eliminar.isPending} onClick={() => eliminar.mutate(c.id)}>Sí</Button>
+                      <Button size="xs" variant="ghost" onClick={() => { setEliminandoId(null); setDeleteError(null) }}>No</Button>
                     </div>
                   </div>
                 )}
-              </div>
+              </Card>
             ))}
           </div>
 
-          {/* ── Desktop table ── */}
-          <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium">Nombre</th>
-                  <th className="text-left px-4 py-3 font-medium">Empresa</th>
-                  <th className="text-left px-4 py-3 font-medium">RUT</th>
-                  <th className="text-left px-4 py-3 font-medium">Email</th>
-                  <th className="text-left px-4 py-3 font-medium">Teléfono</th>
-                  <th className="text-left px-4 py-3 font-medium" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden shadow-elev-1">
+            <Table>
+              <THead>
+                <TR>
+                  <TH>Nombre</TH>
+                  <TH>Empresa</TH>
+                  <TH>RUT</TH>
+                  <TH>Email</TH>
+                  <TH>Teléfono</TH>
+                  <TH className="text-right">Acciones</TH>
+                </TR>
+              </THead>
+              <TBody>
                 {clientes.map(c => (
-                  <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{c.nombre}</td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{c.empresa?.nombre ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 font-num">{c.rut ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{c.email ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{c.telefono ?? '—'}</td>
-                    <td className="px-4 py-3">
+                  <TR key={c.id}>
+                    <TD className="font-medium text-gray-900 dark:text-gray-100">
+                      <div className="flex items-center gap-2">
+                        {c.nombre}
+                        {c.es_nuevo && <Badge variant="brand" size="sm">Nuevo</Badge>}
+                      </div>
+                    </TD>
+                    <TD className="text-gray-500 dark:text-gray-400">{c.empresa?.nombre ?? '—'}</TD>
+                    <TD className="text-gray-500 dark:text-gray-400 font-num">{c.rut ?? '—'}</TD>
+                    <TD className="text-gray-500 dark:text-gray-400">{c.email ?? '—'}</TD>
+                    <TD className="text-gray-500 dark:text-gray-400">{c.telefono ?? '—'}</TD>
+                    <TD>
                       {eliminandoId === c.id ? (
-                        <span className="inline-flex items-center gap-2 text-xs">
+                        <div className="flex items-center justify-end gap-2 text-xs">
                           {deleteError
-                            ? <span className="text-red-500">{deleteError}</span>
+                            ? <span className="text-danger-600 dark:text-danger-400">{deleteError}</span>
                             : <span className="text-gray-600 dark:text-gray-400">¿Eliminar?</span>}
-                          <button onClick={() => eliminar.mutate(c.id)} disabled={eliminar.isPending}
-                            className="text-red-600 hover:underline font-medium disabled:opacity-50">Sí</button>
-                          <button onClick={() => { setEliminandoId(null); setDeleteError(null) }}
-                            className="text-gray-500 hover:underline">No</button>
-                        </span>
+                          <Button size="xs" variant="danger" loading={eliminar.isPending} onClick={() => eliminar.mutate(c.id)}>Sí</Button>
+                          <Button size="xs" variant="ghost" onClick={() => { setEliminandoId(null); setDeleteError(null) }}>No</Button>
+                        </div>
                       ) : (
-                        <span className="inline-flex gap-3">
-                          <button onClick={() => abrirEditar(c)} className="text-xs text-brand-600 dark:text-brand-400 hover:underline">Editar</button>
-                          <button onClick={() => { setEliminandoId(c.id); setDeleteError(null) }} className="text-xs text-red-500 hover:underline">Eliminar</button>
-                        </span>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button size="xs" variant="link" onClick={() => abrirEditar(c)}>Editar</Button>
+                          <Button
+                            size="xs"
+                            variant="link"
+                            className="text-danger-600 dark:text-danger-400 hover:text-danger-700"
+                            onClick={() => { setEliminandoId(c.id); setDeleteError(null) }}
+                          >
+                            Eliminar
+                          </Button>
+                        </div>
                       )}
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))}
-              </tbody>
-            </table>
+              </TBody>
+            </Table>
           </div>
         </>
       )}
 
-      {/* Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto">
-            <div className="px-5 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10">
-              <h2 className="text-base font-semibold text-gray-900 dark:text-white">
-                {editando ? 'Editar cliente' : 'Nuevo cliente'}
-              </h2>
-            </div>
-            <form onSubmit={ev => { ev.preventDefault(); guardar.mutate(form) }} className="px-5 py-4 grid grid-cols-2 gap-4">
+      {/* Create/Edit modal */}
+      <Modal open={modalOpen} onOpenChange={(o) => { if (!o) cerrarModal() }}>
+        <ModalContent size="xl">
+          <ModalHeader>
+            <ModalTitle>{editando ? 'Editar cliente' : 'Nuevo cliente'}</ModalTitle>
+          </ModalHeader>
+          <form onSubmit={ev => { ev.preventDefault(); guardar.mutate(form) }}>
+            <ModalBody>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField label="Empresa" className="col-span-2">
+                  <Select
+                    value={form.empresa_id ? String(form.empresa_id) : 'none'}
+                    onValueChange={(v) => setForm(f => ({ ...f, empresa_id: v === 'none' ? null : Number(v) }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Sin empresa —</SelectItem>
+                      {empresas.map(e => <SelectItem key={e.id} value={String(e.id)}>{e.nombre}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </FormField>
 
-              <div className="col-span-2">
-                <label className={LABEL_CLS}>Empresa</label>
-                <select value={form.empresa_id ?? ''} onChange={e => setForm(f => ({ ...f, empresa_id: e.target.value ? Number(e.target.value) : null }))} className={INPUT_CLS}>
-                  <option value="">— Sin empresa —</option>
-                  {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-                </select>
+                {empresaSeleccionada?.rut && (
+                  <FormField label="RUT Empresa">
+                    <Input value={empresaSeleccionada.rut} readOnly />
+                  </FormField>
+                )}
+                {empresaSeleccionada?.razon_social && (
+                  <FormField label="Razón Social">
+                    <Input value={empresaSeleccionada.razon_social} readOnly />
+                  </FormField>
+                )}
+
+                <FormField label="Nombre" required className="col-span-2">
+                  <Input required value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
+                </FormField>
+
+                <FormField label="RUT" required>
+                  <Input placeholder="76.123.456-7" required value={form.rut} onChange={e => setForm(f => ({ ...f, rut: e.target.value }))} />
+                </FormField>
+                <FormField label="Email">
+                  <Input type="email" placeholder="contacto@empresa.cl" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                </FormField>
+                <FormField label="Teléfono">
+                  <Input placeholder="+56 9 1234 5678" value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} />
+                </FormField>
+                <FormField label="Comuna">
+                  <Input value={form.comuna} onChange={e => setForm(f => ({ ...f, comuna: e.target.value }))} />
+                </FormField>
+
+                <FormField label="Despacho o Retiro">
+                  <Select
+                    value={form.despacho_o_retiro || 'none'}
+                    onValueChange={(v) => setForm(f => ({ ...f, despacho_o_retiro: v === 'none' ? '' : v }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Sin definir —</SelectItem>
+                      <SelectItem value="despacho">Despacho</SelectItem>
+                      <SelectItem value="retiro">Retiro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormField>
+
+                <FormField label="Último Contacto">
+                  <Input type="date" value={form.ultimo_contacto} onChange={e => setForm(f => ({ ...f, ultimo_contacto: e.target.value }))} />
+                </FormField>
+
+                <FormField label="Forma Captación" className="col-span-2">
+                  <Input value={form.forma_captacion} onChange={e => setForm(f => ({ ...f, forma_captacion: e.target.value }))} />
+                </FormField>
+
+                <FormField label="Dirección de Despacho" className="col-span-2">
+                  <Input value={form.direccion_despacho} onChange={e => setForm(f => ({ ...f, direccion_despacho: e.target.value }))} />
+                </FormField>
+
+                <FormField label="Compromiso" className="col-span-2">
+                  <Textarea rows={2} value={form.compromiso} onChange={e => setForm(f => ({ ...f, compromiso: e.target.value }))} />
+                </FormField>
+
+                <FormField label="Notas" className="col-span-2">
+                  <Textarea rows={2} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} />
+                </FormField>
+
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" checked={form.recibe_correo} onChange={e => setForm(f => ({ ...f, recibe_correo: e.target.checked }))} className="size-4 accent-brand-500 rounded" />
+                  Recibe correo
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" checked={form.es_nuevo} onChange={e => setForm(f => ({ ...f, es_nuevo: e.target.checked }))} className="size-4 accent-brand-500 rounded" />
+                  Es nuevo
+                </label>
+
+                {error && <p className="col-span-2 text-xs text-danger-600 dark:text-danger-400">{error}</p>}
               </div>
-
-              {empresaSeleccionada && (
-                <>
-                  {empresaSeleccionada.rut && (
-                    <div><label className={LABEL_CLS}>RUT Empresa</label><div className={READONLY_CLS}>{empresaSeleccionada.rut}</div></div>
-                  )}
-                  {empresaSeleccionada.razon_social && (
-                    <div><label className={LABEL_CLS}>Razón Social</label><div className={READONLY_CLS}>{empresaSeleccionada.razon_social}</div></div>
-                  )}
-                </>
-              )}
-
-              <div className="col-span-2">
-                <label className={LABEL_CLS}>Nombre *</label>
-                <input type="text" required value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} className={INPUT_CLS} />
-              </div>
-
-              {(([
-                { key: 'rut', label: 'RUT *', placeholder: '76.123.456-7', required: true },
-                { key: 'email', label: 'Email', placeholder: 'contacto@empresa.cl' },
-                { key: 'telefono', label: 'Teléfono', placeholder: '+56 9 1234 5678' },
-                { key: 'comuna', label: 'Comuna' },
-              ]) as { key: keyof FormData; label: string; placeholder?: string; required?: boolean }[]).map(({ key, label, placeholder, required }) => (
-                <div key={key}>
-                  <label className={LABEL_CLS}>{label}</label>
-                  <input type="text" placeholder={placeholder} required={required} value={form[key] as string}
-                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} className={INPUT_CLS} />
-                </div>
-              ))}
-
-              <div>
-                <label className={LABEL_CLS}>Despacho o Retiro</label>
-                <select value={form.despacho_o_retiro} onChange={e => setForm(f => ({ ...f, despacho_o_retiro: e.target.value }))} className={INPUT_CLS}>
-                  <option value="">— Sin definir —</option>
-                  <option value="despacho">Despacho</option>
-                  <option value="retiro">Retiro</option>
-                </select>
-              </div>
-
-              <div>
-                <label className={LABEL_CLS}>Último Contacto</label>
-                <input type="date" value={form.ultimo_contacto} onChange={e => setForm(f => ({ ...f, ultimo_contacto: e.target.value }))} className={INPUT_CLS} />
-              </div>
-
-              <div>
-                <label className={LABEL_CLS}>Forma Captación</label>
-                <input type="text" value={form.forma_captacion} onChange={e => setForm(f => ({ ...f, forma_captacion: e.target.value }))} className={INPUT_CLS} />
-              </div>
-
-              <div className="col-span-2">
-                <label className={LABEL_CLS}>Dirección de Despacho</label>
-                <input type="text" value={form.direccion_despacho} onChange={e => setForm(f => ({ ...f, direccion_despacho: e.target.value }))} className={INPUT_CLS} />
-              </div>
-
-              <div className="col-span-2">
-                <label className={LABEL_CLS}>Compromiso</label>
-                <textarea rows={2} value={form.compromiso} onChange={e => setForm(f => ({ ...f, compromiso: e.target.value }))} className={INPUT_CLS} />
-              </div>
-
-              <div className="col-span-2">
-                <label className={LABEL_CLS}>Notas</label>
-                <textarea rows={2} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} className={INPUT_CLS} />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <input type="checkbox" id="recibe_correo" checked={form.recibe_correo} onChange={e => setForm(f => ({ ...f, recibe_correo: e.target.checked }))} className="w-4 h-4 accent-brand-500 rounded" />
-                <label htmlFor="recibe_correo" className="text-sm text-gray-700 dark:text-gray-300">Recibe correo</label>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <input type="checkbox" id="es_nuevo" checked={form.es_nuevo} onChange={e => setForm(f => ({ ...f, es_nuevo: e.target.checked }))} className="w-4 h-4 accent-brand-500 rounded" />
-                <label htmlFor="es_nuevo" className="text-sm text-gray-700 dark:text-gray-300">Es nuevo</label>
-              </div>
-
-              {error && <p className="col-span-2 text-xs text-red-500">{error}</p>}
-              <div className="col-span-2 flex justify-end gap-2 pt-2 pb-1">
-                <button type="button" onClick={cerrarModal} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-                  Cancelar
-                </button>
-                <button type="submit" disabled={guardar.isPending}
-                  className="px-4 py-2 text-sm bg-brand-500 hover:bg-brand-400 text-gray-900 font-semibold rounded-lg disabled:opacity-50 transition-colors">
-                  {guardar.isPending ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </ModalBody>
+            <ModalFooter>
+              <Button type="button" variant="outline" onClick={cerrarModal}>Cancelar</Button>
+              <Button type="submit" loading={guardar.isPending}>Guardar</Button>
+            </ModalFooter>
+          </form>
+        </ModalContent>
+      </Modal>
     </div>
   )
 }
