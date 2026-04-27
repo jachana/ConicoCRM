@@ -2,7 +2,7 @@
 
 **Status:** In progress
 **Owner:** Frontend
-**Last updated:** 2026-04-27
+**Last updated:** 2026-04-27 (post-A8)
 **Related:** `frontend/src/components/ui/*`, `PROGRESS.md` → "Design System v2"
 
 ---
@@ -73,7 +73,7 @@ Each scale: `50 → 950`. Shadows: `shadow-elev-1` (resting) → `shadow-elev-4`
 - [x] **A5 — Facturas list + FacturaDetalle**
 - [x] **A6 — BoletaDetalle + BoletaNueva** (BoletasList already done in `9394195`)
 - [x] **A7 — GuiasDespacho list + Nueva + Detalle**
-- [ ] **A8 — NotasCredito list + Nueva + Detalle, NotasDebito list + Nueva + Detalle**
+- [x] **A8 — NotasCredito list + Nueva + Detalle, NotasDebito list + Nueva + Detalle** (`6074a1b`)
 
 ### Phase B — Money & catalog
 - [ ] Pagos
