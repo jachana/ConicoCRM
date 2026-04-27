@@ -87,12 +87,12 @@ Each scale: `50 → 950`. Shadows: `shadow-elev-1` (resting) → `shadow-elev-4`
 - [x] **B6 — Productos catálogo + ListasPrecios** (`496e0f0`)
 
 ### Phase C — Admin & ops
-- [ ] Tareas + admin/tareas/config
-- [ ] Aprobaciones
-- [ ] RRHH (empleados)
-- [ ] Auditoría (`/admin/auditoria`)
-- [ ] Configuración
-- [ ] Usuarios
+- [x] **C1 — Tareas + TareasConfig** (`263ba6d`)
+- [x] **C2 — Aprobaciones** (`f0c2518`)
+- [x] **C3 — RRHH** (`d5a6cd4`)
+- [x] **C4 — AdminAuditoria** (`42c6427`)
+- [x] **C5 — Configuracion** (`a86f2aa`)
+- [x] **C6 — Users** (`9192a22`)
 
 ### Phase D — Auth & shell
 - [x] **Sidebar** (`94cffaa`)
