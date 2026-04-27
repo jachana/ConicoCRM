@@ -80,7 +80,7 @@ Each scale: `50 → 950`. Shadows: `shadow-elev-1` (resting) → `shadow-elev-4`
 - [x] **B2 — Cobranza** (`cf68d57`)
 - [x] **B3 — OrdenesCompra list + Detalle** (`eaf14ea`)
 - [x] **B4 — Proveedores** (`05d2b8e`)
-- [ ] Reportes
+- [x] **B5 — Reportes** (`2c19b08`)
 - [x] **Empresas list + detail + 4 tabs** (`df202e4`)
 - [x] **Clientes list + form modal** (`d6fa479`)
 - [x] **Inventario + ProductoModal + ProductoHistorial** (`8cf5960`)
