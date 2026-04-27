@@ -2,14 +2,19 @@ import { openPdf } from '../lib/pdf'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Plus, FileText, Mail, Trash2, Eye, ChevronDown, X, Download } from 'lucide-react'
+import { toast } from 'sonner'
+import { Plus, FileText, Mail, Trash2, Eye, ChevronDown, X, Download, Inbox } from 'lucide-react'
 import { api } from '../lib/api'
 import type { Cotizacion } from '../types'
 import ExportPreviewPanel from '../components/ExportPreviewPanel'
 import { COTIZACION_COLUMN_DEFS } from '../lib/columnDefs'
 import type { FlatLine } from '../types'
-
-// ── Constants ──────────────────────────────────────────────────────────────────
+import {
+  Button, Input, Badge, EmptyState, Skeleton, Card, CardContent,
+  Table, THead, TBody, TR, TH, TD,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalTitle, ModalDescription,
+  Tooltip,
+} from '../components/ui'
 
 const ESTADO_LABELS: Record<string, string> = {
   no_definido: 'Sin definir',
@@ -19,15 +24,13 @@ const ESTADO_LABELS: Record<string, string> = {
   rechazada: 'Rechazada',
 }
 
-const ESTADO_COLORS: Record<string, string> = {
-  no_definido: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-  abierta: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  aprobada: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-  cerrada_fv: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-  rechazada: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+const ESTADO_VARIANT: Record<string, 'neutral' | 'info' | 'success' | 'danger'> = {
+  no_definido: 'neutral',
+  abierta: 'info',
+  aprobada: 'success',
+  cerrada_fv: 'success',
+  rechazada: 'danger',
 }
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function fmtMoney(n: number) {
   return `$ ${Math.round(n).toLocaleString('es-CL')}`
@@ -40,13 +43,11 @@ function fmtDate(iso: string) {
 function MargenBadge({ value }: { value: number | null | undefined }) {
   if (value == null) return <span className="text-gray-400 text-xs">—</span>
   const pct = Math.round(value * 1000) / 10
-  const color = pct < 15 ? 'text-red-600 dark:text-red-400'
-    : pct < 25 ? 'text-orange-500 dark:text-orange-400'
-    : 'text-green-600 dark:text-green-400'
+  const color = pct < 15 ? 'text-danger-600 dark:text-danger-400'
+    : pct < 25 ? 'text-warning-600 dark:text-warning-400'
+    : 'text-success-600 dark:text-success-400'
   return <span className={`font-medium text-sm font-num ${color}`}>{pct.toFixed(1)}%</span>
 }
-
-// ── Filter Pill ────────────────────────────────────────────────────────────────
 
 interface PillProps {
   label: string
@@ -65,7 +66,7 @@ function FilterPill({ label, active, summary, isOpen, onToggle, onClear, childre
       <div className={`flex items-center rounded-full border text-sm transition-colors
         ${active
           ? 'border-brand-500 bg-brand-500/10 text-brand-700 dark:text-brand-300'
-          : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500'
+          : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-600'
         }`}
       >
         <button onClick={onToggle} className="flex items-center gap-1.5 pl-3 pr-1.5 py-1.5">
@@ -80,7 +81,7 @@ function FilterPill({ label, active, summary, isOpen, onToggle, onClear, childre
         )}
       </div>
       {isOpen && (
-        <div className={`absolute top-full left-0 mt-1.5 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-2 ${wide ? 'w-80' : 'min-w-[200px]'}`}>
+        <div className={`absolute top-full left-0 mt-1.5 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-elev-3 py-2 ${wide ? 'w-80' : 'min-w-[200px]'}`}>
           {children}
         </div>
       )}
@@ -88,13 +89,9 @@ function FilterPill({ label, active, summary, isOpen, onToggle, onClear, childre
   )
 }
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-
 interface UserMin { id: number; name: string }
 interface EmpresaMin { id: number; nombre: string }
 interface ProductoMin { id: number; nombre: string; sku: string | null }
-
-// ── Module-level helpers ───────────────────────────────────────────────────────
 
 function buildListParams(
   estados: string[],
@@ -118,13 +115,10 @@ function buildListParams(
   return p
 }
 
-// ── Main component ─────────────────────────────────────────────────────────────
-
 export default function Cotizaciones() {
   const navigate = useNavigate()
   const qc = useQueryClient()
 
-  // ── Filter state ─────────────────────────────────────────────────────────────
   const [estados, setEstados] = useState<string[]>([])
   const [emisorId, setEmisorId] = useState<number | null>(null)
   const [empresaId, setEmpresaId] = useState<number | null>(null)
@@ -132,21 +126,17 @@ export default function Cotizaciones() {
   const [fechaHasta, setFechaHasta] = useState('')
   const [montoMin, setMontoMin] = useState('')
   const [montoMax, setMontoMax] = useState('')
-  const [productos, setProductos] = useState<ProductoMin[]>([])   // OR list
+  const [productos, setProductos] = useState<ProductoMin[]>([])
   const [productoSearch, setProductoSearch] = useState('')
 
-  // ── Popover state ─────────────────────────────────────────────────────────────
   const [openPill, setOpenPill] = useState<string | null>(null)
   const filterBarRef = useRef<HTMLDivElement>(null)
 
-  // ── UI state ──────────────────────────────────────────────────────────────────
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState('')
-  const [emailToast, setEmailToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
 
-  // Close popovers on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (filterBarRef.current && !filterBarRef.current.contains(e.target as Node))
@@ -159,7 +149,6 @@ export default function Cotizaciones() {
   const togglePill = useCallback((name: string) =>
     setOpenPill(prev => prev === name ? null : name), [])
 
-  // ── Reference data ────────────────────────────────────────────────────────────
   const { data: users = [] } = useQuery<UserMin[]>({
     queryKey: ['users-list'],
     queryFn: () => api.get('/api/users').then(r => r.data),
@@ -177,7 +166,6 @@ export default function Cotizaciones() {
     staleTime: 30_000,
   })
 
-  // ── Build query params ────────────────────────────────────────────────────────
   const params = useMemo(
     () => buildListParams(estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos),
     [estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos],
@@ -193,7 +181,6 @@ export default function Cotizaciones() {
     setProductos([]); setProductoSearch('')
   }
 
-  // ── Data ──────────────────────────────────────────────────────────────────────
   const { data: cotizaciones = [], isLoading } = useQuery<Cotizacion[]>({
     queryKey: ['cotizaciones', estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos.map(p => p.id)],
     queryFn: () => api.get(`/api/cotizaciones/?${params.toString()}`).then(r => r.data),
@@ -236,11 +223,10 @@ export default function Cotizaciones() {
 
   const emailMut = useMutation({
     mutationFn: (id: number) => api.post(`/api/cotizaciones/${id}/email`),
-    onSuccess: () => { setEmailToast({ msg: 'Email enviado correctamente', ok: true }); setTimeout(() => setEmailToast(null), 3500) },
-    onError: (err: any) => { setEmailToast({ msg: err?.response?.data?.detail || 'Error al enviar email', ok: false }); setTimeout(() => setEmailToast(null), 4000) },
+    onSuccess: () => toast.success('Email enviado correctamente'),
+    onError: (err: any) => toast.error(err?.response?.data?.detail || 'Error al enviar email'),
   })
 
-  // ── Filter pill helpers ────────────────────────────────────────────────────────
   const emisorName = users.find(u => u.id === emisorId)?.name
   const empresaNombre = empresas.find(e => e.id === empresaId)?.nombre
 
@@ -257,37 +243,25 @@ export default function Cotizaciones() {
     [],
   )
 
-  const checkboxCls = 'flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-800 dark:text-gray-200'
+  const checkboxCls = 'flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer text-sm text-gray-800 dark:text-gray-200'
 
-  // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className="p-4 md:p-6">
-
-      {/* Header */}
       <div className="flex items-center justify-between mb-5 gap-2">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Cotizaciones</h1>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowExportModal(true)}
-            className="flex items-center gap-2 px-3 md:px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition-colors"
-          >
-            <Download size={16} />
+          <Button variant="outline" size="sm" leftIcon={<Download />} onClick={() => setShowExportModal(true)}>
             <span className="hidden sm:inline">Exportar</span>
-          </button>
-          <button onClick={() => navigate('/cotizaciones/nueva')}
-            className="flex items-center gap-2 px-3 md:px-4 py-2 bg-brand-500 hover:bg-brand-400 text-gray-900 text-sm font-semibold rounded-lg transition-colors">
-            <Plus size={16} />
+          </Button>
+          <Button leftIcon={<Plus />} onClick={() => navigate('/cotizaciones/nueva')}>
             <span className="hidden sm:inline">Nueva cotización</span>
             <span className="sm:hidden">Nueva</span>
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Filter bar */}
       <div ref={filterBarRef} className="mb-4">
         <div className="flex flex-wrap gap-2 items-center">
-
-          {/* Estado */}
           <FilterPill
             label="Estado" active={estados.length > 0}
             summary={estados.length === 1 ? ESTADO_LABELS[estados[0]] : `${estados.length} estados`}
@@ -296,7 +270,7 @@ export default function Cotizaciones() {
           >
             {Object.entries(ESTADO_LABELS).map(([value, lbl]) => (
               <label key={value} className={checkboxCls}>
-                <input type="checkbox" className="rounded border-gray-300"
+                <input type="checkbox" className="rounded border-gray-300 accent-brand-500"
                   checked={estados.includes(value)}
                   onChange={e => setEstados(prev => e.target.checked ? [...prev, value] : prev.filter(v => v !== value))} />
                 {lbl}
@@ -304,7 +278,6 @@ export default function Cotizaciones() {
             ))}
           </FilterPill>
 
-          {/* Emisor */}
           <FilterPill
             label="Emisor" active={!!emisorId} summary={emisorName}
             isOpen={openPill === 'emisor'} onToggle={() => togglePill('emisor')}
@@ -313,7 +286,7 @@ export default function Cotizaciones() {
             <div className="max-h-56 overflow-y-auto">
               {users.map(u => (
                 <button key={u.id} onClick={() => { setEmisorId(u.id); setOpenPill(null) }}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors
                     ${emisorId === u.id ? 'text-brand-600 dark:text-brand-400 font-medium' : 'text-gray-800 dark:text-gray-200'}`}>
                   {u.name}
                 </button>
@@ -321,7 +294,6 @@ export default function Cotizaciones() {
             </div>
           </FilterPill>
 
-          {/* Empresa */}
           <FilterPill
             label="Empresa" active={!!empresaId} summary={empresaNombre}
             isOpen={openPill === 'empresa'} onToggle={() => togglePill('empresa')}
@@ -330,7 +302,7 @@ export default function Cotizaciones() {
             <div className="max-h-56 overflow-y-auto">
               {empresas.map(e => (
                 <button key={e.id} onClick={() => { setEmpresaId(e.id); setOpenPill(null) }}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors
                     ${empresaId === e.id ? 'text-brand-600 dark:text-brand-400 font-medium' : 'text-gray-800 dark:text-gray-200'}`}>
                   {e.nombre}
                 </button>
@@ -338,7 +310,6 @@ export default function Cotizaciones() {
             </div>
           </FilterPill>
 
-          {/* Fechas */}
           <FilterPill
             label="Fechas" active={!!(fechaDesde || fechaHasta)} summary={fechaSummary}
             isOpen={openPill === 'fechas'} onToggle={() => togglePill('fechas')}
@@ -348,18 +319,15 @@ export default function Cotizaciones() {
             <div className="px-3 py-2 space-y-2">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</p>
-                <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                <Input type="date" size="sm" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</p>
-                <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                <Input type="date" size="sm" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} />
               </div>
             </div>
           </FilterPill>
 
-          {/* Monto */}
           <FilterPill
             label="Monto" active={!!(montoMin || montoMax)} summary={montoSummary}
             isOpen={openPill === 'monto'} onToggle={() => togglePill('monto')}
@@ -369,18 +337,15 @@ export default function Cotizaciones() {
             <div className="px-3 py-2 space-y-2">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Mínimo</p>
-                <input type="number" placeholder="0" value={montoMin} onChange={e => setMontoMin(e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                <Input type="number" size="sm" placeholder="0" value={montoMin} onChange={e => setMontoMin(e.target.value)} />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Máximo</p>
-                <input type="number" placeholder="∞" value={montoMax} onChange={e => setMontoMax(e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                <Input type="number" size="sm" placeholder="∞" value={montoMax} onChange={e => setMontoMax(e.target.value)} />
               </div>
             </div>
           </FilterPill>
 
-          {/* Productos */}
           <FilterPill
             label="Productos" active={productos.length > 0}
             summary={productos.length === 1 ? productos[0].nombre : `${productos.length} productos`}
@@ -389,16 +354,14 @@ export default function Cotizaciones() {
             wide
           >
             <div className="px-3 pt-2 pb-1">
-              <input
+              <Input
                 autoFocus
-                type="text"
+                size="sm"
                 placeholder="Buscar producto..."
                 value={productoSearch}
                 onChange={e => setProductoSearch(e.target.value)}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
-            {/* Selected chips */}
             {productos.length > 0 && (
               <div className="px-3 py-1 flex flex-wrap gap-1">
                 {productos.map(p => (
@@ -411,19 +374,18 @@ export default function Cotizaciones() {
                 ))}
               </div>
             )}
-            {/* Search results */}
             {productoResults.length > 0 && (
               <>
-                <div className="border-t border-gray-100 dark:border-gray-700 mt-1" />
+                <div className="border-t border-gray-100 dark:border-gray-800 mt-1" />
                 <div className="max-h-48 overflow-y-auto py-1">
                   {productoResults
                     .filter(r => !productos.some(p => p.id === r.id))
                     .map(r => (
                       <button key={r.id}
                         onClick={() => setProductos(prev => [...prev, r])}
-                        className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-800 dark:text-gray-200 flex items-center justify-between gap-2">
+                        className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-800 dark:text-gray-200 flex items-center justify-between gap-2">
                         <span className="truncate">{r.nombre}</span>
-                        {r.sku && <span className="text-xs text-gray-400 flex-shrink-0">{r.sku}</span>}
+                        {r.sku && <span className="text-xs text-gray-400 flex-shrink-0 font-num">{r.sku}</span>}
                       </button>
                     ))}
                 </div>
@@ -434,7 +396,6 @@ export default function Cotizaciones() {
             )}
           </FilterPill>
 
-          {/* Clear all */}
           {hasFilters && (
             <button onClick={clearAll} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 px-1 underline underline-offset-2 flex-shrink-0">
               Limpiar todo
@@ -443,205 +404,192 @@ export default function Cotizaciones() {
         </div>
       </div>
 
-      {/* List */}
-      <div>
-          {isLoading ? (
-            <div className="text-gray-400 py-12 text-center text-sm">Cargando...</div>
-          ) : cotizaciones.length === 0 ? (
-            <div className="text-gray-400 py-12 text-center text-sm">Sin cotizaciones</div>
-          ) : (
-            <>
-              {/* Mobile cards */}
-              <div className="md:hidden space-y-2">
-                {cotizaciones.map(c => (
-                  <div key={c.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 font-num">COT-{String(c.numero).padStart(5, '0')}</span>
-                        <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">{c.cliente?.nombre ?? '—'}</p>
-                        {c.empresa?.nombre && <p className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</p>}
-                      </div>
-                      <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[c.estado] ?? ''}`}>
-                        {ESTADO_LABELS[c.estado] ?? c.estado}
-                      </span>
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12" />)}
+        </div>
+      ) : cotizaciones.length === 0 ? (
+        <EmptyState
+          icon={<Inbox />}
+          title="Sin cotizaciones"
+          description="No hay cotizaciones que coincidan con los filtros seleccionados."
+          action={<Button leftIcon={<Plus />} onClick={() => navigate('/cotizaciones/nueva')}>Crear primera cotización</Button>}
+        />
+      ) : (
+        <>
+          <div className="md:hidden space-y-2">
+            {cotizaciones.map(c => (
+              <Card key={c.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 font-num">COT-{String(c.numero).padStart(5, '0')}</span>
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">{c.cliente?.nombre ?? '—'}</p>
+                      {c.empresa?.nombre && <p className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</p>}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 space-x-2">
-                        <span>{fmtDate(c.fecha)}</span>
-                        {c.vendedor?.name && <span>· {c.vendedor.name}</span>}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <MargenBadge value={c.margen_total} />
-                        <span className="font-semibold text-gray-900 dark:text-white text-sm font-num">{fmtMoney(c.total)}</span>
-                      </div>
+                    <Badge variant={ESTADO_VARIANT[c.estado] ?? 'neutral'} size="sm">
+                      {ESTADO_LABELS[c.estado] ?? c.estado}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 space-x-2 font-num">
+                      <span>{fmtDate(c.fecha)}</span>
+                      {c.vendedor?.name && <span>· {c.vendedor.name}</span>}
                     </div>
-                    <div className="flex items-center gap-1 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-                      <button onClick={() => navigate(`/cotizaciones/${c.id}`)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
-                        <Eye size={14} /> Ver
-                      </button>
-                      <button onClick={() => openPdf(`/api/cotizaciones/${c.id}/pdf`)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-orange-600 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
-                        <FileText size={14} /> PDF
-                      </button>
-                      <button onClick={() => emailMut.mutate(c.id)} disabled={emailMut.isPending}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
-                        <Mail size={14} /> Email
-                      </button>
-                      {c.estado === 'no_definido' && (
-                        <button onClick={() => { setDeleteId(c.id); setDeleteError('') }}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                          <Trash2 size={14} /> Borrar
-                        </button>
-                      )}
+                    <div className="flex items-center gap-3">
+                      <MargenBadge value={c.margen_total} />
+                      <span className="font-semibold text-gray-900 dark:text-white text-sm font-num">{fmtMoney(c.total)}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {/* Desktop table */}
-              <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
-                <table className="w-full text-sm min-w-[600px]">
-                  <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
-                    <tr>
-                      {['Nº', 'Fecha', 'Cliente / Empresa', 'Total', 'Margen', 'Estado', 'Encargado', 'Acciones'].map(h => (
-                        <th key={h} className="text-left px-4 py-3 font-medium">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                    {cotizaciones.map(c => (
-                      <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white font-num">
-                          COT-{String(c.numero).padStart(5, '0')}
-                        </td>
-                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{fmtDate(c.fecha)}</td>
-                        <td className="px-4 py-3">
-                          <div className="text-gray-900 dark:text-white leading-tight">{c.cliente?.nombre ?? '-'}</div>
-                          {c.empresa?.nombre && <div className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</div>}
-                        </td>
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white whitespace-nowrap font-num">{fmtMoney(c.total)}</td>
-                        <td className="px-4 py-3"><MargenBadge value={c.margen_total} /></td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[c.estado] ?? ''}`}>
-                            {ESTADO_LABELS[c.estado] ?? c.estado}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{c.vendedor?.name ?? '-'}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => navigate(`/cotizaciones/${c.id}`)}
-                              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors" title="Ver/Editar">
-                              <Eye size={15} />
-                            </button>
-                            <button onClick={() => openPdf(`/api/cotizaciones/${c.id}/pdf`)}
-                              className="p-1.5 text-gray-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded transition-colors" title="PDF">
-                              <FileText size={15} />
-                            </button>
-                            <button onClick={() => emailMut.mutate(c.id)} disabled={emailMut.isPending}
-                              className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors" title="Enviar email">
-                              <Mail size={15} />
-                            </button>
-                            {c.estado === 'no_definido' && (
-                              <button onClick={() => { setDeleteId(c.id); setDeleteError('') }}
-                                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors" title="Eliminar">
-                                <Trash2 size={15} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-      </div>
-
-      {/* Delete modal */}
-      {deleteId !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 w-full max-w-sm">
-            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-2">¿Eliminar cotización?</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Esta acción no se puede deshacer.</p>
-            {deleteError && <p className="text-sm text-red-500 mb-3">{deleteError}</p>}
-            <div className="flex justify-end gap-2">
-              <button onClick={() => { setDeleteId(null); setDeleteError('') }}
-                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-                Cancelar
-              </button>
-              <button onClick={() => deleteMut.mutate(deleteId)} disabled={deleteMut.isPending}
-                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 transition-colors">
-                {deleteMut.isPending ? 'Eliminando...' : 'Eliminar'}
-              </button>
-            </div>
+                  <div className="flex items-center gap-1 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <Button size="xs" variant="ghost" leftIcon={<Eye />} className="flex-1" onClick={() => navigate(`/cotizaciones/${c.id}`)}>Ver</Button>
+                    <Button size="xs" variant="ghost" leftIcon={<FileText />} className="flex-1" onClick={() => openPdf(`/api/cotizaciones/${c.id}/pdf`)}>PDF</Button>
+                    <Button size="xs" variant="ghost" leftIcon={<Mail />} className="flex-1" onClick={() => emailMut.mutate(c.id)} disabled={emailMut.isPending}>Email</Button>
+                    {c.estado === 'no_definido' && (
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        leftIcon={<Trash2 />}
+                        className="flex-1 text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                        onClick={() => { setDeleteId(c.id); setDeleteError('') }}
+                      >Borrar</Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </div>
-      )}
 
-      {emailToast && (
-        <div className={`fixed bottom-20 md:bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-[70] ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-          {emailToast.msg}
-        </div>
-      )}
-
-      {/* Export modal */}
-      {showExportModal && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowDiscardConfirm(true)}
-        >
-          <div
-            className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-              <h2 className="text-base font-semibold text-gray-900 dark:text-white">Exportar cotizaciones</h2>
-              <button
-                onClick={() => setShowDiscardConfirm(true)}
-                className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="p-5 overflow-y-auto">
-              <ExportPreviewPanel
-                lines={flatLines}
-                availableColumns={COTIZACION_COLUMN_DEFS}
-                isLoading={isLoading}
-                exportBaseUrl={exportBaseUrl}
-                storageKey="cotizaciones-preview-cols"
-                filename={exportFilename}
-              />
-            </div>
+          <div className="hidden md:block">
+            <Card className="overflow-x-auto">
+              <Table>
+                <THead>
+                  <TR>
+                    <TH>Nº</TH>
+                    <TH>Fecha</TH>
+                    <TH>Cliente / Empresa</TH>
+                    <TH className="text-right">Total</TH>
+                    <TH className="text-right">Margen</TH>
+                    <TH>Estado</TH>
+                    <TH>Encargado</TH>
+                    <TH className="text-right">Acciones</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {cotizaciones.map(c => (
+                    <TR key={c.id} interactive onClick={() => navigate(`/cotizaciones/${c.id}`)}>
+                      <TD className="font-medium text-gray-900 dark:text-white font-num">
+                        COT-{String(c.numero).padStart(5, '0')}
+                      </TD>
+                      <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">{fmtDate(c.fecha)}</TD>
+                      <TD>
+                        <div className="text-gray-900 dark:text-white leading-tight">{c.cliente?.nombre ?? '-'}</div>
+                        {c.empresa?.nombre && <div className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</div>}
+                      </TD>
+                      <TD className="font-medium text-gray-900 dark:text-white whitespace-nowrap text-right font-num">{fmtMoney(c.total)}</TD>
+                      <TD className="text-right"><MargenBadge value={c.margen_total} /></TD>
+                      <TD>
+                        <Badge variant={ESTADO_VARIANT[c.estado] ?? 'neutral'} showDot>
+                          {ESTADO_LABELS[c.estado] ?? c.estado}
+                        </Badge>
+                      </TD>
+                      <TD className="text-gray-500 dark:text-gray-400">{c.vendedor?.name ?? '-'}</TD>
+                      <TD onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-0.5">
+                          <Tooltip label="Ver / Editar">
+                            <Button size="icon-xs" variant="ghost" onClick={() => navigate(`/cotizaciones/${c.id}`)}>
+                              <Eye />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip label="PDF">
+                            <Button size="icon-xs" variant="ghost" onClick={() => openPdf(`/api/cotizaciones/${c.id}/pdf`)}>
+                              <FileText />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip label="Enviar email">
+                            <Button size="icon-xs" variant="ghost" onClick={() => emailMut.mutate(c.id)} disabled={emailMut.isPending}>
+                              <Mail />
+                            </Button>
+                          </Tooltip>
+                          {c.estado === 'no_definido' && (
+                            <Tooltip label="Eliminar">
+                              <Button
+                                size="icon-xs"
+                                variant="ghost"
+                                className="text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                                onClick={() => { setDeleteId(c.id); setDeleteError('') }}
+                              >
+                                <Trash2 />
+                              </Button>
+                            </Tooltip>
+                          )}
+                        </div>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </Card>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Discard confirmation */}
-      {showDiscardConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/30">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 w-full max-w-sm">
-            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-2">¿Descartar exportación?</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Volverás a la lista de cotizaciones.</p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowDiscardConfirm(false)}
-                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => { setShowDiscardConfirm(false); setShowExportModal(false) }}
-                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-              >
-                Descartar
-              </button>
-            </div>
+      <Modal open={deleteId !== null} onOpenChange={(o) => { if (!o) { setDeleteId(null); setDeleteError('') } }}>
+        <ModalContent size="sm">
+          <ModalHeader>
+            <ModalTitle>¿Eliminar cotización?</ModalTitle>
+            <ModalDescription>Esta acción no se puede deshacer.</ModalDescription>
+          </ModalHeader>
+          <ModalBody>
+            {deleteError && <p className="text-sm text-danger-600 dark:text-danger-400">{deleteError}</p>}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="outline" onClick={() => { setDeleteId(null); setDeleteError('') }}>
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              loading={deleteMut.isPending}
+              onClick={() => deleteId !== null && deleteMut.mutate(deleteId)}
+            >
+              Eliminar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal open={showExportModal} onOpenChange={(o) => { if (!o) setShowDiscardConfirm(true) }}>
+        <ModalContent size="2xl" className="max-h-[90vh] flex flex-col">
+          <ModalHeader>
+            <ModalTitle>Exportar cotizaciones</ModalTitle>
+          </ModalHeader>
+          <div className="px-6 pb-5 overflow-y-auto">
+            <ExportPreviewPanel
+              lines={flatLines}
+              availableColumns={COTIZACION_COLUMN_DEFS}
+              isLoading={isLoading}
+              exportBaseUrl={exportBaseUrl}
+              storageKey="cotizaciones-preview-cols"
+              filename={exportFilename}
+            />
           </div>
-        </div>
-      )}
+        </ModalContent>
+      </Modal>
+
+      <Modal open={showDiscardConfirm} onOpenChange={(o) => { if (!o) setShowDiscardConfirm(false) }}>
+        <ModalContent size="sm">
+          <ModalHeader>
+            <ModalTitle>¿Descartar exportación?</ModalTitle>
+            <ModalDescription>Volverás a la lista de cotizaciones.</ModalDescription>
+          </ModalHeader>
+          <ModalFooter>
+            <Button variant="outline" onClick={() => setShowDiscardConfirm(false)}>Cancelar</Button>
+            <Button variant="danger" onClick={() => { setShowDiscardConfirm(false); setShowExportModal(false) }}>
+              Descartar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   )
 }
