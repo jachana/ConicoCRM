@@ -311,7 +311,7 @@ export interface NotaVenta {
   total: number
   created_at: string
   updated_at: string
-  cliente?: { id: number; nombre: string; rut: string | null; email: string | null; telefono: string | null }
+  cliente?: { id: number; nombre: string; rut: string | null; email: string | null; telefono: string | null; direccion_despacho?: string | null; comuna?: string | null }
   vendedor?: { id: number; name: string; email: string }
   cotizacion?: { id: number; numero: number } | null
   lineas?: NotaVentaLinea[]
