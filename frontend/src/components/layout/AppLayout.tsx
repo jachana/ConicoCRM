@@ -96,6 +96,7 @@ export default function AppLayout() {
           ))}
           <button
             onClick={() => setDrawerOpen(true)}
+            aria-label="Abrir menú completo"
             className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-500 active:text-gray-300 transition-colors"
           >
             <Menu size={20} strokeWidth={1.8} />
