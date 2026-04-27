@@ -74,15 +74,15 @@ const SECTIONS: NavSection[] = [
   {
     label: 'Compras',
     items: [
-      { to: '/ordenes-compra', icon: ShoppingCart, label: 'Órdenes de Compra', pending: true },
-      { to: '/proveedores',    icon: Truck,        label: 'Proveedores',       pending: true },
+      { to: '/ordenes-compra', icon: ShoppingCart, label: 'Órdenes de Compra' },
+      { to: '/proveedores',    icon: Truck,        label: 'Proveedores' },
     ],
   },
   {
     label: 'Operación',
     items: [
       { to: '/reportes', icon: BarChart2, label: 'Reportes' },
-      { to: '/rrhh',     icon: UserCog,   label: 'RRHH', module: 'rrhh', pending: true },
+      { to: '/rrhh',     icon: UserCog,   label: 'RRHH', module: 'rrhh' },
     ],
   },
   {
