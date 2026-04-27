@@ -14,6 +14,10 @@ import { getNotaVenta } from '../api/notasVenta'
 import { api } from '../lib/api'
 import ClienteSelectModal from '../components/ClienteSelectModal'
 import type { Cliente } from '../types'
+import {
+  Button, Input, FormField, Card, CardContent,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '../components/ui'
 
 interface LineaForm {
   descripcion: string
@@ -102,11 +106,9 @@ export default function GuiaDespachoNueva() {
   function handleClienteSelect(cliente: Cliente) {
     setClienteId(cliente.id)
     setClienteNombre(cliente.nombre)
-    // Sync empresa from client if it differs (rare but keep consistent)
     if (cliente.empresa_id && cliente.empresa_id !== empresaId) {
       setEmpresaId(cliente.empresa_id)
     }
-    // Pre-fill address if available
     if (cliente.direccion_despacho) setDireccion(cliente.direccion_despacho)
     if (cliente.comuna) setComuna(cliente.comuna)
   }
@@ -194,10 +196,6 @@ export default function GuiaDespachoNueva() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clienteId, motivo, direccion, comuna, emailEnvio, lineas, saving])
 
-  const inputCls =
-    'w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:border-brand-500'
-  const lblCls = 'block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'
-
   return (
     <div className="p-4 md:p-6 max-w-4xl">
       <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
@@ -205,215 +203,223 @@ export default function GuiaDespachoNueva() {
       </h1>
 
       {notaVentaId && (
-        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+        <div className="mb-4 px-4 py-3 bg-info-50 dark:bg-info-500/10 border border-info-200 dark:border-info-800 rounded-lg text-sm text-info-700 dark:text-info-300 font-num">
           Cargado desde NV N°{notaVentaId}. Edita lo que necesites.
         </div>
       )}
 
       <form onSubmit={e => handleSubmit(true, e)} className="space-y-6">
-        <section className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            Receptor
-          </h2>
-          <div className="flex flex-wrap items-center gap-3">
-            <div>
-              <label htmlFor="empresa-select" className={lblCls}>
-                Empresa
-              </label>
-              <select
-                id="empresa-select"
-                value={empresaId}
-                onChange={e => {
-                  setEmpresaId(Number(e.target.value))
-                  setClienteId(null)
-                  setClienteNombre('')
-                }}
-                className={inputCls + ' min-w-[180px]'}
-              >
-                <option value={0}>— Seleccionar empresa —</option>
-                {empresas.map(emp => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col">
-              <span className={lblCls}>&nbsp;</span>
-              <button
+        <Card>
+          <CardContent className="p-4">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              Receptor
+            </h2>
+            <div className="flex flex-wrap items-end gap-3">
+              <FormField label="Empresa" htmlFor="empresa-select">
+                <Select
+                  value={empresaId === 0 ? 'none' : String(empresaId)}
+                  onValueChange={v => {
+                    setEmpresaId(v === 'none' ? 0 : Number(v))
+                    setClienteId(null)
+                    setClienteNombre('')
+                  }}
+                >
+                  <SelectTrigger id="empresa-select" className="min-w-[200px]">
+                    <SelectValue placeholder="— Seleccionar empresa —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Seleccionar empresa —</SelectItem>
+                    {empresas.map(emp => (
+                      <SelectItem key={emp.id} value={String(emp.id)}>
+                        {emp.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setShowClienteModal(true)}
                 disabled={!empresaId}
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {clienteNombre ? `Cliente: ${clienteNombre}` : 'Seleccionar cliente'}
-              </button>
+              </Button>
             </div>
-          </div>
-        </section>
+          </CardContent>
+        </Card>
 
-        <section className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <label htmlFor="motivo" className={lblCls}>
-              Motivo de traslado SII
-            </label>
-            <select
-              id="motivo"
-              value={motivo}
-              onChange={e => setMotivo(Number(e.target.value) as MotivoTraslado)}
-              className={inputCls}
-            >
-              {MOTIVOS_TRASLADO.map(m => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="direccion-destino" className={lblCls}>
-              Dirección destino
-            </label>
-            <input
-              id="direccion-destino"
-              type="text"
-              value={direccion}
-              onChange={e => setDireccion(e.target.value)}
-              className={inputCls}
-              maxLength={255}
-            />
-          </div>
-          <div>
-            <label htmlFor="comuna-destino" className={lblCls}>
-              Comuna
-            </label>
-            <input
-              id="comuna-destino"
-              type="text"
-              value={comuna}
-              onChange={e => setComuna(e.target.value)}
-              className={inputCls}
-              maxLength={100}
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label htmlFor="email-envio" className={lblCls}>
-              Email envío (opcional)
-            </label>
-            <input
-              id="email-envio"
-              type="email"
-              value={emailEnvio}
-              onChange={e => setEmailEnvio(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-        </section>
-
-        <section className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Líneas</h2>
-            <button
-              type="button"
-              onClick={addLinea}
-              className="flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-            >
-              <Plus size={12} /> Línea
-            </button>
-          </div>
-          <div className="space-y-2">
-            {lineas.map((l, i) => (
-              <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                <input
-                  className={`${inputCls} col-span-5`}
-                  placeholder="Descripción"
-                  value={l.descripcion}
-                  onChange={e => updateLinea(i, { descripcion: e.target.value })}
-                />
-                <input
-                  className={`${inputCls} col-span-2`}
-                  placeholder="Cantidad"
-                  type="number"
-                  step="0.01"
-                  value={l.cantidad}
-                  onChange={e => updateLinea(i, { cantidad: e.target.value })}
-                />
-                <input
-                  className={`${inputCls} col-span-2`}
-                  placeholder="Precio unit"
-                  type="number"
-                  step="1"
-                  value={l.precio_unitario}
-                  onChange={e => updateLinea(i, { precio_unitario: e.target.value })}
-                />
-                <input
-                  className={`${inputCls} col-span-1`}
-                  placeholder="Desc%"
-                  type="number"
-                  step="0.01"
-                  value={l.descuento_pct}
-                  onChange={e => updateLinea(i, { descuento_pct: e.target.value })}
-                />
-                <label className="col-span-1 text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                  <input
-                    type="checkbox"
-                    checked={l.exenta}
-                    onChange={e => updateLinea(i, { exenta: e.target.checked })}
-                  />{' '}
-                  Ex
-                </label>
-                <button
-                  type="button"
-                  onClick={() => removeLinea(i)}
-                  disabled={lineas.length === 1}
-                  className="col-span-1 p-1.5 text-gray-500 hover:text-red-600 disabled:opacity-30"
+        <Card>
+          <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <FormField label="Motivo de traslado SII" htmlFor="motivo">
+                <Select
+                  value={String(motivo)}
+                  onValueChange={v => setMotivo(Number(v) as MotivoTraslado)}
                 >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 text-right text-sm space-y-0.5 text-gray-700 dark:text-gray-300">
-            <div>Neto: $ {Math.round(subtotal).toLocaleString('es-CL')}</div>
-            <div>IVA 19%: $ {iva.toLocaleString('es-CL')}</div>
-            {exentas > 0 && (
-              <div>Exento: $ {Math.round(exentas).toLocaleString('es-CL')}</div>
-            )}
-            <div className="font-semibold text-gray-900 dark:text-white">
-              Total: $ {total.toLocaleString('es-CL')}
+                  <SelectTrigger id="motivo">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MOTIVOS_TRASLADO.map(m => (
+                      <SelectItem key={m.value} value={String(m.value)}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
             </div>
-          </div>
-        </section>
+            <FormField label="Dirección destino" htmlFor="direccion-destino">
+              <Input
+                id="direccion-destino"
+                type="text"
+                value={direccion}
+                onChange={e => setDireccion(e.target.value)}
+                maxLength={255}
+              />
+            </FormField>
+            <FormField label="Comuna" htmlFor="comuna-destino">
+              <Input
+                id="comuna-destino"
+                type="text"
+                value={comuna}
+                onChange={e => setComuna(e.target.value)}
+                maxLength={100}
+              />
+            </FormField>
+            <div className="md:col-span-2">
+              <FormField label="Email envío (opcional)" htmlFor="email-envio">
+                <Input
+                  id="email-envio"
+                  type="email"
+                  value={emailEnvio}
+                  onChange={e => setEmailEnvio(e.target.value)}
+                />
+              </FormField>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Líneas</h2>
+              <Button
+                type="button"
+                size="xs"
+                variant="outline"
+                leftIcon={<Plus />}
+                onClick={addLinea}
+              >
+                Línea
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {lineas.map((l, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                  <Input
+                    size="sm"
+                    className="col-span-5"
+                    placeholder="Descripción"
+                    value={l.descripcion}
+                    onChange={e => updateLinea(i, { descripcion: e.target.value })}
+                  />
+                  <Input
+                    size="sm"
+                    className="col-span-2"
+                    placeholder="Cantidad"
+                    type="number"
+                    step="0.01"
+                    value={l.cantidad}
+                    onChange={e => updateLinea(i, { cantidad: e.target.value })}
+                  />
+                  <Input
+                    size="sm"
+                    className="col-span-2"
+                    placeholder="Precio unit"
+                    type="number"
+                    step="1"
+                    value={l.precio_unitario}
+                    onChange={e => updateLinea(i, { precio_unitario: e.target.value })}
+                  />
+                  <Input
+                    size="sm"
+                    className="col-span-1"
+                    placeholder="Desc%"
+                    type="number"
+                    step="0.01"
+                    value={l.descuento_pct}
+                    onChange={e => updateLinea(i, { descuento_pct: e.target.value })}
+                  />
+                  <label className="col-span-1 text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 accent-brand-500"
+                      checked={l.exenta}
+                      onChange={e => updateLinea(i, { exenta: e.target.checked })}
+                    />{' '}
+                    Ex
+                  </label>
+                  <Button
+                    type="button"
+                    size="icon-xs"
+                    variant="ghost"
+                    onClick={() => removeLinea(i)}
+                    disabled={lineas.length === 1}
+                    aria-label="Eliminar línea"
+                    className="col-span-1 text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 text-right text-sm space-y-0.5 text-gray-700 dark:text-gray-300 font-num">
+              <div>Neto: $ {Math.round(subtotal).toLocaleString('es-CL')}</div>
+              <div>IVA 19%: $ {iva.toLocaleString('es-CL')}</div>
+              {exentas > 0 && (
+                <div>Exento: $ {Math.round(exentas).toLocaleString('es-CL')}</div>
+              )}
+              <div className="font-semibold text-gray-900 dark:text-white">
+                Total: $ {total.toLocaleString('es-CL')}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {error && (
-          <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+          <div className="px-4 py-3 bg-danger-50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-800 rounded-lg text-sm text-danger-700 dark:text-danger-300">
             {error}
           </div>
         )}
 
         <div className="flex gap-2 justify-end">
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={() => navigate('/guias-despacho')}
-            className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
+            leftIcon={<Save />}
             onClick={() => handleSubmit(false)}
             disabled={!formValido || saving}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50"
+            loading={saving}
           >
-            <Save size={14} /> Guardar borrador
-          </button>
-          <button
+            Guardar borrador
+          </Button>
+          <Button
             type="submit"
+            leftIcon={<Send />}
             disabled={!formValido || saving}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm bg-brand-500 hover:bg-brand-600 text-white rounded-lg disabled:opacity-50"
+            loading={saving}
           >
-            <Send size={14} /> Guardar y emitir DTE
-          </button>
+            Guardar y emitir DTE
+          </Button>
         </div>
       </form>
 

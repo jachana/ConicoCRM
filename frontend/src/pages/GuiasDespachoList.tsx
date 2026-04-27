@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, Link } from 'react-router-dom'
-import { Eye, Download, Mail, Trash2, Plus, FileSpreadsheet, X as XIcon } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { Eye, Download, Mail, Trash2, Plus, FileSpreadsheet, X as XIcon, Inbox } from 'lucide-react'
 import {
   listarGuiasDespacho,
   exportarGuiasDespachoExcel,
@@ -16,10 +17,16 @@ import {
 } from '../api/guiasDespacho'
 import { openPdf } from '../lib/pdf'
 import DteBadge from '../components/DteBadge'
+import {
+  Button, Input, Badge, EmptyState, Skeleton, Card,
+  Table, THead, TBody, TR, TH, TD,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Tooltip,
+} from '../components/ui'
 
-const ESTADO_COLORS: Record<string, string> = {
-  emitida: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  anulada: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+const ESTADO_VARIANT: Record<string, 'neutral' | 'info' | 'warning' | 'success' | 'danger'> = {
+  emitida: 'info',
+  anulada: 'danger',
 }
 
 const DTE_ESTADOS: { value: GuiaDteEstado; label: string }[] = [
@@ -66,12 +73,6 @@ export default function GuiasDespachoList() {
   const [vendedorId, setVendedorId] = useState('')
   const [page, setPage] = useState(1)
 
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
-  function showToast(msg: string, ok = true) {
-    setToast({ msg, ok })
-    setTimeout(() => setToast(null), 3500)
-  }
-
   const filters: GuiaListFilters = useMemo(() => ({
     fecha_desde: fechaDesde || undefined,
     fecha_hasta: fechaHasta || undefined,
@@ -91,19 +92,19 @@ export default function GuiasDespachoList() {
   const eliminarMut = useMutation({
     mutationFn: (id: number) => eliminarGuiaDespacho(id),
     onSuccess: () => {
-      showToast('Guía eliminada')
+      toast.success('Guía eliminada')
       qc.invalidateQueries({ queryKey: ['guias-despacho-list'] })
     },
-    onError: () => showToast('No se pudo eliminar (¿ya emitida?)', false),
+    onError: () => toast.error('No se pudo eliminar (¿ya emitida?)'),
   })
 
   const sendEmailMut = useMutation({
     mutationFn: (id: number) => enviarEmailGuiaDespacho(id),
     onSuccess: () => {
-      showToast('Email enviado')
+      toast.success('Email enviado')
       qc.invalidateQueries({ queryKey: ['guias-despacho-list'] })
     },
-    onError: () => showToast('Error al enviar email', false),
+    onError: () => toast.error('Error al enviar email'),
   })
 
   async function handleExport() {
@@ -112,12 +113,12 @@ export default function GuiasDespachoList() {
       const date = new Date().toISOString().split('T')[0]
       downloadBlob(blob, `guias-despacho-${date}.xlsx`)
     } catch {
-      showToast('Error al exportar', false)
+      toast.error('Error al exportar')
     }
   }
 
   function handleDownloadPdf(id: number) {
-    openPdf(`/api/guias-despacho/${id}/pdf`).catch(() => showToast('Error al abrir PDF', false))
+    openPdf(`/api/guias-despacho/${id}/pdf`).catch(() => toast.error('Error al abrir PDF'))
   }
 
   function toggleEstado(v: GuiaEstado) {
@@ -139,165 +140,253 @@ export default function GuiasDespachoList() {
       <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Guías de Despacho</h1>
         <div className="flex gap-2">
-          <button onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">
-            <FileSpreadsheet size={15} /> Exportar Excel
-          </button>
-          <button onClick={() => navigate('/guias-despacho/nueva')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-brand-500 hover:bg-brand-600 text-white rounded-lg">
-            <Plus size={15} /> Nueva guía
-          </button>
+          <Button variant="outline" size="sm" leftIcon={<FileSpreadsheet />} onClick={handleExport}>
+            Exportar Excel
+          </Button>
+          <Button size="sm" leftIcon={<Plus />} onClick={() => navigate('/guias-despacho/nueva')}>
+            Nueva guía
+          </Button>
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2 items-end bg-white dark:bg-gray-900 p-3 rounded-xl border border-gray-200 dark:border-gray-800">
-        <div>
-          <label htmlFor="fecha-desde" className="block text-xs text-gray-500 mb-1">Desde</label>
-          <input id="fecha-desde" type="date" value={fechaDesde}
-            onChange={e => { setFechaDesde(e.target.value); setPage(1) }}
-            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-        </div>
-        <div>
-          <label htmlFor="fecha-hasta" className="block text-xs text-gray-500 mb-1">Hasta</label>
-          <input id="fecha-hasta" type="date" value={fechaHasta}
-            onChange={e => { setFechaHasta(e.target.value); setPage(1) }}
-            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Estado</label>
-          <div className="flex gap-2 py-1.5">
-            {(['emitida', 'anulada'] as GuiaEstado[]).map(e => (
-              <label key={e} className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
-                <input type="checkbox" checked={estados.includes(e)} onChange={() => toggleEstado(e)} />
-                {e}
-              </label>
-            ))}
+      <Card className="mb-4 p-3">
+        <div className="flex flex-wrap gap-3 items-end">
+          <div>
+            <label htmlFor="fecha-desde" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</label>
+            <Input
+              id="fecha-desde"
+              size="sm"
+              type="date"
+              value={fechaDesde}
+              onChange={e => { setFechaDesde(e.target.value); setPage(1) }}
+            />
           </div>
+          <div>
+            <label htmlFor="fecha-hasta" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</label>
+            <Input
+              id="fecha-hasta"
+              size="sm"
+              type="date"
+              value={fechaHasta}
+              onChange={e => { setFechaHasta(e.target.value); setPage(1) }}
+            />
+          </div>
+          <div>
+            <span className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Estado</span>
+            <div className="flex gap-2 py-1.5">
+              {(['emitida', 'anulada'] as GuiaEstado[]).map(e => (
+                <label key={e} className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 accent-brand-500"
+                    checked={estados.includes(e)}
+                    onChange={() => toggleEstado(e)}
+                  />
+                  {e}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="block text-xs text-gray-500 dark:text-gray-400 mb-1">DTE</span>
+            <Select
+              value={dteEstado || 'all'}
+              onValueChange={v => { setDteEstado(v === 'all' ? '' : v as GuiaDteEstado); setPage(1) }}
+            >
+              <SelectTrigger size="sm" className="min-w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {DTE_ESTADOS.map(o => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <span className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Motivo</span>
+            <Select
+              value={motivo === '' ? 'all' : String(motivo)}
+              onValueChange={v => {
+                setMotivo(v === 'all' ? '' : (Number(v) as MotivoTraslado))
+                setPage(1)
+              }}
+            >
+              <SelectTrigger size="sm" className="min-w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {MOTIVOS_TRASLADO.map(m => (
+                  <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label htmlFor="vendedor-id" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Vendedor ID</label>
+            <Input
+              id="vendedor-id"
+              size="sm"
+              type="number"
+              placeholder="ID"
+              value={vendedorId}
+              onChange={e => { setVendedorId(e.target.value); setPage(1) }}
+              className="w-24"
+            />
+          </div>
+          {hasFilters && (
+            <Button
+              variant="ghost"
+              size="xs"
+              leftIcon={<XIcon />}
+              onClick={clearFilters}
+              className="text-gray-500"
+            >
+              Limpiar
+            </Button>
+          )}
         </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">DTE</label>
-          <select value={dteEstado} onChange={e => { setDteEstado(e.target.value as GuiaDteEstado | ''); setPage(1) }}
-            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-            <option value="">Todas</option>
-            {DTE_ESTADOS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Motivo</label>
-          <select value={motivo}
-            onChange={e => { setMotivo(e.target.value ? Number(e.target.value) as MotivoTraslado : ''); setPage(1) }}
-            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-            <option value="">Todos</option>
-            {MOTIVOS_TRASLADO.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Vendedor ID</label>
-          <input type="number" placeholder="ID" value={vendedorId}
-            onChange={e => { setVendedorId(e.target.value); setPage(1) }}
-            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-24" />
-        </div>
-        {hasFilters && (
-          <button onClick={clearFilters}
-            className="text-xs text-gray-400 hover:text-gray-600 underline px-2 py-1.5">
-            <XIcon size={12} className="inline" /> Limpiar
-          </button>
-        )}
-      </div>
+      </Card>
 
       {isLoading ? (
-        <div className="text-gray-400 py-12 text-center text-sm">Cargando...</div>
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12" />)}
+        </div>
       ) : guias.length === 0 ? (
-        <div className="text-gray-400 py-12 text-center text-sm">Sin guías de despacho para los filtros aplicados</div>
+        <EmptyState
+          icon={<Inbox />}
+          title="Sin guías"
+          description="No hay resultados para los filtros aplicados."
+        />
       ) : (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
-          <table className="w-full text-sm min-w-[900px]">
-            <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
-              <tr>
-                {['Nº', 'Fecha', 'Cliente', 'Motivo', 'NV', 'Total', 'Estado', 'DTE', 'Vendedor', 'Acciones'].map(h => (
-                  <th key={h} className="text-left px-3 py-3 font-medium">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+        <Card className="overflow-x-auto">
+          <Table density="compact" className="min-w-[900px]">
+            <THead>
+              <TR>
+                <TH>Nº</TH>
+                <TH>Fecha</TH>
+                <TH>Cliente</TH>
+                <TH>Motivo</TH>
+                <TH>NV</TH>
+                <TH className="text-right">Total</TH>
+                <TH>Estado</TH>
+                <TH>DTE</TH>
+                <TH>Vendedor</TH>
+                <TH className="text-right">Acciones</TH>
+              </TR>
+            </THead>
+            <TBody>
               {guias.map(g => {
                 const motivoLabel = MOTIVOS_TRASLADO.find(m => m.value === g.motivo_traslado)?.label.split(' — ')[1] ?? '—'
                 const canDelete = g.dte_estado === 'no_emitida' && g.estado !== 'anulada'
                 return (
-                  <tr key={g.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="px-3 py-3 font-medium text-gray-900 dark:text-white font-num">
-                      <Link to={`/guias-despacho/${g.id}`} className="hover:text-brand-500">
-                        {String(g.numero).padStart(5, '0')}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{fmtDate(g.fecha)}</td>
-                    <td className="px-3 py-3 text-gray-900 dark:text-white">{g.cliente?.nombre ?? '—'}</td>
-                    <td className="px-3 py-3 text-gray-700 dark:text-gray-300 text-xs">{motivoLabel}</td>
-                    <td className="px-3 py-3 text-gray-700 dark:text-gray-300 font-num">
+                  <TR key={g.id} interactive onClick={() => navigate(`/guias-despacho/${g.id}`)}>
+                    <TD className="font-medium text-gray-900 dark:text-white font-num">
+                      {String(g.numero).padStart(5, '0')}
+                    </TD>
+                    <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">{fmtDate(g.fecha)}</TD>
+                    <TD className="text-gray-900 dark:text-white">{g.cliente?.nombre ?? '—'}</TD>
+                    <TD className="text-gray-700 dark:text-gray-300 text-xs">{motivoLabel}</TD>
+                    <TD className="text-gray-700 dark:text-gray-300 font-num" onClick={e => e.stopPropagation()}>
                       {g.nota_venta_id
-                        ? <Link to={`/notas-venta/${g.nota_venta_id}`} className="text-brand-500 hover:underline">N°{g.nota_venta_id}</Link>
+                        ? (
+                          <button
+                            onClick={() => navigate(`/notas-venta/${g.nota_venta_id}`)}
+                            className="text-brand-600 dark:text-brand-400 hover:underline"
+                          >
+                            N°{g.nota_venta_id}
+                          </button>
+                        )
                         : '—'}
-                    </td>
-                    <td className="px-3 py-3 font-medium text-gray-900 dark:text-white whitespace-nowrap font-num">{fmtMoney(g.total)}</td>
-                    <td className="px-3 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[g.estado] ?? ''}`}>
+                    </TD>
+                    <TD className="font-medium text-gray-900 dark:text-white whitespace-nowrap text-right font-num">{fmtMoney(g.total)}</TD>
+                    <TD>
+                      <Badge variant={ESTADO_VARIANT[g.estado] ?? 'neutral'} size="sm">
                         {g.estado}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3"><DteBadge estado={g.dte_estado} /></td>
-                    <td className="px-3 py-3 text-gray-700 dark:text-gray-300 text-xs">{g.vendedor?.name ?? '—'}</td>
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-1">
-                        <Link to={`/guias-despacho/${g.id}`} title="Ver"
-                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded">
-                          <Eye size={15} />
-                        </Link>
-                        <button onClick={() => handleDownloadPdf(g.id)} title="PDF"
-                          className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded">
-                          <Download size={15} />
-                        </button>
-                        <button onClick={() => sendEmailMut.mutate(g.id)} title="Enviar email"
-                          disabled={sendEmailMut.isPending}
-                          className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded disabled:opacity-50">
-                          <Mail size={15} />
-                        </button>
-                        <button onClick={() => {
-                          if (window.confirm(`¿Eliminar guía N°${g.numero}? Solo posible si DTE no fue emitida.`)) {
-                            eliminarMut.mutate(g.id)
-                          }
-                        }} title="Eliminar (solo si DTE no emitida)" disabled={!canDelete}
-                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-30 disabled:cursor-not-allowed">
-                          <Trash2 size={15} />
-                        </button>
+                      </Badge>
+                    </TD>
+                    <TD><DteBadge estado={g.dte_estado} /></TD>
+                    <TD className="text-gray-700 dark:text-gray-300 text-xs">{g.vendedor?.name ?? '—'}</TD>
+                    <TD onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-0.5">
+                        <Tooltip label="Ver">
+                          <Button
+                            size="icon-xs"
+                            variant="ghost"
+                            onClick={() => navigate(`/guias-despacho/${g.id}`)}
+                            aria-label="Ver guía"
+                          >
+                            <Eye />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip label="PDF">
+                          <Button
+                            size="icon-xs"
+                            variant="ghost"
+                            onClick={() => handleDownloadPdf(g.id)}
+                            aria-label="Descargar PDF"
+                          >
+                            <Download />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip label="Enviar email">
+                          <Button
+                            size="icon-xs"
+                            variant="ghost"
+                            onClick={() => sendEmailMut.mutate(g.id)}
+                            disabled={sendEmailMut.isPending}
+                            aria-label="Enviar email"
+                          >
+                            <Mail />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip label="Eliminar (solo si DTE no emitida)">
+                          <Button
+                            size="icon-xs"
+                            variant="ghost"
+                            disabled={!canDelete}
+                            onClick={() => {
+                              if (window.confirm(`¿Eliminar guía N°${g.numero}? Solo posible si DTE no fue emitida.`)) {
+                                eliminarMut.mutate(g.id)
+                              }
+                            }}
+                            aria-label="Eliminar guía"
+                            className="text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                          >
+                            <Trash2 />
+                          </Button>
+                        </Tooltip>
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 )
               })}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
+        </Card>
       )}
 
       {(page > 1 || hasNextPage) && (
         <div className="flex items-center justify-end gap-2 mt-4">
-          <button disabled={page <= 1 || isFetching}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1 || isFetching}
             onClick={() => setPage(p => Math.max(1, p - 1))}
-            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-40">
+          >
             Anterior
-          </button>
-          <span className="text-sm text-gray-500">Página {page}</span>
-          <button disabled={!hasNextPage || isFetching}
+          </Button>
+          <span className="text-sm text-gray-500 dark:text-gray-400">Página {page}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasNextPage || isFetching}
             onClick={() => setPage(p => p + 1)}
-            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-40">
+          >
             Siguiente
-          </button>
-        </div>
-      )}
-
-      {toast && (
-        <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${toast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-          {toast.msg}
+          </Button>
         </div>
       )}
     </div>

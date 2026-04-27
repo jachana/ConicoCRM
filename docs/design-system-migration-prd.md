@@ -72,7 +72,7 @@ Each scale: `50 → 950`. Shadows: `shadow-elev-1` (resting) → `shadow-elev-4`
 - [x] **A4 — CotizacionDetalle** (`fe7b967`, subagent)
 - [x] **A5 — Facturas list + FacturaDetalle**
 - [x] **A6 — BoletaDetalle + BoletaNueva** (BoletasList already done in `9394195`)
-- [ ] **A7 — GuiasDespacho list + Nueva + Detalle**
+- [x] **A7 — GuiasDespacho list + Nueva + Detalle**
 - [ ] **A8 — NotasCredito list + Nueva + Detalle, NotasDebito list + Nueva + Detalle**
 
 ### Phase B — Money & catalog
