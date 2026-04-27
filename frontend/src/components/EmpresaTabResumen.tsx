@@ -1,4 +1,6 @@
+import { Pencil } from 'lucide-react'
 import type { EmpresaListItem, Empresa } from '../types'
+import { Button, Card, CardContent } from './ui'
 
 interface Props {
   empresa: EmpresaListItem
@@ -17,12 +19,14 @@ function fmtMoney(n: number | null) {
 
 function Field({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2">
-      <div className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">{label}</div>
-      <div className={`text-sm font-medium ${highlight ? 'text-sky-500' : 'text-gray-900 dark:text-white'}`}>
-        {value || '—'}
-      </div>
-    </div>
+    <Card variant="subtle">
+      <CardContent className="py-2.5">
+        <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{label}</div>
+        <div className={`text-sm font-medium ${highlight ? 'text-brand-600 dark:text-brand-400' : 'text-gray-900 dark:text-gray-100'}`}>
+          {value || '—'}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -43,16 +47,17 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
         <Field label="Ubicación" value={empresa.ubicacion ?? '—'} />
       </div>
       {empresa.nota_cobranza && (
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2">
-          <div className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Nota de Cobranza</div>
-          <div className="text-sm text-gray-700 dark:text-gray-300">{empresa.nota_cobranza}</div>
-        </div>
+        <Card variant="subtle">
+          <CardContent className="py-2.5">
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Nota de Cobranza</div>
+            <div className="text-sm text-gray-700 dark:text-gray-300">{empresa.nota_cobranza}</div>
+          </CardContent>
+        </Card>
       )}
       <div>
-        <button onClick={() => onEdit(empresa)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
-          ✏ Editar empresa
-        </button>
+        <Button leftIcon={<Pencil />} onClick={() => onEdit(empresa)}>
+          Editar empresa
+        </Button>
       </div>
     </div>
   )

@@ -1,9 +1,14 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Download, Inbox, Search } from 'lucide-react'
 import { api } from '../lib/api'
 import type { EmpresaProductoLine } from '../types'
 import { EMPRESA_PRODUCTO_COLS } from '../lib/columnDefs'
 import EmpresaExportPanel from './EmpresaExportPanel'
+import {
+  Button, Input, EmptyState, Skeleton,
+  Table, THead, TBody, TR, TH, TD,
+} from './ui'
 
 type SortField = 'fecha' | 'sku' | 'descripcion' | 'cantidad' | 'precio_unit' | 'total_neto'
 
@@ -55,84 +60,97 @@ export default function EmpresaTabProductos({ empresaId, empresaNombre }: Props)
     else { setSortField(field); setSortDir('desc') }
   }
 
-  function SortIcon({ field }: { field: SortField }) {
-    if (sortField !== field) return <span className="text-gray-500 ml-1">↕</span>
-    return <span className="text-sky-400 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
+  function SortIndicator({ field }: { field: SortField }) {
+    if (sortField !== field) return <span className="text-gray-400 ml-1">↕</span>
+    return <span className="text-brand-500 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
   }
 
-  const HEADERS: { field: SortField; label: string }[] = [
+  const HEADERS: { field: SortField; label: string; align?: 'right' }[] = [
     { field: 'fecha',       label: 'Fecha' },
     { field: 'sku',         label: 'SKU' },
     { field: 'descripcion', label: 'Descripción' },
-    { field: 'cantidad',    label: 'Cantidad' },
-    { field: 'precio_unit', label: 'Precio Unit.' },
-    { field: 'total_neto',  label: 'Total' },
+    { field: 'cantidad',    label: 'Cantidad',    align: 'right' },
+    { field: 'precio_unit', label: 'Precio Unit.', align: 'right' },
+    { field: 'total_neto',  label: 'Total',       align: 'right' },
   ]
 
   return (
     <div className="flex flex-col gap-3">
       {/* Filters */}
       <div className="flex gap-2 flex-wrap items-center">
-        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar SKU o descripción..."
-          className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 min-w-[200px]" />
-        <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)}
-          className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300" />
+        <Input
+          size="sm"
+          leftAddon={<Search />}
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          placeholder="Buscar SKU o descripción..."
+          className="min-w-[220px]"
+        />
+        <Input type="date" size="sm" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} className="w-40" />
         <span className="text-gray-400 text-sm">→</span>
-        <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)}
-          className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300" />
-        <button onClick={() => setShowExport(o => !o)}
-          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-sky-700 hover:bg-sky-600 text-white text-xs font-semibold rounded-lg transition-colors">
-          ↓ Exportar
-        </button>
+        <Input type="date" size="sm" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} className="w-40" />
+        <Button
+          size="sm"
+          variant="outline"
+          leftIcon={<Download />}
+          onClick={() => setShowExport(o => !o)}
+          className="ml-auto"
+        >
+          Exportar
+        </Button>
       </div>
 
       {/* Table */}
       {isLoading ? (
-        <div className="text-gray-400 text-sm py-8 text-center">Cargando...</div>
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10" />)}
+        </div>
       ) : lineas.length === 0 ? (
-        <div className="text-gray-400 text-sm py-8 text-center">Sin líneas de productos</div>
+        <EmptyState icon={<Inbox />} title="Sin líneas de productos" description="No hay líneas que coincidan con los filtros." />
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
-          <table className="text-sm w-full">
-            <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-              <tr>
-                <th className="text-left px-3 py-2 font-medium whitespace-nowrap cursor-pointer hover:text-gray-900 dark:hover:text-white select-none"
-                  onClick={() => toggleSort('fecha')}>
-                  Fecha <SortIcon field="fecha" />
-                </th>
-                <th className="text-left px-3 py-2 font-medium whitespace-nowrap text-sky-500">Nº Fac.</th>
-                {HEADERS.filter(h => h.field !== 'fecha').map(({ field, label }) => (
-                  <th key={field} onClick={() => toggleSort(field)}
-                    className="text-left px-3 py-2 font-medium whitespace-nowrap cursor-pointer hover:text-gray-900 dark:hover:text-white select-none">
-                    {label} <SortIcon field={field} />
-                  </th>
+        <div className="rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+          <Table density="compact">
+            <THead>
+              <TR>
+                <TH onClick={() => toggleSort('fecha')} className="cursor-pointer hover:text-gray-900 dark:hover:text-gray-100 select-none whitespace-nowrap">
+                  Fecha <SortIndicator field="fecha" />
+                </TH>
+                <TH className="whitespace-nowrap text-brand-600 dark:text-brand-400">Nº Fac.</TH>
+                {HEADERS.filter(h => h.field !== 'fecha').map(({ field, label, align }) => (
+                  <TH
+                    key={field}
+                    onClick={() => toggleSort(field)}
+                    className={`cursor-pointer hover:text-gray-900 dark:hover:text-gray-100 select-none whitespace-nowrap ${align === 'right' ? 'text-right' : ''}`}
+                  >
+                    {label} <SortIndicator field={field} />
+                  </TH>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
+              </TR>
+            </THead>
+            <TBody>
               {lineas.map((l, i) => (
-                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                  <td className="px-3 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">{fmtDate(l.fecha)}</td>
-                  <td className="px-3 py-2 text-sky-500 font-mono text-xs whitespace-nowrap">
+                <TR key={i}>
+                  <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">{fmtDate(l.fecha)}</TD>
+                  <TD className="text-brand-600 dark:text-brand-400 font-num text-xs whitespace-nowrap">
                     FAC-{String(l.factura_numero).padStart(4, '0')}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs text-gray-500 dark:text-gray-400">{l.sku ?? '—'}</td>
-                  <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{l.descripcion}</td>
-                  <td className="px-3 py-2 text-right font-num text-gray-700 dark:text-gray-300">{l.cantidad}</td>
-                  <td className="px-3 py-2 text-right font-num text-gray-500 dark:text-gray-400">{fmtMoney(l.precio_unit)}</td>
-                  <td className="px-3 py-2 text-right font-num font-semibold text-gray-900 dark:text-white">{fmtMoney(l.total_neto)}</td>
-                </tr>
+                  </TD>
+                  <TD className="font-num text-xs text-gray-500 dark:text-gray-400">{l.sku ?? '—'}</TD>
+                  <TD className="text-gray-700 dark:text-gray-300">{l.descripcion}</TD>
+                  <TD className="text-right font-num text-gray-700 dark:text-gray-300">{l.cantidad}</TD>
+                  <TD className="text-right font-num text-gray-500 dark:text-gray-400">{fmtMoney(l.precio_unit)}</TD>
+                  <TD className="text-right font-num font-semibold text-gray-900 dark:text-gray-100">{fmtMoney(l.total_neto)}</TD>
+                </TR>
               ))}
-            </tbody>
-          </table>
+            </TBody>
+          </Table>
         </div>
       )}
 
       {/* Footer */}
       {lineas.length > 0 && (
-        <div className="flex justify-between text-xs text-gray-400 px-1">
+        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 px-1">
           <span>{lineas.length} línea{lineas.length !== 1 ? 's' : ''} en {facturaCount} factura{facturaCount !== 1 ? 's' : ''}</span>
-          <span className="font-semibold text-gray-700 dark:text-gray-300">Total: {fmtMoney(totalNeto)}</span>
+          <span className="font-semibold text-gray-700 dark:text-gray-300 font-num">Total: {fmtMoney(totalNeto)}</span>
         </div>
       )}
 

@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { Card, CardContent, EmptyState, Skeleton } from './ui'
+import { CreditCard } from 'lucide-react'
 
 interface CreditoOut {
   limite_credito: number | null
@@ -16,12 +18,20 @@ function fmtMoney(n: number | null) {
   return `$ ${Math.round(n).toLocaleString('es-CL')}`
 }
 
-function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
+function Stat({ label, value, tone }: { label: string; value: string; tone?: 'default' | 'warning' | 'danger' | 'success' }) {
+  const colorMap = {
+    default: 'text-gray-900 dark:text-gray-100',
+    warning: 'text-warning-600 dark:text-warning-400',
+    danger:  'text-danger-600 dark:text-danger-400',
+    success: 'text-success-600 dark:text-success-400',
+  }
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-3 flex flex-col gap-1">
-      <div className="text-xs text-gray-400 uppercase tracking-wide">{label}</div>
-      <div className={`text-lg font-bold ${color ?? 'text-gray-900 dark:text-white'}`}>{value}</div>
-    </div>
+    <Card variant="subtle">
+      <CardContent className="py-3">
+        <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{label}</div>
+        <div className={`text-lg font-bold font-num ${colorMap[tone ?? 'default']}`}>{value}</div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -31,13 +41,21 @@ export default function EmpresaTabCredito({ empresaId }: Props) {
     queryFn: () => api.get(`/api/empresas/${empresaId}/credito`).then(r => r.data),
   })
 
-  if (isLoading) return <div className="text-gray-400 text-sm py-8 text-center">Cargando...</div>
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20" />)}
+      </div>
+    )
+  }
 
   if (!data || data.limite_credito == null) {
     return (
-      <div className="text-gray-400 text-sm py-8 text-center">
-        Esta empresa no tiene límite de crédito configurado.
-      </div>
+      <EmptyState
+        icon={<CreditCard />}
+        title="Sin límite de crédito"
+        description="Esta empresa no tiene límite de crédito configurado."
+      />
     )
   }
 
@@ -45,30 +63,25 @@ export default function EmpresaTabCredito({ empresaId }: Props) {
     ? Math.round((Number(data.credito_usado ?? 0) / Number(data.limite_credito)) * 100)
     : 0
 
+  const usadoTone: 'default' | 'warning' | 'danger' = pct > 80 ? 'danger' : pct > 50 ? 'warning' : 'default'
+  const dispTone: 'success' | 'danger' = (data.credito_disponible ?? 0) < 0 ? 'danger' : 'success'
+
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Stat label="Límite de Crédito" value={fmtMoney(data.limite_credito)} />
-        <Stat
-          label="Crédito Usado"
-          value={fmtMoney(data.credito_usado)}
-          color={pct > 80 ? 'text-red-500' : pct > 50 ? 'text-orange-500' : 'text-gray-900 dark:text-white'}
-        />
-        <Stat
-          label="Disponible"
-          value={fmtMoney(data.credito_disponible)}
-          color={(data.credito_disponible ?? 0) < 0 ? 'text-red-500' : 'text-green-600 dark:text-green-400'}
-        />
+        <Stat label="Crédito Usado" value={fmtMoney(data.credito_usado)} tone={usadoTone} />
+        <Stat label="Disponible" value={fmtMoney(data.credito_disponible)} tone={dispTone} />
       </div>
       {data.limite_credito > 0 && (
         <div>
-          <div className="flex justify-between text-xs text-gray-400 mb-1">
+          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
             <span>Uso del crédito</span>
-            <span>{pct}%</span>
+            <span className="font-num font-medium">{pct}%</span>
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
             <div
-              className={`h-2 rounded-full transition-all ${pct > 80 ? 'bg-red-500' : pct > 50 ? 'bg-orange-500' : 'bg-green-500'}`}
+              className={`h-full rounded-full transition-all ${pct > 80 ? 'bg-danger-500' : pct > 50 ? 'bg-warning-500' : 'bg-success-500'}`}
               style={{ width: `${Math.min(pct, 100)}%` }}
             />
           </div>

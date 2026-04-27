@@ -1,10 +1,18 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
+import { Plus, FileSpreadsheet, Eye, Pencil, Trash2, Inbox } from 'lucide-react'
 import { api } from '../lib/api'
 import type { Empresa, EmpresaListItem, DeudaBulkItem, SedeDespacho } from '../types'
 import EmpresaFilters from '../components/EmpresaFilters'
 import EmpresaDetailModal from '../components/EmpresaDetailModal'
+import {
+  Button, Input, Textarea, Badge, EmptyState, Skeleton, FormField,
+  Card, CardContent,
+  Table, THead, TBody, TR, TH, TD,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalTitle,
+} from '../components/ui'
 
 const PLAZO_OPTIONS = ['Al contado', '30 Dias', '60 Dias', '90 Dias', 'Especial']
 
@@ -30,6 +38,18 @@ const EMPTY_FORM: FormData = {
   nombre: '', razon_social: '', rut: '', forma_pago: '',
   linea_credito: '', limite_credito: '', plazo_credito: '',
   prioridad: '', sector: '', email: '', nota_cobranza: '', ubicacion: '',
+}
+
+type SortField = 'nombre' | 'rut' | 'sector' | 'forma_pago' | 'prioridad' | 'ultima_compra' | 'deuda_total' | 'deuda_vencida'
+
+const PRIORIDAD_VARIANT: Record<string, 'brand' | 'info' | 'neutral'> = {
+  Alta:  'brand',
+  Media: 'info',
+  Baja:  'neutral',
+}
+
+function fmt(n: number) {
+  return '$' + n.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
 export default function Empresas() {
@@ -74,7 +94,6 @@ export default function Empresas() {
     [deudaBulk]
   )
 
-  type SortField = 'nombre' | 'rut' | 'sector' | 'forma_pago' | 'prioridad' | 'ultima_compra' | 'deuda_total' | 'deuda_vencida'
   const [sortField, setSortField] = useState<SortField>('deuda_total')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [filterConDeuda, setFilterConDeuda] = useState(false)
@@ -123,10 +142,6 @@ export default function Empresas() {
       }
       return sortDir === 'asc' ? cmp : -cmp
     })
-
-  function fmt(n: number) {
-    return '$' + n.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-  }
 
   function abrirCrear() {
     setEditando(null); setForm(EMPTY_FORM); setError(null); setModalOpen(true)
@@ -243,46 +258,67 @@ export default function Empresas() {
     }
   }
 
-  if (isLoading) return <div className="p-6 text-gray-500">Cargando...</div>
+  function SortIndicator({ field }: { field: SortField }) {
+    if (sortField !== field) return <span className="text-gray-400 ml-1">↕</span>
+    return <span className="text-brand-500 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
+  }
+
+  const HEADERS: { field: SortField; label: string; align?: 'right' }[] = [
+    { field: 'nombre',        label: 'Nombre' },
+    { field: 'rut',           label: 'RUT' },
+    { field: 'sector',        label: 'Sector' },
+    { field: 'forma_pago',    label: 'Forma Pago' },
+    { field: 'prioridad',     label: 'Prioridad' },
+    { field: 'ultima_compra', label: 'Última Compra' },
+    { field: 'deuda_total',   label: 'Deuda',   align: 'right' },
+    { field: 'deuda_vencida', label: 'Vencida', align: 'right' },
+  ]
 
   return (
-    <div className="p-4 md:p-6 max-w-6xl">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Empresas</h1>
-        <div className="flex gap-2">
-          <button
+    <div className="p-4 md:p-6 max-w-7xl">
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Empresas</h1>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<FileSpreadsheet />}
             onClick={() => api.get('/api/empresas/export/excel', { responseType: 'blob' }).then(r => {
               const url = URL.createObjectURL(r.data)
               const a = document.createElement('a'); a.href = url; a.download = 'empresas.xlsx'; a.click()
               URL.revokeObjectURL(url)
             })}
-            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
-            Exportar Excel
-          </button>
-          <button
-            onClick={abrirCrear}
-            className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            Agregar empresa
-          </button>
+            Excel
+          </Button>
+          <Button leftIcon={<Plus />} onClick={abrirCrear}>
+            Agregar
+          </Button>
         </div>
       </div>
 
       {/* Stats bar */}
-      <div className="flex gap-3 flex-wrap mb-4">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 px-4 py-3 text-sm">
-          <span className="text-gray-500 dark:text-gray-400">Deuda Total</span>
-          <span className="text-red-500 font-bold ml-2">{fmt(totalDeuda)}</span>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 px-4 py-3 text-sm">
-          <span className="text-gray-500 dark:text-gray-400">Deuda Vencida</span>
-          <span className={`font-bold ml-2 ${totalVencida > 0 ? 'text-orange-500' : 'text-gray-400'}`}>{fmt(totalVencida)}</span>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 px-4 py-3 text-sm">
-          <span className="text-gray-500 dark:text-gray-400">Con Deuda</span>
-          <span className="font-bold ml-2 text-gray-900 dark:text-white">{empresasConDeuda}</span>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <Card variant="subtle">
+          <CardContent className="py-3">
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Deuda Total</div>
+            <div className="text-lg font-bold font-num text-danger-600 dark:text-danger-400">{fmt(totalDeuda)}</div>
+          </CardContent>
+        </Card>
+        <Card variant="subtle">
+          <CardContent className="py-3">
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Deuda Vencida</div>
+            <div className={`text-lg font-bold font-num ${totalVencida > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-400'}`}>
+              {fmt(totalVencida)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card variant="subtle">
+          <CardContent className="py-3">
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Con Deuda</div>
+            <div className="text-lg font-bold font-num text-gray-900 dark:text-gray-100">{empresasConDeuda}</div>
+          </CardContent>
+        </Card>
       </div>
 
       <EmpresaFilters
@@ -298,90 +334,104 @@ export default function Empresas() {
         totalCount={displayEmpresas.length}
       />
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
-        <table className="w-full text-sm min-w-[900px]">
-          <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
-            <tr>
-              {([
-                { field: 'nombre' as SortField,        label: 'Nombre' },
-                { field: 'rut' as SortField,           label: 'RUT' },
-                { field: 'sector' as SortField,        label: 'Sector' },
-                { field: 'forma_pago' as SortField,    label: 'Forma Pago' },
-                { field: 'prioridad' as SortField,     label: 'Prioridad' },
-                { field: 'ultima_compra' as SortField, label: 'Última Compra' },
-                { field: 'deuda_total' as SortField,   label: 'Deuda' },
-                { field: 'deuda_vencida' as SortField, label: 'Vencida' },
-              ]).map(({ field, label }) => (
-                <th key={field} onClick={() => toggleSort(field)}
-                  aria-sort={sortField === field ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
-                  className="text-left px-4 py-3 font-medium whitespace-nowrap cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none">
-                  {label}
-                  {sortField === field
-                    ? <span className="text-sky-400 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
-                    : <span className="text-gray-400 ml-1">↕</span>}
-                </th>
-              ))}
-              <th className="text-left px-4 py-3 font-medium">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {displayEmpresas.length === 0 && (
-              <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">Sin empresas registradas</td>
-              </tr>
-            )}
-            {displayEmpresas.map(e => {
-              const d = deudaMap.get(e.id)
-              const deudaTotal = Number(d?.deuda_total ?? 0)
-              const deudaVencida = Number(d?.deuda_vencida ?? 0)
-              return (
-                <tr key={e.id}
-                  className={`border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${deudaTotal === 0 ? 'opacity-60' : ''}`}>
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{e.nombre}</td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm">{e.rut ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm">{e.sector ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm">{e.forma_pago ?? '—'}</td>
-                  <td className="px-4 py-3 text-sm">
-                    {e.prioridad
-                      ? <span className={`px-2 py-0.5 rounded text-xs font-medium ${e.prioridad === 'Alta' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}`}>{e.prioridad}</span>
-                      : <span className="text-gray-400">—</span>}
-                  </td>
-                  <td className="px-4 py-3 text-sky-500 dark:text-sky-400 text-sm whitespace-nowrap">
-                    {e.ultima_compra
-                      ? new Date(e.ultima_compra + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
-                      : <span className="text-gray-400">—</span>}
-                  </td>
-                  <td className={`px-4 py-3 font-semibold text-sm ${deudaTotal > 0 ? 'text-red-500' : 'text-gray-400'}`}>
-                    {deudaTotal > 0 ? fmt(deudaTotal) : '—'}
-                  </td>
-                  <td className={`px-4 py-3 text-sm ${deudaVencida > 0 ? 'text-orange-500' : 'text-gray-400'}`}>
-                    {deudaVencida > 0 ? fmt(deudaVencida) : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    {eliminandoId === e.id ? (
-                      <span className="inline-flex items-center gap-2 text-xs">
-                        {deleteError
-                          ? <span className="text-red-500">{deleteError}</span>
-                          : <span className="text-gray-600 dark:text-gray-400">¿Eliminar?</span>}
-                        <button onClick={() => eliminar.mutate(e.id)} disabled={eliminar.isPending} className="text-red-600 hover:underline font-medium disabled:opacity-50">Sí</button>
-                        <button onClick={() => { setEliminandoId(null); setDeleteError(null) }} className="text-gray-500 hover:underline">No</button>
-                      </span>
-                    ) : (
-                      <span className="inline-flex gap-2">
-                        <button onClick={() => setDetalleEmpresa(e)}
-                          className="px-2.5 py-1 bg-sky-700 hover:bg-sky-600 text-white text-xs font-medium rounded-lg transition-colors">
-                          Ver
-                        </button>
-                        <button onClick={() => abrirEditar(e)} aria-label={`Editar ${e.nombre}`} className="text-xs text-blue-600 hover:underline">Editar</button>
-                        <button onClick={() => { setEliminandoId(e.id); setDeleteError(null) }} aria-label={`Eliminar ${e.nombre}`} className="text-xs text-red-500 hover:underline">Eliminar</button>
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden shadow-elev-1 mt-3">
+        {isLoading ? (
+          <div className="p-4 space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10" />)}
+          </div>
+        ) : displayEmpresas.length === 0 ? (
+          <EmptyState
+            icon={<Inbox />}
+            title="Sin empresas"
+            description="No hay empresas que coincidan con los filtros."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <THead>
+                <TR>
+                  {HEADERS.map(({ field, label, align }) => (
+                    <TH
+                      key={field}
+                      onClick={() => toggleSort(field)}
+                      aria-sort={sortField === field ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                      className={`cursor-pointer hover:text-gray-900 dark:hover:text-gray-100 select-none whitespace-nowrap ${align === 'right' ? 'text-right' : ''}`}
+                    >
+                      {label}
+                      <SortIndicator field={field} />
+                    </TH>
+                  ))}
+                  <TH className="text-right">Acciones</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {displayEmpresas.map(e => {
+                  const d = deudaMap.get(e.id)
+                  const deudaTotal = Number(d?.deuda_total ?? 0)
+                  const deudaVencida = Number(d?.deuda_vencida ?? 0)
+                  const dimmed = deudaTotal === 0
+                  return (
+                    <TR key={e.id} className={dimmed ? 'opacity-70' : ''}>
+                      <TD className="font-medium text-gray-900 dark:text-gray-100">{e.nombre}</TD>
+                      <TD className="text-gray-500 dark:text-gray-400 font-num">{e.rut ?? '—'}</TD>
+                      <TD className="text-gray-500 dark:text-gray-400">{e.sector ?? '—'}</TD>
+                      <TD className="text-gray-500 dark:text-gray-400">{e.forma_pago ?? '—'}</TD>
+                      <TD>
+                        {e.prioridad
+                          ? <Badge variant={PRIORIDAD_VARIANT[e.prioridad] ?? 'neutral'} size="sm">{e.prioridad}</Badge>
+                          : <span className="text-gray-400">—</span>}
+                      </TD>
+                      <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">
+                        {e.ultima_compra
+                          ? new Date(e.ultima_compra + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
+                          : '—'}
+                      </TD>
+                      <TD className={`text-right font-num font-semibold whitespace-nowrap ${deudaTotal > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400'}`}>
+                        {deudaTotal > 0 ? fmt(deudaTotal) : '—'}
+                      </TD>
+                      <TD className={`text-right font-num whitespace-nowrap ${deudaVencida > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-400'}`}>
+                        {deudaVencida > 0 ? fmt(deudaVencida) : '—'}
+                      </TD>
+                      <TD>
+                        {eliminandoId === e.id ? (
+                          <div className="flex items-center justify-end gap-2 text-xs">
+                            {deleteError
+                              ? <span className="text-danger-600 dark:text-danger-400">{deleteError}</span>
+                              : <span className="text-gray-600 dark:text-gray-400">¿Eliminar?</span>}
+                            <Button size="xs" variant="danger" loading={eliminar.isPending} onClick={() => eliminar.mutate(e.id)}>
+                              Sí
+                            </Button>
+                            <Button size="xs" variant="ghost" onClick={() => { setEliminandoId(null); setDeleteError(null) }}>
+                              No
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-1">
+                            <Button size="xs" variant="outline" leftIcon={<Eye />} onClick={() => setDetalleEmpresa(e)}>
+                              Ver
+                            </Button>
+                            <Button size="icon-xs" variant="ghost" aria-label={`Editar ${e.nombre}`} onClick={() => abrirEditar(e)}>
+                              <Pencil />
+                            </Button>
+                            <Button
+                              size="icon-xs"
+                              variant="ghost"
+                              aria-label={`Eliminar ${e.nombre}`}
+                              className="text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                              onClick={() => { setEliminandoId(e.id); setDeleteError(null) }}
+                            >
+                              <Trash2 />
+                            </Button>
+                          </div>
+                        )}
+                      </TD>
+                    </TR>
+                  )
+                })}
+              </TBody>
+            </Table>
+          </div>
+        )}
       </div>
 
       <EmpresaDetailModal
@@ -394,171 +444,246 @@ export default function Empresas() {
         }}
       />
 
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {editando ? 'Editar empresa' : 'Nueva empresa'}
-              </h2>
-            </div>
-            <form onSubmit={ev => { ev.preventDefault(); guardar.mutate(form) }} className="px-6 py-4 grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
-                <input type="text" required value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              {(([
-                { key: 'razon_social', label: 'Razón Social' },
-                { key: 'rut', label: 'RUT *', placeholder: '76.123.456-7', required: true },
-                { key: 'forma_pago', label: 'Forma de Pago' },
-                { key: 'prioridad', label: 'Prioridad' },
-                { key: 'sector', label: 'Sector' },
-                { key: 'email', label: 'Email' },
-              ]) as { key: keyof FormData; label: string; placeholder?: string; required?: boolean }[]).map(({ key, label, placeholder, required }) => (
-                <div key={key}>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-                  <input type="text" placeholder={placeholder} required={required} value={form[key] as string} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-              ))}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Línea de Crédito ($)</label>
-                <input type="number" min="0" step="0.01" value={form.linea_credito} onChange={e => setForm(f => ({ ...f, linea_credito: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Límite de Crédito ($)</label>
-                <input type="number" min="0" step="0.01" value={form.limite_credito} onChange={e => setForm(f => ({ ...f, limite_credito: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Plazo de Crédito</label>
-                <select value={form.plazo_credito} onChange={e => setForm(f => ({ ...f, plazo_credito: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
-                  <option value="">— Sin plazo —</option>
-                  {PLAZO_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Ubicación sede central</label>
-                <input type="text" value={form.ubicacion} onChange={e => setForm(f => ({ ...f, ubicacion: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nota Cobranza</label>
-                <textarea rows={2} value={form.nota_cobranza} onChange={e => setForm(f => ({ ...f, nota_cobranza: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-              {/* Sedes de despacho */}
-              <div className="col-span-2">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Sedes de despacho</label>
-                  {editando && !sedeAdding && sedeEditId === null && (
-                    <button
-                      type="button"
-                      onClick={() => { setSedeAdding(true); setSedeForm(EMPTY_SEDE) }}
-                      className="text-xs text-blue-600 hover:underline"
-                    >+ Agregar sede</button>
-                  )}
-                </div>
-                {!editando && (
-                  <p className="text-xs text-gray-400">Guarda la empresa primero para agregar sedes.</p>
-                )}
-                {editando && (
-                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                    {sedes.length === 0 && !sedeAdding && (
-                      <p className="text-xs text-gray-400 px-3 py-2">Sin sedes registradas</p>
-                    )}
-                    {sedes.map(s => (
-                      <div key={s.id} className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
-                        {sedeEditId === s.id ? (
-                          <div className="space-y-1">
-                            <input
-                              type="text"
-                              value={sedeForm.nombre}
-                              onChange={e => setSedeForm(f => ({ ...f, nombre: e.target.value }))}
-                              placeholder="Nombre"
-                              className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                            />
-                            <input
-                              type="text"
-                              value={sedeForm.direccion}
-                              onChange={e => setSedeForm(f => ({ ...f, direccion: e.target.value }))}
-                              placeholder="Dirección"
-                              className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                            />
-                            {sedeError && <p className="text-xs text-red-500">{sedeError}</p>}
-                            <div className="flex gap-2">
-                              <button type="button" onClick={guardarSede} disabled={sedeSaving || !sedeForm.nombre || !sedeForm.direccion}
-                                className="text-xs text-blue-600 hover:underline disabled:opacity-50">Guardar</button>
-                              <button type="button" onClick={() => { setSedeEditId(null); setSedeForm(EMPTY_SEDE); setSedeError(null) }}
-                                className="text-xs text-gray-500 hover:underline">Cancelar</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">{s.nombre}</span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{s.direccion}</span>
-                            </div>
-                            {sedeEliminandoId === s.id ? (
-                              <span className="flex gap-2 text-xs">
-                                <button type="button" onClick={() => eliminarSede(s.id)} disabled={sedeSaving} className="text-red-600 hover:underline disabled:opacity-50">Sí</button>
-                                <button type="button" onClick={() => setSedeEliminandoId(null)} className="text-gray-500 hover:underline">No</button>
-                              </span>
-                            ) : (
-                              <span className="flex gap-2">
-                                <button type="button" onClick={() => { setSedeEditId(s.id); setSedeForm({ nombre: s.nombre, direccion: s.direccion }); setSedeError(null); setSedeEliminandoId(null) }}
-                                  className="text-xs text-blue-600 hover:underline">Editar</button>
-                                <button type="button" onClick={() => setSedeEliminandoId(s.id)}
-                                  className="text-xs text-red-500 hover:underline">Eliminar</button>
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {sedeAdding && (
-                      <div className="px-3 py-2 space-y-1 border-t border-gray-100 dark:border-gray-800">
-                        <input
-                          type="text"
-                          value={sedeForm.nombre}
-                          onChange={e => setSedeForm(f => ({ ...f, nombre: e.target.value }))}
-                          placeholder="Nombre de la sede"
-                          className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                        />
-                        <input
-                          type="text"
-                          value={sedeForm.direccion}
-                          onChange={e => setSedeForm(f => ({ ...f, direccion: e.target.value }))}
-                          placeholder="Dirección completa"
-                          className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                        />
-                        {sedeError && <p className="text-xs text-red-500">{sedeError}</p>}
-                        <div className="flex gap-2">
-                          <button type="button" onClick={guardarSede} disabled={sedeSaving || !sedeForm.nombre || !sedeForm.direccion}
-                            className="text-xs text-blue-600 hover:underline disabled:opacity-50">Guardar</button>
-                          <button type="button" onClick={() => { setSedeAdding(false); setSedeForm(EMPTY_SEDE); setSedeError(null) }}
-                            className="text-xs text-gray-500 hover:underline">Cancelar</button>
-                        </div>
-                      </div>
+      {/* Create / Edit modal */}
+      <Modal open={modalOpen} onOpenChange={(o) => { if (!o) cerrarModal() }}>
+        <ModalContent size="xl">
+          <ModalHeader>
+            <ModalTitle>{editando ? 'Editar empresa' : 'Nueva empresa'}</ModalTitle>
+          </ModalHeader>
+          <form onSubmit={ev => { ev.preventDefault(); guardar.mutate(form) }}>
+            <ModalBody>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label="Nombre" required className="col-span-2">
+                  <Input
+                    required
+                    value={form.nombre}
+                    onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
+                  />
+                </FormField>
+
+                <FormField label="Razón Social">
+                  <Input value={form.razon_social} onChange={e => setForm(f => ({ ...f, razon_social: e.target.value }))} />
+                </FormField>
+                <FormField label="RUT" required>
+                  <Input
+                    required
+                    placeholder="76.123.456-7"
+                    value={form.rut}
+                    onChange={e => setForm(f => ({ ...f, rut: e.target.value }))}
+                  />
+                </FormField>
+
+                <FormField label="Forma de Pago">
+                  <Input value={form.forma_pago} onChange={e => setForm(f => ({ ...f, forma_pago: e.target.value }))} />
+                </FormField>
+                <FormField label="Prioridad">
+                  <Input value={form.prioridad} onChange={e => setForm(f => ({ ...f, prioridad: e.target.value }))} />
+                </FormField>
+
+                <FormField label="Sector">
+                  <Input value={form.sector} onChange={e => setForm(f => ({ ...f, sector: e.target.value }))} />
+                </FormField>
+                <FormField label="Email">
+                  <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                </FormField>
+
+                <FormField label="Línea de Crédito ($)">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.linea_credito}
+                    onChange={e => setForm(f => ({ ...f, linea_credito: e.target.value }))}
+                  />
+                </FormField>
+                <FormField label="Límite de Crédito ($)">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.limite_credito}
+                    onChange={e => setForm(f => ({ ...f, limite_credito: e.target.value }))}
+                  />
+                </FormField>
+
+                <FormField label="Plazo de Crédito" className="col-span-2">
+                  <Select
+                    value={form.plazo_credito || 'none'}
+                    onValueChange={v => setForm(f => ({ ...f, plazo_credito: v === 'none' ? '' : v }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Sin plazo —</SelectItem>
+                      {PLAZO_OPTIONS.map(o => (
+                        <SelectItem key={o} value={o}>{o}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+
+                <FormField label="Ubicación sede central" className="col-span-2">
+                  <Input value={form.ubicacion} onChange={e => setForm(f => ({ ...f, ubicacion: e.target.value }))} />
+                </FormField>
+
+                <FormField label="Nota Cobranza" className="col-span-2">
+                  <Textarea
+                    rows={2}
+                    value={form.nota_cobranza}
+                    onChange={e => setForm(f => ({ ...f, nota_cobranza: e.target.value }))}
+                  />
+                </FormField>
+
+                {/* Sedes de despacho */}
+                <div className="col-span-2 border-t border-gray-200 dark:border-gray-800 pt-3 mt-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Sedes de despacho</label>
+                    {editando && !sedeAdding && sedeEditId === null && (
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="ghost"
+                        leftIcon={<Plus />}
+                        onClick={() => { setSedeAdding(true); setSedeForm(EMPTY_SEDE) }}
+                      >
+                        Agregar sede
+                      </Button>
                     )}
                   </div>
-                )}
+                  {!editando && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Guarda la empresa primero para agregar sedes.</p>
+                  )}
+                  {editando && (
+                    <div className="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
+                      {sedes.length === 0 && !sedeAdding && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 px-3 py-2">Sin sedes registradas</p>
+                      )}
+                      {sedes.map(s => (
+                        <div key={s.id} className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                          {sedeEditId === s.id ? (
+                            <div className="space-y-1.5">
+                              <Input
+                                size="sm"
+                                value={sedeForm.nombre}
+                                onChange={e => setSedeForm(f => ({ ...f, nombre: e.target.value }))}
+                                placeholder="Nombre"
+                              />
+                              <Input
+                                size="sm"
+                                value={sedeForm.direccion}
+                                onChange={e => setSedeForm(f => ({ ...f, direccion: e.target.value }))}
+                                placeholder="Dirección"
+                              />
+                              {sedeError && <p className="text-xs text-danger-600 dark:text-danger-400">{sedeError}</p>}
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  size="xs"
+                                  onClick={guardarSede}
+                                  loading={sedeSaving}
+                                  disabled={!sedeForm.nombre || !sedeForm.direccion}
+                                >
+                                  Guardar
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="xs"
+                                  variant="ghost"
+                                  onClick={() => { setSedeEditId(null); setSedeForm(EMPTY_SEDE); setSedeError(null) }}
+                                >
+                                  Cancelar
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.nombre}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{s.direccion}</span>
+                              </div>
+                              {sedeEliminandoId === s.id ? (
+                                <div className="flex items-center gap-2">
+                                  <Button type="button" size="xs" variant="danger" loading={sedeSaving} onClick={() => eliminarSede(s.id)}>Sí</Button>
+                                  <Button type="button" size="xs" variant="ghost" onClick={() => setSedeEliminandoId(null)}>No</Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    type="button"
+                                    size="icon-xs"
+                                    variant="ghost"
+                                    aria-label="Editar sede"
+                                    onClick={() => { setSedeEditId(s.id); setSedeForm({ nombre: s.nombre, direccion: s.direccion }); setSedeError(null); setSedeEliminandoId(null) }}
+                                  >
+                                    <Pencil />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="icon-xs"
+                                    variant="ghost"
+                                    aria-label="Eliminar sede"
+                                    className="text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                                    onClick={() => setSedeEliminandoId(s.id)}
+                                  >
+                                    <Trash2 />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {sedeAdding && (
+                        <div className="px-3 py-2 space-y-1.5 border-t border-gray-100 dark:border-gray-800">
+                          <Input
+                            size="sm"
+                            value={sedeForm.nombre}
+                            onChange={e => setSedeForm(f => ({ ...f, nombre: e.target.value }))}
+                            placeholder="Nombre de la sede"
+                          />
+                          <Input
+                            size="sm"
+                            value={sedeForm.direccion}
+                            onChange={e => setSedeForm(f => ({ ...f, direccion: e.target.value }))}
+                            placeholder="Dirección completa"
+                          />
+                          {sedeError && <p className="text-xs text-danger-600 dark:text-danger-400">{sedeError}</p>}
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              size="xs"
+                              onClick={guardarSede}
+                              loading={sedeSaving}
+                              disabled={!sedeForm.nombre || !sedeForm.direccion}
+                            >
+                              Guardar
+                            </Button>
+                            <Button
+                              type="button"
+                              size="xs"
+                              variant="ghost"
+                              onClick={() => { setSedeAdding(false); setSedeForm(EMPTY_SEDE); setSedeError(null) }}
+                            >
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {error && <p className="col-span-2 text-sm text-danger-600 dark:text-danger-400">{error}</p>}
               </div>
-              {error && <p className="col-span-2 text-xs text-red-500">{error}</p>}
-              <div className="col-span-2 flex justify-end gap-2 pt-2">
-                <button type="button" onClick={cerrarModal} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Cancelar</button>
-                <button type="submit" disabled={guardar.isPending}
-                  className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-colors">
-                  {guardar.isPending ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </ModalBody>
+            <ModalFooter>
+              <Button type="button" variant="outline" onClick={cerrarModal}>Cancelar</Button>
+              <Button type="submit" loading={guardar.isPending}>
+                Guardar
+              </Button>
+            </ModalFooter>
+          </form>
+        </ModalContent>
+      </Modal>
     </div>
   )
 }

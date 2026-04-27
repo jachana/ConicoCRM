@@ -1,19 +1,12 @@
-import { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
 import type { EmpresaListItem, Empresa } from '../types'
 import EmpresaTabResumen from './EmpresaTabResumen'
 import EmpresaTabFacturas from './EmpresaTabFacturas'
 import EmpresaTabProductos from './EmpresaTabProductos'
 import EmpresaTabCredito from './EmpresaTabCredito'
-
-type Tab = 'resumen' | 'facturas' | 'productos' | 'credito'
-
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'resumen',   label: 'Resumen' },
-  { key: 'facturas',  label: 'Facturas' },
-  { key: 'productos', label: 'Productos' },
-  { key: 'credito',   label: 'Crédito' },
-]
+import {
+  Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription,
+  Tabs, TabsList, TabsTrigger, TabsContent,
+} from './ui'
 
 interface Props {
   empresa: EmpresaListItem | null
@@ -22,73 +15,43 @@ interface Props {
 }
 
 export default function EmpresaDetailModal({ empresa, onClose, onEdit }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>('resumen')
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [onClose])
-
   if (!empresa) return null
 
+  const subtitle = [empresa.rut, empresa.sector, empresa.prioridad ? `Prioridad ${empresa.prioridad}` : null]
+    .filter(Boolean).join(' · ')
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="empresa-modal-title"
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-          <div>
-            <h2 id="empresa-modal-title" className="text-lg font-bold text-gray-900 dark:text-white">{empresa.nombre}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {[empresa.rut, empresa.sector, empresa.prioridad ? `Prioridad ${empresa.prioridad}` : null]
-                .filter(Boolean).join(' · ')}
-            </p>
+    <Modal open onOpenChange={(o) => { if (!o) onClose() }}>
+      <ModalContent size="2xl" className="flex flex-col max-h-[90vh] p-0">
+        <ModalHeader className="px-6 pt-5 pb-3">
+          <ModalTitle>{empresa.nombre}</ModalTitle>
+          {subtitle && <ModalDescription>{subtitle}</ModalDescription>}
+        </ModalHeader>
+
+        <Tabs defaultValue="resumen" className="flex flex-col flex-1 overflow-hidden">
+          <TabsList variant="underline" className="px-6 flex-shrink-0">
+            <TabsTrigger value="resumen">Resumen</TabsTrigger>
+            <TabsTrigger value="facturas">Facturas</TabsTrigger>
+            <TabsTrigger value="productos">Productos</TabsTrigger>
+            <TabsTrigger value="credito">Crédito</TabsTrigger>
+          </TabsList>
+
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            <TabsContent value="resumen">
+              <EmpresaTabResumen empresa={empresa} onEdit={onEdit} />
+            </TabsContent>
+            <TabsContent value="facturas">
+              <EmpresaTabFacturas empresaId={empresa.id} empresaNombre={empresa.nombre} />
+            </TabsContent>
+            <TabsContent value="productos">
+              <EmpresaTabProductos empresaId={empresa.id} empresaNombre={empresa.nombre} />
+            </TabsContent>
+            <TabsContent value="credito">
+              <EmpresaTabCredito empresaId={empresa.id} />
+            </TabsContent>
           </div>
-          <button onClick={onClose} aria-label="Cerrar"
-            className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors mt-0.5">
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-800 flex-shrink-0 bg-gray-50 dark:bg-gray-800/50">
-          {TABS.map(({ key, label }) => (
-            <button key={key} onClick={() => setActiveTab(key)}
-              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                activeTab === key
-                  ? 'border-sky-500 text-sky-600 dark:text-sky-400 bg-white dark:bg-gray-900'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}>
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'resumen' && (
-            <EmpresaTabResumen empresa={empresa} onEdit={onEdit} />
-          )}
-          {activeTab === 'facturas' && (
-            <EmpresaTabFacturas empresaId={empresa.id} empresaNombre={empresa.nombre} />
-          )}
-          {activeTab === 'productos' && (
-            <EmpresaTabProductos empresaId={empresa.id} empresaNombre={empresa.nombre} />
-          )}
-          {activeTab === 'credito' && (
-            <EmpresaTabCredito empresaId={empresa.id} />
-          )}
-        </div>
-      </div>
-    </div>
+        </Tabs>
+      </ModalContent>
+    </Modal>
   )
 }
