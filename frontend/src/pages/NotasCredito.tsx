@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { Plus, Inbox } from 'lucide-react'
 import { api } from '../lib/api'
 import DteBadge from '../components/DteBadge'
 import type { NotaCredito } from '../types'
+import {
+  Button, Card, EmptyState, Skeleton,
+  Table, THead, TBody, TR, TH, TD,
+} from '../components/ui'
 
 export default function NotasCredito() {
+  const navigate = useNavigate()
   const [items, setItems] = useState<NotaCredito[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -16,58 +22,65 @@ export default function NotasCredito() {
   }, [])
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-white">Notas de Crédito</h1>
-        <Link
-          to="/notas-credito/nueva"
-          className="px-4 py-2 text-sm font-semibold bg-brand-500 hover:bg-brand-400 text-gray-900 rounded-xl"
-        >
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Notas de Crédito</h1>
+        <Button onClick={() => navigate('/notas-credito/nueva')} leftIcon={<Plus className="size-4" />}>
           Nueva NC
-        </Link>
+        </Button>
       </div>
+
       {loading ? (
-        <p className="text-gray-500 text-sm">Cargando...</p>
+        <Card padded>
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+        </Card>
+      ) : items.length === 0 ? (
+        <Card padded>
+          <EmptyState
+            icon={<Inbox className="size-8" />}
+            title="Sin notas de crédito"
+            description="Crea la primera para empezar."
+          />
+        </Card>
       ) : (
-        <div className="bg-[#111827] border border-white/8 rounded-2xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/8 text-gray-500 text-[11px] uppercase tracking-wider">
-                <th className="px-4 py-3 text-left">N°</th>
-                <th className="px-4 py-3 text-left">Fecha</th>
-                <th className="px-4 py-3 text-left">Razón</th>
-                <th className="px-4 py-3 text-right">Total</th>
-                <th className="px-4 py-3 text-center">DTE</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card>
+          <Table density="compact">
+            <THead>
+              <TR>
+                <TH>N°</TH>
+                <TH>Fecha</TH>
+                <TH>Razón</TH>
+                <TH className="text-right">Total</TH>
+                <TH className="text-center">DTE</TH>
+              </TR>
+            </THead>
+            <TBody>
               {items.map(nc => (
-                <tr key={nc.id} className="border-b border-white/5 hover:bg-white/3">
-                  <td className="px-4 py-3">
-                    <Link to={`/notas-credito/${nc.id}`} className="text-brand-400 hover:underline">
+                <TR key={nc.id} interactive onClick={() => navigate(`/notas-credito/${nc.id}`)}>
+                  <TD>
+                    <Link
+                      to={`/notas-credito/${nc.id}`}
+                      onClick={e => e.stopPropagation()}
+                      className="text-brand-600 dark:text-brand-400 hover:underline font-medium"
+                    >
                       NC-{nc.numero}
                     </Link>
-                  </td>
-                  <td className="px-4 py-3 text-gray-300">{nc.fecha}</td>
-                  <td className="px-4 py-3 text-gray-300 max-w-xs truncate">{nc.razon}</td>
-                  <td className="px-4 py-3 text-right text-gray-200">
+                  </TD>
+                  <TD>{nc.fecha}</TD>
+                  <TD className="max-w-xs truncate">{nc.razon}</TD>
+                  <TD className="text-right font-num">
                     ${Number(nc.monto_total).toLocaleString('es-CL')}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <DteBadge estado={nc.dte_estado} />
-                  </td>
-                </tr>
+                  </TD>
+                  <TD className="text-center"><DteBadge estado={nc.dte_estado} /></TD>
+                </TR>
               ))}
-              {items.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-600 text-sm">
-                    Sin notas de crédito
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
+        </Card>
       )}
     </div>
   )

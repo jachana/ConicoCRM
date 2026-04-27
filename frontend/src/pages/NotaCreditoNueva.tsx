@@ -1,7 +1,12 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
+import { Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { api } from '../lib/api'
 import { getGuiaDespacho } from '../api/guiasDespacho'
+import {
+  Button, Card, CardContent, FormField, Input, Textarea,
+} from '../components/ui'
 
 interface Linea { descripcion: string; cantidad: string; precio_unitario: string }
 
@@ -69,6 +74,7 @@ export default function NotaCreditoNueva() {
         })),
       }
       const r = await api.post<{ id: number }>('/api/dte/notas-credito/', body)
+      toast.success(`Nota de crédito creada`)
       navigate(`/notas-credito/${r.data.id}`)
     } catch {
       setError('Error al crear la nota de crédito.')
@@ -81,64 +87,119 @@ export default function NotaCreditoNueva() {
   const iva = Math.round(subtotal * 0.19)
 
   return (
-    <div className="p-6 max-w-3xl">
-      <h1 className="text-xl font-semibold text-white mb-6">Nueva Nota de Crédito</h1>
+    <div className="p-6 max-w-3xl space-y-6">
+      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Nueva Nota de Crédito</h1>
+
       {guiaNumero !== null && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-sm text-yellow-800">
-          Esta NC anulará la guía N°{guiaNumero} cuando sea aceptada por SII.
+        <div className="flex items-start gap-3 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/30 rounded-md text-sm text-warning-800 dark:text-warning-200">
+          <AlertTriangle className="size-4 mt-0.5 shrink-0" />
+          <span>Esta NC anulará la guía N°{guiaNumero} cuando sea aceptada por SII.</span>
         </div>
       )}
+
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 tracking-widest uppercase">ID Cliente</label>
-            <input type="number" value={clienteId} onChange={e => setClienteId(e.target.value)} required
-              className="w-full px-4 py-2.5 bg-[#0B1120] border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-brand-500/60" />
-          </div>
-          <div>
-            <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 tracking-widest uppercase">Fecha</label>
-            <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-              className="w-full px-4 py-2.5 bg-[#0B1120] border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-brand-500/60" />
-          </div>
-        </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 tracking-widest uppercase">Razón</label>
-          <textarea value={razon} onChange={e => setRazon(e.target.value)} required rows={2}
-            className="w-full px-4 py-2.5 bg-[#0B1120] border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-brand-500/60 resize-none" />
+          <FormField label="ID Cliente" htmlFor="cliente_id" required>
+            <Input
+              id="cliente_id"
+              type="number"
+              value={clienteId}
+              onChange={e => setClienteId(e.target.value)}
+              required
+            />
+          </FormField>
+          <FormField label="Fecha" htmlFor="fecha">
+            <Input
+              id="fecha"
+              type="date"
+              value={fecha}
+              onChange={e => setFecha(e.target.value)}
+            />
+          </FormField>
         </div>
 
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-[11px] font-semibold text-gray-500 tracking-widest uppercase">Líneas</label>
-            <button type="button" onClick={addLinea} className="text-xs text-brand-400 hover:text-brand-300">+ Agregar</button>
+        <FormField label="Razón" htmlFor="razon" required>
+          <Textarea
+            id="razon"
+            value={razon}
+            onChange={e => setRazon(e.target.value)}
+            required
+            rows={2}
+          />
+        </FormField>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Líneas</span>
+            <Button type="button" variant="ghost" size="xs" leftIcon={<Plus className="size-3.5" />} onClick={addLinea}>
+              Agregar
+            </Button>
           </div>
           <div className="space-y-2">
             {lineas.map((l, i) => (
-              <div key={i} className="grid grid-cols-[1fr_80px_120px_32px] gap-2">
-                <input placeholder="Descripción" value={l.descripcion} onChange={e => updateLinea(i, 'descripcion', e.target.value)} required
-                  className="px-3 py-2 bg-[#0B1120] border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500/60" />
-                <input type="number" placeholder="Cant." value={l.cantidad} onChange={e => updateLinea(i, 'cantidad', e.target.value)} min="0.01" step="0.01"
-                  className="px-3 py-2 bg-[#0B1120] border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500/60" />
-                <input type="number" placeholder="P. Unit." value={l.precio_unitario} onChange={e => updateLinea(i, 'precio_unitario', e.target.value)} min="0"
-                  className="px-3 py-2 bg-[#0B1120] border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500/60" />
-                <button type="button" onClick={() => removeLinea(i)} className="text-gray-600 hover:text-red-400 text-lg leading-none">×</button>
+              <div key={i} className="grid grid-cols-[1fr_80px_120px_36px] gap-2">
+                <Input
+                  placeholder="Descripción"
+                  value={l.descripcion}
+                  onChange={e => updateLinea(i, 'descripcion', e.target.value)}
+                  required
+                />
+                <Input
+                  type="number"
+                  placeholder="Cant."
+                  value={l.cantidad}
+                  onChange={e => updateLinea(i, 'cantidad', e.target.value)}
+                  min="0.01"
+                  step="0.01"
+                />
+                <Input
+                  type="number"
+                  placeholder="P. Unit."
+                  value={l.precio_unitario}
+                  onChange={e => updateLinea(i, 'precio_unitario', e.target.value)}
+                  min="0"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => removeLinea(i)}
+                  aria-label="Eliminar línea"
+                  className="text-gray-400 hover:text-danger-500"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-[#111827] border border-white/8 rounded-xl p-4 text-sm space-y-1">
-          <div className="flex justify-between text-gray-500"><span>Neto</span><span>${subtotal.toLocaleString('es-CL')}</span></div>
-          <div className="flex justify-between text-gray-500"><span>IVA 19%</span><span>${iva.toLocaleString('es-CL')}</span></div>
-          <div className="flex justify-between font-semibold text-white"><span>Total</span><span>${(subtotal + iva).toLocaleString('es-CL')}</span></div>
-        </div>
+        <Card>
+          <CardContent className="space-y-1 text-sm">
+            <Row label="Neto" value={`$${subtotal.toLocaleString('es-CL')}`} />
+            <Row label="IVA 19%" value={`$${iva.toLocaleString('es-CL')}`} />
+            <div className="flex justify-between font-semibold pt-2 border-t border-gray-100 dark:border-gray-800">
+              <span className="text-gray-700 dark:text-gray-300">Total</span>
+              <span className="text-gray-900 dark:text-gray-100 font-num">${(subtotal + iva).toLocaleString('es-CL')}</span>
+            </div>
+          </CardContent>
+        </Card>
 
-        {error && <p className="text-xs text-red-400">{error}</p>}
-        <button type="submit" disabled={saving}
-          className="w-full py-3 bg-brand-500 hover:bg-brand-400 text-gray-900 font-semibold text-sm rounded-xl disabled:opacity-50">
+        {error && <p className="text-xs text-danger-600 dark:text-danger-400">{error}</p>}
+
+        <Button type="submit" loading={saving} className="w-full" size="lg">
           {saving ? 'Guardando...' : 'Crear Nota de Crédito'}
-        </button>
+        </Button>
       </form>
+    </div>
+  )
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between">
+      <span className="text-gray-500 dark:text-gray-400">{label}</span>
+      <span className="text-gray-700 dark:text-gray-200 font-num">{value}</span>
     </div>
   )
 }

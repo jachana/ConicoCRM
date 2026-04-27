@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { toast } from 'sonner'
+import { Send } from 'lucide-react'
 import { api } from '../lib/api'
 import DteBadge from '../components/DteBadge'
 import type { NotaDebito } from '../types'
+import {
+  Button, Card, CardContent, Skeleton,
+  Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter,
+  Table, THead, TBody, TR, TH, TD,
+} from '../components/ui'
 
 export default function NotaDebitoDetalle() {
   const { id } = useParams<{ id: string }>()
@@ -21,75 +28,104 @@ export default function NotaDebitoDetalle() {
       setEmitirOpen(false)
       const r = await api.get<NotaDebito>(`/api/dte/notas-debito/${id}`)
       setNd(r.data)
+      toast.success('Solicitud DTE enviada')
     } catch {
-      alert('Error al emitir. Intente de nuevo.')
+      toast.error('Error al emitir. Intenta de nuevo.')
     } finally {
       setEmitiendo(false)
     }
   }
 
-  if (!nd) return <div className="p-6 text-gray-500 text-sm">Cargando...</div>
+  if (!nd) {
+    return (
+      <div className="p-6 max-w-3xl space-y-4">
+        <Skeleton className="h-7 w-40" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    )
+  }
+
+  const fmt = (v: string | number) => `$${Number(v).toLocaleString('es-CL')}`
 
   return (
-    <div className="p-6 max-w-3xl">
-      <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-xl font-semibold text-white">ND-{nd.numero}</h1>
+    <div className="p-6 max-w-3xl space-y-4">
+      <div className="flex items-center gap-3">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">ND-{nd.numero}</h1>
         <DteBadge estado={nd.dte_estado} />
         {nd.dte_estado === 'no_emitida' && (
-          <button
-            onClick={() => setEmitirOpen(true)}
-            className="px-3 py-1.5 text-xs font-medium bg-brand-500 hover:bg-brand-400 text-gray-900 rounded-lg"
-          >
+          <Button size="sm" leftIcon={<Send className="size-4" />} onClick={() => setEmitirOpen(true)}>
             Emitir DTE
-          </button>
+          </Button>
         )}
       </div>
 
-      <div className="bg-[#111827] border border-white/8 rounded-2xl p-5 mb-4 space-y-2 text-sm">
-        <div className="flex justify-between"><span className="text-gray-500">Fecha</span><span className="text-gray-200">{nd.fecha}</span></div>
-        <div className="flex justify-between"><span className="text-gray-500">Razón</span><span className="text-gray-200">{nd.razon}</span></div>
-        <div className="flex justify-between"><span className="text-gray-500">Neto</span><span className="text-gray-200">${Number(nd.monto_neto).toLocaleString('es-CL')}</span></div>
-        <div className="flex justify-between"><span className="text-gray-500">IVA</span><span className="text-gray-200">${Number(nd.monto_iva).toLocaleString('es-CL')}</span></div>
-        <div className="flex justify-between font-semibold"><span className="text-gray-400">Total</span><span className="text-white">${Number(nd.monto_total).toLocaleString('es-CL')}</span></div>
-      </div>
-
-      <div className="bg-[#111827] border border-white/8 rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/8 text-gray-500 text-[11px] uppercase tracking-wider">
-              <th className="px-4 py-3 text-left">Descripción</th>
-              <th className="px-4 py-3 text-right">Cant.</th>
-              <th className="px-4 py-3 text-right">P. Unit.</th>
-              <th className="px-4 py-3 text-right">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {nd.lineas.map(l => (
-              <tr key={l.id} className="border-b border-white/5">
-                <td className="px-4 py-2 text-gray-300">{l.descripcion}</td>
-                <td className="px-4 py-2 text-right text-gray-400">{l.cantidad}</td>
-                <td className="px-4 py-2 text-right text-gray-400">${Number(l.precio_unitario).toLocaleString('es-CL')}</td>
-                <td className="px-4 py-2 text-right text-gray-200">${Number(l.subtotal).toLocaleString('es-CL')}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {emitirOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[#111827] border border-white/10 rounded-2xl p-6 w-full max-w-sm">
-            <h3 className="text-white font-semibold mb-2">¿Emitir Nota de Débito?</h3>
-            <p className="text-gray-400 text-sm mb-4">Total: ${Number(nd.monto_total).toLocaleString('es-CL')}</p>
-            <div className="flex gap-3">
-              <button onClick={() => setEmitirOpen(false)} className="flex-1 py-2 text-sm text-gray-400 border border-white/10 rounded-lg">Cancelar</button>
-              <button onClick={handleEmitir} disabled={emitiendo} className="flex-1 py-2 text-sm font-semibold bg-brand-500 hover:bg-brand-400 text-gray-900 rounded-lg disabled:opacity-50">
-                {emitiendo ? 'Enviando...' : 'Confirmar'}
-              </button>
-            </div>
+      <Card>
+        <CardContent className="space-y-2 text-sm">
+          <Row label="Fecha" value={nd.fecha} />
+          <Row label="Razón" value={nd.razon} />
+          <Row label="Neto" value={fmt(nd.monto_neto)} />
+          <Row label="IVA" value={fmt(nd.monto_iva)} />
+          <div className="flex justify-between font-semibold pt-2 border-t border-gray-100 dark:border-gray-800">
+            <span className="text-gray-700 dark:text-gray-300">Total</span>
+            <span className="text-gray-900 dark:text-gray-100 font-num">{fmt(nd.monto_total)}</span>
           </div>
-        </div>
-      )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <Table density="compact">
+          <THead>
+            <TR>
+              <TH>Descripción</TH>
+              <TH className="text-right">Cant.</TH>
+              <TH className="text-right">P. Unit.</TH>
+              <TH className="text-right">Subtotal</TH>
+            </TR>
+          </THead>
+          <TBody>
+            {nd.lineas.map(l => (
+              <TR key={l.id}>
+                <TD>{l.descripcion}</TD>
+                <TD className="text-right font-num">{l.cantidad}</TD>
+                <TD className="text-right font-num">{fmt(l.precio_unitario)}</TD>
+                <TD className="text-right font-num">{fmt(l.subtotal)}</TD>
+              </TR>
+            ))}
+          </TBody>
+        </Table>
+      </Card>
+
+      <Modal open={emitirOpen} onOpenChange={setEmitirOpen}>
+        <ModalContent size="sm">
+          <ModalHeader>
+            <ModalTitle>¿Emitir Nota de Débito?</ModalTitle>
+            <ModalDescription>Total: <span className="font-num">{fmt(nd.monto_total)}</span></ModalDescription>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Se enviará la nota al SII. Esta acción no se puede deshacer.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="outline" onClick={() => setEmitirOpen(false)} disabled={emitiendo}>
+              Cancelar
+            </Button>
+            <Button onClick={handleEmitir} loading={emitiendo}>
+              {emitiendo ? 'Enviando...' : 'Confirmar'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </div>
+  )
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between">
+      <span className="text-gray-500 dark:text-gray-400">{label}</span>
+      <span className="text-gray-700 dark:text-gray-200">{value}</span>
     </div>
   )
 }
