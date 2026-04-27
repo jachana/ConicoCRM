@@ -247,15 +247,24 @@ Ver `docs/state-of-product.html` para snapshot ejecutivo y `docs/backlog.md` par
   - `.env.prod.example` extendido con placeholders de retención y S3
 - [ ] CI (lint + tests + build Docker)
 - [ ] Boleta electrónica 39/41
-- [~] **W1-05 — Guía de despacho electrónica 52 (backend)** — 4/5 SC verificadas, 12/13 tests pass
-  - Modelos `GuiaDespacho` + `GuiaDespachoLinea` con FK CASCADE en `DteEmision` y FK SET NULL en `NotaCredito`
-  - Migración Alembic monolítica (`c1d2e3f4a5b6`) reversible
-  - Router `/api/guias-despacho` CRUD con `_next_numero` (SELECT FOR UPDATE), permisos por rol (vendedor sin DELETE), audit_log zero-code
-  - Pipeline DTE 52: endpoint `/emitir`, `DteService.build_guia_payload`, branches en `_process_emit` y `_sync_dte_estado` (incl. NC anula guía D-16)
-  - PDF WeasyPrint + email SMTP (template `guia_despacho.html`, asunto canónico D-20)
-  - Stock invariante D-13 confirmado por test (guía no descuenta stock)
-  - **Pendiente sandbox Lioren**: validar payload tipo 52 con credenciales reales antes de producción (`checkpoint:human-action`, ver `.planning/phases/01-gu-a-de-despacho-52-backend/01-03-SUMMARY.md`)
-  - Frontend pendiente (Phase 2)
+- [x] **W1-05 — Guía de despacho electrónica 52** — Phase 1 backend + Phase 2 frontend completas
+  - **Phase 1 — Backend** (4/5 SC verificadas, 13/14 tests pass + 1 skip)
+    - Modelos `GuiaDespacho` + `GuiaDespachoLinea` con FK CASCADE en `DteEmision` y FK SET NULL en `NotaCredito`
+    - Migración Alembic monolítica (`c1d2e3f4a5b6`) reversible
+    - Router `/api/guias-despacho` CRUD con `_next_numero` (SELECT FOR UPDATE), permisos por rol (vendedor sin DELETE), audit_log zero-code
+    - Pipeline DTE 52: endpoint `/emitir`, `DteService.build_guia_payload`, branches en `_process_emit` y `_sync_dte_estado` (incl. NC anula guía D-16)
+    - PDF WeasyPrint + email SMTP (template `guia_despacho.html`, asunto canónico D-20)
+    - Stock invariante D-13 confirmado por test (guía no descuenta stock)
+    - Export Excel `/api/guias-despacho/export.xlsx` con 11 columnas (admin/subadmin)
+    - **Pendiente sandbox Lioren**: validar payload tipo 52 con credenciales reales antes de producción (`checkpoint:human-action`, ver `.planning/phases/01-gu-a-de-despacho-52-backend/01-03-SUMMARY.md`)
+  - **Phase 2 — Frontend** (4/4 SC verificadas, ~14 tests vitest pass)
+    - SC-1: `/guias-despacho` — lista con 5 filtros (búsqueda número/cliente, fechas desde/hasta, estado, dte_estado, motivo) + paginación + Excel export
+    - SC-2: `/guias-despacho/nueva` — form con selectores empresa+cliente, motivo (6 opciones), líneas con autocomplete, prefill via `?nv_id=X` (incluye dirección/comuna desde NV.cliente)
+    - SC-3: `/guias-despacho/:id` — detalle con acciones state-aware (editar borrador, emitir DTE, descargar PDF, enviar email, anular vía NC), polling DTE 10s en estado `procesando`
+    - SC-4: integración con Notas de Crédito vía `?guia_despacho_id=X` (NotaCreditoNueva precarga datos de la guía)
+    - Sidebar entry "Guías de despacho" con permiso `guias_despacho:view`
+    - Tipos: `direccion_despacho`/`comuna` agregados a `NotaVenta.cliente`; tsconfig lib bumped a ES2022 (Array.at en tests)
+    - Tests: GuiasDespachoList (3), GuiaDespachoNueva (5), GuiaDespachoDetalle (6), NotaCreditoNueva (1) — todos pass
 - [ ] Observabilidad (Sentry + structured logs + healthz)
 - [ ] 2FA TOTP + reset password
 
