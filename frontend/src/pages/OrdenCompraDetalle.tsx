@@ -2,11 +2,34 @@ import { openPdf } from '../lib/pdf'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, FileText, Mail, ArrowLeft, PackageCheck } from 'lucide-react'
+import { toast } from 'sonner'
+import { Plus, Trash2, FileText, Mail, ArrowLeft, PackageCheck, Save, Ban } from 'lucide-react'
 import { api } from '../lib/api'
 import type { OrdenCompra, OrdenCompraLinea, Proveedor, Producto } from '../types'
+import {
+  Button, Input, Textarea, FormField, Badge, Card, CardContent, Tooltip,
+  Table, THead, TBody, TR, TH, TD,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Modal, ModalContent, ModalHeader, ModalTitle, ModalBody, ModalFooter,
+} from '../components/ui'
 
 type LineaLocal = Omit<OrdenCompraLinea, 'id'> & { id?: number; _key: string }
+
+const ESTADO_LABELS: Record<string, string> = {
+  borrador: 'Borrador',
+  enviada: 'Enviada',
+  recibida_parcial: 'Recibida parcial',
+  recibida_completa: 'Recibida completa',
+  cancelada: 'Cancelada',
+}
+
+const ESTADO_VARIANT: Record<string, 'neutral' | 'info' | 'warning' | 'success' | 'danger'> = {
+  borrador: 'neutral',
+  enviada: 'info',
+  recibida_parcial: 'warning',
+  recibida_completa: 'success',
+  cancelada: 'danger',
+}
 
 function newLinea(orden: number): LineaLocal {
   return { _key: `${Date.now()}-${orden}`, orden, producto_id: null, sku: null, descripcion: '', cantidad: 1, cantidad_recibida: 0, valor_neto: 0, total_neto: 0, iva: 0, total: 0 }
@@ -39,12 +62,13 @@ export default function OrdenCompraDetalle() {
   const [lineas, setLineas] = useState<LineaLocal[]>([newLinea(1)])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [emailToast, setEmailToast] = useState<{ msg: string; ok: boolean } | null>(null)
 
   const [autocompleteIdx, setAutocompleteIdx] = useState<number | null>(null)
   const [autocompleteResults, setAutocompleteResults] = useState<Producto[]>([])
 
   const [recepcionCantidades, setRecepcionCantidades] = useState<Record<number, number>>({})
+  const [confirmCancel, setConfirmCancel] = useState(false)
+  const [showRecepcionModal, setShowRecepcionModal] = useState(false)
 
   const { data: orden } = useQuery<OrdenCompra>({
     queryKey: ['orden_compra', id],
@@ -116,15 +140,19 @@ export default function OrdenCompraDetalle() {
       if (isNew) {
         const r = await api.post('/api/ordenes-compra/', { proveedor_id: proveedorId, fecha, fecha_entrega_esperada: fechaEntrega || null, nota: nota || null, lineas: lineasPayload })
         qc.invalidateQueries({ queryKey: ['ordenes_compra'] })
+        toast.success('Orden de compra creada')
         navigate(`/ordenes-compra/${r.data.id}`)
       } else {
         await api.patch(`/api/ordenes-compra/${id}`, { proveedor_id: proveedorId, fecha, fecha_entrega_esperada: fechaEntrega || null, nota: nota || null })
         await api.put(`/api/ordenes-compra/${id}/lineas`, lineasPayload)
         qc.invalidateQueries({ queryKey: ['orden_compra', id] })
         qc.invalidateQueries({ queryKey: ['ordenes_compra'] })
+        toast.success('Orden de compra actualizada')
       }
     } catch (e: any) {
-      setError(e?.response?.data?.detail || 'Error al guardar')
+      const msg = e?.response?.data?.detail || 'Error al guardar'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }
@@ -135,12 +163,10 @@ export default function OrdenCompraDetalle() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orden_compra', id] })
       qc.invalidateQueries({ queryKey: ['ordenes_compra'] })
-      setEmailToast({ msg: 'Email enviado. OC marcada como enviada.', ok: true })
-      setTimeout(() => setEmailToast(null), 4000)
+      toast.success('Email enviado. OC marcada como enviada.')
     },
     onError: (e: any) => {
-      setEmailToast({ msg: e?.response?.data?.detail || 'Error al enviar email', ok: false })
-      setTimeout(() => setEmailToast(null), 4000)
+      toast.error(e?.response?.data?.detail || 'Error al enviar email')
     },
   })
 
@@ -149,8 +175,14 @@ export default function OrdenCompraDetalle() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orden_compra', id] })
       qc.invalidateQueries({ queryKey: ['ordenes_compra'] })
+      setConfirmCancel(false)
+      toast.success('OC cancelada')
     },
-    onError: (e: any) => setError(e?.response?.data?.detail || 'Error al cancelar'),
+    onError: (e: any) => {
+      const msg = e?.response?.data?.detail || 'Error al cancelar'
+      setError(msg)
+      toast.error(msg)
+    },
   })
 
   const recepcionarMut = useMutation({
@@ -164,219 +196,375 @@ export default function OrdenCompraDetalle() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orden_compra', id] })
       qc.invalidateQueries({ queryKey: ['ordenes_compra'] })
+      setShowRecepcionModal(false)
+      toast.success('Recepción registrada')
     },
-    onError: (e: any) => setError(e?.response?.data?.detail || 'Error al recepcionar'),
+    onError: (e: any) => {
+      const msg = e?.response?.data?.detail || 'Error al recepcionar'
+      setError(msg)
+      toast.error(msg)
+    },
   })
-
-  const inputCls = 'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
-  const labelCls = 'block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'
-
-  // suppress unused var warning — isReadonly used as guard concept, canEdit covers both
-  void isReadonly
 
   return (
     <div className="p-4 md:p-6 max-w-6xl">
-      {/* Toast */}
-      {emailToast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm text-white ${emailToast.ok ? 'bg-green-600' : 'bg-red-600'}`}>
-          {emailToast.msg}
-        </div>
-      )}
-
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/ordenes-compra')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">
-          <ArrowLeft size={18} />
-        </button>
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <Tooltip label="Volver">
+          <Button size="icon-sm" variant="ghost" onClick={() => navigate('/ordenes-compra')} aria-label="Volver">
+            <ArrowLeft />
+          </Button>
+        </Tooltip>
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
           {isNew ? 'Nueva Orden de Compra' : `OC-${String(orden?.numero ?? '').padStart(5, '0')}`}
         </h1>
         {orden && (
-          <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${
-            { borrador: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300', enviada: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300', recibida_parcial: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300', recibida_completa: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300', cancelada: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' }[estado] ?? ''
-          }`}>
-            { { borrador: 'Borrador', enviada: 'Enviada', recibida_parcial: 'Recibida parcial', recibida_completa: 'Recibida completa', cancelada: 'Cancelada' }[estado] }
-          </span>
+          <Badge variant={ESTADO_VARIANT[estado] ?? 'neutral'} size="sm">
+            {ESTADO_LABELS[estado] ?? estado}
+          </Badge>
         )}
       </div>
 
-      {error && <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm">{error}</div>}
+      {/* Banner: anulada / readonly */}
+      {orden && estado === 'cancelada' && (
+        <div className="mb-4 px-4 py-3 bg-danger-50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-800 rounded-lg text-sm text-danger-700 dark:text-danger-300">
+          Esta orden de compra fue cancelada.
+        </div>
+      )}
+      {orden && estado === 'recibida_completa' && (
+        <div className="mb-4 px-4 py-3 bg-success-50 dark:bg-success-500/10 border border-success-200 dark:border-success-800 rounded-lg text-sm text-success-700 dark:text-success-300">
+          Esta orden de compra fue recibida completamente.
+        </div>
+      )}
+      {!isNew && isReadonly && (
+        <div className="mb-4 px-4 py-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-800 rounded-lg text-sm text-warning-700 dark:text-warning-300">
+          Solo lectura. No se puede modificar esta OC.
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-4 px-4 py-3 bg-danger-50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-800 rounded-lg text-sm text-danger-700 dark:text-danger-300">
+          {error}
+        </div>
+      )}
 
       {/* Form */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 mb-5">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2 md:col-span-1">
-            <label className={labelCls}>Proveedor *</label>
-            <select value={proveedorId} onChange={e => setProveedorId(Number(e.target.value))} disabled={!canEdit} className={inputCls}>
-              <option value="">Seleccionar proveedor...</option>
-              {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-            </select>
+      <Card className="mb-5">
+        <CardContent className="p-5">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2 md:col-span-1">
+              <FormField label="Proveedor" required>
+                <Select
+                  value={proveedorId === '' ? 'none' : String(proveedorId)}
+                  onValueChange={v => setProveedorId(v === 'none' ? '' : Number(v))}
+                  disabled={!canEdit}
+                >
+                  <SelectTrigger size="md"><SelectValue placeholder="Seleccionar proveedor..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Seleccionar proveedor...</SelectItem>
+                    {proveedores.map(p => (
+                      <SelectItem key={p.id} value={String(p.id)}>{p.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            </div>
+            <FormField label="Fecha">
+              <Input type="date" value={fecha} onChange={e => setFecha(e.target.value)} disabled={!canEdit} />
+            </FormField>
+            <FormField label="Entrega esperada">
+              <Input type="date" value={fechaEntrega} onChange={e => setFechaEntrega(e.target.value)} disabled={!canEdit} />
+            </FormField>
+            <div className="col-span-2">
+              <FormField label="Nota">
+                <Textarea value={nota} onChange={e => setNota(e.target.value)} disabled={!canEdit} rows={2} className="resize-none" />
+              </FormField>
+            </div>
           </div>
-          <div>
-            <label className={labelCls}>Fecha</label>
-            <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} disabled={!canEdit} className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Entrega esperada</label>
-            <input type="date" value={fechaEntrega} onChange={e => setFechaEntrega(e.target.value)} disabled={!canEdit} className={inputCls} />
-          </div>
-          <div className="col-span-2">
-            <label className={labelCls}>Nota</label>
-            <textarea value={nota} onChange={e => setNota(e.target.value)} disabled={!canEdit} rows={2} className={`${inputCls} resize-none`} />
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Line editor */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 mb-5">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Líneas</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-200 dark:border-gray-700">
-                <th className="py-2 pr-3 text-left w-8">Nº</th>
-                <th className="py-2 pr-3 text-left">Producto / Descripción</th>
-                <th className="py-2 pr-3 text-left w-24">SKU</th>
-                <th className="py-2 pr-3 text-right w-16">Cant.</th>
-                <th className="py-2 pr-3 text-right w-28">Valor Neto</th>
-                <th className="py-2 pr-3 text-right w-28">Total Neto</th>
-                <th className="py-2 pr-3 text-right w-24">IVA</th>
-                <th className="py-2 text-right w-28">Total</th>
-                {canEdit && <th className="py-2 w-8" />}
-              </tr>
-            </thead>
-            <tbody>
-              {lineas.map((l, idx) => (
-                <tr key={l._key} className="border-b border-gray-100 dark:border-gray-800">
-                  <td className="py-2 pr-3 text-gray-400">{idx + 1}</td>
-                  <td className="py-2 pr-3 relative">
-                    <input
-                      value={l.descripcion}
-                      onChange={e => { updateLinea(idx, 'descripcion', e.target.value); handleProductoSearch(idx, e.target.value) }}
-                      disabled={!canEdit}
-                      placeholder="Descripción o buscar producto..."
-                      className={`${inputCls} w-full`}
-                    />
-                    {autocompleteIdx === idx && autocompleteResults.length > 0 && (
-                      <div className="absolute top-full left-0 z-10 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                        {autocompleteResults.map(p => (
-                          <button key={p.id} type="button" onClick={() => seleccionarProducto(idx, p)}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white">
-                            {p.nombre} {p.sku ? `(${p.sku})` : ''}
-                          </button>
-                        ))}
-                      </div>
+      <Card className="mb-5">
+        <CardContent className="p-5">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Líneas</h2>
+          <div className="overflow-x-auto">
+            <Table density="compact">
+              <THead>
+                <TR>
+                  <TH className="w-8">Nº</TH>
+                  <TH>Producto / Descripción</TH>
+                  <TH className="w-24">SKU</TH>
+                  <TH className="text-right w-16">Cant.</TH>
+                  <TH className="text-right w-28">Valor Neto</TH>
+                  <TH className="text-right w-28">Total Neto</TH>
+                  <TH className="text-right w-24">IVA</TH>
+                  <TH className="text-right w-28">Total</TH>
+                  {canEdit && <TH className="w-8" />}
+                </TR>
+              </THead>
+              <TBody>
+                {lineas.map((l, idx) => (
+                  <TR key={l._key}>
+                    <TD className="text-gray-400 font-num">{idx + 1}</TD>
+                    <TD className="relative">
+                      <Input
+                        size="sm"
+                        value={l.descripcion}
+                        onChange={e => { updateLinea(idx, 'descripcion', e.target.value); handleProductoSearch(idx, e.target.value) }}
+                        disabled={!canEdit}
+                        placeholder="Descripción o buscar producto..."
+                      />
+                      {autocompleteIdx === idx && autocompleteResults.length > 0 && (
+                        <div className="absolute top-full left-0 z-10 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-elev-3 max-h-48 overflow-y-auto mt-1">
+                          {autocompleteResults.map(p => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => seleccionarProducto(idx, p)}
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
+                            >
+                              {p.nombre} {p.sku ? `(${p.sku})` : ''}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </TD>
+                    <TD>
+                      <Input size="sm" value={l.sku ?? ''} onChange={e => updateLinea(idx, 'sku', e.target.value || null)} disabled={!canEdit} placeholder="SKU" />
+                    </TD>
+                    <TD>
+                      <Input size="sm" type="number" min={1} value={l.cantidad} onChange={e => updateLinea(idx, 'cantidad', Number(e.target.value))} disabled={!canEdit} className="text-right font-num" />
+                    </TD>
+                    <TD>
+                      <Input size="sm" type="number" min={0} value={l.valor_neto} onChange={e => updateLinea(idx, 'valor_neto', Number(e.target.value))} disabled={!canEdit} className="text-right font-num" />
+                    </TD>
+                    <TD className="text-right text-gray-700 dark:text-gray-300 font-num">{fmtMoney(l.total_neto)}</TD>
+                    <TD className="text-right text-gray-500 font-num">{fmtMoney(l.iva)}</TD>
+                    <TD className="text-right font-medium text-gray-900 dark:text-white font-num">{fmtMoney(l.total)}</TD>
+                    {canEdit && (
+                      <TD>
+                        <Tooltip label="Eliminar línea">
+                          <Button
+                            size="icon-xs"
+                            variant="ghost"
+                            onClick={() => removeLinea(idx)}
+                            aria-label="Eliminar línea"
+                            className="text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                          >
+                            <Trash2 />
+                          </Button>
+                        </Tooltip>
+                      </TD>
                     )}
-                  </td>
-                  <td className="py-2 pr-3">
-                    <input value={l.sku ?? ''} onChange={e => updateLinea(idx, 'sku', e.target.value || null)} disabled={!canEdit} className={inputCls} placeholder="SKU" />
-                  </td>
-                  <td className="py-2 pr-3">
-                    <input type="number" min={1} value={l.cantidad} onChange={e => updateLinea(idx, 'cantidad', Number(e.target.value))} disabled={!canEdit} className={`${inputCls} text-right`} />
-                  </td>
-                  <td className="py-2 pr-3">
-                    <input type="number" min={0} value={l.valor_neto} onChange={e => updateLinea(idx, 'valor_neto', Number(e.target.value))} disabled={!canEdit} className={`${inputCls} text-right`} />
-                  </td>
-                  <td className="py-2 pr-3 text-right text-gray-700 dark:text-gray-300">{fmtMoney(l.total_neto)}</td>
-                  <td className="py-2 pr-3 text-right text-gray-500">{fmtMoney(l.iva)}</td>
-                  <td className="py-2 text-right font-medium text-gray-900 dark:text-white">{fmtMoney(l.total)}</td>
-                  {canEdit && (
-                    <td className="py-2 pl-2">
-                      <button onClick={() => removeLinea(idx)} className="p-1 text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
-                    </td>
-                  )}
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </div>
+          {canEdit && (
+            <Button variant="link" size="sm" leftIcon={<Plus />} onClick={addLinea} className="mt-3 px-0">
+              Agregar línea
+            </Button>
+          )}
+          <div className="mt-4 flex justify-end">
+            <table className="text-sm">
+              <tbody>
+                <tr>
+                  <td className="pr-8 text-gray-500">Total Neto</td>
+                  <td className="text-right font-medium text-gray-900 dark:text-white font-num">{fmtMoney(totalNeto)}</td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {canEdit && (
-          <button onClick={addLinea} className="mt-3 flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            <Plus size={14} /> Agregar línea
-          </button>
-        )}
-        <div className="mt-4 flex justify-end">
-          <table className="text-sm">
-            <tbody>
-              <tr><td className="pr-8 text-gray-500">Total Neto</td><td className="text-right font-medium text-gray-900 dark:text-white">{fmtMoney(totalNeto)}</td></tr>
-              <tr><td className="pr-8 text-gray-500">IVA (19%)</td><td className="text-right font-medium text-gray-900 dark:text-white">{fmtMoney(totalIva)}</td></tr>
-              <tr className="border-t border-gray-200 dark:border-gray-700">
-                <td className="pr-8 font-semibold text-gray-900 dark:text-white pt-2">TOTAL</td>
-                <td className="text-right font-bold text-blue-600 dark:text-blue-400 pt-2">{fmtMoney(total)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+                <tr>
+                  <td className="pr-8 text-gray-500">IVA (19%)</td>
+                  <td className="text-right font-medium text-gray-900 dark:text-white font-num">{fmtMoney(totalIva)}</td>
+                </tr>
+                <tr className="border-t border-gray-200 dark:border-gray-700">
+                  <td className="pr-8 font-semibold text-gray-900 dark:text-white pt-2">TOTAL</td>
+                  <td className="text-right font-bold text-info-600 dark:text-info-400 pt-2 font-num">{fmtMoney(total)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Action bar */}
-      <div className="flex flex-wrap gap-3 mb-5">
+      <div className="flex flex-wrap gap-2 mb-5">
         {canEdit && (
-          <button onClick={guardar} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
-            {saving ? 'Guardando…' : 'Guardar'}
-          </button>
+          <Button leftIcon={<Save />} onClick={guardar} loading={saving} disabled={saving}>
+            Guardar
+          </Button>
         )}
         {!isNew && estado === 'borrador' && (
           <>
-            <button onClick={() => emailMut.mutate()} disabled={emailMut.isPending} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">
-              <Mail size={16} /> Enviar por Email
-            </button>
-            <button onClick={() => { if (confirm('¿Cancelar esta orden?')) cancelarMut.mutate() }} className="px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 dark:hover:bg-red-900/20">
+            <Button
+              variant="success"
+              leftIcon={<Mail />}
+              onClick={() => emailMut.mutate()}
+              loading={emailMut.isPending}
+              disabled={emailMut.isPending}
+            >
+              Enviar por Email
+            </Button>
+            <Button
+              variant="outline"
+              leftIcon={<Ban />}
+              onClick={() => setConfirmCancel(true)}
+              className="border-danger-300 text-danger-600 hover:bg-danger-50 dark:border-danger-700 dark:text-danger-400 dark:hover:bg-danger-500/10"
+            >
               Cancelar OC
-            </button>
+            </Button>
           </>
         )}
         {!isNew && (
-          <button onClick={() => openPdf(`/api/ordenes-compra/${id}/pdf`)} className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
-            <FileText size={16} /> Ver PDF
-          </button>
+          <Button variant="outline" leftIcon={<FileText />} onClick={() => openPdf(`/api/ordenes-compra/${id}/pdf`)}>
+            Ver PDF
+          </Button>
+        )}
+        {!isNew && canReceive && (
+          <Button
+            leftIcon={<PackageCheck />}
+            onClick={() => setShowRecepcionModal(true)}
+            className="bg-warning-500 hover:bg-warning-600 focus-visible:ring-warning-500"
+          >
+            Recepcionar mercadería
+          </Button>
         )}
       </div>
 
-      {/* Reception panel */}
+      {/* Reception inline panel (also accessible via modal) */}
       {!isNew && canReceive && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-yellow-200 dark:border-yellow-800 p-5">
-          <h2 className="text-sm font-semibold text-yellow-700 dark:text-yellow-400 mb-3 flex items-center gap-2">
-            <PackageCheck size={16} /> Recepción de mercadería
-          </h2>
-          <table className="min-w-full text-sm mb-4">
-            <thead>
-              <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-200 dark:border-gray-700">
-                <th className="py-2 pr-4 text-left">Descripción</th>
-                <th className="py-2 pr-4 text-right">Pedido</th>
-                <th className="py-2 pr-4 text-right">Ya recibido</th>
-                <th className="py-2 text-right">Recibir ahora</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(orden?.lineas ?? []).map(l => (
-                <tr key={l.id} className="border-b border-gray-100 dark:border-gray-800">
-                  <td className="py-2 pr-4">{l.descripcion}</td>
-                  <td className="py-2 pr-4 text-right">{l.cantidad}</td>
-                  <td className="py-2 pr-4 text-right text-green-600">{l.cantidad_recibida}</td>
-                  <td className="py-2 text-right">
-                    <input
-                      type="number"
-                      min={l.cantidad_recibida}
-                      max={l.cantidad}
-                      value={l.id != null ? (recepcionCantidades[l.id] ?? l.cantidad_recibida) : l.cantidad_recibida}
-                      onChange={e => l.id != null && setRecepcionCantidades(prev => ({ ...prev, [l.id!]: Number(e.target.value) }))}
-                      className="w-20 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-2 py-1 text-sm text-right"
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <button
-            onClick={() => recepcionarMut.mutate()}
-            disabled={recepcionarMut.isPending}
-            className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700 disabled:opacity-50"
-          >
-            <PackageCheck size={16} /> Confirmar recepción
-          </button>
-        </div>
+        <Card className="border-warning-200 dark:border-warning-800">
+          <CardContent className="p-5">
+            <h2 className="text-sm font-semibold text-warning-700 dark:text-warning-400 mb-3 flex items-center gap-2">
+              <PackageCheck size={16} /> Recepción de mercadería
+            </h2>
+            <Table density="compact">
+              <THead>
+                <TR>
+                  <TH>Descripción</TH>
+                  <TH className="text-right">Pedido</TH>
+                  <TH className="text-right">Ya recibido</TH>
+                  <TH className="text-right">Recibir ahora</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {(orden?.lineas ?? []).map(l => (
+                  <TR key={l.id}>
+                    <TD className="text-gray-900 dark:text-white">{l.descripcion}</TD>
+                    <TD className="text-right text-gray-700 dark:text-gray-300 font-num">{l.cantidad}</TD>
+                    <TD className="text-right text-success-600 dark:text-success-400 font-num">{l.cantidad_recibida}</TD>
+                    <TD className="text-right">
+                      <Input
+                        size="sm"
+                        type="number"
+                        min={l.cantidad_recibida}
+                        max={l.cantidad}
+                        value={l.id != null ? (recepcionCantidades[l.id] ?? l.cantidad_recibida) : l.cantidad_recibida}
+                        onChange={e => l.id != null && setRecepcionCantidades(prev => ({ ...prev, [l.id!]: Number(e.target.value) }))}
+                        className="w-20 text-right font-num inline-block"
+                      />
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+            <div className="mt-4">
+              <Button
+                leftIcon={<PackageCheck />}
+                onClick={() => recepcionarMut.mutate()}
+                loading={recepcionarMut.isPending}
+                disabled={recepcionarMut.isPending}
+                className="bg-warning-500 hover:bg-warning-600 focus-visible:ring-warning-500"
+              >
+                Confirmar recepción
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
+
+      {/* Cancel confirm modal */}
+      <Modal open={confirmCancel} onOpenChange={setConfirmCancel}>
+        <ModalContent size="sm">
+          <ModalHeader>
+            <ModalTitle>Cancelar orden de compra</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              ¿Seguro que deseas cancelar esta orden de compra? Esta acción no se puede deshacer.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="outline" onClick={() => setConfirmCancel(false)} disabled={cancelarMut.isPending}>
+              Volver
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => cancelarMut.mutate()}
+              loading={cancelarMut.isPending}
+              disabled={cancelarMut.isPending}
+            >
+              Cancelar OC
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Recepción modal (alternate trigger from action bar) */}
+      <Modal open={showRecepcionModal} onOpenChange={setShowRecepcionModal}>
+        <ModalContent size="xl">
+          <ModalHeader>
+            <ModalTitle>Recepcionar mercadería</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <Table density="compact">
+              <THead>
+                <TR>
+                  <TH>Descripción</TH>
+                  <TH className="text-right">Pedido</TH>
+                  <TH className="text-right">Ya recibido</TH>
+                  <TH className="text-right">Recibir ahora</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {(orden?.lineas ?? []).map(l => (
+                  <TR key={l.id}>
+                    <TD className="text-gray-900 dark:text-white">{l.descripcion}</TD>
+                    <TD className="text-right text-gray-700 dark:text-gray-300 font-num">{l.cantidad}</TD>
+                    <TD className="text-right text-success-600 dark:text-success-400 font-num">{l.cantidad_recibida}</TD>
+                    <TD className="text-right">
+                      <Input
+                        size="sm"
+                        type="number"
+                        min={l.cantidad_recibida}
+                        max={l.cantidad}
+                        value={l.id != null ? (recepcionCantidades[l.id] ?? l.cantidad_recibida) : l.cantidad_recibida}
+                        onChange={e => l.id != null && setRecepcionCantidades(prev => ({ ...prev, [l.id!]: Number(e.target.value) }))}
+                        className="w-24 text-right font-num inline-block"
+                      />
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="outline" onClick={() => setShowRecepcionModal(false)} disabled={recepcionarMut.isPending}>
+              Cerrar
+            </Button>
+            <Button
+              leftIcon={<PackageCheck />}
+              onClick={() => recepcionarMut.mutate()}
+              loading={recepcionarMut.isPending}
+              disabled={recepcionarMut.isPending}
+              className="bg-warning-500 hover:bg-warning-600 focus-visible:ring-warning-500"
+            >
+              Confirmar recepción
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   )
 }

@@ -2,9 +2,15 @@ import { openPdf } from '../lib/pdf'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Plus, FileText, Trash2, Eye, Download } from 'lucide-react'
+import { Plus, FileText, Trash2, Eye, Download, Inbox } from 'lucide-react'
 import { api } from '../lib/api'
 import type { OrdenCompra, Proveedor } from '../types'
+import {
+  Button, Input, FormField, Badge, EmptyState, Skeleton, Card, Tooltip,
+  Table, THead, TBody, TR, TH, TD,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Modal, ModalContent, ModalHeader, ModalTitle, ModalBody, ModalFooter,
+} from '../components/ui'
 
 const ESTADO_LABELS: Record<string, string> = {
   borrador: 'Borrador',
@@ -14,12 +20,12 @@ const ESTADO_LABELS: Record<string, string> = {
   cancelada: 'Cancelada',
 }
 
-const ESTADO_COLORS: Record<string, string> = {
-  borrador: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-  enviada: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  recibida_parcial: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
-  recibida_completa: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-  cancelada: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+const ESTADO_VARIANT: Record<string, 'neutral' | 'info' | 'warning' | 'success' | 'danger'> = {
+  borrador: 'neutral',
+  enviada: 'info',
+  recibida_parcial: 'warning',
+  recibida_completa: 'success',
+  cancelada: 'danger',
 }
 
 function fmtMoney(n: number) {
@@ -34,7 +40,7 @@ export default function OrdenesCompra() {
   const [estado, setEstado] = useState('')
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
-  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [confirmId, setConfirmId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState('')
 
   const params = new URLSearchParams()
@@ -57,7 +63,7 @@ export default function OrdenesCompra() {
     mutationFn: (id: number) => api.delete(`/api/ordenes-compra/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['ordenes_compra'] })
-      setDeleteId(null)
+      setConfirmId(null)
       setDeleteError('')
     },
     onError: (err: any) => {
@@ -79,123 +85,163 @@ export default function OrdenesCompra() {
     URL.revokeObjectURL(url)
   }
 
+  function closeConfirm() {
+    setConfirmId(null)
+    setDeleteError('')
+  }
+
   return (
     <div className="p-4 md:p-6 max-w-7xl">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Órdenes de Compra</h1>
         <div className="flex gap-2">
-          <button
-            onClick={exportarExcel}
-            className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <Download size={16} /> Excel
-          </button>
-          <button
-            onClick={() => navigate('/ordenes-compra/nueva')}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Plus size={16} /> Nueva OC
-          </button>
+          <Button variant="outline" size="sm" leftIcon={<Download />} onClick={exportarExcel}>
+            Excel
+          </Button>
+          <Button size="sm" leftIcon={<Plus />} onClick={() => navigate('/ordenes-compra/nueva')}>
+            Nueva OC
+          </Button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <select
-          value={proveedorId}
-          onChange={e => setProveedorId(e.target.value)}
-          className="text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-1.5"
-        >
-          <option value="">Todos los proveedores</option>
-          {proveedores.map(p => (
-            <option key={p.id} value={p.id}>{p.nombre}</option>
-          ))}
-        </select>
-        <select
-          value={estado}
-          onChange={e => setEstado(e.target.value)}
-          className="text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-1.5"
-        >
-          <option value="">Todos los estados</option>
-          {Object.entries(ESTADO_LABELS).map(([v, l]) => (
-            <option key={v} value={v}>{l}</option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={fechaDesde}
-          onChange={e => setFechaDesde(e.target.value)}
-          className="text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-1.5"
-          placeholder="Desde"
-        />
-        <input
-          type="date"
-          value={fechaHasta}
-          onChange={e => setFechaHasta(e.target.value)}
-          className="text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-1.5"
-          placeholder="Hasta"
-        />
-      </div>
+      <Card className="mb-4 p-3">
+        <div className="flex flex-wrap gap-3 items-end">
+          <FormField label="Proveedor">
+            <Select value={proveedorId || 'all'} onValueChange={v => setProveedorId(v === 'all' ? '' : v)}>
+              <SelectTrigger size="sm" className="min-w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los proveedores</SelectItem>
+                {proveedores.map(p => (
+                  <SelectItem key={p.id} value={String(p.id)}>{p.nombre}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField label="Estado">
+            <Select value={estado || 'all'} onValueChange={v => setEstado(v === 'all' ? '' : v)}>
+              <SelectTrigger size="sm" className="min-w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los estados</SelectItem>
+                {Object.entries(ESTADO_LABELS).map(([v, l]) => (
+                  <SelectItem key={v} value={v}>{l}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField label="Desde">
+            <Input type="date" size="sm" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} className="w-36" />
+          </FormField>
+          <FormField label="Hasta">
+            <Input type="date" size="sm" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} className="w-36" />
+          </FormField>
+        </div>
+      </Card>
 
       {isLoading ? (
-        <p className="text-gray-500 dark:text-gray-400 text-sm">Cargando…</p>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                {['Nº OC', 'Proveedor', 'Fecha', 'Entrega esperada', 'Estado', 'Total', 'Acciones'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
-              {ordenes.map(o => (
-                <tr key={o.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                  <td className="px-4 py-3 font-mono text-blue-600 dark:text-blue-400">OC-{String(o.numero).padStart(5, '0')}</td>
-                  <td className="px-4 py-3 text-gray-900 dark:text-white">{o.proveedor?.nombre ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{o.fecha}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{o.fecha_entrega_esperada ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[o.estado] ?? ''}`}>
-                      {ESTADO_LABELS[o.estado] ?? o.estado}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{fmtMoney(o.total)}</td>
-                  <td className="px-4 py-3">
-                    {deleteId === o.id ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-red-600 dark:text-red-400 text-xs">{deleteError || '¿Eliminar?'}</span>
-                        <button onClick={() => deleteMut.mutate(o.id)} className="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700">Sí</button>
-                        <button onClick={() => { setDeleteId(null); setDeleteError('') }} className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-800">No</button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => navigate(`/ordenes-compra/${o.id}`)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400" title="Ver">
-                          <Eye size={16} />
-                        </button>
-                        <button onClick={() => abrirPdf(o.id)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400" title="PDF">
-                          <FileText size={16} />
-                        </button>
-                        {o.estado === 'borrador' && (
-                          <button onClick={() => setDeleteId(o.id)} className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-400" title="Eliminar">
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {ordenes.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400 dark:text-gray-600">No hay órdenes de compra</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12" />)}
         </div>
+      ) : ordenes.length === 0 ? (
+        <EmptyState
+          icon={<Inbox />}
+          title="Sin órdenes de compra"
+          description="No hay resultados para los filtros aplicados."
+        />
+      ) : (
+        <Card className="overflow-x-auto">
+          <Table density="compact" className="min-w-[800px]">
+            <THead>
+              <TR>
+                <TH>Nº OC</TH>
+                <TH>Proveedor</TH>
+                <TH>Fecha</TH>
+                <TH>Entrega esperada</TH>
+                <TH>Estado</TH>
+                <TH className="text-right">Total</TH>
+                <TH className="text-right">Acciones</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {ordenes.map(o => (
+                <TR key={o.id} interactive onClick={() => navigate(`/ordenes-compra/${o.id}`)}>
+                  <TD className="font-mono text-info-600 dark:text-info-400">
+                    OC-{String(o.numero).padStart(5, '0')}
+                  </TD>
+                  <TD className="text-gray-900 dark:text-white">{o.proveedor?.nombre ?? '—'}</TD>
+                  <TD className="text-gray-600 dark:text-gray-400 font-num whitespace-nowrap">{o.fecha}</TD>
+                  <TD className="text-gray-600 dark:text-gray-400 font-num whitespace-nowrap">{o.fecha_entrega_esperada ?? '—'}</TD>
+                  <TD>
+                    <Badge variant={ESTADO_VARIANT[o.estado] ?? 'neutral'} size="sm">
+                      {ESTADO_LABELS[o.estado] ?? o.estado}
+                    </Badge>
+                  </TD>
+                  <TD className="font-medium text-gray-900 dark:text-white text-right font-num whitespace-nowrap">
+                    {fmtMoney(o.total)}
+                  </TD>
+                  <TD onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-0.5">
+                      <Tooltip label="Ver">
+                        <Button size="icon-sm" variant="ghost" onClick={() => navigate(`/ordenes-compra/${o.id}`)} aria-label="Ver">
+                          <Eye />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip label="PDF">
+                        <Button size="icon-sm" variant="ghost" onClick={() => abrirPdf(o.id)} aria-label="PDF">
+                          <FileText />
+                        </Button>
+                      </Tooltip>
+                      {o.estado === 'borrador' && (
+                        <Tooltip label="Eliminar">
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            onClick={() => { setConfirmId(o.id); setDeleteError('') }}
+                            aria-label="Eliminar"
+                            className="text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                          >
+                            <Trash2 />
+                          </Button>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </Card>
       )}
+
+      {/* Delete confirmation modal */}
+      <Modal open={confirmId !== null} onOpenChange={(open) => { if (!open) closeConfirm() }}>
+        <ModalContent size="sm">
+          <ModalHeader>
+            <ModalTitle>Eliminar orden de compra</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              ¿Seguro que deseas eliminar esta orden de compra? Esta acción no se puede deshacer.
+            </p>
+            {deleteError && (
+              <p className="mt-3 text-sm text-danger-600 dark:text-danger-400">{deleteError}</p>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="outline" onClick={closeConfirm} disabled={deleteMut.isPending}>
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => confirmId !== null && deleteMut.mutate(confirmId)}
+              loading={deleteMut.isPending}
+              disabled={deleteMut.isPending}
+            >
+              Eliminar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   )
 }
