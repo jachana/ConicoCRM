@@ -1,17 +1,42 @@
-import { useState, FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, FormEvent } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
+import { getGuiaDespacho } from '../api/guiasDespacho'
 
 interface Linea { descripcion: string; cantidad: string; precio_unitario: string }
 
 export default function NotaCreditoNueva() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const guiaIdParam = searchParams.get('guia_despacho_id')
   const [clienteId, setClienteId] = useState('')
   const [razon, setRazon] = useState('')
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10))
   const [lineas, setLineas] = useState<Linea[]>([{ descripcion: '', cantidad: '1', precio_unitario: '0' }])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [guiaDespachoId, setGuiaDespachoId] = useState<number | null>(null)
+  const [guiaNumero, setGuiaNumero] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!guiaIdParam) return
+    const id = Number(guiaIdParam)
+    setGuiaDespachoId(id)
+    getGuiaDespacho(id)
+      .then(guia => {
+        if (guia.cliente_id) setClienteId(String(guia.cliente_id))
+        setRazon(`Anulación guía despacho N°${guia.numero}`)
+        setGuiaNumero(guia.numero)
+        if (guia.lineas && guia.lineas.length > 0) {
+          setLineas(guia.lineas.map(l => ({
+            descripcion: l.descripcion,
+            cantidad: String(l.cantidad),
+            precio_unitario: String(l.precio_unitario),
+          })))
+        }
+      })
+      .catch(() => setError(`No se pudo cargar la guía ${id}`))
+  }, [guiaIdParam])
 
   function addLinea() {
     setLineas([...lineas, { descripcion: '', cantidad: '1', precio_unitario: '0' }])
@@ -35,6 +60,7 @@ export default function NotaCreditoNueva() {
         fecha,
         cliente_id: Number(clienteId),
         razon,
+        ...(guiaDespachoId ? { guia_despacho_id: guiaDespachoId } : {}),
         lineas: lineas.map((l, i) => ({
           orden: i,
           descripcion: l.descripcion,
@@ -57,6 +83,11 @@ export default function NotaCreditoNueva() {
   return (
     <div className="p-6 max-w-3xl">
       <h1 className="text-xl font-semibold text-white mb-6">Nueva Nota de Crédito</h1>
+      {guiaNumero !== null && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-sm text-yellow-800">
+          Esta NC anulará la guía N°{guiaNumero} cuando sea aceptada por SII.
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-2 gap-4">
           <div>
