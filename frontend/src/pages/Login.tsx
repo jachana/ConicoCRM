@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { getPreferencias } from '../api/preferencias'
 import { usePreferencesStore } from '../stores/preferences'
+import { Button, Input } from '../components/ui'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -70,54 +71,72 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 tracking-widest uppercase">
+              <label
+                htmlFor="login-email"
+                className="block text-[11px] font-semibold text-gray-500 mb-1.5 tracking-widest uppercase"
+              >
                 Email
               </label>
-              <input
+              <Input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
                 autoComplete="email"
                 placeholder="usuario@conico.cl"
-                className="w-full px-4 py-3 bg-[#0B1120] border border-white/10 rounded-xl text-white text-sm
-                           placeholder-gray-700 transition-colors
-                           focus:outline-none focus:border-brand-500/60 focus:ring-2 focus:ring-brand-500/20"
+                size="lg"
+                className="bg-[#0B1120] border-white/10 text-white rounded-xl placeholder:text-gray-700
+                           hover:border-white/20
+                           focus:border-brand-500/60 focus:ring-brand-500/20
+                           dark:bg-[#0B1120] dark:border-white/10 dark:text-white dark:placeholder:text-gray-700"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 tracking-widest uppercase">
+              <label
+                htmlFor="login-password"
+                className="block text-[11px] font-semibold text-gray-500 mb-1.5 tracking-widest uppercase"
+              >
                 Contraseña
               </label>
-              <input
+              <Input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
                 placeholder="••••••••"
-                className="w-full px-4 py-3 bg-[#0B1120] border border-white/10 rounded-xl text-white text-sm
-                           placeholder-gray-700 transition-colors
-                           focus:outline-none focus:border-brand-500/60 focus:ring-2 focus:ring-brand-500/20"
+                size="lg"
+                className="bg-[#0B1120] border-white/10 text-white rounded-xl placeholder:text-gray-700
+                           hover:border-white/20
+                           focus:border-brand-500/60 focus:ring-brand-500/20
+                           dark:bg-[#0B1120] dark:border-white/10 dark:text-white dark:placeholder:text-gray-700"
               />
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-xs text-red-400 bg-red-950/40 border border-red-900/50 rounded-lg px-3 py-2.5">
+              <div
+                role="alert"
+                className="flex items-center gap-2 text-xs text-danger-400 bg-danger-950/40 border border-danger-900/50 rounded-lg px-3 py-2.5"
+              >
                 <span>{error}</span>
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
-              disabled={loading}
-              className="w-full py-3 mt-1 bg-brand-500 hover:bg-brand-400 active:bg-brand-600
-                         text-gray-900 font-semibold text-sm rounded-xl tracking-wide
-                         disabled:opacity-50 transition-all duration-150"
+              loading={loading}
+              fullWidth
+              size="lg"
+              className="mt-1 rounded-xl bg-brand-500 text-gray-900 font-semibold tracking-wide shadow-none
+                         hover:bg-brand-400 hover:text-gray-900 hover:shadow-none
+                         active:bg-brand-600 active:text-gray-900
+                         focus-visible:ring-brand-500 focus-visible:ring-offset-[#111827] dark:focus-visible:ring-offset-[#111827]"
             >
               {loading ? 'Verificando...' : 'Ingresar'}
-            </button>
+            </Button>
           </form>
         </div>
 
