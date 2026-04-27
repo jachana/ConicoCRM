@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Pencil, Save, X, ChevronDown, Plus, Trash2, Loader2, LayoutDashboard } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '../stores/auth'
+import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
 import { useDashboardPresets } from '../hooks/useDashboardPresets'
 import WidgetGrid from '../components/dashboard/WidgetGrid'
 import WidgetPicker from '../components/dashboard/WidgetPicker'
@@ -14,7 +15,8 @@ import { cn } from '../lib/cn'
 
 export default function Dashboard() {
   const user = useAuthStore(s => s.user)
-  const role = user?.role ?? 'vendedor'
+  const { role: effectiveRole } = useEffectivePermissions()
+  const role = effectiveRole ?? user?.role ?? 'vendedor'
   const isAdmin = role === 'admin'
 
   const { query, create, save, remove } = useDashboardPresets(role)

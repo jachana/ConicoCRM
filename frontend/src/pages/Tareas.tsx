@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { listarTareas, completarTarea, descartarTarea } from '../api/tareas';
 import type { Tarea, TareaEstado } from '../types/tarea';
 import { useAuth } from '../hooks/useAuth';
+import { useEffectivePermissions } from '../hooks/useEffectivePermissions';
 import TareaModal from '../components/TareaModal';
 import TareaDrawer from '../components/TareaDrawer';
 import {
@@ -54,7 +55,8 @@ function entidadLink(t: Tarea): { label: string; href: string } | null {
 
 export default function TareasPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { role: effectiveRole } = useEffectivePermissions();
+  const isAdmin = (effectiveRole ?? user?.role) === 'admin';
 
   const [tab, setTab] = useState<TareaEstado>('pendiente');
   const [tareas, setTareas] = useState<Tarea[]>([]);

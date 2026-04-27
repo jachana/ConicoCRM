@@ -4,7 +4,9 @@ import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
-import type { SystemConfig, BancoReceptor } from '../types'
+import { useViewAsStore } from '../stores/viewAs'
+import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
+import type { SystemConfig, BancoReceptor, User } from '../types'
 import { usePreferencesStore } from '../stores/preferences'
 import { patchPreferencias, type AtajoBusqueda } from '../api/preferencias'
 import { atajoLabel } from '../components/search/SearchButton'
@@ -87,13 +89,16 @@ export default function Configuracion() {
     saveMut.mutate(form)
   }
 
-  const isAdmin = user?.role === 'admin'
+  const { role: effectiveRole } = useEffectivePermissions()
+  const isAdmin = (effectiveRole ?? user?.role) === 'admin'
 
   return (
     <div className="p-4 md:p-6 max-w-2xl space-y-5">
       <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Configuración del Sistema</h1>
 
       <BusquedaSection />
+
+      {isAdmin && <ViewAsSection />}
 
       {isAdmin && isLoading ? (
         <div className="space-y-5">
@@ -205,6 +210,71 @@ export default function Configuracion() {
         </>
       ) : null}
     </div>
+  )
+}
+
+function ViewAsSection() {
+  const target = useViewAsStore(s => s.targetUser)
+  const setTarget = useViewAsStore(s => s.setTarget)
+  const clear = useViewAsStore(s => s.clear)
+
+  const { data: users = [], isLoading } = useQuery<User[]>({
+    queryKey: ['users'],
+    queryFn: () => api.get('/api/users').then(r => r.data),
+  })
+
+  const candidates = users.filter(u => u.is_active && u.role !== 'admin')
+  const [selectedId, setSelectedId] = useState<string>(target ? String(target.id) : '')
+
+  useEffect(() => {
+    setSelectedId(target ? String(target.id) : '')
+  }, [target])
+
+  function handleActivate() {
+    const u = candidates.find(c => String(c.id) === selectedId)
+    if (!u) return
+    setTarget(u)
+    toast.success(`Viendo como ${u.name}`)
+  }
+
+  return (
+    <Card padded>
+      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Vista como</h2>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+        Previsualiza la interfaz como otro usuario. Los datos siguen siendo los tuyos — solo se ocultan los menús y botones que ese rol no tiene.
+      </p>
+
+      {target ? (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-warning-300 dark:border-warning-700 bg-warning-50 dark:bg-warning-900/20 px-3 py-2.5">
+          <div className="text-sm">
+            <span className="text-gray-700 dark:text-gray-300">Activo: </span>
+            <span className="font-semibold text-gray-900 dark:text-white">{target.name}</span>
+            <span className="text-gray-500 dark:text-gray-400"> · {target.role}</span>
+          </div>
+          <Button size="sm" variant="ghost" onClick={() => { clear(); toast.success('Volviste a tu vista') }}>
+            Salir
+          </Button>
+        </div>
+      ) : (
+        <div className="flex gap-2 items-end">
+          <FormField className="flex-1" label="Usuario">
+            <Select value={selectedId} onValueChange={setSelectedId} disabled={isLoading || candidates.length === 0}>
+              <SelectTrigger>
+                <SelectValue placeholder={candidates.length === 0 ? 'Sin usuarios disponibles' : 'Selecciona un usuario'} />
+              </SelectTrigger>
+              <SelectContent>
+                {candidates.map(u => (
+                  <SelectItem key={u.id} value={String(u.id)}>
+                    {u.name} · {u.role}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <Button onClick={handleActivate} disabled={!selectedId}>Activar</Button>
+        </div>
+      )}
+    </Card>
   )
 }
 

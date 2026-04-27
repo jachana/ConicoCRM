@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, Inbox } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
+import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
 import {
   Badge, Button, Card, EmptyState, Skeleton, Tooltip,
   Table, THead, TBody, TR, TH, TD,
@@ -60,7 +61,9 @@ const fmtPct = (n: number) => `${(n * 100).toFixed(1)}%`
 
 export default function Aprobaciones() {
   const user = useAuthStore(s => s.user)
-  const isAdminUser = !!user && (user.role === 'admin' || user.role === 'subadmin')
+  const { role: effectiveRole } = useEffectivePermissions()
+  const role = effectiveRole ?? user?.role
+  const isAdminUser = !!user && (role === 'admin' || role === 'subadmin')
   const queryClient = useQueryClient()
   const [actingKey, setActingKey] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)

@@ -11,7 +11,8 @@ import { useTheme } from './ThemeProvider'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import MisPendientesWidget from '../MisPendientesWidget'
-import type { Module, Permissions } from '../../types'
+import { useEffectivePermissions } from '../../hooks/useEffectivePermissions'
+import type { Module } from '../../types'
 
 interface SidebarProps {
   collapsed: boolean
@@ -101,16 +102,10 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
   const { theme, toggle: toggleTheme } = useTheme()
   const location = useLocation()
 
-  const isAdminUser = !!user && (user.role === 'admin' || user.role === 'subadmin')
+  const { permissions: myPermissions, role: effectiveRole } = useEffectivePermissions()
+  const isAdminUser = effectiveRole === 'admin' || effectiveRole === 'subadmin'
 
-  const { data: myPermissions } = useQuery<Permissions>({
-    queryKey: ['my-permissions'],
-    queryFn: () => api.get('/api/users/me/permissions').then(r => r.data),
-    enabled: !!user,
-    staleTime: 5 * 60_000,
-  })
-
-  const canViewInventario = !!user && user.role !== 'vendedor' && myPermissions?.inventario?.view !== false
+  const canViewInventario = !!user && effectiveRole !== 'vendedor' && myPermissions?.inventario?.view !== false
 
   const { data: stockBajo = [] } = useQuery<{ id: number }[]>({
     queryKey: ['stock-bajo'],

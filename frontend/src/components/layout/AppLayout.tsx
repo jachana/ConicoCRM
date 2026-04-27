@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, FileText, ShoppingCart, Users, Menu } from 'lucide-react'
+import { LayoutDashboard, FileText, ShoppingCart, Users, Menu, Eye } from 'lucide-react'
 import Sidebar from './Sidebar'
 import GlobalSearchModal from '../search/GlobalSearchModal'
 import SearchButton from '../search/SearchButton'
 import { useGlobalShortcut } from '../../hooks/useGlobalShortcut'
 import { usePreferencesStore } from '../../stores/preferences'
+import { useViewAsStore } from '../../stores/viewAs'
 
 const BOTTOM_TABS = [
   { to: '/',             icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -20,6 +21,8 @@ export default function AppLayout() {
   const [searchOpen, setSearchOpen] = useState(false)
   const atajo = usePreferencesStore(s => s.preferencias.busqueda_atajo)
   useGlobalShortcut(atajo, () => setSearchOpen(true))
+  const viewAsTarget = useViewAsStore(s => s.targetUser)
+  const clearViewAs = useViewAsStore(s => s.clear)
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-[#0B0F1A] overflow-hidden">
@@ -48,6 +51,27 @@ export default function AppLayout() {
 
       {/* ── Content column ── */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+
+        {viewAsTarget && (
+          <div
+            role="status"
+            className="flex items-center justify-between gap-3 px-4 py-2 bg-warning-100 dark:bg-warning-900/30 border-b border-warning-300 dark:border-warning-700 text-warning-900 dark:text-warning-100 text-sm flex-shrink-0"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Eye size={16} className="flex-shrink-0" />
+              <span className="truncate">
+                Viendo como <strong>{viewAsTarget.name}</strong> ({viewAsTarget.role})
+                <span className="hidden sm:inline text-warning-700 dark:text-warning-300"> · los datos siguen siendo los tuyos</span>
+              </span>
+            </div>
+            <button
+              onClick={clearViewAs}
+              className="flex-shrink-0 px-2 py-1 rounded-md text-xs font-medium bg-warning-200 hover:bg-warning-300 dark:bg-warning-800 dark:hover:bg-warning-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning-500"
+            >
+              Salir de vista
+            </button>
+          </div>
+        )}
 
         {/* Mobile top bar */}
         <header className="md:hidden flex items-center justify-between h-12 px-4 bg-[#111827] border-b border-white/5 flex-shrink-0">

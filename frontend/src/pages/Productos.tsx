@@ -6,6 +6,7 @@ import { api } from '../lib/api'
 import type { Producto } from '../types'
 import ProductoModal from '../components/ProductoModal'
 import { useAuthStore } from '../stores/auth'
+import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
 import {
   Button, Input, FormField, EmptyState, Skeleton, Tooltip,
   Table, THead, TBody, TR, TH, TD,
@@ -20,6 +21,7 @@ function formatPrecio(n: number) {
 export default function Productos() {
   const qc = useQueryClient()
   const user = useAuthStore(s => s.user)
+  const { role: effectiveRole } = useEffectivePermissions()
   const [busqueda, setBusqueda] = useState('')
 
   const { data: productos = [], isLoading } = useQuery<Producto[]>({
@@ -170,7 +172,7 @@ export default function Productos() {
         <ProductoModal
           editando={editando}
           onClose={cerrarModal}
-          userRole={user?.role ?? 'vendedor'}
+          userRole={effectiveRole ?? user?.role ?? 'vendedor'}
         />
       )}
 

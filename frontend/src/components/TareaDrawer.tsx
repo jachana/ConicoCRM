@@ -3,6 +3,7 @@ import { X, Check, Trash2, XCircle } from 'lucide-react';
 import { completarTarea, descartarTarea, deleteTarea } from '../api/tareas';
 import type { Tarea } from '../types/tarea';
 import { useAuth } from '../hooks/useAuth';
+import { useEffectivePermissions } from '../hooks/useEffectivePermissions';
 
 function extractErrorDetail(e: unknown, fallback: string): string {
   const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
@@ -42,7 +43,8 @@ interface Props {
 
 export default function TareaDrawer({ tarea, onClose, onChanged }: Props) {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { role: effectiveRole } = useEffectivePermissions();
+  const isAdmin = (effectiveRole ?? user?.role) === 'admin';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

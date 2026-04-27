@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { listarAuditoria, exportarAuditoriaCsvUrl, type AuditLog, type AuditFiltros } from '../api/auditoria'
 import { useAuthStore } from '../stores/auth'
+import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
 import {
   Badge,
   Button,
@@ -68,7 +69,8 @@ function fmtDate(iso: string) {
 export default function AdminAuditoria() {
   const accessToken = useAuthStore(s => s.accessToken)
   const user = useAuthStore(s => s.user)
-  const isAdmin = user?.role === 'admin'
+  const { role: effectiveRole } = useEffectivePermissions()
+  const isAdmin = (effectiveRole ?? user?.role) === 'admin'
   const [filtros, setFiltros] = useState<AuditFiltros>({ limit: PAGE_SIZE, offset: 0 })
   const [diffViewing, setDiffViewing] = useState<AuditLog | null>(null)
 

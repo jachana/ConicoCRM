@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { listarReglas, patchRegla } from '../api/tareas';
 import type { ReglaTarea, AsignadoRol } from '../types/tarea';
 import { useAuth } from '../hooks/useAuth';
+import { useEffectivePermissions } from '../hooks/useEffectivePermissions';
 import {
   Button, Input, EmptyState, Skeleton,
   Card,
@@ -37,17 +38,19 @@ function prettyTipo(tipo: string): string {
 
 export default function TareasConfigPage() {
   const { user } = useAuth();
+  const { role: effectiveRole } = useEffectivePermissions();
+  const role = effectiveRole ?? user?.role;
 
   const { data: reglas = [], refetch, isLoading } = useQuery<ReglaTarea[]>({
     queryKey: ['reglas-tarea'],
     queryFn: listarReglas,
-    enabled: user?.role === 'admin',
+    enabled: role === 'admin',
   });
 
   const [dirty, setDirty] = useState<Record<string, ReglaPatch>>({});
   const [saving, setSaving] = useState(false);
 
-  if (!user || user.role !== 'admin') return <Navigate to="/" replace />;
+  if (!user || role !== 'admin') return <Navigate to="/" replace />;
 
   function updateDirty(tipo: string, patch: ReglaPatch) {
     setDirty(prev => ({ ...prev, [tipo]: { ...prev[tipo], ...patch } }));
