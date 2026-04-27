@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, Link } from 'react-router-dom'
-import { Eye, Download, Mail, Trash2, Plus, FileSpreadsheet } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Eye, Download, Mail, Trash2, Plus, FileSpreadsheet, Inbox } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   listarBoletas,
   exportarBoletasExcel,
@@ -17,10 +18,15 @@ import { openPdf } from '../lib/pdf'
 import DteBadge from '../components/DteBadge'
 import BoletaAnularModal from '../components/BoletaAnularModal'
 import BoletaEmailModal from '../components/BoletaEmailModal'
+import {
+  Button, Input, FormField, Badge, EmptyState, Skeleton, Tooltip,
+  Table, THead, TBody, TR, TH, TD,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '../components/ui'
 
-const ESTADO_COLORS: Record<string, string> = {
-  emitida: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  anulada: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+const ESTADO_VARIANT: Record<string, 'info' | 'danger' | 'neutral'> = {
+  emitida: 'info',
+  anulada: 'danger',
 }
 
 const DTE_ESTADOS: { value: BoletaDteEstado; label: string }[] = [
@@ -67,7 +73,6 @@ export default function BoletasList() {
   const navigate = useNavigate()
   const qc = useQueryClient()
 
-  // Filter state
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
   const [patente, setPatente] = useState('')
@@ -77,14 +82,6 @@ export default function BoletasList() {
   const [vendedorId, setVendedorId] = useState('')
   const [page, setPage] = useState(1)
 
-  // Toast
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
-  function showToast(msg: string, ok = true) {
-    setToast({ msg, ok })
-    setTimeout(() => setToast(null), 3500)
-  }
-
-  // Modal state
   const [anularTarget, setAnularTarget] = useState<BoletaListItem | null>(null)
   const [emailTarget, setEmailTarget] = useState<BoletaListItem | null>(null)
 
@@ -108,7 +105,7 @@ export default function BoletasList() {
   const sendEmailMut = useMutation({
     mutationFn: ({ id, email }: { id: number; email?: string }) => enviarEmailBoleta(id, email),
     onSuccess: () => {
-      showToast('Email enviado')
+      toast.success('Email enviado')
       setEmailTarget(null)
       qc.invalidateQueries({ queryKey: ['boletas-list'] })
     },
@@ -117,7 +114,7 @@ export default function BoletasList() {
   const anularMut = useMutation({
     mutationFn: ({ id, razon }: { id: number; razon: string }) => anularBoleta(id, razon),
     onSuccess: () => {
-      showToast('Boleta anulada')
+      toast.success('Boleta anulada')
       setAnularTarget(null)
       qc.invalidateQueries({ queryKey: ['boletas-list'] })
     },
@@ -129,25 +126,25 @@ export default function BoletasList() {
       const date = new Date().toISOString().split('T')[0]
       downloadBlob(blob, `boletas-${date}.xlsx`)
     } catch {
-      showToast('Error al exportar', false)
+      toast.error('Error al exportar')
     }
   }
 
   function handleDownloadPdf(id: number) {
-    openPdf(`/api/boletas/${id}/pdf`).catch(() => showToast('Error al abrir PDF', false))
+    openPdf(`/api/boletas/${id}/pdf`).catch(() => toast.error('Error al abrir PDF'))
   }
 
   async function handleSendEmail(b: BoletaListItem) {
     try {
       await enviarEmailBoleta(b.id)
-      showToast('Email enviado')
+      toast.success('Email enviado')
       qc.invalidateQueries({ queryKey: ['boletas-list'] })
     } catch (err: unknown) {
       const e = err as { response?: { status?: number } }
       if (e?.response?.status === 422) {
         setEmailTarget(b)
       } else {
-        showToast('Error al enviar email', false)
+        toast.error('Error al enviar email')
       }
     }
   }
@@ -167,171 +164,198 @@ export default function BoletasList() {
   const hasNextPage = boletas.length === PAGE_SIZE
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="p-4 md:p-6 max-w-7xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Boletas</h1>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Boletas</h1>
         <div className="flex gap-2">
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-          >
-            <FileSpreadsheet size={15} /> Exportar Excel
-          </button>
-          <button
-            onClick={() => navigate('/boletas/nueva')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-brand-500 hover:bg-brand-600 text-white rounded-lg"
-          >
-            <Plus size={15} /> Nueva boleta
-          </button>
+          <Button variant="outline" size="sm" leftIcon={<FileSpreadsheet />} onClick={handleExport}>
+            Excel
+          </Button>
+          <Button leftIcon={<Plus />} onClick={() => navigate('/boletas/nueva')}>
+            Nueva boleta
+          </Button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="mb-4 flex flex-wrap gap-2 items-end bg-white dark:bg-gray-900 p-3 rounded-xl border border-gray-200 dark:border-gray-800">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Desde</label>
-          <input type="date" value={fechaDesde} onChange={e => { setFechaDesde(e.target.value); setPage(1) }}
-            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Hasta</label>
-          <input type="date" value={fechaHasta} onChange={e => { setFechaHasta(e.target.value); setPage(1) }}
-            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Patente</label>
-          <input type="text" placeholder="Patente..." value={patente}
+      <div className="mb-4 flex flex-wrap gap-3 items-end bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-200 dark:border-gray-800 shadow-elev-1">
+        <FormField label="Desde">
+          <Input type="date" size="sm" value={fechaDesde} onChange={e => { setFechaDesde(e.target.value); setPage(1) }} className="w-36" />
+        </FormField>
+        <FormField label="Hasta">
+          <Input type="date" size="sm" value={fechaHasta} onChange={e => { setFechaHasta(e.target.value); setPage(1) }} className="w-36" />
+        </FormField>
+        <FormField label="Patente">
+          <Input
+            size="sm"
+            placeholder="Patente..."
+            value={patente}
             onChange={e => { setPatente(e.target.value.toUpperCase()); setPage(1) }}
-            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-32" />
-        </div>
+            className="w-32"
+          />
+        </FormField>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Estado</label>
-          <div className="flex gap-2 py-1.5">
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Estado</label>
+          <div className="flex gap-3 py-1.5">
             {(['emitida', 'anulada'] as BoletaEstado[]).map(e => (
-              <label key={e} className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
-                <input type="checkbox" checked={estados.includes(e)} onChange={() => toggleEstado(e)} />
+              <label key={e} className="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={estados.includes(e)}
+                  onChange={() => toggleEstado(e)}
+                  className="rounded accent-brand-500"
+                />
                 {e}
               </label>
             ))}
           </div>
         </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">DTE</label>
-          <select value={dteEstado} onChange={e => { setDteEstado(e.target.value as BoletaDteEstado | ''); setPage(1) }}
-            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-            <option value="">Todas</option>
-            {DTE_ESTADOS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Método pago</label>
-          <select value={metodoPago} onChange={e => { setMetodoPago(e.target.value as BoletaMetodoPago | ''); setPage(1) }}
-            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-            <option value="">Todos</option>
-            {METODOS_PAGO.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Vendedor ID</label>
-          <input type="number" placeholder="ID" value={vendedorId}
+        <FormField label="DTE">
+          <Select value={dteEstado || 'all'} onValueChange={v => { setDteEstado(v === 'all' ? '' : (v as BoletaDteEstado)); setPage(1) }}>
+            <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              {DTE_ESTADOS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </FormField>
+        <FormField label="Método pago">
+          <Select value={metodoPago || 'all'} onValueChange={v => { setMetodoPago(v === 'all' ? '' : (v as BoletaMetodoPago)); setPage(1) }}>
+            <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {METODOS_PAGO.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </FormField>
+        <FormField label="Vendedor ID">
+          <Input
+            type="number"
+            size="sm"
+            placeholder="ID"
+            value={vendedorId}
             onChange={e => { setVendedorId(e.target.value); setPage(1) }}
-            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-24" />
-        </div>
+            className="w-24"
+          />
+        </FormField>
         {hasFilters && (
-          <button onClick={clearFilters} className="text-xs text-gray-400 hover:text-gray-600 underline px-2 py-1.5">
+          <Button size="xs" variant="ghost" onClick={clearFilters}>
             Limpiar
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Table */}
-      {isLoading ? (
-        <div className="text-gray-400 py-12 text-center text-sm">Cargando...</div>
-      ) : boletas.length === 0 ? (
-        <div className="text-gray-400 py-12 text-center text-sm">Sin boletas para los filtros aplicados</div>
-      ) : (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
-          <table className="w-full text-sm min-w-[900px]">
-            <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
-              <tr>
-                {['Nº', 'Fecha', 'Tipo', 'Receptor', 'Patente', 'Total', 'Método', 'Estado', 'DTE', 'Vendedor', 'Acciones'].map(h => (
-                  <th key={h} className="text-left px-3 py-3 font-medium">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {boletas.map(b => {
-                const receptor = b.cliente?.nombre ?? b.nombre_receptor ?? '—'
-                const canAnular = b.estado !== 'anulada'
-                return (
-                  <tr key={b.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="px-3 py-3 font-medium text-gray-900 dark:text-white font-num">
-                      <Link to={`/boletas/${b.id}`} className="hover:text-brand-500">
+      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden shadow-elev-1">
+        {isLoading ? (
+          <div className="p-4 space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10" />)}
+          </div>
+        ) : boletas.length === 0 ? (
+          <EmptyState icon={<Inbox />} title="Sin boletas" description="No hay boletas que coincidan con los filtros." />
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <THead>
+                <TR>
+                  <TH>Nº</TH>
+                  <TH>Fecha</TH>
+                  <TH>Tipo</TH>
+                  <TH>Receptor</TH>
+                  <TH>Patente</TH>
+                  <TH className="text-right">Total</TH>
+                  <TH>Método</TH>
+                  <TH>Estado</TH>
+                  <TH>DTE</TH>
+                  <TH>Vendedor</TH>
+                  <TH className="text-right">Acciones</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {boletas.map(b => {
+                  const receptor = b.cliente?.nombre ?? b.nombre_receptor ?? '—'
+                  const canAnular = b.estado !== 'anulada'
+                  return (
+                    <TR key={b.id} interactive onClick={() => navigate(`/boletas/${b.id}`)}>
+                      <TD className="font-num font-medium text-gray-900 dark:text-gray-100">
                         {String(b.numero).padStart(5, '0')}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{fmtDate(b.fecha)}</td>
-                    <td className="px-3 py-3 text-gray-700 dark:text-gray-300">{b.tipo_dte}</td>
-                    <td className="px-3 py-3 text-gray-900 dark:text-white">{receptor}</td>
-                    <td className="px-3 py-3 text-gray-700 dark:text-gray-300 font-num">{b.patente_vehiculo ?? '—'}</td>
-                    <td className="px-3 py-3 font-medium text-gray-900 dark:text-white whitespace-nowrap font-num">{fmtMoney(b.total)}</td>
-                    <td className="px-3 py-3 text-gray-700 dark:text-gray-300">{b.metodo_pago}</td>
-                    <td className="px-3 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[b.estado] ?? ''}`}>
-                        {b.estado}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3"><DteBadge estado={b.dte_estado} /></td>
-                    <td className="px-3 py-3 text-gray-700 dark:text-gray-300 text-xs">{b.vendedor?.name ?? '—'}</td>
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-1">
-                        <Link to={`/boletas/${b.id}`} title="Ver"
-                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded">
-                          <Eye size={15} />
-                        </Link>
-                        <button onClick={() => handleDownloadPdf(b.id)} title="PDF"
-                          className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded">
-                          <Download size={15} />
-                        </button>
-                        <button onClick={() => handleSendEmail(b)} title="Enviar email"
-                          disabled={sendEmailMut.isPending}
-                          className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded disabled:opacity-50">
-                          <Mail size={15} />
-                        </button>
-                        <button onClick={() => setAnularTarget(b)} title="Anular"
-                          disabled={!canAnular}
-                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-30 disabled:cursor-not-allowed">
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                      </TD>
+                      <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">{fmtDate(b.fecha)}</TD>
+                      <TD className="text-gray-700 dark:text-gray-300">{b.tipo_dte}</TD>
+                      <TD className="text-gray-900 dark:text-gray-100">{receptor}</TD>
+                      <TD className="text-gray-700 dark:text-gray-300 font-num">{b.patente_vehiculo ?? '—'}</TD>
+                      <TD className="font-num font-medium text-right text-gray-900 dark:text-gray-100 whitespace-nowrap">{fmtMoney(b.total)}</TD>
+                      <TD className="text-gray-700 dark:text-gray-300 capitalize">{b.metodo_pago}</TD>
+                      <TD>
+                        <Badge variant={ESTADO_VARIANT[b.estado] ?? 'neutral'} showDot className="capitalize">{b.estado}</Badge>
+                      </TD>
+                      <TD><DteBadge estado={b.dte_estado} /></TD>
+                      <TD className="text-gray-500 dark:text-gray-400 text-xs">{b.vendedor?.name ?? '—'}</TD>
+                      <TD onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-0.5">
+                          <Tooltip label="Ver">
+                            <Button size="icon-xs" variant="ghost" onClick={() => navigate(`/boletas/${b.id}`)}>
+                              <Eye />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip label="PDF">
+                            <Button size="icon-xs" variant="ghost" onClick={() => handleDownloadPdf(b.id)}>
+                              <Download />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip label="Enviar email">
+                            <Button
+                              size="icon-xs"
+                              variant="ghost"
+                              loading={sendEmailMut.isPending}
+                              onClick={() => handleSendEmail(b)}
+                            >
+                              <Mail />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip label={canAnular ? 'Anular' : 'Ya anulada'}>
+                            <Button
+                              size="icon-xs"
+                              variant="ghost"
+                              disabled={!canAnular}
+                              className="text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                              onClick={() => setAnularTarget(b)}
+                            >
+                              <Trash2 />
+                            </Button>
+                          </Tooltip>
+                        </div>
+                      </TD>
+                    </TR>
+                  )
+                })}
+              </TBody>
+            </Table>
+          </div>
+        )}
+      </div>
 
       {/* Pagination */}
       {(page > 1 || hasNextPage) && (
         <div className="flex items-center justify-end gap-2 mt-4">
-          <button
+          <Button
+            size="sm"
+            variant="outline"
             disabled={page <= 1 || isFetching}
             onClick={() => setPage(p => Math.max(1, p - 1))}
-            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-40"
           >
             Anterior
-          </button>
-          <span className="text-sm text-gray-500">Página {page}</span>
-          <button
+          </Button>
+          <span className="text-sm text-gray-500 dark:text-gray-400 font-num">Página {page}</span>
+          <Button
+            size="sm"
+            variant="outline"
             disabled={!hasNextPage || isFetching}
             onClick={() => setPage(p => p + 1)}
-            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-40"
           >
             Siguiente
-          </button>
+          </Button>
         </div>
       )}
 
@@ -356,14 +380,6 @@ export default function BoletasList() {
           error={sendEmailMut.error ? 'No se pudo enviar' : null}
         />
       )}
-
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${toast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-          {toast.msg}
-        </div>
-      )}
     </div>
   )
 }
-
