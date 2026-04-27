@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Users, Package, ShoppingCart,
   Warehouse, Truck, UserCog, Building2, CreditCard,
-  ChevronLeft, ChevronRight, ChevronDown, LogOut, Sun, Moon, X, ClipboardList, Settings, Banknote, BarChart2, CheckSquare, AlarmClock, ShieldCheck,
+  ChevronLeft, ChevronRight, LogOut, Sun, Moon, X, ClipboardList, Settings, Banknote, BarChart2, CheckSquare, AlarmClock, ShieldCheck,
+  Receipt, ScrollText, FileMinus, FilePlus, Contact,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth'
 import { useTheme } from './ThemeProvider'
@@ -18,53 +19,81 @@ interface SidebarProps {
   onClose?: () => void
 }
 
-interface NavChild { to: string; icon: React.ElementType; label: string }
 interface NavItem {
-  to?: string
+  to: string
   icon: React.ElementType
   label: string
   module?: Module
   adminOnly?: boolean
   pending?: boolean
-  children?: NavChild[]
 }
 
-const NAV: NavItem[] = [
-  { to: '/',               icon: LayoutDashboard, label: 'Dashboard',         module: 'dashboard',  pending: true },
-  { to: '/aprobaciones',   icon: ClipboardList,   label: 'Aprobaciones',      adminOnly: true },
-  { to: '/clientes',       icon: Users,           label: 'Clientes',          module: 'clientes' },
-  { to: '/empresas',       icon: Building2,       label: 'Empresas',          module: 'empresas' },
-  { to: '/catalogo',       icon: Package,         label: 'Catálogo',          module: 'catalogo' },
-  { to: '/inventario',     icon: Warehouse,       label: 'Inventario',        module: 'inventario' },
-  { to: '/inventario/listas-precios', icon: FileText,  label: 'Listas de precios', adminOnly: true },
-  { to: '/cotizaciones',   icon: FileText,        label: 'Cotizaciones',      module: 'cotizaciones' },
-  { to: '/notas-venta',    icon: ShoppingCart,    label: 'Notas de Venta',    module: 'nota_venta' },
+interface NavSection {
+  label: string
+  items: NavItem[]
+}
+
+const SECTIONS: NavSection[] = [
   {
-    icon: Banknote, label: 'Cobranza',
-    children: [
-      { to: '/cobranza',       icon: Banknote,    label: 'Cobranza' },
-      { to: '/facturas',       icon: FileText,    label: 'Facturas' },
-      { to: '/boletas',         icon: FileText,    label: 'Boletas' },
-      { to: '/guias-despacho', icon: Truck,       label: 'Guías de Despacho' },
-      { to: '/notas-credito',  icon: FileText,    label: 'Notas de Crédito' },
-      { to: '/notas-debito',   icon: FileText,    label: 'Notas de Débito' },
-      { to: '/pagos',          icon: CreditCard,  label: 'Pagos' },
+    label: 'General',
+    items: [
+      { to: '/',             icon: LayoutDashboard, label: 'Dashboard',    module: 'dashboard' },
+      { to: '/aprobaciones', icon: ClipboardList,   label: 'Aprobaciones', adminOnly: true },
+      { to: '/tareas',       icon: CheckSquare,     label: 'Tareas' },
     ],
   },
   {
-    icon: Truck, label: 'Compras', pending: true,
-    children: [
-      { to: '/ordenes-compra', icon: ShoppingCart, label: 'Órdenes de Compra' },
-      { to: '/proveedores',    icon: Truck,        label: 'Proveedores' },
+    label: 'Ventas',
+    items: [
+      { to: '/clientes',     icon: Contact,      label: 'Clientes',       module: 'clientes' },
+      { to: '/empresas',     icon: Building2,    label: 'Empresas',       module: 'empresas' },
+      { to: '/cotizaciones', icon: FileText,     label: 'Cotizaciones',   module: 'cotizaciones' },
+      { to: '/notas-venta',  icon: ShoppingCart, label: 'Notas de Venta', module: 'nota_venta' },
     ],
   },
-  { to: '/rrhh',           icon: UserCog,         label: 'RRHH',              module: 'rrhh',       pending: true },
-  { to: '/tareas',         icon: CheckSquare,     label: 'Tareas' },
-  { to: '/reportes',       icon: BarChart2,       label: 'Reportes' },
-  { to: '/usuarios',       icon: Users,           label: 'Usuarios',          module: 'usuarios' },
-  { to: '/configuracion',  icon: Settings,        label: 'Configuración',     adminOnly: true },
-  { to: '/admin/tareas/config', icon: AlarmClock, label: 'Reglas de tareas',  adminOnly: true },
-  { to: '/admin/auditoria',     icon: ShieldCheck, label: 'Auditoría',         adminOnly: true },
+  {
+    label: 'Catálogo',
+    items: [
+      { to: '/catalogo',                  icon: Package,   label: 'Catálogo',          module: 'catalogo' },
+      { to: '/inventario',                icon: Warehouse, label: 'Inventario',        module: 'inventario' },
+      { to: '/inventario/listas-precios', icon: FileText,  label: 'Listas de precios', adminOnly: true },
+    ],
+  },
+  {
+    label: 'Cobranza',
+    items: [
+      { to: '/cobranza',       icon: Banknote,   label: 'Cobranza' },
+      { to: '/facturas',       icon: Receipt,    label: 'Facturas' },
+      { to: '/boletas',        icon: ScrollText, label: 'Boletas' },
+      { to: '/guias-despacho', icon: Truck,      label: 'Guías de Despacho' },
+      { to: '/notas-credito',  icon: FileMinus,  label: 'Notas de Crédito' },
+      { to: '/notas-debito',   icon: FilePlus,   label: 'Notas de Débito' },
+      { to: '/pagos',          icon: CreditCard, label: 'Pagos' },
+    ],
+  },
+  {
+    label: 'Compras',
+    items: [
+      { to: '/ordenes-compra', icon: ShoppingCart, label: 'Órdenes de Compra', pending: true },
+      { to: '/proveedores',    icon: Truck,        label: 'Proveedores',       pending: true },
+    ],
+  },
+  {
+    label: 'Operación',
+    items: [
+      { to: '/reportes', icon: BarChart2, label: 'Reportes' },
+      { to: '/rrhh',     icon: UserCog,   label: 'RRHH', module: 'rrhh', pending: true },
+    ],
+  },
+  {
+    label: 'Administración',
+    items: [
+      { to: '/usuarios',            icon: Users,      label: 'Usuarios',         module: 'usuarios' },
+      { to: '/configuracion',       icon: Settings,   label: 'Configuración',    adminOnly: true },
+      { to: '/admin/tareas/config', icon: AlarmClock, label: 'Reglas de tareas', adminOnly: true },
+      { to: '/admin/auditoria',     icon: ShieldCheck, label: 'Auditoría',       adminOnly: true },
+    ],
+  },
 ]
 
 export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) {
@@ -72,22 +101,6 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
   const user = useAuthStore(s => s.user)
   const { theme, toggle: toggleTheme } = useTheme()
   const location = useLocation()
-
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => ({
-    Cobranza: ['/cobranza', '/facturas', '/boletas', '/guias-despacho', '/notas-credito', '/notas-debito', '/pagos'].some(p => location.pathname.startsWith(p)),
-    Compras:  ['/ordenes-compra', '/proveedores'].some(p => location.pathname.startsWith(p)),
-  }))
-
-  const toggleGroup = (label: string) =>
-    setOpenGroups(prev => ({ ...prev, [label]: !prev[label] }))
-
-  const { data: stockBajo = [] } = useQuery<{ id: number }[]>({
-    queryKey: ['stock-bajo'],
-    queryFn: () => api.get('/api/inventario/stock-bajo').then(r => r.data),
-    enabled: !!user && user.role !== 'vendedor',
-    staleTime: 60_000,
-  })
-  const stockBajoCount = stockBajo.length
 
   const isAdminUser = !!user && (user.role === 'admin' || user.role === 'subadmin')
 
@@ -98,13 +111,38 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
     staleTime: 5 * 60_000,
   })
 
+  const canViewInventario = !!user && user.role !== 'vendedor' && myPermissions?.inventario?.view !== false
+
+  const { data: stockBajo = [] } = useQuery<{ id: number }[]>({
+    queryKey: ['stock-bajo'],
+    queryFn: () => api.get('/api/inventario/stock-bajo').then(r => r.data),
+    enabled: canViewInventario,
+    staleTime: 60_000,
+  })
+  const stockBajoCount = stockBajo.length
+
   const { data: aprobacionesPendientes = [] } = useQuery<{ id: number }[]>({
     queryKey: ['aprobaciones-pendientes'],
     queryFn: () => api.get('/api/aprobaciones/?estado=pendiente').then(r => r.data),
     enabled: isAdminUser,
     staleTime: 30_000,
+    refetchInterval: 60_000,
   })
   const aprobacionesCount = aprobacionesPendientes.length
+
+  const isVisible = (item: NavItem) =>
+    (!item.module || myPermissions?.[item.module]?.view !== false) &&
+    (!item.adminOnly || isAdminUser)
+
+  const visibleSections = SECTIONS
+    .map(s => ({ ...s, items: s.items.filter(isVisible) }))
+    .filter(s => s.items.length > 0)
+
+  const badgeFor = (to: string): { count: number; color: string } | null => {
+    if (to === '/inventario' && stockBajoCount > 0) return { count: stockBajoCount, color: 'bg-red-500' }
+    if (to === '/aprobaciones' && aprobacionesCount > 0) return { count: aprobacionesCount, color: 'bg-orange-500' }
+    return null
+  }
 
   return (
     <aside
@@ -135,124 +173,31 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
         )}
       </div>
 
-      {/* Nav links */}
-      <nav className="flex-1 overflow-y-auto py-2 space-y-0.5">
-        {NAV.filter(item => (!item.module || myPermissions?.[item.module]?.view !== false) && (!item.adminOnly || isAdminUser)).map((item) => {
-          if (item.children) {
-            const { icon: Icon, label, children, pending } = item
-            const isGroupActive = children.some(c => location.pathname.startsWith(c.to))
-            const isOpen = collapsed ? true : !!openGroups[label]
-            return (
-              <div key={label}>
-                {!collapsed && (
-                  pending ? (
-                    <div
-                      className="flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm w-[calc(100%-12px)] cursor-not-allowed opacity-50"
-                    >
-                      <Icon size={18} strokeWidth={1.8} />
-                      <span className="truncate flex-1 text-left">{label}</span>
-                      <span className="text-[9px] font-semibold uppercase tracking-wide bg-gray-700 text-gray-400 rounded px-1 py-0.5 flex-shrink-0">pronto</span>
-                    </div>
-                  ) : (
-                  <button
-                    onClick={() => toggleGroup(label)}
-                    className={`flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm transition-colors w-[calc(100%-12px)]
-                      ${isGroupActive ? 'text-brand-400 font-medium' : 'text-gray-400 hover:bg-white/8 hover:text-white'}`}
-                  >
-                    <Icon size={18} strokeWidth={isGroupActive ? 2.5 : 1.8} />
-                    <span className="truncate flex-1 text-left">{label}</span>
-                    <ChevronDown size={14} className={`transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  )
-                )}
-                {!pending && isOpen && (
-                  <div className={!collapsed ? 'ml-3' : ''}>
-                    {children.map(({ to, icon: ChildIcon, label: childLabel }) => (
-                      <NavLink
-                        key={to}
-                        to={to}
-                        onClick={onClose}
-                        className={({ isActive }) =>
-                          `flex items-center gap-3 px-3 py-2 mx-1.5 rounded-lg text-sm transition-colors
-                           ${isActive
-                             ? 'bg-brand-500/15 text-brand-400 font-medium'
-                             : 'hover:bg-white/8 hover:text-white text-gray-400'}`
-                        }
-                        title={collapsed ? childLabel : undefined}
-                      >
-                        {({ isActive }) => (
-                          <>
-                            <ChildIcon size={16} strokeWidth={isActive ? 2.5 : 1.8} className="flex-shrink-0" />
-                            {!collapsed && <span className="truncate flex-1">{childLabel}</span>}
-                          </>
-                        )}
-                      </NavLink>
-                    ))}
-                  </div>
-                )}
+      {/* Nav sections */}
+      <nav className="flex-1 overflow-y-auto py-2">
+        {visibleSections.map((section, sIdx) => (
+          <div key={section.label} className={sIdx > 0 ? 'mt-3' : ''}>
+            {!collapsed ? (
+              <div className="px-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                {section.label}
               </div>
-            )
-          }
+            ) : sIdx > 0 ? (
+              <div className="border-t border-white/5 mx-3 mb-2" aria-hidden />
+            ) : null}
 
-          const { to, icon: Icon, label, pending } = item as NavItem & { to: string }
-          const badge = to === '/inventario' ? stockBajoCount : to === '/aprobaciones' ? aprobacionesCount : 0
-          const badgeColor = to === '/aprobaciones' ? 'bg-orange-500' : 'bg-red-500'
-          if (pending) {
-            return (
-              <div
-                key={to}
-                title={collapsed ? label : undefined}
-                className="flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm cursor-not-allowed opacity-50"
-              >
-                <Icon size={18} strokeWidth={1.8} className="flex-shrink-0" />
-                {!collapsed && (
-                  <>
-                    <span className="truncate flex-1">{label}</span>
-                    <span className="text-[9px] font-semibold uppercase tracking-wide bg-gray-700 text-gray-400 rounded px-1 py-0.5 flex-shrink-0">pronto</span>
-                  </>
-                )}
-              </div>
-            )
-          }
-          return (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm transition-colors
-                 ${isActive
-                   ? 'bg-brand-500/15 text-brand-400 font-medium'
-                   : 'hover:bg-white/8 hover:text-white text-gray-400'}`
-              }
-              title={collapsed ? label : undefined}
-            >
-              {({ isActive }) => (
-                <>
-                  <span className="relative flex-shrink-0">
-                    <Icon size={18} strokeWidth={isActive ? 2.5 : 1.8} />
-                    {badge > 0 && collapsed && (
-                      <span className={`absolute -top-1.5 -right-1.5 ${badgeColor} text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5`}>
-                        {badge > 99 ? '99+' : badge}
-                      </span>
-                    )}
-                  </span>
-                  {!collapsed && (
-                    <>
-                      <span className="truncate flex-1">{label}</span>
-                      {badge > 0 && (
-                        <span className={`${badgeColor} text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1`}>
-                          {badge > 99 ? '99+' : badge}
-                        </span>
-                      )}
-                    </>
-                  )}
-                </>
-              )}
-            </NavLink>
-          )
-        })}
+            <div className="space-y-0.5">
+              {section.items.map(item => (
+                <NavRow
+                  key={item.to}
+                  item={item}
+                  collapsed={collapsed}
+                  onClose={onClose}
+                  badge={badgeFor(item.to)}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
       </nav>
 
       <MisPendientesWidget collapsed={collapsed} onClose={onClose} />
@@ -261,7 +206,7 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
       <div className="border-t border-white/5 p-2 space-y-0.5">
         <button
           onClick={toggleTheme}
-          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-gray-400 hover:bg-white/8 hover:text-white transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
           title={collapsed ? (theme === 'dark' ? 'Modo claro' : 'Modo oscuro') : undefined}
         >
           {theme === 'dark' ? <Sun size={18} strokeWidth={1.8} /> : <Moon size={18} strokeWidth={1.8} />}
@@ -280,5 +225,92 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
         </button>
       </div>
     </aside>
+  )
+}
+
+interface NavRowProps {
+  item: NavItem
+  collapsed: boolean
+  onClose?: () => void
+  badge: { count: number; color: string } | null
+}
+
+function NavRow({ item, collapsed, onClose, badge }: NavRowProps) {
+  const { to, icon: Icon, label, pending } = item
+
+  if (pending) {
+    return (
+      <div className="group/row relative">
+        <div
+          className="flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm cursor-not-allowed opacity-50"
+        >
+          <Icon size={18} strokeWidth={1.8} className="flex-shrink-0" />
+          {!collapsed && (
+            <>
+              <span className="truncate flex-1">{label}</span>
+              <span className="text-[9px] font-semibold uppercase tracking-wide bg-gray-700 text-gray-400 rounded px-1 py-0.5 flex-shrink-0">pronto</span>
+            </>
+          )}
+        </div>
+        {collapsed && <Flyout label={label} hint="pronto" />}
+      </div>
+    )
+  }
+
+  return (
+    <div className="group/row relative">
+      <NavLink
+        to={to}
+        end={to === '/'}
+        onClick={onClose}
+        className={({ isActive }) =>
+          `relative flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm transition-colors
+           ${isActive
+             ? "bg-brand-500/15 text-brand-400 font-medium before:absolute before:-left-1.5 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r before:bg-brand-400"
+             : 'hover:bg-white/10 hover:text-white text-gray-400'}`
+        }
+      >
+        {({ isActive }) => (
+          <>
+            <span className="relative flex-shrink-0">
+              <Icon size={18} strokeWidth={isActive ? 2.5 : 1.8} />
+              {badge && collapsed && (
+                <span className={`absolute -top-1.5 -right-1.5 ${badge.color} text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5`}>
+                  {badge.count > 99 ? '99+' : badge.count}
+                </span>
+              )}
+            </span>
+            {!collapsed && (
+              <>
+                <span className="truncate flex-1">{label}</span>
+                {badge && (
+                  <span className={`${badge.color} text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1`}>
+                    {badge.count > 99 ? '99+' : badge.count}
+                  </span>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </NavLink>
+      {collapsed && <Flyout label={label} />}
+    </div>
+  )
+}
+
+function Flyout({ label, hint }: { label: string; hint?: string }) {
+  return (
+    <div
+      role="tooltip"
+      className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50
+                 px-2.5 py-1.5 bg-gray-900 border border-white/10 rounded-md shadow-lg
+                 text-xs text-gray-100 whitespace-nowrap
+                 opacity-0 invisible -translate-x-1
+                 group-hover/row:opacity-100 group-hover/row:visible group-hover/row:translate-x-0
+                 transition-all duration-150"
+    >
+      {label}
+      {hint && <span className="ml-1.5 text-[9px] uppercase tracking-wide text-gray-500">{hint}</span>}
+    </div>
   )
 }
