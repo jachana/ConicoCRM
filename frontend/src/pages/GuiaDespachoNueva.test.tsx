@@ -5,9 +5,11 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import GuiaDespachoNueva from './GuiaDespachoNueva'
 import * as apiGuias from '../api/guiasDespacho'
+import * as apiNv from '../api/notasVenta'
 import type { Cliente } from '../types'
 
 vi.mock('../api/guiasDespacho')
+vi.mock('../api/notasVenta')
 
 vi.mock('../lib/api', () => ({
   api: {
@@ -111,5 +113,27 @@ describe('GuiaDespachoNueva', () => {
     await waitFor(() => expect(apiGuias.crearGuiaDespacho).toHaveBeenCalled())
     await waitFor(() => expect(apiGuias.emitirGuiaDespachoDte).toHaveBeenCalledWith(42))
     await waitFor(() => expect(screen.getByText(/detalle-stub/)).toBeInTheDocument())
+  })
+
+  it('autopopulates form from ?nv_id query param', async () => {
+    const mockNv = {
+      id: 99, cliente_id: 7, empresa_id: 1,
+      cliente: { id: 7, nombre: 'ACME', rut: '11111111-1', direccion_despacho: 'Av desde NV 99', comuna: 'Maipu' },
+      lineas: [{ orden: 0, descripcion: 'Item NV', cantidad: 3, valor_neto: 500, total_neto: 1500, iva: 285, total: 1785, margen: null, producto_id: null, sku: null, formato: null }],
+    }
+    vi.mocked(apiNv.getNotaVenta).mockResolvedValue(mockNv as any)
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={['/guias-despacho/nueva?nv_id=99']}>
+          <Routes>
+            <Route path="/guias-despacho/nueva" element={<GuiaDespachoNueva />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    await waitFor(() => expect(screen.getByDisplayValue(/av desde nv 99/i)).toBeInTheDocument())
+    expect(screen.getByDisplayValue(/maipu/i)).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Item NV')).toBeInTheDocument()
   })
 })

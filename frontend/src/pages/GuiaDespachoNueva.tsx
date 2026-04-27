@@ -10,6 +10,7 @@ import {
   type GuiaLineaInput,
   type MotivoTraslado,
 } from '../api/guiasDespacho'
+import { getNotaVenta } from '../api/notasVenta'
 import { api } from '../lib/api'
 import ClienteSelectModal from '../components/ClienteSelectModal'
 import type { Cliente } from '../types'
@@ -61,9 +62,29 @@ export default function GuiaDespachoNueva() {
   }, [empresas, empresaId])
 
   useEffect(() => {
-    if (nvIdParam) {
-      setNotaVentaId(Number(nvIdParam))
-    }
+    if (!nvIdParam) return
+    const id = Number(nvIdParam)
+    setNotaVentaId(id)
+    getNotaVenta(id)
+      .then(nv => {
+        if (nv.cliente_id) {
+          setClienteId(nv.cliente_id)
+          setClienteNombre(nv.cliente?.nombre ?? `Cliente ${nv.cliente_id}`)
+        }
+        if (nv.empresa_id) setEmpresaId(nv.empresa_id)
+        if (nv.cliente?.direccion_despacho) setDireccion(nv.cliente.direccion_despacho)
+        if (nv.cliente?.comuna) setComuna(nv.cliente.comuna)
+        if (nv.lineas && nv.lineas.length > 0) {
+          setLineas(nv.lineas.map(l => ({
+            descripcion: l.descripcion,
+            cantidad: String(l.cantidad),
+            precio_unitario: String(l.valor_neto),
+            descuento_pct: '0',
+            exenta: false,
+          })))
+        }
+      })
+      .catch(() => setError(`No se pudo cargar la NV ${id}`))
   }, [nvIdParam])
 
   function addLinea() {
