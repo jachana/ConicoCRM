@@ -25,7 +25,6 @@ interface NavItem {
   label: string
   module?: Module
   adminOnly?: boolean
-  pending?: boolean
 }
 
 interface NavSection {
@@ -139,14 +138,14 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
     .filter(s => s.items.length > 0)
 
   const badgeFor = (to: string): { count: number; color: string } | null => {
-    if (to === '/inventario' && stockBajoCount > 0) return { count: stockBajoCount, color: 'bg-red-500' }
-    if (to === '/aprobaciones' && aprobacionesCount > 0) return { count: aprobacionesCount, color: 'bg-orange-500' }
+    if (to === '/inventario' && stockBajoCount > 0) return { count: stockBajoCount, color: 'bg-danger-500' }
+    if (to === '/aprobaciones' && aprobacionesCount > 0) return { count: aprobacionesCount, color: 'bg-warning-500' }
     return null
   }
 
   return (
     <aside
-      className={`flex flex-col h-full bg-[#111827] text-gray-300 transition-all duration-200 flex-shrink-0
+      className={`flex flex-col h-full bg-gray-900 text-gray-300 transition-all duration-200 flex-shrink-0
                   ${collapsed ? 'w-14' : 'w-64'}`}
     >
       {/* Header */}
@@ -164,7 +163,7 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
           </button>
         ) : (
           <button
-            aria-label="toggle-sidebar"
+            aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
             onClick={onToggle}
             className="p-1.5 rounded-lg hover:bg-white/10 transition-colors ml-auto flex-shrink-0 text-gray-400 hover:text-white"
           >
@@ -206,6 +205,7 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
       <div className="border-t border-white/5 p-2 space-y-0.5">
         <button
           onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
           className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
           title={collapsed ? (theme === 'dark' ? 'Modo claro' : 'Modo oscuro') : undefined}
         >
@@ -217,7 +217,8 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
         )}
         <button
           onClick={logout}
-          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-gray-400 hover:bg-red-950/60 hover:text-red-400 transition-colors"
+          aria-label="Cerrar sesión"
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-gray-400 hover:bg-danger-500/10 hover:text-danger-400 transition-colors"
           title={collapsed ? 'Salir' : undefined}
         >
           <LogOut size={18} strokeWidth={1.8} />
@@ -236,26 +237,7 @@ interface NavRowProps {
 }
 
 function NavRow({ item, collapsed, onClose, badge }: NavRowProps) {
-  const { to, icon: Icon, label, pending } = item
-
-  if (pending) {
-    return (
-      <div className="group/row relative">
-        <div
-          className="flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm cursor-not-allowed opacity-50"
-        >
-          <Icon size={18} strokeWidth={1.8} className="flex-shrink-0" />
-          {!collapsed && (
-            <>
-              <span className="truncate flex-1">{label}</span>
-              <span className="text-[9px] font-semibold uppercase tracking-wide bg-gray-700 text-gray-400 rounded px-1 py-0.5 flex-shrink-0">pronto</span>
-            </>
-          )}
-        </div>
-        {collapsed && <Flyout label={label} hint="pronto" />}
-      </div>
-    )
-  }
+  const { to, icon: Icon, label } = item
 
   return (
     <div className="group/row relative">
@@ -298,7 +280,7 @@ function NavRow({ item, collapsed, onClose, badge }: NavRowProps) {
   )
 }
 
-function Flyout({ label, hint }: { label: string; hint?: string }) {
+function Flyout({ label }: { label: string }) {
   return (
     <div
       role="tooltip"
@@ -310,7 +292,6 @@ function Flyout({ label, hint }: { label: string; hint?: string }) {
                  transition-all duration-150"
     >
       {label}
-      {hint && <span className="ml-1.5 text-[9px] uppercase tracking-wide text-gray-500">{hint}</span>}
     </div>
   )
 }
