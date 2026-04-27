@@ -47,7 +47,11 @@ export default function GuiaDespachoDetalle() {
     queryKey: ['guia-despacho', guiaId],
     queryFn: () => getGuiaDespacho(guiaId),
     enabled: !!guiaId,
-    // refetchInterval agregado en Task 7
+    refetchInterval: (query) => {
+      const d = query.state.data as GuiaDespacho | undefined
+      if (d && (d.dte_estado === 'pendiente' || d.dte_estado === 'procesando')) return 10_000
+      return false
+    },
   })
 
   const emitirMut = useMutation({
