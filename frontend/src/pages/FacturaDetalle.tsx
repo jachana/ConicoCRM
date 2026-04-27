@@ -2,12 +2,21 @@ import { openPdf } from '../lib/pdf'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FileText, Mail, ArrowLeft, ExternalLink, Pencil, X, Check, Plus, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { FileText, Mail, ArrowLeft, ExternalLink, Pencil, Plus, Trash2, Lock } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { Factura, FacturaLinea, Cliente, User, Empresa, Pago, BancoReceptor } from '../types'
 import DteBadge from '../components/DteBadge'
 import TareasRelacionadas from '../components/TareasRelacionadas'
+import {
+  Button, Input, Textarea, FormField, Badge, Card, CardContent,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter,
+  Popover, PopoverTrigger, PopoverContent,
+  Tooltip,
+  Table, THead, TBody, TR, TH, TD,
+} from '../components/ui'
 
 const ESTADO_LABELS: Record<string, string> = {
   emitida: 'Emitida',
@@ -16,11 +25,11 @@ const ESTADO_LABELS: Record<string, string> = {
   anulada: 'Anulada',
 }
 
-const ESTADO_COLORS: Record<string, string> = {
-  emitida: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  parcial: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  pagada:  'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  anulada: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+const ESTADO_VARIANT: Record<string, 'neutral' | 'info' | 'success' | 'warning' | 'danger'> = {
+  emitida: 'info',
+  parcial: 'warning',
+  pagada:  'success',
+  anulada: 'danger',
 }
 
 const METODOS_PAGO = ['Efectivo', 'Transferencia', 'Cheque', 'Débito', 'Crédito', 'Mixto']
@@ -63,7 +72,6 @@ export default function FacturaDetalle() {
   const [editingLineas, setEditingLineas] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [emailToast, setEmailToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const [showEstadoMenu, setShowEstadoMenu] = useState(false)
   const [showPagoModal, setShowPagoModal] = useState(false)
   const [emitirOpen, setEmitirOpen] = useState(false)
@@ -258,14 +266,8 @@ export default function FacturaDetalle() {
 
   const emailMut = useMutation({
     mutationFn: () => api.post(`/api/facturas/${id}/email`),
-    onSuccess: () => {
-      setEmailToast({ msg: 'Email enviado correctamente', ok: true })
-      setTimeout(() => setEmailToast(null), 3500)
-    },
-    onError: (err: any) => {
-      setEmailToast({ msg: err?.response?.data?.detail || 'Error al enviar email', ok: false })
-      setTimeout(() => setEmailToast(null), 4000)
-    },
+    onSuccess: () => toast.success('Email enviado correctamente'),
+    onError: (err: any) => toast.error(err?.response?.data?.detail || 'Error al enviar email'),
   })
 
   const deleteMut = useMutation({
@@ -299,10 +301,16 @@ export default function FacturaDetalle() {
     return (
       <div className="p-6">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate('/facturas')}
-            className="p-1.5 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded transition-colors">
-            <ArrowLeft size={18} />
-          </button>
+          <Tooltip label="Volver">
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              onClick={() => navigate('/facturas')}
+              aria-label="Volver"
+            >
+              <ArrowLeft size={18} />
+            </Button>
+          </Tooltip>
           <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-40 animate-pulse" />
         </div>
       </div>
@@ -312,100 +320,101 @@ export default function FacturaDetalle() {
   return (
     <div className="p-4 md:p-6 max-w-6xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/facturas')}
-            className="p-1.5 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded transition-colors">
-            <ArrowLeft size={18} />
-          </button>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <Tooltip label="Volver">
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              onClick={() => navigate('/facturas')}
+              aria-label="Volver"
+            >
+              <ArrowLeft size={18} />
+            </Button>
+          </Tooltip>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white font-num">
             FAC-{String(factura.numero).padStart(5, '0')}
           </h1>
-          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${ESTADO_COLORS[factura.estado] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>
+          <Badge variant={ESTADO_VARIANT[factura.estado] ?? 'neutral'} size="sm">
             {ESTADO_LABELS[factura.estado] ?? factura.estado}
-          </span>
+          </Badge>
           <DteBadge estado={factura.dte_estado ?? 'no_emitida'} />
           {(factura.dte_estado === 'no_emitida' || !factura.dte_estado) && (
-            <button
-              onClick={() => setEmitirOpen(true)}
-              className="px-3 py-1.5 text-xs font-medium bg-brand-500 hover:bg-brand-400 text-gray-900 rounded-lg"
-            >
+            <Button size="xs" onClick={() => setEmitirOpen(true)}>
               Emitir DTE
-            </button>
+            </Button>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {validTransitions.length > 0 && (
-            <div className="relative">
-              <button
-                onClick={() => setShowEstadoMenu(v => !v)}
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                Cambiar estado
-              </button>
-              {showEstadoMenu && (
-                <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[160px]">
-                  {validTransitions.map(t => (
-                    <button key={t} onClick={() => estadoMut.mutate({ estado: t })}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg text-gray-700 dark:text-gray-300">
-                      → {ESTADO_LABELS[t] ?? t}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Popover open={showEstadoMenu} onOpenChange={setShowEstadoMenu}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">Cambiar estado</Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="p-1 min-w-[160px]">
+                {validTransitions.map(t => (
+                  <button
+                    key={t}
+                    onClick={() => estadoMut.mutate({ estado: t })}
+                    className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                  >
+                    → {ESTADO_LABELS[t] ?? t}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
           )}
-          <button
+          <Button
+            size="sm"
+            variant="outline"
+            leftIcon={<FileText />}
             onClick={() => openPdf(`/api/facturas/${id}/pdf`)}
-            className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
-            <FileText size={15} />
             PDF
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            leftIcon={<Mail />}
             onClick={() => emailMut.mutate()}
             disabled={emailMut.isPending}
-            className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+            loading={emailMut.isPending}
           >
-            <Mail size={15} />
-            {emailMut.isPending ? 'Enviando...' : 'Email'}
-          </button>
+            Email
+          </Button>
           {!factura?.is_locked && (
             !editing ? (
-              <button
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={<Pencil />}
                 onClick={() => setEditing(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm border border-indigo-300 dark:border-indigo-700 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                className="border-brand-300 text-brand-600 hover:bg-brand-50 dark:border-brand-700 dark:text-brand-400 dark:hover:bg-brand-500/10"
               >
-                <Pencil size={14} />
                 Editar
-              </button>
+              </Button>
             ) : (
               <>
-                <button
-                  onClick={handleCancelEdit}
-                  className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
+                <Button size="sm" variant="outline" onClick={handleCancelEdit}>
                   Cancelar
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
-                >
-                  {saving ? 'Guardando...' : 'Guardar'}
-                </button>
+                </Button>
+                <Button size="sm" onClick={handleSave} loading={saving} disabled={saving}>
+                  Guardar
+                </Button>
               </>
             )
           )}
           {canDelete && (
-            <button
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => {
                 if (window.confirm('¿Eliminar esta factura?')) deleteMut.mutate()
               }}
-              className="px-3 py-2 text-sm border border-red-300 dark:border-red-700 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              className="border-danger-300 text-danger-600 hover:bg-danger-50 dark:border-danger-700 dark:text-danger-400 dark:hover:bg-danger-500/10"
             >
               Eliminar
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -418,7 +427,7 @@ export default function FacturaDetalle() {
               <span className="text-xs text-gray-500 dark:text-gray-400">Nota de venta:</span>
               <button
                 onClick={() => navigate(`/notas-venta/${factura.nv_id}`)}
-                className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline font-num"
               >
                 NV-{String(factura.nv?.numero ?? factura.nv_id).padStart(5, '0')}
                 <ExternalLink size={11} />
@@ -430,7 +439,7 @@ export default function FacturaDetalle() {
               <span className="text-xs text-gray-500 dark:text-gray-400">Cotización:</span>
               <button
                 onClick={() => navigate(`/cotizaciones/${factura.cotizacion_id}`)}
-                className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline font-num"
               >
                 COT-{String(factura.cotizacion?.numero ?? factura.cotizacion_id).padStart(5, '0')}
                 <ExternalLink size={11} />
@@ -441,264 +450,289 @@ export default function FacturaDetalle() {
       )}
 
       {factura?.is_locked && (
-        <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300">
+        <div className="mb-4 rounded-lg border border-warning-300 bg-warning-50 dark:border-warning-700 dark:bg-warning-500/10 px-4 py-3 text-sm text-warning-800 dark:text-warning-300 flex items-center gap-2">
+          <Lock size={15} />
           Esta factura no es editable en su estado actual.
         </div>
       )}
 
       {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
+        <div className="mb-4 px-4 py-3 bg-danger-50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-800 rounded-lg text-sm text-danger-600 dark:text-danger-400">
           {error}
         </div>
       )}
 
       {/* Header card */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 mb-5">
-        {editing ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Cliente</label>
-              <select
-                value={clienteId}
-                onChange={e => setClienteId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">Seleccionar cliente...</option>
-                {clientes.map(c => (
-                  <option key={c.id} value={c.id}>{c.nombre}{c.rut ? ` · ${c.rut}` : ''}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Empresa</label>
-              <select
-                value={empresaId}
-                onChange={e => setEmpresaId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">— Sin empresa —</option>
-                {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Banco de recepción</label>
-              <select
-                value={bancoReceptorId ?? ''}
-                onChange={e => setBancoReceptorId(e.target.value ? Number(e.target.value) : null)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">Sin especificar</option>
-                {bancos
-                  .filter(b => b.activo || b.id === bancoReceptorId)
-                  .map(b => (
-                    <option key={b.id} value={b.id}>
-                      {b.nombre}{!b.activo ? ' (inactivo)' : ''}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Método de pago</label>
-              <select
-                value={metodoPago}
-                onChange={e => setMetodoPago(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">Sin especificar</option>
-                {METODOS_PAGO.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Contacto</label>
-              <input
-                type="text"
-                value={contacto}
-                onChange={e => setContacto(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Nombre del contacto"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Correo</label>
-              <input
-                type="email"
-                value={correo}
-                onChange={e => setCorreo(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="email@ejemplo.com"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fecha emisión</label>
-              <input
-                type="date"
-                value={fecha}
-                onChange={e => setFecha(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fecha vencimiento</label>
-              <input
-                type="date"
-                value={fechaVencimiento}
-                onChange={e => setFechaVencimiento(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            {isAdmin && (
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Vendedor</label>
-                <select
-                  value={vendedorId}
-                  onChange={e => setVendedorId(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      <Card className="mb-5">
+        <CardContent className="p-5">
+          {editing ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <FormField label="Cliente" required>
+                <Select
+                  value={clienteId ? String(clienteId) : ''}
+                  onValueChange={v => setClienteId(v ? Number(v) : '')}
                 >
-                  <option value="">— Sin asignar —</option>
-                  {usuarios.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                </select>
-              </div>
-            )}
-            <div className="sm:col-span-2 lg:col-span-3">
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Nota / Observaciones</label>
-              <textarea
-                value={nota}
-                onChange={e => setNota(e.target.value)}
-                rows={2}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                placeholder="Notas internas o para el cliente..."
-              />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar cliente..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientes.map(c => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.nombre}{c.rut ? ` · ${c.rut}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+
+              <FormField label="Empresa">
+                <Select
+                  value={empresaId ? String(empresaId) : 'none'}
+                  onValueChange={v => setEmpresaId(v === 'none' ? '' : Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Sin empresa —</SelectItem>
+                    {empresas.map(e => (
+                      <SelectItem key={e.id} value={String(e.id)}>{e.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+
+              <FormField label="Banco de recepción">
+                <Select
+                  value={bancoReceptorId !== null ? String(bancoReceptorId) : 'none'}
+                  onValueChange={v => setBancoReceptorId(v === 'none' ? null : Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin especificar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin especificar</SelectItem>
+                    {bancos
+                      .filter(b => b.activo || b.id === bancoReceptorId)
+                      .map(b => (
+                        <SelectItem key={b.id} value={String(b.id)}>
+                          {b.nombre}{!b.activo ? ' (inactivo)' : ''}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+
+              <FormField label="Método de pago">
+                <Select
+                  value={metodoPago || 'none'}
+                  onValueChange={v => setMetodoPago(v === 'none' ? '' : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin especificar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin especificar</SelectItem>
+                    {METODOS_PAGO.map(m => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+
+              <FormField label="Contacto">
+                <Input
+                  type="text"
+                  value={contacto}
+                  onChange={e => setContacto(e.target.value)}
+                  placeholder="Nombre del contacto"
+                />
+              </FormField>
+
+              <FormField label="Correo">
+                <Input
+                  type="email"
+                  value={correo}
+                  onChange={e => setCorreo(e.target.value)}
+                  placeholder="email@ejemplo.com"
+                />
+              </FormField>
+
+              <FormField label="Fecha emisión">
+                <Input
+                  type="date"
+                  value={fecha}
+                  onChange={e => setFecha(e.target.value)}
+                />
+              </FormField>
+
+              <FormField label="Fecha vencimiento">
+                <Input
+                  type="date"
+                  value={fechaVencimiento}
+                  onChange={e => setFechaVencimiento(e.target.value)}
+                />
+              </FormField>
+
+              {isAdmin && (
+                <FormField label="Vendedor">
+                  <Select
+                    value={vendedorId ? String(vendedorId) : 'none'}
+                    onValueChange={v => setVendedorId(v === 'none' ? '' : Number(v))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Sin asignar —</SelectItem>
+                      {usuarios.map(u => (
+                        <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              )}
+
+              <FormField label="Nota / Observaciones" className="sm:col-span-2 lg:col-span-3">
+                <Textarea
+                  value={nota}
+                  onChange={e => setNota(e.target.value)}
+                  rows={2}
+                  placeholder="Notas internas o para el cliente..."
+                />
+              </FormField>
             </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3">
-            <div>
-              <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Cliente</span>
-              <span className="text-sm text-gray-900 dark:text-white font-medium">
-                {factura.cliente?.nombre ?? '—'}
-                {factura.cliente?.rut ? <span className="text-gray-500 font-normal"> · {factura.cliente.rut}</span> : null}
-              </span>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3">
+              <div>
+                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Cliente</span>
+                <span className="text-sm text-gray-900 dark:text-white font-medium">
+                  {factura.cliente?.nombre ?? '—'}
+                  {factura.cliente?.rut ? <span className="text-gray-500 font-normal"> · {factura.cliente.rut}</span> : null}
+                </span>
+              </div>
+              {factura.empresa && (
+                <div>
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Empresa</span>
+                  <span className="text-sm text-gray-900 dark:text-white">{factura.empresa.nombre}</span>
+                </div>
+              )}
+              {factura.banco_receptor && (
+                <div>
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Banco de recepción</span>
+                  <span className="text-sm text-gray-900 dark:text-white">{factura.banco_receptor.nombre}</span>
+                </div>
+              )}
+              {factura.metodo_pago && (
+                <div>
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Método de pago</span>
+                  <span className="text-sm text-gray-900 dark:text-white">{factura.metodo_pago}</span>
+                </div>
+              )}
+              {factura.contacto && (
+                <div>
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Contacto</span>
+                  <span className="text-sm text-gray-900 dark:text-white">{factura.contacto}</span>
+                </div>
+              )}
+              {factura.correo && (
+                <div>
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Correo</span>
+                  <span className="text-sm text-gray-900 dark:text-white">{factura.correo}</span>
+                </div>
+              )}
+              <div>
+                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Fecha emisión</span>
+                <span className="text-sm text-gray-900 dark:text-white font-num">{factura.fecha}</span>
+              </div>
+              {factura.fecha_vencimiento && (
+                <div>
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Vencimiento</span>
+                  <span className="text-sm text-gray-900 dark:text-white font-num">{factura.fecha_vencimiento}</span>
+                </div>
+              )}
+              {factura.vendedor && (
+                <div>
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Vendedor</span>
+                  <span className="text-sm text-gray-900 dark:text-white">{factura.vendedor.name}</span>
+                </div>
+              )}
+              {factura.nota && (
+                <div className="sm:col-span-2 lg:col-span-3">
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Nota</span>
+                  <span className="text-sm text-gray-900 dark:text-white whitespace-pre-line">{factura.nota}</span>
+                </div>
+              )}
             </div>
-            {factura.empresa && (
-              <div>
-                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Empresa</span>
-                <span className="text-sm text-gray-900 dark:text-white">{factura.empresa.nombre}</span>
-              </div>
-            )}
-            {factura.banco_receptor && (
-              <div>
-                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Banco de recepción</span>
-                <span className="text-sm text-gray-900 dark:text-white">{factura.banco_receptor.nombre}</span>
-              </div>
-            )}
-            {factura.metodo_pago && (
-              <div>
-                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Método de pago</span>
-                <span className="text-sm text-gray-900 dark:text-white">{factura.metodo_pago}</span>
-              </div>
-            )}
-            {factura.contacto && (
-              <div>
-                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Contacto</span>
-                <span className="text-sm text-gray-900 dark:text-white">{factura.contacto}</span>
-              </div>
-            )}
-            {factura.correo && (
-              <div>
-                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Correo</span>
-                <span className="text-sm text-gray-900 dark:text-white">{factura.correo}</span>
-              </div>
-            )}
-            <div>
-              <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Fecha emisión</span>
-              <span className="text-sm text-gray-900 dark:text-white">{factura.fecha}</span>
-            </div>
-            {factura.fecha_vencimiento && (
-              <div>
-                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Vencimiento</span>
-                <span className="text-sm text-gray-900 dark:text-white">{factura.fecha_vencimiento}</span>
-              </div>
-            )}
-            {factura.vendedor && (
-              <div>
-                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Vendedor</span>
-                <span className="text-sm text-gray-900 dark:text-white">{factura.vendedor.name}</span>
-              </div>
-            )}
-            {factura.nota && (
-              <div className="sm:col-span-2 lg:col-span-3">
-                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Nota</span>
-                <span className="text-sm text-gray-900 dark:text-white whitespace-pre-line">{factura.nota}</span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Pagos section */}
       {factura.estado !== 'anulada' && (
         <div className="mb-5">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Abonos / Pagos</h2>
               {pagos.length > 0 && (
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  Pagado: <span className="font-medium text-gray-700 dark:text-gray-200">{fmtMoney(pagos.reduce((s, p) => s + Number(p.monto), 0))}</span>
-                  {' · '}Saldo: <span className={`font-medium ${Number(factura.monto_pagado ?? 0) >= Number(factura.total) ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                  Pagado: <span className="font-medium text-gray-700 dark:text-gray-200 font-num">{fmtMoney(pagos.reduce((s, p) => s + Number(p.monto), 0))}</span>
+                  {' · '}Saldo: <span className={`font-medium font-num ${Number(factura.monto_pagado ?? 0) >= Number(factura.total) ? 'text-success-600 dark:text-success-400' : 'text-warning-600 dark:text-warning-400'}`}>
                     {fmtMoney(Number(factura.total) - Number(factura.monto_pagado ?? 0))}
                   </span>
                 </span>
               )}
             </div>
             {factura.estado !== 'pagada' && (
-              <button
-                onClick={() => setShowPagoModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-brand-500 hover:bg-brand-400 text-gray-900 rounded-lg font-medium transition-colors"
-              >
-                <Plus size={12} />
+              <Button size="xs" leftIcon={<Plus />} onClick={() => setShowPagoModal(true)}>
                 Registrar abono
-              </button>
+              </Button>
             )}
           </div>
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+          <Card className="overflow-hidden">
             {pagos.length === 0 ? (
               <p className="px-4 py-5 text-sm text-gray-400 dark:text-gray-500 text-center">Sin pagos registrados</p>
             ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
-                  <tr>
-                    <th className="px-4 py-2.5 font-medium text-left">Fecha</th>
-                    <th className="px-4 py-2.5 font-medium text-right">Monto</th>
-                    <th className="px-4 py-2.5 font-medium text-left">Método</th>
-                    <th className="px-4 py-2.5 font-medium text-left">Nota</th>
-                    <th className="px-4 py-2.5 font-medium text-left">Registrado por</th>
-                    {isAdmin && <th className="px-4 py-2.5 w-10" />}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+              <Table density="compact">
+                <THead>
+                  <TR>
+                    <TH>Fecha</TH>
+                    <TH className="text-right">Monto</TH>
+                    <TH>Método</TH>
+                    <TH>Nota</TH>
+                    <TH>Registrado por</TH>
+                    {isAdmin && <TH className="w-10" />}
+                  </TR>
+                </THead>
+                <TBody>
                   {pagos.map(p => (
-                    <tr key={p.id}>
-                      <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300">{p.fecha}</td>
-                      <td className="px-4 py-2.5 text-right font-medium text-gray-900 dark:text-white">{fmtMoney(p.monto)}</td>
-                      <td className="px-4 py-2.5 text-gray-600 dark:text-gray-400 capitalize">{p.metodo_pago}</td>
-                      <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 text-xs max-w-[160px] truncate">{p.nota ?? '—'}</td>
-                      <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 text-xs">{p.registrado_por?.name ?? '—'}</td>
+                    <TR key={p.id}>
+                      <TD className="font-num">{p.fecha}</TD>
+                      <TD className="text-right font-medium text-gray-900 dark:text-white font-num">{fmtMoney(p.monto)}</TD>
+                      <TD className="text-gray-600 dark:text-gray-400 capitalize">{p.metodo_pago}</TD>
+                      <TD className="text-gray-500 dark:text-gray-400 text-xs max-w-[160px] truncate">{p.nota ?? '—'}</TD>
+                      <TD className="text-gray-500 dark:text-gray-400 text-xs">{p.registrado_por?.name ?? '—'}</TD>
                       {isAdmin && (
-                        <td className="px-4 py-2.5">
-                          <button
-                            onClick={() => { if (window.confirm('¿Eliminar este abono?')) deletePagoMut.mutate(p.id) }}
-                            className="p-1 text-red-400 hover:text-red-600 rounded transition-colors"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </td>
+                        <TD>
+                          <Tooltip label="Eliminar abono">
+                            <Button
+                              size="icon-xs"
+                              variant="ghost"
+                              onClick={() => { if (window.confirm('¿Eliminar este abono?')) deletePagoMut.mutate(p.id) }}
+                              aria-label="Eliminar abono"
+                              className="text-gray-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                            >
+                              <Trash2 size={13} />
+                            </Button>
+                          </Tooltip>
+                        </TD>
                       )}
-                    </tr>
+                    </TR>
                   ))}
-                </tbody>
-              </table>
+                </TBody>
+              </Table>
             )}
-          </div>
+          </Card>
         </div>
       )}
 
@@ -706,220 +740,224 @@ export default function FacturaDetalle() {
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Líneas</h2>
         {!factura?.is_locked && !editingLineas && currentUser?.role === 'admin' && (
-          <button
+          <Button
+            size="xs"
+            variant="outline"
+            leftIcon={<Pencil />}
             onClick={() => { setEditingLineas(true); setEditing(true) }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-indigo-300 dark:border-indigo-700 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+            className="border-brand-300 text-brand-600 hover:bg-brand-50 dark:border-brand-700 dark:text-brand-400 dark:hover:bg-brand-500/10"
           >
-            <Pencil size={12} />
             Editar líneas
-          </button>
+          </Button>
         )}
       </div>
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto mb-4">
-        <table className="w-full text-sm min-w-[800px]">
-          <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
-            <tr>
-              <th className="px-3 py-3 font-medium text-center w-10">Nº</th>
-              <th className="px-3 py-3 font-medium w-24">SKU</th>
-              <th className="px-3 py-3 font-medium">Descripción</th>
-              <th className="px-3 py-3 font-medium w-28">Formato</th>
-              <th className="px-3 py-3 font-medium text-right w-20">Cant.</th>
-              <th className="px-3 py-3 font-medium text-right w-28">Valor Neto</th>
-              <th className="px-3 py-3 font-medium text-right w-28">Total Neto</th>
-              <th className="px-3 py-3 font-medium text-right w-24">IVA</th>
-              <th className="px-3 py-3 font-medium text-right w-28">Total</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+      <Card className="mb-4 overflow-x-auto">
+        <Table density="compact" className="min-w-[800px]">
+          <THead>
+            <TR>
+              <TH className="text-center w-10">Nº</TH>
+              <TH className="w-24">SKU</TH>
+              <TH>Descripción</TH>
+              <TH className="w-28">Formato</TH>
+              <TH className="text-right w-20">Cant.</TH>
+              <TH className="text-right w-28">Valor Neto</TH>
+              <TH className="text-right w-28">Total Neto</TH>
+              <TH className="text-right w-24">IVA</TH>
+              <TH className="text-right w-28">Total</TH>
+            </TR>
+          </THead>
+          <TBody>
             {lineas.map((linea, idx) => (
-              <tr key={linea._key}>
-                <td className="px-3 py-2 text-center text-gray-500 dark:text-gray-400">{idx + 1}</td>
-                <td className="px-3 py-2">
+              <TR key={linea._key}>
+                <TD className="text-center text-gray-500 dark:text-gray-400 font-num">{idx + 1}</TD>
+                <TD>
                   {editingLineas ? (
-                    <input
+                    <Input
+                      size="sm"
                       type="text"
                       value={linea.sku ?? ''}
                       onChange={e => updateLinea(idx, { sku: e.target.value || null })}
-                      className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       placeholder="SKU"
                     />
                   ) : (
                     <span className="text-xs text-gray-700 dark:text-gray-300">{linea.sku ?? '—'}</span>
                   )}
-                </td>
-                <td className="px-3 py-2">
+                </TD>
+                <TD>
                   {editingLineas ? (
-                    <input
+                    <Input
+                      size="sm"
                       type="text"
                       value={linea.descripcion}
                       onChange={e => updateLinea(idx, { descripcion: e.target.value })}
-                      className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       placeholder="Descripción..."
                     />
                   ) : (
                     <span className="text-xs text-gray-900 dark:text-white">{linea.descripcion}</span>
                   )}
-                </td>
-                <td className="px-3 py-2">
+                </TD>
+                <TD>
                   {editingLineas ? (
-                    <input
+                    <Input
+                      size="sm"
                       type="text"
                       value={linea.formato ?? ''}
                       onChange={e => updateLinea(idx, { formato: e.target.value || null })}
-                      className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       placeholder="Formato"
                     />
                   ) : (
                     <span className="text-xs text-gray-500 dark:text-gray-400">{linea.formato ?? '—'}</span>
                   )}
-                </td>
-                <td className="px-3 py-2 text-right">
+                </TD>
+                <TD className="text-right">
                   {editingLineas ? (
-                    <input
+                    <Input
+                      size="sm"
                       type="number"
                       min="1"
+                      className="text-right"
                       value={linea.cantidad}
                       onChange={e => updateLinea(idx, { cantidad: Math.max(1, parseInt(e.target.value) || 1) })}
-                      className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 text-right"
                     />
                   ) : (
-                    <span className="text-xs text-gray-700 dark:text-gray-300">{linea.cantidad}</span>
+                    <span className="text-xs text-gray-700 dark:text-gray-300 font-num">{linea.cantidad}</span>
                   )}
-                </td>
-                <td className="px-3 py-2 text-right">
+                </TD>
+                <TD className="text-right">
                   {editingLineas ? (
-                    <input
+                    <Input
+                      size="sm"
                       type="number"
                       min="0"
+                      className="text-right"
                       value={linea.valor_neto}
                       onChange={e => updateLinea(idx, { valor_neto: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 text-right"
                     />
                   ) : (
-                    <span className="text-xs text-gray-700 dark:text-gray-300">{fmtMoney(linea.valor_neto)}</span>
+                    <span className="text-xs text-gray-700 dark:text-gray-300 font-num">{fmtMoney(linea.valor_neto)}</span>
                   )}
-                </td>
-                <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300 text-xs font-medium">{fmtMoney(linea.total_neto)}</td>
-                <td className="px-3 py-2 text-right text-gray-500 dark:text-gray-400 text-xs">{fmtMoney(linea.iva)}</td>
-                <td className="px-3 py-2 text-right text-gray-900 dark:text-white text-xs font-medium">{fmtMoney(linea.total)}</td>
-              </tr>
+                </TD>
+                <TD className="text-right text-gray-700 dark:text-gray-300 text-xs font-medium font-num">{fmtMoney(linea.total_neto)}</TD>
+                <TD className="text-right text-gray-500 dark:text-gray-400 text-xs font-num">{fmtMoney(linea.iva)}</TD>
+                <TD className="text-right text-gray-900 dark:text-white text-xs font-medium font-num">{fmtMoney(linea.total)}</TD>
+              </TR>
             ))}
             {lineas.length === 0 && (
-              <tr>
-                <td colSpan={9} className="px-3 py-6 text-center text-xs text-gray-400 dark:text-gray-500">Sin líneas</td>
-              </tr>
+              <TR>
+                <TD colSpan={9} className="text-center text-xs text-gray-400 dark:text-gray-500 py-6">Sin líneas</TD>
+              </TR>
             )}
-          </tbody>
-        </table>
-      </div>
+          </TBody>
+        </Table>
+      </Card>
 
       {/* Totals */}
       <div className="flex justify-end mb-6">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 min-w-[260px]">
-          <div className="space-y-1.5 text-sm">
-            <div className="flex justify-between text-gray-600 dark:text-gray-400">
-              <span>Total Neto</span><span className="font-medium">{fmtMoney(totalNeto)}</span>
+        <Card className="min-w-[260px]">
+          <CardContent className="p-4">
+            <div className="space-y-1.5 text-sm font-num">
+              <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                <span>Total Neto</span><span className="font-medium">{fmtMoney(totalNeto)}</span>
+              </div>
+              <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                <span>IVA (19%)</span><span className="font-medium">{fmtMoney(totalIva)}</span>
+              </div>
+              <div className="flex justify-between border-t border-gray-200 dark:border-gray-800 pt-1.5 font-bold text-gray-900 dark:text-white text-base">
+                <span>Total</span><span>{fmtMoney(total)}</span>
+              </div>
             </div>
-            <div className="flex justify-between text-gray-600 dark:text-gray-400">
-              <span>IVA (19%)</span><span className="font-medium">{fmtMoney(totalIva)}</span>
-            </div>
-            <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-1.5 font-bold text-gray-900 dark:text-white text-base">
-              <span>Total</span><span>{fmtMoney(total)}</span>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       <TareasRelacionadas tipo="factura" id={factura.id} />
 
-      {/* Email toast */}
-      {emailToast && (
-        <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${emailToast.ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-          {emailToast.msg}
-        </div>
-      )}
-
       {/* DTE emitir modal */}
-      {emitirOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[#111827] border border-white/10 rounded-2xl p-6 w-full max-w-sm">
-            <h3 className="text-white font-semibold mb-2">¿Emitir Factura Electrónica?</h3>
-            <p className="text-gray-400 text-sm mb-1">Esta acción enviará el documento al SII via Lioren.</p>
-            <p className="text-gray-300 text-sm mb-4">
-              <span className="font-medium">Total:</span> ${Number(factura.total).toLocaleString('es-CL')}
+      <Modal open={emitirOpen} onOpenChange={setEmitirOpen}>
+        <ModalContent size="sm">
+          <ModalHeader>
+            <ModalTitle>¿Emitir Factura Electrónica?</ModalTitle>
+            <ModalDescription>Esta acción enviará el documento al SII via Lioren.</ModalDescription>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              <span className="font-medium">Total:</span>{' '}
+              <span className="font-num">${Number(factura.total).toLocaleString('es-CL')}</span>
             </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setEmitirOpen(false)}
-                className="flex-1 py-2 text-sm text-gray-400 hover:text-white border border-white/10 rounded-lg"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleEmitirDte}
-                disabled={emitiendo}
-                className="flex-1 py-2 text-sm font-semibold bg-brand-500 hover:bg-brand-400 text-gray-900 rounded-lg disabled:opacity-50"
-              >
-                {emitiendo ? 'Enviando...' : 'Confirmar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="outline" onClick={() => setEmitirOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleEmitirDte} loading={emitiendo} disabled={emitiendo}>
+              {emitiendo ? 'Enviando...' : 'Confirmar'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Pago modal */}
-      {showPagoModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl p-5 w-full max-w-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-gray-900 dark:text-white">Registrar abono</h2>
-              <button onClick={() => setShowPagoModal(false)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded">
-                <X size={16} />
-              </button>
-            </div>
+      <Modal open={showPagoModal} onOpenChange={setShowPagoModal}>
+        <ModalContent size="sm">
+          <ModalHeader>
+            <ModalTitle>Registrar abono</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
-                <input type="date" value={pagoFecha} onChange={e => setPagoFecha(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Monto (saldo: {fmtMoney(Number(factura.total) - Number(factura.monto_pagado ?? 0))})</label>
-                <input type="number" min="1" step="1" value={pagoMonto} onChange={e => setPagoMonto(e.target.value)}
+              <FormField label="Fecha">
+                <Input
+                  type="date"
+                  value={pagoFecha}
+                  onChange={e => setPagoFecha(e.target.value)}
+                />
+              </FormField>
+              <FormField label={`Monto (saldo: ${fmtMoney(Number(factura.total) - Number(factura.monto_pagado ?? 0))})`}>
+                <Input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={pagoMonto}
+                  onChange={e => setPagoMonto(e.target.value)}
                   placeholder="0"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Método de pago</label>
-                <select value={pagoMetodo} onChange={e => setPagoMetodo(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
-                  {METODOS_PAGO.map(m => <option key={m} value={m} className="capitalize">{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Nota (opcional)</label>
-                <input type="text" value={pagoNota} onChange={e => setPagoNota(e.target.value)}
+                />
+              </FormField>
+              <FormField label="Método de pago">
+                <Select value={pagoMetodo} onValueChange={v => setPagoMetodo(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {METODOS_PAGO.map(m => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+              <FormField label="Nota (opcional)">
+                <Input
+                  type="text"
+                  value={pagoNota}
+                  onChange={e => setPagoNota(e.target.value)}
                   placeholder="Referencia, número de transferencia..."
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
-              </div>
+                />
+              </FormField>
             </div>
-            <div className="flex gap-2 mt-5">
-              <button onClick={() => setShowPagoModal(false)}
-                className="flex-1 px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                Cancelar
-              </button>
-              <button
-                disabled={!pagoMonto || createPagoMut.isPending}
-                onClick={() => createPagoMut.mutate({ factura_id: Number(id), fecha: pagoFecha, monto: Number(pagoMonto), metodo_pago: pagoMetodo, nota: pagoNota || null })}
-                className="flex-1 px-4 py-2 text-sm bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-gray-900 rounded-lg transition-colors font-medium flex items-center justify-center gap-1.5">
-                <Check size={14} />
-                {createPagoMut.isPending ? 'Registrando...' : 'Registrar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="outline" onClick={() => setShowPagoModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={!pagoMonto || createPagoMut.isPending}
+              loading={createPagoMut.isPending}
+              onClick={() => createPagoMut.mutate({ factura_id: Number(id), fecha: pagoFecha, monto: Number(pagoMonto), metodo_pago: pagoMetodo, nota: pagoNota || null })}
+            >
+              {createPagoMut.isPending ? 'Registrando...' : 'Registrar'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   )
 }

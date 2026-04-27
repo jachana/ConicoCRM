@@ -1,19 +1,31 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Eye, ChevronDown, X } from 'lucide-react'
+import { Eye, ChevronDown, X, Inbox } from 'lucide-react'
 import { api } from '../lib/api'
 import type { FacturaList, FlatLine } from '../types'
 import ExportPreviewPanel from '../components/ExportPreviewPanel'
 import { FACTURA_COLUMN_DEFS } from '../lib/columnDefs'
+import {
+  Button, Input, Badge, EmptyState, Skeleton, Card, CardContent,
+  Table, THead, TBody, TR, TH, TD,
+  Tooltip,
+} from '../components/ui'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const ESTADO_COLORS: Record<string, string> = {
-  emitida: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  pagada:  'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-  parcial: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
-  anulada: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+const ESTADO_LABELS: Record<string, string> = {
+  emitida: 'Emitida',
+  pagada:  'Pagada',
+  parcial: 'Parcial',
+  anulada: 'Anulada',
+}
+
+const ESTADO_VARIANT: Record<string, 'neutral' | 'info' | 'success' | 'warning' | 'danger'> = {
+  emitida: 'info',
+  pagada:  'success',
+  parcial: 'warning',
+  anulada: 'danger',
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -31,9 +43,9 @@ function fmtDate(iso: string) {
 function MargenBadge({ value }: { value: number | null | undefined }) {
   if (value == null) return <span className="text-gray-400 text-xs">—</span>
   const pct = Math.round(value * 1000) / 10
-  const color = pct < 15 ? 'text-red-600 dark:text-red-400'
-    : pct < 25 ? 'text-orange-500 dark:text-orange-400'
-    : 'text-green-600 dark:text-green-400'
+  const color = pct < 15 ? 'text-danger-600 dark:text-danger-400'
+    : pct < 25 ? 'text-warning-600 dark:text-warning-400'
+    : 'text-success-600 dark:text-success-400'
   return <span className={`font-medium text-sm font-num ${color}`}>{pct.toFixed(1)}%</span>
 }
 
@@ -56,7 +68,7 @@ function FilterPill({ label, active, summary, isOpen, onToggle, onClear, childre
       <div className={`flex items-center rounded-full border text-sm transition-colors
         ${active
           ? 'border-brand-500 bg-brand-500/10 text-brand-700 dark:text-brand-300'
-          : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500'
+          : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-600'
         }`}
       >
         <button onClick={onToggle} className="flex items-center gap-1.5 pl-3 pr-1.5 py-1.5">
@@ -71,7 +83,7 @@ function FilterPill({ label, active, summary, isOpen, onToggle, onClear, childre
         )}
       </div>
       {isOpen && (
-        <div className={`absolute top-full left-0 mt-1.5 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-2 ${wide ? 'w-80' : 'min-w-[200px]'}`}>
+        <div className={`absolute top-full left-0 mt-1.5 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-elev-3 py-2 ${wide ? 'w-80' : 'min-w-[200px]'}`}>
           {children}
         </div>
       )}
@@ -79,7 +91,7 @@ function FilterPill({ label, active, summary, isOpen, onToggle, onClear, childre
   )
 }
 
-const checkboxCls = 'flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-800 dark:text-gray-200'
+const checkboxCls = 'flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer text-sm text-gray-800 dark:text-gray-200'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -221,15 +233,15 @@ export default function Facturas() {
 
           {/* Estado */}
           <FilterPill label="Estado" active={estados.length > 0}
-            summary={estados.length === 1 ? estados[0] : estados.length > 1 ? `${estados.length} estados` : undefined}
+            summary={estados.length === 1 ? ESTADO_LABELS[estados[0]] ?? estados[0] : estados.length > 1 ? `${estados.length} estados` : undefined}
             isOpen={openPill === 'estado'} onToggle={() => togglePill('estado')}
             onClear={() => setEstados([])}>
-            {['emitida', 'pagada', 'parcial', 'anulada'].map(e => (
-              <label key={e} className={checkboxCls}>
-                <input type="checkbox" className="rounded border-gray-300"
-                  checked={estados.includes(e)}
-                  onChange={ev => setEstados(prev => ev.target.checked ? [...prev, e] : prev.filter(v => v !== e))} />
-                {e.charAt(0).toUpperCase() + e.slice(1)}
+            {Object.entries(ESTADO_LABELS).map(([value, lbl]) => (
+              <label key={value} className={checkboxCls}>
+                <input type="checkbox" className="rounded border-gray-300 accent-brand-500"
+                  checked={estados.includes(value)}
+                  onChange={ev => setEstados(prev => ev.target.checked ? [...prev, value] : prev.filter(v => v !== value))} />
+                {lbl}
               </label>
             ))}
           </FilterPill>
@@ -241,7 +253,7 @@ export default function Facturas() {
             <div className="max-h-56 overflow-y-auto">
               {empresas.map(e => (
                 <button key={e.id} onClick={() => { setEmpresaId(e.id); setEmpresaNombre(e.nombre); setOpenPill(null) }}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors
                     ${empresaId === e.id ? 'text-brand-600 dark:text-brand-400 font-medium' : 'text-gray-800 dark:text-gray-200'}`}>
                   {e.nombre}
                 </button>
@@ -256,7 +268,7 @@ export default function Facturas() {
             <div className="max-h-56 overflow-y-auto">
               {clientes.map(c => (
                 <button key={c.id} onClick={() => { setClienteId(c.id); setClienteNombre(c.nombre); setOpenPill(null) }}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors
                     ${clienteId === c.id ? 'text-brand-600 dark:text-brand-400 font-medium' : 'text-gray-800 dark:text-gray-200'}`}>
                   {c.nombre}
                 </button>
@@ -271,13 +283,11 @@ export default function Facturas() {
             <div className="px-3 py-2 space-y-2">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</p>
-                <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                <Input type="date" size="sm" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</p>
-                <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                <Input type="date" size="sm" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} />
               </div>
             </div>
           </FilterPill>
@@ -289,13 +299,11 @@ export default function Facturas() {
             <div className="px-3 py-2 space-y-2">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Mínimo</p>
-                <input type="number" placeholder="0" value={montoMin} onChange={e => setMontoMin(e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                <Input type="number" size="sm" placeholder="0" value={montoMin} onChange={e => setMontoMin(e.target.value)} />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Máximo</p>
-                <input type="number" placeholder="∞" value={montoMax} onChange={e => setMontoMax(e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                <Input type="number" size="sm" placeholder="∞" value={montoMax} onChange={e => setMontoMax(e.target.value)} />
               </div>
             </div>
           </FilterPill>
@@ -306,13 +314,12 @@ export default function Facturas() {
             isOpen={openPill === 'productos'} onToggle={() => togglePill('productos')}
             onClear={() => { setProductos([]); setProductoSearch('') }} wide>
             <div className="px-3 pt-2 pb-1">
-              <input
+              <Input
                 autoFocus
-                type="text"
+                size="sm"
                 placeholder="Buscar producto..."
                 value={productoSearch}
                 onChange={e => setProductoSearch(e.target.value)}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
             {productos.length > 0 && (
@@ -329,16 +336,16 @@ export default function Facturas() {
             )}
             {productoResults.length > 0 && (
               <>
-                <div className="border-t border-gray-100 dark:border-gray-700 mt-1" />
+                <div className="border-t border-gray-100 dark:border-gray-800 mt-1" />
                 <div className="max-h-48 overflow-y-auto py-1">
                   {productoResults
                     .filter(r => !productos.some(p => p.id === r.id))
                     .map(r => (
                       <button key={r.id}
                         onClick={() => setProductos(prev => [...prev, r])}
-                        className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-800 dark:text-gray-200 flex items-center justify-between gap-2">
+                        className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-800 dark:text-gray-200 flex items-center justify-between gap-2">
                         <span className="truncate">{r.nombre}</span>
-                        {r.sku && <span className="text-xs text-gray-400 flex-shrink-0">{r.sku}</span>}
+                        {r.sku && <span className="text-xs text-gray-400 flex-shrink-0 font-num">{r.sku}</span>}
                       </button>
                     ))}
                 </div>
@@ -378,80 +385,96 @@ export default function Facturas() {
         {/* Left: list */}
         <div className={activeTab === 'list' ? '' : 'hidden lg:block'}>
           {isLoading ? (
-            <div className="text-gray-400 py-12 text-center text-sm">Cargando...</div>
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12" />)}
+            </div>
           ) : facturas.length === 0 ? (
-            <div className="text-gray-400 py-12 text-center text-sm">Sin facturas</div>
+            <EmptyState
+              icon={<Inbox />}
+              title="Sin facturas"
+              description="No hay facturas que coincidan con los filtros seleccionados."
+            />
           ) : (
             <>
               {/* Mobile cards */}
               <div className="md:hidden space-y-2">
                 {facturas.map(f => (
-                  <div key={f.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 font-num">FAC-{String(f.numero).padStart(5, '0')}</span>
-                        <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">{f.cliente?.nombre ?? '—'}</p>
-                        {f.empresa?.nombre && <p className="text-xs text-gray-400 leading-tight">{f.empresa.nombre}</p>}
+                  <Card key={f.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 font-num">FAC-{String(f.numero).padStart(5, '0')}</span>
+                          <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">{f.cliente?.nombre ?? '—'}</p>
+                          {f.empresa?.nombre && <p className="text-xs text-gray-400 leading-tight">{f.empresa.nombre}</p>}
+                        </div>
+                        <Badge variant={ESTADO_VARIANT[f.estado] ?? 'neutral'} size="sm">
+                          {ESTADO_LABELS[f.estado] ?? f.estado}
+                        </Badge>
                       </div>
-                      <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[f.estado] ?? ''}`}>
-                        {f.estado}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{fmtDate(f.fecha)}</span>
-                      <div className="flex items-center gap-3">
-                        <MargenBadge value={f.margen_total} />
-                        <span className="font-semibold text-gray-900 dark:text-white text-sm font-num">{fmtMoney(f.total)}</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-num">{fmtDate(f.fecha)}</span>
+                        <div className="flex items-center gap-3">
+                          <MargenBadge value={f.margen_total} />
+                          <span className="font-semibold text-gray-900 dark:text-white text-sm font-num">{fmtMoney(f.total)}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-                      <button onClick={() => navigate(`/facturas/${f.id}`)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
-                        <Eye size={14} /> Ver
-                      </button>
-                    </div>
-                  </div>
+                      <div className="flex items-center gap-1 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                        <Button size="xs" variant="ghost" leftIcon={<Eye />} className="flex-1" onClick={() => navigate(`/facturas/${f.id}`)}>
+                          Ver
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
 
               {/* Desktop table */}
-              <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
-                <table className="w-full text-sm min-w-[600px]">
-                  <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
-                    <tr>
-                      {['Nº', 'Fecha', 'Cliente / Empresa', 'Total', 'Margen', 'Estado', 'Acciones'].map(h => (
-                        <th key={h} className="text-left px-4 py-3 font-medium">{h}</th>
+              <div className="hidden md:block">
+                <Card className="overflow-x-auto">
+                  <Table>
+                    <THead>
+                      <TR>
+                        <TH>Nº</TH>
+                        <TH>Fecha</TH>
+                        <TH>Cliente / Empresa</TH>
+                        <TH className="text-right">Total</TH>
+                        <TH className="text-right">Margen</TH>
+                        <TH>Estado</TH>
+                        <TH className="text-right">Acciones</TH>
+                      </TR>
+                    </THead>
+                    <TBody>
+                      {facturas.map(f => (
+                        <TR key={f.id} interactive onClick={() => navigate(`/facturas/${f.id}`)}>
+                          <TD className="font-medium text-gray-900 dark:text-white font-num">
+                            FAC-{String(f.numero).padStart(5, '0')}
+                          </TD>
+                          <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">{fmtDate(f.fecha)}</TD>
+                          <TD>
+                            <div className="text-gray-900 dark:text-white leading-tight">{f.cliente?.nombre ?? '—'}</div>
+                            {f.empresa?.nombre && <div className="text-xs text-gray-400 leading-tight">{f.empresa.nombre}</div>}
+                          </TD>
+                          <TD className="font-medium text-gray-900 dark:text-white whitespace-nowrap text-right font-num">{fmtMoney(f.total)}</TD>
+                          <TD className="text-right"><MargenBadge value={f.margen_total} /></TD>
+                          <TD>
+                            <Badge variant={ESTADO_VARIANT[f.estado] ?? 'neutral'} showDot>
+                              {ESTADO_LABELS[f.estado] ?? f.estado}
+                            </Badge>
+                          </TD>
+                          <TD onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-0.5">
+                              <Tooltip label="Ver">
+                                <Button size="icon-xs" variant="ghost" onClick={() => navigate(`/facturas/${f.id}`)} aria-label="Ver factura">
+                                  <Eye />
+                                </Button>
+                              </Tooltip>
+                            </div>
+                          </TD>
+                        </TR>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                    {facturas.map(f => (
-                      <tr key={f.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white font-num">
-                          FAC-{String(f.numero).padStart(5, '0')}
-                        </td>
-                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{fmtDate(f.fecha)}</td>
-                        <td className="px-4 py-3">
-                          <div className="text-gray-900 dark:text-white leading-tight">{f.cliente?.nombre ?? '—'}</div>
-                          {f.empresa?.nombre && <div className="text-xs text-gray-400 leading-tight">{f.empresa.nombre}</div>}
-                        </td>
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white whitespace-nowrap font-num">{fmtMoney(f.total)}</td>
-                        <td className="px-4 py-3"><MargenBadge value={f.margen_total} /></td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[f.estado] ?? ''}`}>
-                            {f.estado}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <button onClick={() => navigate(`/facturas/${f.id}`)}
-                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors" title="Ver">
-                            <Eye size={15} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </TBody>
+                  </Table>
+                </Card>
               </div>
             </>
           )}
@@ -459,19 +482,21 @@ export default function Facturas() {
 
         {/* Right: preview panel */}
         <div className={activeTab === 'preview' ? '' : 'hidden lg:block'}>
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-              Vista previa exportación
-            </h2>
-            <ExportPreviewPanel
-              lines={flatLines}
-              availableColumns={FACTURA_COLUMN_DEFS}
-              isLoading={isLoading}
-              exportBaseUrl={exportBaseUrl}
-              storageKey="facturas-preview-cols"
-              filename={exportFilename}
-            />
-          </div>
+          <Card>
+            <CardContent className="p-4">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                Vista previa exportación
+              </h2>
+              <ExportPreviewPanel
+                lines={flatLines}
+                availableColumns={FACTURA_COLUMN_DEFS}
+                isLoading={isLoading}
+                exportBaseUrl={exportBaseUrl}
+                storageKey="facturas-preview-cols"
+                filename={exportFilename}
+              />
+            </CardContent>
+          </Card>
         </div>
 
       </div>
