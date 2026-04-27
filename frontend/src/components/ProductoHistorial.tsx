@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Download } from 'lucide-react'
 import { api } from '../lib/api'
 import type { MovimientoPage } from '../types'
+import {
+  Button, Badge, Skeleton,
+  Table, THead, TBody, TR, TH, TD,
+} from './ui'
 
 export default function ProductoHistorial({ productoId }: { productoId: number }) {
   const [page, setPage] = useState(1)
@@ -26,68 +31,67 @@ export default function ProductoHistorial({ productoId }: { productoId: number }
 
   const total = data?.total ?? 0
   const totalPages = Math.ceil(total / PAGE_SIZE)
+  const items = data?.items ?? []
 
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm text-gray-500">{total} movimiento{total !== 1 ? 's' : ''}</span>
-        <button onClick={exportar}
-          className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+        <span className="text-sm text-gray-500 dark:text-gray-400">{total} movimiento{total !== 1 ? 's' : ''}</span>
+        <Button size="xs" variant="outline" leftIcon={<Download />} onClick={exportar}>
           Exportar CSV
-        </button>
+        </Button>
       </div>
 
-      {isLoading && <div className="text-sm text-gray-400">Cargando...</div>}
-
-      {!isLoading && (data?.items ?? []).length === 0 && (
-        <p className="text-sm text-gray-400 text-center py-4">Sin movimientos</p>
-      )}
-
-      {!isLoading && (data?.items ?? []).length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead className="text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-              <tr>
-                <th className="text-left py-2 pr-3">Fecha</th>
-                <th className="text-left py-2 pr-3">Tipo</th>
-                <th className="text-right py-2 pr-3">Cant.</th>
-                <th className="text-left py-2 pr-3">Referencia</th>
-                <th className="text-left py-2">Motivo</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {(data?.items ?? []).map(m => (
-                <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                  <td className="py-1.5 pr-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-8" />)}
+        </div>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6">Sin movimientos</p>
+      ) : (
+        <div className="rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+          <Table density="compact">
+            <THead>
+              <TR>
+                <TH>Fecha</TH>
+                <TH>Tipo</TH>
+                <TH className="text-right">Cant.</TH>
+                <TH>Referencia</TH>
+                <TH>Motivo</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {items.map(m => (
+                <TR key={m.id}>
+                  <TD className="text-gray-600 dark:text-gray-300 whitespace-nowrap font-num text-xs">
                     {new Date(m.created_at).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}
-                  </td>
-                  <td className="py-1.5 pr-3">
-                    <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                      m.signo > 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                  : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                    }`}>{m.tipo}</span>
-                  </td>
-                  <td className="py-1.5 pr-3 text-right font-mono">
+                  </TD>
+                  <TD>
+                    <Badge variant={m.signo > 0 ? 'success' : 'danger'} size="sm" className="capitalize">{m.tipo}</Badge>
+                  </TD>
+                  <TD className="text-right font-num font-medium">
                     {m.signo > 0 ? '+' : '−'}{m.cantidad}
-                  </td>
-                  <td className="py-1.5 pr-3 text-gray-500">
+                  </TD>
+                  <TD className="text-gray-500 dark:text-gray-400">
                     {m.referencia_tipo ? `${m.referencia_tipo} #${m.referencia_id}` : '—'}
-                  </td>
-                  <td className="py-1.5 text-gray-400">{m.motivo ?? '—'}</td>
-                </tr>
+                  </TD>
+                  <TD className="text-gray-500 dark:text-gray-400">{m.motivo ?? '—'}</TD>
+                </TR>
               ))}
-            </tbody>
-          </table>
+            </TBody>
+          </Table>
         </div>
       )}
 
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-4">
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-            className="px-3 py-1 text-xs border rounded disabled:opacity-40">Anterior</button>
-          <span className="px-3 py-1 text-xs text-gray-500">{page} / {totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-            className="px-3 py-1 text-xs border rounded disabled:opacity-40">Siguiente</button>
+        <div className="flex justify-center items-center gap-2 mt-4">
+          <Button size="xs" variant="outline" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+            Anterior
+          </Button>
+          <span className="px-3 py-1 text-xs text-gray-500 dark:text-gray-400 font-num">{page} / {totalPages}</span>
+          <Button size="xs" variant="outline" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+            Siguiente
+          </Button>
         </div>
       )}
     </div>
