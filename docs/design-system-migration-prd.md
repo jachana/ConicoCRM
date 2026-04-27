@@ -97,8 +97,8 @@ Each scale: `50 → 950`. Shadows: `shadow-elev-1` (resting) → `shadow-elev-4`
 ### Phase D — Auth & shell
 - [x] **Sidebar** (`94cffaa`)
 - [x] **Dashboard** (`b91e5e4`)
-- [ ] Login / password reset
-- [ ] Layout wrapper visual QA
+- [x] **Login** (`5764189`) — *no password reset flow exists in app or routes; mark as N/A until that feature ships*
+- [x] **Layout wrapper visual QA** (`073d5a0`)
 
 ### Phase E — QA & polish
 - [ ] Visual QA pass — every route screenshotted in light + dark, mobile + desktop
