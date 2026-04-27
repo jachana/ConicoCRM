@@ -101,9 +101,9 @@ Each scale: `50 → 950`. Shadows: `shadow-elev-1` (resting) → `shadow-elev-4`
 - [x] **Layout wrapper visual QA** (`073d5a0`)
 
 ### Phase E — QA & polish
-- [ ] Visual QA pass — every route screenshotted in light + dark, mobile + desktop
-- [ ] Replace any remaining `bg-red-*` / `bg-green-*` / `bg-yellow-*` / `bg-blue-*` with semantic tokens (grep gate)
-- [ ] A11y sweep — `aria-label` on every icon-only button, `aria-describedby` on form errors, focus-visible rings
+- [x] **Semantic-token sweep** (`af817b6`) — strict PRD gate `grep -rE "bg-(red|green|yellow|blue|orange)-[0-9]" src/pages` returns zero hits; broader `src/components/**` (outside `ui/*`) also clean. Mapping: red→danger, green→success, yellow/amber/orange→warning, blue→info. Only `components/ui/README.md` keeps raw tokens (documented before/after examples, intentional).
+- [x] **A11y sweep** (`af817b6`) — 9 icon-only `<button>` get `aria-label`, 2 raw native inputs get `aria-describedby` + `aria-invalid` (form-level summaries left as-is — wiring would be guessy), 7 raw `<button>` with custom `bg-*` get `focus-visible:ring-N`, 5 inline danger banners get `role="alert"` for parity with sonner toasts.
+- [ ] Visual QA pass — every route screenshotted in light + dark, mobile + desktop *(deferred; manual pass)*
 - [ ] *Optional:* Storybook for the `ui/*` primitives so designers can sanity-check tokens without running the app
 
 ## 6. Migration patterns / gotchas
