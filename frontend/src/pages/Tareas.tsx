@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Check, X } from 'lucide-react';
+import { Plus, Check, X, Inbox } from 'lucide-react';
+import { toast } from 'sonner';
 import { listarTareas, completarTarea, descartarTarea } from '../api/tareas';
 import type { Tarea, TareaEstado } from '../types/tarea';
 import { useAuth } from '../hooks/useAuth';
 import TareaModal from '../components/TareaModal';
 import TareaDrawer from '../components/TareaDrawer';
+import {
+  Button, FormField, Textarea, EmptyState, Skeleton, Tooltip,
+  Card, CardContent,
+  Table, THead, TBody, TR, TH, TD,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalTitle,
+  Tabs, TabsList, TabsTrigger,
+} from '../components/ui';
 
 function extractErrorDetail(e: unknown, fallback: string): string {
   const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
@@ -55,6 +63,9 @@ export default function TareasPage() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [drawerTarea, setDrawerTarea] = useState<Tarea | null>(null);
+  const [discardTarget, setDiscardTarget] = useState<Tarea | null>(null);
+  const [discardMotivo, setDiscardMotivo] = useState('');
+  const [discardSaving, setDiscardSaving] = useState(false);
   const requestIdRef = useRef(0);
 
   async function cargar() {
@@ -85,19 +96,34 @@ export default function TareasPage() {
       await completarTarea(t.id);
       cargar();
     } catch (e: unknown) {
-      setError(extractErrorDetail(e, 'Error al completar tarea'));
+      toast.error(extractErrorDetail(e, 'Error al completar tarea'));
     }
   }
 
-  async function handleDescartar(t: Tarea, ev: React.MouseEvent) {
+  function openDiscardModal(t: Tarea, ev: React.MouseEvent) {
     ev.stopPropagation();
-    const motivo = prompt('Motivo del descarte:');
+    setDiscardTarget(t);
+    setDiscardMotivo('');
+  }
+
+  function closeDiscardModal() {
+    setDiscardTarget(null);
+    setDiscardMotivo('');
+    setDiscardSaving(false);
+  }
+
+  async function confirmDiscard() {
+    if (!discardTarget) return;
+    const motivo = discardMotivo.trim();
     if (!motivo) return;
+    setDiscardSaving(true);
     try {
-      await descartarTarea(t.id, motivo);
+      await descartarTarea(discardTarget.id, motivo);
+      closeDiscardModal();
       cargar();
     } catch (e: unknown) {
-      setError(extractErrorDetail(e, 'Error al descartar tarea'));
+      toast.error(extractErrorDetail(e, 'Error al descartar tarea'));
+      setDiscardSaving(false);
     }
   }
 
@@ -106,47 +132,39 @@ export default function TareasPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5 gap-2">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Tareas</h1>
-        <button
-          onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 px-3 md:px-4 py-2 bg-brand-500 hover:bg-brand-400 text-gray-900 text-sm font-semibold rounded-lg transition-colors"
-        >
-          <Plus size={16} />
+        <Button leftIcon={<Plus size={16} />} onClick={() => setModalOpen(true)}>
           <span className="hidden sm:inline">Nueva tarea</span>
           <span className="sm:hidden">Nueva</span>
-        </button>
+        </Button>
       </div>
 
       {/* Tabs */}
-      <div className="mb-4 border-b border-gray-200 dark:border-gray-800 flex gap-1">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === t
-                ? 'border-brand-500 text-brand-600 dark:text-brand-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-            }`}
-          >
-            {TAB_LABELS[t]}
-            {tab === t && total > 0 && (
-              <span className="ml-2 text-xs text-gray-400">({total})</span>
-            )}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as TareaEstado)} className="mb-4">
+        <TabsList variant="underline">
+          {TABS.map((t) => (
+            <TabsTrigger key={t} value={t}>
+              {TAB_LABELS[t]}
+              {tab === t && total > 0 && (
+                <span className="ml-1 text-xs text-gray-400 font-num">({total})</span>
+              )}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {error && (
-        <div className="mb-4 px-3 py-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg">
+        <div className="mb-4 px-3 py-2 text-sm text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-500/10 border border-danger-500/30 rounded-lg">
           {error}
         </div>
       )}
 
       {/* List */}
       {loading ? (
-        <div className="text-gray-400 py-12 text-center text-sm">Cargando...</div>
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
+        </div>
       ) : tareas.length === 0 ? (
-        <div className="text-gray-400 py-12 text-center text-sm">Sin tareas</div>
+        <EmptyState icon={<Inbox />} title="Sin tareas" />
       ) : (
         <>
           {/* Mobile cards */}
@@ -155,142 +173,158 @@ export default function TareasPage() {
               const link = entidadLink(t);
               const puedeDescartar = tab === 'pendiente' && (t.origen === 'auto' || isAdmin);
               return (
-                <div
+                <Card
                   key={t.id}
                   onClick={() => setDrawerTarea(t)}
-                  className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base" title={t.prioridad_derivada}>
-                          {ICONO_PRIORIDAD[t.prioridad_derivada] ?? '⚪'}
-                        </span>
-                        <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight truncate">
-                          {t.titulo}
-                        </p>
+                  <CardContent>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Tooltip label={t.prioridad_derivada}>
+                            <span className="text-base">
+                              {ICONO_PRIORIDAD[t.prioridad_derivada] ?? '⚪'}
+                            </span>
+                          </Tooltip>
+                          <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight truncate">
+                            {t.titulo}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 pl-7">
+                          {link && (
+                            <Link
+                              to={link.href}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs text-brand-600 dark:text-brand-400 hover:underline"
+                            >
+                              {link.label}
+                            </Link>
+                          )}
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {t.asignado_nombre}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 font-num">
+                            Vence {fmtDate(t.due_date)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 pl-7">
-                        {link && (
-                          <Link
-                            to={link.href}
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-xs text-brand-600 dark:text-brand-400 hover:underline"
-                          >
-                            {link.label}
-                          </Link>
-                        )}
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {t.asignado_nombre}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          Vence {fmtDate(t.due_date)}
-                        </span>
-                      </div>
+                      {tab === 'pendiente' && (
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Tooltip label="Completar">
+                            <Button
+                              size="icon-sm"
+                              variant="ghost"
+                              onClick={(e) => handleCompletar(t, e)}
+                            >
+                              <Check size={16} />
+                            </Button>
+                          </Tooltip>
+                          {puedeDescartar && (
+                            <Tooltip label="Descartar">
+                              <Button
+                                size="icon-sm"
+                                variant="ghost"
+                                className="text-gray-500 hover:text-danger-600 hover:bg-danger-500/10"
+                                onClick={(e) => openDiscardModal(t, e)}
+                              >
+                                <X size={16} />
+                              </Button>
+                            </Tooltip>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    {tab === 'pendiente' && (
-                      <div className="flex gap-1 flex-shrink-0">
-                        <button
-                          onClick={(e) => handleCompletar(t, e)}
-                          title="Completar"
-                          className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                        >
-                          <Check size={16} />
-                        </button>
-                        {puedeDescartar && (
-                          <button
-                            onClick={(e) => handleDescartar(t, e)}
-                            title="Descartar"
-                            className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                          >
-                            <X size={16} />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
 
           {/* Desktop table */}
-          <div className="hidden md:block bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium w-10"></th>
-                  <th className="text-left px-4 py-3 font-medium">Título</th>
-                  <th className="text-left px-4 py-3 font-medium">Vinculado</th>
-                  <th className="text-left px-4 py-3 font-medium">Asignado</th>
-                  <th className="text-left px-4 py-3 font-medium">Vence</th>
-                  <th className="text-left px-4 py-3 font-medium w-24">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {tareas.map((t) => {
-                  const link = entidadLink(t);
-                  const puedeDescartar = tab === 'pendiente' && (t.origen === 'auto' || isAdmin);
-                  return (
-                    <tr
-                      key={t.id}
-                      onClick={() => setDrawerTarea(t)}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
-                    >
-                      <td className="px-4 py-3 text-base" title={t.prioridad_derivada}>
-                        {ICONO_PRIORIDAD[t.prioridad_derivada] ?? '⚪'}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
-                        {t.titulo}
-                      </td>
-                      <td className="px-4 py-3">
-                        {link ? (
-                          <Link
-                            to={link.href}
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-brand-600 dark:text-brand-400 hover:underline"
-                          >
-                            {link.label}
-                          </Link>
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                        {t.asignado_nombre}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                        {fmtDate(t.due_date)}
-                      </td>
-                      <td className="px-4 py-3">
-                        {tab === 'pendiente' ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={(e) => handleCompletar(t, e)}
-                              title="Completar"
-                              className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
+          <div className="hidden md:block">
+            <Card>
+              <Table density="compact">
+                <THead>
+                  <TR>
+                    <TH className="w-10" />
+                    <TH>Título</TH>
+                    <TH>Vinculado</TH>
+                    <TH>Asignado</TH>
+                    <TH>Vence</TH>
+                    <TH className="w-24">Acciones</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {tareas.map((t) => {
+                    const link = entidadLink(t);
+                    const puedeDescartar = tab === 'pendiente' && (t.origen === 'auto' || isAdmin);
+                    return (
+                      <TR key={t.id} interactive onClick={() => setDrawerTarea(t)}>
+                        <TD>
+                          <Tooltip label={t.prioridad_derivada}>
+                            <span className="text-base">
+                              {ICONO_PRIORIDAD[t.prioridad_derivada] ?? '⚪'}
+                            </span>
+                          </Tooltip>
+                        </TD>
+                        <TD className="font-medium text-gray-900 dark:text-white">
+                          {t.titulo}
+                        </TD>
+                        <TD>
+                          {link ? (
+                            <Link
+                              to={link.href}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-brand-600 dark:text-brand-400 hover:underline"
                             >
-                              <Check size={15} />
-                            </button>
-                            {puedeDescartar && (
-                              <button
-                                onClick={(e) => handleDescartar(t, e)}
-                                title="Descartar"
-                                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                              >
-                                <X size={15} />
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-gray-400 text-xs">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                              {link.label}
+                            </Link>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </TD>
+                        <TD className="text-gray-500 dark:text-gray-400">
+                          {t.asignado_nombre}
+                        </TD>
+                        <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">
+                          {fmtDate(t.due_date)}
+                        </TD>
+                        <TD>
+                          {tab === 'pendiente' ? (
+                            <div className="flex items-center gap-1">
+                              <Tooltip label="Completar">
+                                <Button
+                                  size="icon-sm"
+                                  variant="ghost"
+                                  onClick={(e) => handleCompletar(t, e)}
+                                >
+                                  <Check size={15} />
+                                </Button>
+                              </Tooltip>
+                              {puedeDescartar && (
+                                <Tooltip label="Descartar">
+                                  <Button
+                                    size="icon-sm"
+                                    variant="ghost"
+                                    className="text-gray-500 hover:text-danger-600 hover:bg-danger-500/10"
+                                    onClick={(e) => openDiscardModal(t, e)}
+                                  >
+                                    <X size={15} />
+                                  </Button>
+                                </Tooltip>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-xs">—</span>
+                          )}
+                        </TD>
+                      </TR>
+                    );
+                  })}
+                </TBody>
+              </Table>
+            </Card>
           </div>
         </>
       )}
@@ -312,6 +346,44 @@ export default function TareasPage() {
           onChanged={cargar}
         />
       )}
+
+      {/* Discard modal — replaces prompt() */}
+      <Modal
+        open={!!discardTarget}
+        onOpenChange={(o) => { if (!o && !discardSaving) closeDiscardModal() }}
+      >
+        <ModalContent size="sm">
+          <ModalHeader>
+            <ModalTitle>Descartar tarea</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              {discardTarget?.titulo}
+            </p>
+            <FormField label="Motivo del descarte" required>
+              <Textarea
+                value={discardMotivo}
+                onChange={(e) => setDiscardMotivo(e.target.value)}
+                placeholder="Explica por qué se descarta esta tarea..."
+                rows={3}
+                autoFocus
+              />
+            </FormField>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="outline" onClick={closeDiscardModal} disabled={discardSaving}>
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              disabled={!discardMotivo.trim() || discardSaving}
+              onClick={confirmDiscard}
+            >
+              {discardSaving ? 'Descartando…' : 'Descartar'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
