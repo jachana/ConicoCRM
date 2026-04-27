@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   FileText,
@@ -75,12 +75,10 @@ const FILTER_PILLS: { tipo: TimelineTipo; label: string }[] = [
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-function fmtDate(fecha: string) {
-  return new Date(fecha + 'T00:00:00').toLocaleDateString('es-CL', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
+function fmtDate(fecha: string): string {
+  const d = new Date(fecha + 'T00:00:00')
+  if (isNaN(d.getTime())) return fecha
+  return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
 function fmtMoney(monto: string) {
@@ -93,7 +91,10 @@ function fmtMoney(monto: string) {
 
 function SkeletonRow() {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800 last:border-0">
+    <div
+      data-testid="timeline-skeleton-row"
+      className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800 last:border-0"
+    >
       <Skeleton shape="circle" className="size-8 flex-shrink-0" />
       <div className="flex-1 flex flex-col gap-1.5">
         <Skeleton shape="text" className="w-2/5" />
@@ -177,48 +178,43 @@ export interface TimelineProps {
 
 export default function Timeline({ scope, entityId, pageSize = 25 }: TimelineProps) {
   const [activeTipos, setActiveTipos] = useState<TimelineTipo[]>([])
-  const [offset, setOffset] = useState(0)
-  const [accumulated, setAccumulated] = useState<TimelineEvent[]>([])
-  const [total, setTotal] = useState(0)
 
   // tipos to send: empty = all
   const tiposParam = activeTipos.length > 0 ? activeTipos : undefined
 
-  const { isLoading, isError } = useQuery({
-    queryKey: ['timeline', scope, entityId, tiposParam, offset],
-    queryFn: async () => {
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['timeline', scope, entityId, tiposParam],
+    queryFn: ({ pageParam = 0 }) => {
       const fetchFn = scope === 'cliente' ? getClienteTimeline : getEmpresaTimeline
-      const page = await fetchFn(entityId, {
-        tipos: tiposParam,
-        limit: pageSize,
-        offset,
-      })
-      setTotal(page.total)
-      setAccumulated(prev => offset === 0 ? page.items : [...prev, ...page.items])
-      return page
+      return fetchFn(entityId, { tipos: tiposParam, limit: pageSize, offset: pageParam as number })
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((sum, p) => sum + p.items.length, 0)
+      return loaded < lastPage.total ? loaded : undefined
     },
     enabled: !!entityId,
   })
+
+  const items = data?.pages.flatMap(p => p.items) ?? []
+  const total = data?.pages[0]?.total ?? 0
 
   function toggleTipo(tipo: TimelineTipo) {
     setActiveTipos(prev =>
       prev.includes(tipo) ? prev.filter(t => t !== tipo) : [...prev, tipo],
     )
-    setOffset(0)
-    setAccumulated([])
   }
 
   function clearFilters() {
     setActiveTipos([])
-    setOffset(0)
-    setAccumulated([])
   }
-
-  function handleLoadMore() {
-    setOffset(prev => prev + pageSize)
-  }
-
-  const canLoadMore = !isLoading && !isError && offset + accumulated.length < total
 
   return (
     <div className="flex flex-col gap-3">
@@ -248,7 +244,7 @@ export default function Timeline({ scope, entityId, pageSize = 25 }: TimelinePro
       {/* List */}
       <Card>
         <CardContent className="p-0">
-          {isLoading && offset === 0 ? (
+          {isLoading ? (
             <div>
               {Array.from({ length: 6 }).map((_, i) => (
                 <SkeletonRow key={i} />
@@ -261,26 +257,39 @@ export default function Timeline({ scope, entityId, pageSize = 25 }: TimelinePro
             >
               Error al cargar el historial de actividad.
             </div>
-          ) : accumulated.length === 0 ? (
+          ) : items.length === 0 ? (
             <EmptyState icon={<Inbox />} title="Sin actividad registrada" />
           ) : (
             <div>
-              {accumulated.map((item, idx) => (
-                <EventRow key={`${item.tipo}-${item.id}-${idx}`} item={item} />
+              {items.map(item => (
+                <EventRow key={`${item.tipo}-${item.id}`} item={item} />
               ))}
             </div>
           )}
         </CardContent>
 
         {/* Load more */}
-        {canLoadMore && (
+        {(hasNextPage || isFetchingNextPage) && (
           <div className="px-4 pb-4 pt-2 border-t border-gray-100 dark:border-gray-800">
-            <Button variant="outline" size="sm" fullWidth onClick={handleLoadMore}>
-              Cargar más
+            <Button
+              variant="outline"
+              size="sm"
+              fullWidth
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage ? 'Cargando...' : 'Cargar más'}
             </Button>
           </div>
         )}
       </Card>
+
+      {/* Hidden total for tests / a11y */}
+      {total > 0 && (
+        <p className="sr-only" aria-live="polite">
+          {items.length} de {total} eventos
+        </p>
+      )}
     </div>
   )
 }
