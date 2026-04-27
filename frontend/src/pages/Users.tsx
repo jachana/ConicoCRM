@@ -5,7 +5,7 @@ import type { User, Permissions, Module, Action } from '../types'
 
 const MODULES: Module[] = [
   'catalogo','clientes','empresas','proveedores','cotizaciones','nota_venta',
-  'facturas','ordenes_compra','inventario','rrhh','dashboard','usuarios',
+  'facturas','ordenes_compra','inventario','rrhh','dashboard','usuarios','guias_despacho',
 ]
 const ACTIONS: Action[] = ['view','create','edit','delete']
 
@@ -13,7 +13,7 @@ const MODULE_LABELS: Record<Module, string> = {
   catalogo: 'Catálogo', clientes: 'Clientes', empresas: 'Empresas', proveedores: 'Proveedores',
   cotizaciones: 'Cotizaciones', nota_venta: 'Nota de Venta', facturas: 'Facturas',
   ordenes_compra: 'Órdenes de Compra', inventario: 'Inventario',
-  rrhh: 'RRHH', dashboard: 'Dashboard', usuarios: 'Usuarios',
+  rrhh: 'RRHH', dashboard: 'Dashboard', usuarios: 'Usuarios', guias_despacho: 'Guías de Despacho',
 }
 
 const ACTION_LABELS: Record<Action, string> = {

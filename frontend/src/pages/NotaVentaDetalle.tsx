@@ -2,7 +2,7 @@ import { openPdf } from '../lib/pdf'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, FileText, Mail, ArrowLeft, ExternalLink, Receipt } from 'lucide-react'
+import { Plus, Trash2, FileText, Mail, ArrowLeft, ExternalLink, Receipt, Truck } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { NotaVenta, NotaVentaLinea, Cliente, User, Producto, Empresa, SedeDespacho } from '../types'
@@ -546,6 +546,15 @@ export default function NotaVentaDetalle() {
                   className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
                 >
                   <Receipt size={15} /> Generar Factura
+                </button>
+              )}
+              {nv && nv.estado !== 'cancelada' && (
+                <button
+                  onClick={() => navigate(`/guias-despacho/nueva?nv_id=${nv.id}`)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                  title="Crear guía de despacho desde esta NV"
+                >
+                  <Truck size={15} /> Generar guía
                 </button>
               )}
               {nv?.factura_id != null && (

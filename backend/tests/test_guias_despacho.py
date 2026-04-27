@@ -460,3 +460,27 @@ def test_numeracion_concurrente_guias(mock_emit, client, admin_token):
     # TODO(W1-05-followup): implementar test threaded (ver test_boletas.py:280-310)
     # si se decide habilitar en sprint futuro. Por ahora esqueleto skipif en SQLite.
     pytest.skip("TODO(W1-05-followup): implementar concurrencia threaded cuando corra en Postgres")
+
+
+# ── 12. Export Excel ───────────────────────────────────────────────────────────
+
+
+@patch("app.api.guias_despacho.emit_dte")
+def test_exportar_excel_admin(mock_emit, client, admin_token, db):
+    """GET /export/excel retorna .xlsx con content-type correcto y contenido no vacío."""
+    payload = {
+        "cliente_id": 1,
+        "motivo_traslado": 1,
+        "direccion_destino": "Av Test 123",
+        "comuna_destino": "Santiago",
+        "lineas": [{"descripcion": "Item", "cantidad": "1", "precio_unitario": "1000"}],
+    }
+    client.post("/api/guias-despacho/", json=payload,
+                headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get("/api/guias-despacho/export/excel",
+                   headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    assert len(r.content) > 100
