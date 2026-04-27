@@ -212,6 +212,75 @@ def eliminar_guia(
         raise
 
 
+@router.get("/export/excel")
+def exportar_excel(
+    perms: tuple[User, Session] = require_permission("guias_despacho", "view"),
+    fecha_desde: str | None = None,
+    fecha_hasta: str | None = None,
+    cliente_id: int | None = None,
+    estado: list[str] | None = Query(None),
+    dte_estado: list[str] | None = Query(None),
+    motivo_traslado: int | None = None,
+    vendedor_id: int | None = None,
+):
+    user, db = perms
+    q = db.query(GuiaDespacho).options(
+        joinedload(GuiaDespacho.cliente),
+        joinedload(GuiaDespacho.vendedor),
+    )
+    if user.role == "vendedor":
+        q = q.filter(GuiaDespacho.vendedor_id == user.id)
+    if fecha_desde:
+        q = q.filter(GuiaDespacho.fecha >= fecha_desde)
+    if fecha_hasta:
+        q = q.filter(GuiaDespacho.fecha <= fecha_hasta)
+    if cliente_id:
+        q = q.filter(GuiaDespacho.cliente_id == cliente_id)
+    if estado:
+        q = q.filter(GuiaDespacho.estado.in_(estado))
+    if dte_estado:
+        q = q.filter(GuiaDespacho.dte_estado.in_(dte_estado))
+    if motivo_traslado:
+        q = q.filter(GuiaDespacho.motivo_traslado == motivo_traslado)
+    if vendedor_id:
+        q = q.filter(GuiaDespacho.vendedor_id == vendedor_id)
+
+    rows = q.order_by(GuiaDespacho.fecha.desc(), GuiaDespacho.numero.desc()).all()
+
+    from openpyxl import Workbook
+    from io import BytesIO
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Guías de Despacho"
+    ws.append([
+        "N°", "Fecha", "Cliente", "RUT", "Motivo", "NV vinculada",
+        "Total neto", "IVA", "Total", "Estado", "DTE", "Vendedor",
+    ])
+    for g in rows:
+        ws.append([
+            g.numero,
+            g.fecha.isoformat() if g.fecha else "",
+            g.cliente.nombre if g.cliente else "",
+            g.cliente.rut if g.cliente else "",
+            g.motivo_traslado,
+            g.nota_venta_id or "",
+            float(g.total_neto or 0),
+            float(g.total_iva or 0),
+            float(g.total or 0),
+            g.estado,
+            g.dte_estado,
+            g.vendedor.name if g.vendedor else "",
+        ])
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return Response(
+        content=buf.read(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="guias-despacho.xlsx"'},
+    )
+
+
 @router.get("/{guia_id}/pdf")
 def descargar_pdf_guia(
     guia_id: int,
