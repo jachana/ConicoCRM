@@ -84,8 +84,7 @@ Each scale: `50 → 950`. Shadows: `shadow-elev-1` (resting) → `shadow-elev-4`
 - [x] **Empresas list + detail + 4 tabs** (`df202e4`)
 - [x] **Clientes list + form modal** (`d6fa479`)
 - [x] **Inventario + ProductoModal + ProductoHistorial** (`8cf5960`)
-- [ ] Catálogo (productos list page) — *verify if already migrated*
-- [ ] Listas de precios
+- [x] **B6 — Productos catálogo + ListasPrecios** (`496e0f0`)
 
 ### Phase C — Admin & ops
 - [ ] Tareas + admin/tareas/config
