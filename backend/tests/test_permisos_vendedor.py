@@ -371,3 +371,96 @@ def test_vendedor_nv_detail_hides_margen(client, vendedor_user, vendedor_token):
     data = resp.json()
     for linea in data.get("lineas", []):
         assert linea["margen"] is None
+
+
+# ---------------------------------------------------------------------------
+# Timeline scoping tests
+# ---------------------------------------------------------------------------
+
+def _make_tareas_for_timeline(vendedor_user, admin_user):
+    """Create a cotizacion with two tasks: one for vendedor, one for admin."""
+    from tests.conftest import TestingSession
+    from app.models.cliente import Cliente
+    from app.models.cotizacion import Cotizacion
+    from app.models.tarea import Tarea
+    from decimal import Decimal
+
+    db = TestingSession()
+    try:
+        cliente = Cliente(nombre="Cliente Timeline Test")
+        db.add(cliente)
+        db.flush()
+
+        total_neto = Decimal("1000")
+        iva = total_neto * Decimal("0.19")
+        total = total_neto + iva
+
+        cot = Cotizacion(
+            numero=99901,
+            cliente_id=cliente.id,
+            vendedor_id=vendedor_user.id,
+            fecha=date(2026, 4, 28),
+            estado="no_definido",
+            total_neto=total_neto,
+            total_iva=iva,
+            total=total,
+            validez_dias=5,
+        )
+        db.add(cot)
+        db.flush()
+
+        tarea_vendedor = Tarea(
+            titulo="Tarea del vendedor",
+            due_date=date(2026, 5, 1),
+            estado="pendiente",
+            origen="manual",
+            asignado_id=vendedor_user.id,
+            creado_por_id=vendedor_user.id,
+            cotizacion_id=cot.id,
+        )
+        tarea_admin = Tarea(
+            titulo="Tarea del admin",
+            due_date=date(2026, 5, 2),
+            estado="pendiente",
+            origen="manual",
+            asignado_id=admin_user.id,
+            creado_por_id=admin_user.id,
+            cotizacion_id=cot.id,
+        )
+        db.add(tarea_vendedor)
+        db.add(tarea_admin)
+        db.commit()
+        return cot.id
+    finally:
+        db.close()
+
+
+def test_vendedor_timeline_sees_only_own_tasks(
+    client, vendedor_user, vendedor_token, admin_user, admin_token
+):
+    cot_id = _make_tareas_for_timeline(vendedor_user, admin_user)
+    resp = client.get(
+        f"/api/tareas/timeline/cotizacion/{cot_id}",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert resp.status_code == 200
+    tareas = resp.json()
+    assert len(tareas) == 1
+    assert tareas[0]["asignado_id"] == vendedor_user.id
+    assert tareas[0]["titulo"] == "Tarea del vendedor"
+
+
+def test_admin_timeline_sees_all_tasks(
+    client, vendedor_user, vendedor_token, admin_user, admin_token
+):
+    cot_id = _make_tareas_for_timeline(vendedor_user, admin_user)
+    resp = client.get(
+        f"/api/tareas/timeline/cotizacion/{cot_id}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+    tareas = resp.json()
+    assert len(tareas) == 2
+    asignados = {t["asignado_id"] for t in tareas}
+    assert vendedor_user.id in asignados
+    assert admin_user.id in asignados
