@@ -124,7 +124,7 @@
       ]
     },
     {
-      "list": "Bugs",
+      "list": "In review",
       "name": "[Tests] Baseline failures Empresas + Facturas (12 fails)",
       "labels": [
         "Bug"
