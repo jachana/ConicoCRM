@@ -93,6 +93,7 @@ export default function FacturaDetalle() {
   const [bancoReceptorId, setBancoReceptorId] = useState<number | null>(null)
   const [metodoPago, setMetodoPago] = useState<string>('')
   const [lineas, setLineas] = useState<LineaLocal[]>([])
+  const [referenciasDocs, setReferenciasDocs] = useState<Array<{tipo: string; folio: string; fecha: string; razon?: string}>>([])
 
   const { data: factura } = useQuery<Factura>({
     queryKey: ['factura', id],
@@ -118,6 +119,7 @@ export default function FacturaDetalle() {
           _key: `${l.id ?? i}`,
         }))
       )
+      setReferenciasDocs(factura.referencias_docs ?? [])
     }
   }, [factura])
 
@@ -200,6 +202,7 @@ export default function FacturaDetalle() {
         empresa_id: empresaId || null,
         banco_receptor_id: bancoReceptorId,
         metodo_pago: metodoPago || null,
+        referencias_docs: referenciasDocs.length > 0 ? referenciasDocs : null,
       }
       await api.patch(`/api/facturas/${id}`, payload)
       if (editingLineas) {
@@ -244,6 +247,7 @@ export default function FacturaDetalle() {
           _key: `${l.id ?? i}`,
         }))
       )
+      setReferenciasDocs(factura.referencias_docs ?? [])
     }
     setEditing(false)
     setEditingLineas(false)
@@ -695,6 +699,98 @@ export default function FacturaDetalle() {
           )}
         </CardContent>
       </Card>
+
+      {/* Documentos referenciados */}
+      {editing && (
+        <div className="mb-5">
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Documentos referenciados</h2>
+            <Button
+              size="xs"
+              leftIcon={<Plus />}
+              onClick={() => setReferenciasDocs(prev => [...prev, { tipo: '801', folio: '', fecha: new Date().toISOString().split('T')[0], razon: '' }])}
+            >
+              Agregar
+            </Button>
+          </div>
+          {referenciasDocs.length === 0 ? (
+            <Card>
+              <p className="px-4 py-5 text-sm text-gray-400 dark:text-gray-500 text-center">Sin documentos referenciados</p>
+            </Card>
+          ) : (
+            <Card className="overflow-x-auto">
+              <Table density="compact" className="min-w-[640px]">
+                <THead>
+                  <TR>
+                    <TH className="w-48">Tipo</TH>
+                    <TH className="w-32">Folio</TH>
+                    <TH className="w-36">Fecha</TH>
+                    <TH>Razón</TH>
+                    <TH className="w-10" />
+                  </TR>
+                </THead>
+                <TBody>
+                  {referenciasDocs.map((ref, idx) => (
+                    <TR key={idx}>
+                      <TD>
+                        <select
+                          value={ref.tipo}
+                          onChange={e => setReferenciasDocs(prev => prev.map((r, i) => i !== idx ? r : { ...r, tipo: e.target.value }))}
+                          className="w-full text-sm rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        >
+                          <option value="801">Orden de Compra (801)</option>
+                          <option value="802">HES (802)</option>
+                          <option value="803">Contrato (803)</option>
+                          <option value="52">Guía de Despacho (52)</option>
+                        </select>
+                      </TD>
+                      <TD>
+                        <Input
+                          size="sm"
+                          type="text"
+                          value={ref.folio}
+                          onChange={e => setReferenciasDocs(prev => prev.map((r, i) => i !== idx ? r : { ...r, folio: e.target.value }))}
+                          placeholder="Folio"
+                        />
+                      </TD>
+                      <TD>
+                        <Input
+                          size="sm"
+                          type="date"
+                          value={ref.fecha}
+                          onChange={e => setReferenciasDocs(prev => prev.map((r, i) => i !== idx ? r : { ...r, fecha: e.target.value }))}
+                        />
+                      </TD>
+                      <TD>
+                        <Input
+                          size="sm"
+                          type="text"
+                          value={ref.razon ?? ''}
+                          onChange={e => setReferenciasDocs(prev => prev.map((r, i) => i !== idx ? r : { ...r, razon: e.target.value }))}
+                          placeholder="Opcional"
+                        />
+                      </TD>
+                      <TD>
+                        <Tooltip label="Eliminar">
+                          <Button
+                            size="icon-xs"
+                            variant="ghost"
+                            onClick={() => setReferenciasDocs(prev => prev.filter((_, i) => i !== idx))}
+                            aria-label="Eliminar referencia"
+                            className="text-gray-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                          >
+                            <Trash2 size={13} />
+                          </Button>
+                        </Tooltip>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Pagos section */}
       {factura.estado !== 'anulada' && (
