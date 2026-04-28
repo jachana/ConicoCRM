@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
-import { Eye, ChevronDown, X, Inbox } from 'lucide-react'
+import { Eye, ChevronDown, X, Inbox, FileSpreadsheet } from 'lucide-react'
 import { api } from '../lib/api'
 import type { FacturaList, FlatLine } from '../types'
 import ExportPreviewPanel from '../components/ExportPreviewPanel'
@@ -122,6 +122,7 @@ export default function Facturas() {
   const [productoSearch, setProductoSearch] = useState('')
   const [openPill, setOpenPill] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'list' | 'preview'>('list')
+  const [showPreview, setShowPreview] = useState(false)
   const filterBarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -231,6 +232,14 @@ export default function Facturas() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5 gap-2">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Facturas</h1>
+        <Button
+          variant={showPreview ? 'primary' : 'secondary'}
+          size="sm"
+          leftIcon={<FileSpreadsheet size={15} />}
+          onClick={() => { setShowPreview(p => !p); setActiveTab('list') }}
+        >
+          Exportar
+        </Button>
       </div>
 
       {/* Filter bar */}
@@ -375,7 +384,7 @@ export default function Facturas() {
       </div>
 
       {/* Mobile tab toggle */}
-      <div className="lg:hidden flex gap-0 mb-4 border-b border-gray-200 dark:border-gray-800">
+      <div className={`${showPreview ? 'flex' : 'hidden'} lg:hidden gap-0 mb-4 border-b border-gray-200 dark:border-gray-800`}>
         {(['list', 'preview'] as const).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
@@ -389,7 +398,7 @@ export default function Facturas() {
       </div>
 
       {/* Split layout */}
-      <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+      <div className={showPreview ? 'lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start' : ''}>
 
         {/* Left: list */}
         <div className={activeTab === 'list' ? '' : 'hidden lg:block'}>
@@ -490,7 +499,7 @@ export default function Facturas() {
         </div>
 
         {/* Right: preview panel */}
-        <div className={activeTab === 'preview' ? '' : 'hidden lg:block'}>
+        <div className={!showPreview ? 'hidden' : activeTab === 'preview' ? '' : 'hidden lg:block'}>
           <Card>
             <CardContent className="p-4">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
