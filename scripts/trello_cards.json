@@ -1679,6 +1679,31 @@
         "Phase D — Login + AppLayout QA",
         "Phase E — Semantic-token sweep + a11y pass (grep gate clean)"
       ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Factura] Documentos referenciados (OC, HES, contrato, guía, NV)",
+      "labels": [
+        "Core",
+        "DTE/SII"
+      ],
+      "desc": "Las facturas frecuentemente referencian otros documentos — la más común es la Orden de Compra del cliente, pero también HES, contrato, resolución, guía de despacho previa, o nota de venta interna. Hoy ese dato no se captura ni se persiste, lo que rompe el match contable del cliente y obliga a re-emitir.\n\nModelo: lista de referencias por factura (N:1). Cada referencia tiene tipo, folio, fecha y razón. Se mapea al bloque <Referencia> del XML SII al emitir DTE.\n\nTipos de documento referenciado SII (TpoDocRef):\n- 33/34/39/41/52/56/61 → DTEs (NC referencia a factura, factura referencia a guía, etc.)\n- 801 Orden de Compra (caso más común)\n- 802 Nota de Pedido\n- 803 Contrato\n- 804 Resolución\n- 805 Proceso ChileCompra\n- 806 Ficha ChileCompra\n- 807 DUS\n- 808 B/L\n- 809 AWB\n- 810 MIC/DTA\n- 811 Carta de Porte\n- HES, NV interna, etc. (tipo libre con código de texto)",
+      "checklist": [
+        "Modelo: ReferenciaFactura (factura_id, tipo_doc, folio, fecha, razon, codigo_tipo_sii)",
+        "Soportar 1..N referencias por factura (lista, no campo único)",
+        "Tipo de doc desde catálogo SII (33,34,39,41,52,56,61,801..811) + tipo libre 'OTROS' con texto",
+        "UI emisión: sección 'Documentos referenciados' en formulario de factura, agregar/quitar filas",
+        "Caso rápido: botón 'Referenciar OC' con input de número + fecha (autocompleta tipo=801)",
+        "Validación: si tipo es DTE (33,34,...), folio debe ser numérico; si es 801/HES/contrato, libre",
+        "Persistencia: tabla referencias_factura con FK a factura (cascade delete)",
+        "Render en ficha de factura: bloque visible con todas las referencias",
+        "PDF/preview: incluir referencias bajo el detalle (igual que el SII las imprime)",
+        "DTE XML emisión (Lioren): mapear referencias al bloque <Referencia> del XML",
+        "Filtro/búsqueda en lista de facturas: 'Buscar por OC referenciada' (input → match en folio referencia tipo 801)",
+        "Ficha de Empresa/Cliente: columna 'OC' en historial de facturas (primera referencia tipo 801)",
+        "Migración legacy: campo opcional en import facturas históricas (tipo + folio + fecha)",
+        "Tests: emitir factura con 0/1/N referencias, validar XML SII, búsqueda por OC retorna factura"
+      ]
     }
   ]
 }
