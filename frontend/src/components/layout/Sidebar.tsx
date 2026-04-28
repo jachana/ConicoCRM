@@ -26,6 +26,7 @@ interface NavItem {
   label: string
   module?: Module
   adminOnly?: boolean
+  end?: boolean
 }
 
 interface NavSection {
@@ -55,7 +56,7 @@ const SECTIONS: NavSection[] = [
     label: 'Catálogo',
     items: [
       { to: '/catalogo',                  icon: Package,   label: 'Catálogo',          module: 'catalogo' },
-      { to: '/inventario',                icon: Warehouse, label: 'Inventario',        module: 'inventario' },
+      { to: '/inventario',                icon: Warehouse, label: 'Inventario',        module: 'inventario', end: true },
       { to: '/inventario/listas-precios', icon: FileText,  label: 'Listas de precios', adminOnly: true },
     ],
   },
@@ -238,7 +239,7 @@ function NavRow({ item, collapsed, onClose, badge }: NavRowProps) {
     <div className="group/row relative">
       <NavLink
         to={to}
-        end={to === '/'}
+        end={to === '/' || !!item.end}
         onClick={onClose}
         className={({ isActive }) =>
           `relative flex items-center gap-3 px-3 py-2.5 mx-1.5 rounded-lg text-sm transition-colors

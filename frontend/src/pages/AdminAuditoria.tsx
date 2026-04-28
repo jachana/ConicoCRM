@@ -118,7 +118,7 @@ export default function AdminAuditoria() {
   if (!isAdmin) {
     return (
       <div className="p-6">
-        <h1 className="text-xl font-semibold mb-4">Auditoría</h1>
+        <h1 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Auditoría</h1>
         <Card padded>
           <EmptyState
             icon={<Lock />}
@@ -133,7 +133,7 @@ export default function AdminAuditoria() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold">Auditoría</h1>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Auditoría</h1>
         <Button
           variant="outline"
           size="sm"

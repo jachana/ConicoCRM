@@ -33,7 +33,7 @@ export default function Cobranza() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Cobranza</h1>
+      <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Cobranza</h1>
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
         <TabsList variant="underline">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
@@ -109,7 +109,7 @@ function DashboardTab() {
 
       {/* Aging */}
       <div>
-        <h2 className="text-lg font-semibold mb-2">Aging</h2>
+        <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Aging</h2>
         <Card>
           <Table density="compact">
             <THead>
@@ -134,7 +134,7 @@ function DashboardTab() {
 
       {/* Por empresa */}
       <div>
-        <h2 className="text-lg font-semibold mb-2">Por empresa</h2>
+        <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Por empresa</h2>
         <Card>
           <Table density="compact">
             <THead>
