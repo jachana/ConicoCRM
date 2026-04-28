@@ -327,6 +327,9 @@
         "Re-deploy backend en Coolify",
         "Verificar /configuracion sin error de consola",
         "Auditar otros endpoints que dependen de redirect 307"
+      ],
+      "commits": [
+        "e3ea0038a46f138c2431da98b4900257d0e82a79"
       ]
     },
     {

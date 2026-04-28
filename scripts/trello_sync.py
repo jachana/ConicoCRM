@@ -28,6 +28,12 @@ Usage:
   python scripts/trello_sync.py --enrich      # LLM triage of bare cards (pull first, then run)
   python scripts/trello_sync.py --enrich --model sonnet  # use Sonnet instead of Haiku
   python scripts/trello_sync.py --apply --only-cards "[W1-05]"   # filter by name substring
+  python scripts/trello_sync.py --link-commit HEAD --card "[Bug:HTTPS]"  # tag commit -> card
+
+Card schema gains optional `"commits": ["<sha>", ...]` (full or short hashes).
+On --apply they render at the bottom of the desc as a "Resuelto por" markdown
+list with GitHub commit links (resolved from `git config remote.origin.url`),
+bracketed by HTML markers so --pull strips them back into the structured field.
 
 Re-running --apply is safe: existing cards get description + label + checklist
 refreshed; missing cards are created; nothing is deleted.
@@ -44,6 +50,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -79,6 +87,94 @@ PROVIDER_MODELS = {
     },
 }
 DONE_LISTS = {"Friendly Beta 0.1", "Live Beta 0.2", "Live 1.0", "In review"}
+
+COMMITS_MARKER_START = "<!-- conico-commits -->"
+COMMITS_MARKER_END = "<!-- /conico-commits -->"
+_COMMITS_BLOCK_RE = re.compile(
+    re.escape(COMMITS_MARKER_START) + r".*?" + re.escape(COMMITS_MARKER_END),
+    re.DOTALL,
+)
+
+
+def _git(*args: str) -> str | None:
+    try:
+        r = subprocess.run(["git", *args], capture_output=True, text=True,
+                           check=True, cwd=str(SCRIPT_DIR.parent))
+        return r.stdout.strip() or None
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+
+def _github_repo_url() -> str | None:
+    """Resolve `git@host:user/repo.git` or `https://host/user/repo.git` to web URL."""
+    url = _git("config", "--get", "remote.origin.url")
+    if not url:
+        return None
+    if url.startswith("git@"):
+        host, _, path = url[4:].partition(":")
+        url = f"https://{host}/{path}"
+    if url.endswith(".git"):
+        url = url[:-4]
+    return url
+
+
+def _commit_meta(sha: str) -> tuple[str, str]:
+    """Return (short_sha, subject). Falls back gracefully if git can't resolve."""
+    short = _git("rev-parse", "--short", sha) or sha[:7]
+    subject = _git("log", "-1", "--format=%s", sha) or ""
+    return short, subject
+
+
+def _normalize_commits(raw: Any) -> list[dict]:
+    """Coerce commits field (list of str or list of dict) to canonical [{'hash': ..., 'subject': ...}]."""
+    out: list[dict] = []
+    for item in raw or []:
+        if isinstance(item, str):
+            out.append({"hash": item})
+        elif isinstance(item, dict) and item.get("hash"):
+            entry = {"hash": item["hash"]}
+            if item.get("subject"):
+                entry["subject"] = item["subject"]
+            out.append(entry)
+    return out
+
+
+def _render_commits_block(commits: list[dict], repo_url: str | None) -> str:
+    if not commits:
+        return ""
+    lines = [COMMITS_MARKER_START, "**Resuelto por:**"]
+    for c in commits:
+        sha = c["hash"]
+        short, subject = _commit_meta(sha)
+        subject = c.get("subject") or subject
+        link = f"[`{short}`]({repo_url}/commit/{sha})" if repo_url else f"`{short}`"
+        suffix = f" — {subject}" if subject else ""
+        lines.append(f"- {link}{suffix}")
+    lines.append(COMMITS_MARKER_END)
+    return "\n".join(lines)
+
+
+def _compose_desc(base_desc: str, commits: list[dict], repo_url: str | None) -> str:
+    block = _render_commits_block(commits, repo_url)
+    if not block:
+        return base_desc or ""
+    base = (base_desc or "").rstrip()
+    return f"{base}\n\n{block}" if base else block
+
+
+def _split_commits_block(desc: str) -> tuple[str, list[str]]:
+    """Strip commits block from desc; return (clean_desc, [shas])."""
+    if not desc or COMMITS_MARKER_START not in desc:
+        return desc or "", []
+    match = _COMMITS_BLOCK_RE.search(desc)
+    if not match:
+        return desc, []
+    block = match.group(0)
+    shas = re.findall(r"/commit/([0-9a-f]{4,40})", block)
+    if not shas:
+        shas = re.findall(r"`([0-9a-f]{4,40})`", block)
+    cleaned = (desc[:match.start()].rstrip() + "\n" + desc[match.end():].lstrip()).strip()
+    return cleaned, shas
 
 
 def load_dotenv(path: Path) -> None:
@@ -181,10 +277,12 @@ def ensure_labels(board_id: str, wanted: dict[str, str], dry_run: bool) -> dict[
 
 def sync_card(board_id: str, card_def: dict, lists_map: dict[str, str],
               labels_map: dict[str, str], existing_by_name: dict[str, dict],
-              dry_run: bool) -> None:
+              dry_run: bool, repo_url: str | None = None) -> None:
     name = card_def["name"]
     list_id = lists_map[card_def["list"]]
-    desc = card_def.get("desc", "")
+    base_desc = card_def.get("desc", "")
+    commits = _normalize_commits(card_def.get("commits"))
+    desc = _compose_desc(base_desc, commits, repo_url)
     label_ids = [labels_map[l] for l in card_def.get("labels", []) if l in labels_map]
     checklist_items = card_def.get("checklist", [])
 
@@ -267,13 +365,17 @@ def pull(board_id: str, cards_path: Path) -> int:
             items_sorted = sorted(cl.get("checkItems", []), key=lambda i: i.get("pos", 0))
             checklist_items = [it["name"] for it in items_sorted]
             break
-        new_cards.append({
+        clean_desc, commit_shas = _split_commits_block(c.get("desc", ""))
+        entry = {
             "list": list_name,
             "name": c["name"],
             "labels": label_names,
-            "desc": c.get("desc", ""),
+            "desc": clean_desc,
             "checklist": checklist_items,
-        })
+        }
+        if commit_shas:
+            entry["commits"] = commit_shas
+        new_cards.append(entry)
 
     new_spec = {
         "lists": list_names_in_order,
@@ -482,10 +584,12 @@ def apply_spec(spec: dict, board_id: str, dry_run: bool,
     print("\nCards:")
     existing_cards = [] if dry_run else fetch_cards(board_id)
     existing_by_name = {c["name"]: c for c in existing_cards}
+    repo_url = _github_repo_url()
 
     for card_def in cards:
         try:
-            sync_card(board_id, card_def, lists_map, labels_map, existing_by_name, dry_run)
+            sync_card(board_id, card_def, lists_map, labels_map, existing_by_name,
+                      dry_run, repo_url=repo_url)
         except Exception as e:
             print(f"  ! error on {card_def['name']!r}: {e}", file=sys.stderr)
 
@@ -573,6 +677,45 @@ def enrich(spec: dict, cards_path: Path, model_alias: str,
     return 0
 
 
+def link_commit(spec: dict, cards_path: Path, sha_arg: str, card_needle: str,
+                board_id: str, push: bool) -> int:
+    """Resolve sha (HEAD ok), find card by name substring, append to commits, write JSON."""
+    sha = _git("rev-parse", sha_arg)
+    if not sha:
+        print(f"error: cannot resolve commit {sha_arg!r} via git", file=sys.stderr)
+        return 2
+
+    needle = card_needle.lower()
+    matches = [c for c in spec["cards"] if needle in c["name"].lower()]
+    if not matches:
+        print(f"error: no card matches {card_needle!r}", file=sys.stderr)
+        return 2
+    if len(matches) > 1:
+        print(f"error: {card_needle!r} matches {len(matches)} cards (need exactly 1):",
+              file=sys.stderr)
+        for m in matches:
+            print(f"   - {m['name']!r}", file=sys.stderr)
+        return 2
+
+    card = matches[0]
+    commits = _normalize_commits(card.get("commits"))
+    if any(c["hash"] == sha or sha.startswith(c["hash"]) or c["hash"].startswith(sha)
+           for c in commits):
+        print(f"already linked: {sha[:7]} -> {card['name']!r}")
+    else:
+        commits.append({"hash": sha})
+        card["commits"] = [c["hash"] for c in commits]
+        cards_path.write_text(
+            json.dumps(spec, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        print(f"linked: {sha[:7]} -> {card['name']!r}  (JSON updated)")
+
+    if push:
+        return apply_spec(spec, board_id, dry_run=False, only_cards=card["name"])
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Sync Conico tasks to Trello")
     parser.add_argument("--dry-run", action="store_true", help="preview push, no writes")
@@ -597,13 +740,25 @@ def main() -> int:
                              "(default: auto)")
     parser.add_argument("--only-cards", default=None,
                         help="filter cards by name substring (case-insensitive); push only")
+    parser.add_argument("--link-commit", default=None, metavar="HASH",
+                        help="link a commit (sha, ref, or HEAD) to one card; "
+                             "use with --card. Updates JSON + auto-applies "
+                             "unless --no-push is set.")
+    parser.add_argument("--card", default=None, metavar="NAME_SUBSTR",
+                        help="card name substring for --link-commit (must match exactly one)")
     parser.add_argument("--cards-file", default=str(CARDS_FILE))
     args = parser.parse_args()
 
-    modes = sum([args.dry_run, args.apply, args.pull, args.enrich])
+    modes = sum([args.dry_run, args.apply, args.pull, args.enrich,
+                 bool(args.link_commit)])
     if modes != 1:
-        print("error: pass exactly one of --dry-run / --apply / --pull / --enrich",
+        print("error: pass exactly one of "
+              "--dry-run / --apply / --pull / --enrich / --link-commit",
               file=sys.stderr)
+        return 2
+
+    if args.link_commit and not args.card:
+        print("error: --link-commit requires --card NAME_SUBSTR", file=sys.stderr)
         return 2
 
     load_dotenv(ENV_FILE)
@@ -619,6 +774,11 @@ def main() -> int:
 
     if args.pull:
         return pull(board_id, cards_path)
+
+    if args.link_commit:
+        spec = json.loads(cards_path.read_text(encoding="utf-8"))
+        return link_commit(spec, cards_path, args.link_commit, args.card,
+                           board_id=board_id, push=not args.no_push)
 
     if args.enrich:
         print("Pulling Trello -> JSON before enrichment...")
