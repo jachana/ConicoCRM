@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from app.schemas.empresa import EmpresaRef
 from app.schemas.banco_receptor import BancoReceptorOut
 
@@ -124,7 +124,7 @@ class FacturaOut(BaseModel):
     banco_receptor: BancoReceptorOut | None = None
     nv: NVRef | None = None
     cotizacion: CotizacionRef | None = None
-    referencias_docs: list = []
+    referencias_docs: list = Field(default_factory=list)
     lineas: list[FacturaLineaOut] = []
     is_locked: bool
     model_config = {"from_attributes": True}

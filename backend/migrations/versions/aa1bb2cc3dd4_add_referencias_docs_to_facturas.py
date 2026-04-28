@@ -23,7 +23,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.add_column(
         "facturas",
-        sa.Column("referencias_docs", sa.JSON(), nullable=True, server_default="[]"),
+        sa.Column("referencias_docs", sa.JSON(), nullable=True, server_default=sa.text("'[]'::json")),
     )
 
 
