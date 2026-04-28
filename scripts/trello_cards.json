@@ -1832,6 +1832,35 @@
         "Import productos (Excel onboarding): columna opcional 'normas' (formato 'ISO 46;SAE 10W-40;ACEA C3')",
         "Tests: crear/asociar/quitar normas, filtro retorna correcto, búsqueda por norma matchea"
       ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Pagos] Recuperar método de pago — combinable con plazo (cheque a 30 días, transferencia a 30, etc.)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Recuperar el campo 'método de pago' por documento (cotización, NV, factura) y permitir combinarlo libremente con el plazo. Hoy el catálogo es muy limitado y asume que cualquier método distinto de 'crédito' es al contado — eso es incorrecto.\n\nCasos reales del cliente (Paly, 28-04):\n- Cheque a 30 días\n- Transferencia a 30 días\n- Al contado con tarjeta\n- Al contado con transferencia\n- Vale vista (típicamente al contado)\n\n**Cambio de regla anterior:** la decisión previa ('cheque/transferencia/efectivo → plazo forzado a 0') queda obsoleta. Cheque y transferencia SÍ pueden ir con plazo. Solo efectivo y tarjeta presencial fuerzan plazo=0.\n\nModelo: dos campos independientes en cada documento — `metodo_pago` (catálogo fijo) y `plazo_dias` (0..N). El display los combina: '{Método} a {N} días' o '{Método} al contado'.",
+      "checklist": [
+        "Catálogo MétodoPago: efectivo, tarjeta_credito, tarjeta_debito, transferencia, cheque, vale_vista, credito_simple, otros",
+        "Modelo: metodo_pago (FK/enum) + plazo_dias (int) por documento (Cotización, NV, Factura)",
+        "Reglas de validación:",
+        "  - efectivo / tarjeta_debito / tarjeta_credito (presencial) → plazo_dias forzado a 0",
+        "  - cheque / transferencia / vale_vista → plazo_dias libre (0, 30, 60, 90, custom)",
+        "  - credito_simple → plazo_dias > 0 obligatorio (es la condición de venta a plazo)",
+        "Display: 'Transferencia a 30 días', 'Cheque al contado', 'Vale vista al contado'",
+        "UI: dos selectores en form de NV/Factura/Cotización — Método (select) + Plazo (select 0/30/60/90 + custom)",
+        "Defaults inteligentes: si vendedor selecciona 'efectivo' → plazo se bloquea en 0",
+        "Defaults por cliente: la Empresa puede tener un método+plazo SUGERIDO (no obligatorio) que prefilla el form",
+        "  - NOTA: esto NO contradice '[Empresa] Quitar forma de pago' — ahí se quitó el campo COMO regla; aquí vuelve como SUGERENCIA prefill (override por documento)",
+        "Cálculo fecha_vencimiento de factura: fecha_emision + plazo_dias (single source of truth)",
+        "Reportes cobranza: agrupar por método (cuánto en cheques pendientes, cuánto en transferencias)",
+        "Filtro lista facturas: por método + por rango de plazo",
+        "Migración: facturas existentes con forma_pago texto libre → mapear a catálogo + setear plazo_dias=0 si efectivo/tarjeta",
+        "Resolver pendientes en review:",
+        "  - '[Bug:Datos] Forma de pago duplica Plazo de Crédito' → cerrada por esta card (regla actualizada)",
+        "  - '[Empresa] Quitar forma de pago del modelo Empresa' → revisitar (sugerido prefill, no campo de negocio)",
+        "Tests: cheque+30d emite ok, efectivo+30d rechazado, vencimiento = emision + plazo, prefill desde empresa funciona"
+      ]
     }
   ]
 }
