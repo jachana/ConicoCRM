@@ -1704,6 +1704,29 @@
         "Migración legacy: campo opcional en import facturas históricas (tipo + folio + fecha)",
         "Tests: emitir factura con 0/1/N referencias, validar XML SII, búsqueda por OC retorna factura"
       ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Factura] Estado 'pagado' derivado de pagos — no editable manualmente",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "El estado de pago de una factura (pendiente / parcial / pagado / vencida) debe ser **derivado** de la suma de pagos aplicados, nunca editable a mano. Hoy es posible marcar 'pagado' sin registrar el pago, lo que rompe la cobranza, los reportes de cartola y la conciliación con el cliente.\n\nRegla: estado_pago = f(total_factura, sum(pagos.monto))\n- 0                       → pendiente (o vencida si fecha_venc < hoy)\n- 0 < pagado < total      → parcial\n- pagado >= total         → pagado\n\nPara 'marcar como pagado' rápido (sin querer registrar pago real), el flujo correcto es: registrar un pago por el saldo pendiente con medio='ajuste' o 'condonado' (queda trazable). No debe existir botón ni endpoint que cambie el estado directamente.",
+      "checklist": [
+        "Backend: estado_pago se computa desde pagos al leer (property/computed), no se persiste mutable",
+        "Eliminar endpoint/campo que permita PATCH directo a estado_pago",
+        "Eliminar botón 'Marcar como pagado' del frontend (Factura, Cobranza, lista)",
+        "Reemplazar por flujo: 'Registrar pago' (modal de pago con monto = saldo pendiente prellenado)",
+        "Soportar medio_pago='ajuste'/'condonado' para casos sin plata real (queda en cartola con motivo)",
+        "Permisos: registrar pago tipo 'ajuste'/'condonado' solo admin",
+        "Auditoría: cada pago queda con usuario + timestamp + motivo (ya debería estar)",
+        "Reverso: anular un pago revierte el estado automáticamente (no requiere acción extra)",
+        "Recalcular estado al crear/editar/anular pago — single source of truth",
+        "Migración: si hay facturas en BD con estado_pago='pagado' y sum(pagos)=0, dejarlas pendientes y reportar (no auto-pagar)",
+        "Tests: factura con 0 pagos → pendiente; pagos parciales → parcial; pagos = total → pagado; anular pago → vuelve atrás",
+        "Tests: PATCH a estado_pago retorna 422 / es ignorado"
+      ]
     }
   ]
 }
