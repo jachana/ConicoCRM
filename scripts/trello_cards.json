@@ -223,21 +223,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "Settings de admin debe poder ordenar y quitar items del sidebar",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Administrador necesita personalizar navegación: ocultar módulos no usados y reordenar sidebar según flujo de negocio. Mejora usabilidad para roles específicos.",
-      "checklist": [
-        "UI settings: drag-drop o checkboxes para visibilidad",
-        "Persistir preferencias por rol (no por usuario)",
-        "Validar que no se oculten módulos críticos (ej: Clientes)",
-        "Default sensato: todos visibles on first load",
-        "Test con admin + vendedor"
-      ]
-    },
-    {
       "list": "Feature requests",
       "name": "[Roadmap] OC enhancements + Empresa Cliente actualización",
       "labels": [
@@ -267,36 +252,148 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "[DevX] Seed data — Pagos, NC, ND, GD, Boletas, Proveedores, OC",
+      "list": "Feature requests",
+      "name": "[Empresa] Quitar forma de pago del modelo Empresa",
       "labels": [
         "Core"
       ],
-      "desc": "Seed actual cubre Cotizaciones/NV/Facturas/Clientes pero deja vacíos los módulos posteriores. Demos y entornos nuevos no muestran cobranza, DTE, ni proveedores. Extender scripts/seed_demo.py (o equivalente) con datos coherentes y vinculados al grafo existente.",
+      "desc": "Decisión de negocio: la Empresa no tiene forma de pago propia. Cada transacción (cotización, NV, factura) define su propia forma de pago. Eliminar forma_pago de EmpresaCreate/Update/Read, modal y export si existe; la lógica de forma_pago vive en cada documento.",
       "checklist": [
-        "Pagos múltiples por Factura (estados parcial/pagada)",
-        "NC vinculadas a facturas existentes (D-16 anulación + ajuste)",
-        "ND vinculadas a facturas existentes",
-        "Guías de despacho desde NV existentes",
-        "Boletas standalone tipo 39 + algunas anuladas vía NC 61",
-        "Proveedores con OC en distintos estados",
-        "OC con líneas y al menos una recibida",
-        "Idempotencia (--reset borra y re-siembra) y respeta secuencias correlativas"
+        "Confirmar si Empresa.forma_pago existe en modelo (grep)",
+        "Si existe: migración Alembic drop column + backfill",
+        "Quitar forma_pago de EmpresaModal (input)",
+        "Quitar forma_pago de EmpresaRead schema y export Excel",
+        "Validar que cotización/NV/factura sigan teniendo su propio forma_pago"
       ]
     },
     {
-      "list": "In review",
-      "name": "[Empresas] Quitar campo \"Prioridad\"",
+      "list": "Feature requests",
+      "name": "[Empresa] Permisos: solo admins modifican línea de crédito",
       "labels": [
         "Core"
       ],
-      "desc": "El campo Prioridad en Empresa no se usa en filtros, reportes ni reglas de negocio. Genera ruido en formularios y export. Eliminar del modelo, UI, filtros y export Excel; migración Alembic drop column.",
+      "desc": "Vendedores no deben poder modificar ni ver el campo línea de crédito de una empresa. Solo admins y subadmins pueden editarlo. Implica bloquear el campo en EmpresaModal para vendedor y restringir el endpoint PATCH /empresas/{id}.",
       "checklist": [
-        "Migración Alembic drop column empresas.prioridad",
-        "Quitar campo de EmpresaCreate/EmpresaUpdate/EmpresaRead",
-        "Quitar input de EmpresaModal + columna de EmpresaList + filtro",
-        "Quitar de export Excel y de cualquier reporte",
-        "Audit log: confirmar que listener no falla por columna ausente"
+        "Backend: validar rol antes de actualizar linea_credito en PATCH /empresas/{id}",
+        "Frontend: ocultar / deshabilitar campo línea de crédito en EmpresaModal si rol=vendedor",
+        "Ocultar AprobacionCredito y GET /empresas/{id}/credito para vendedor si aplica",
+        "Test: vendedor envía PATCH con linea_credito → 403"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] RUT como ID inmutable — no editable post-creación",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El RUT es el identificador estable de la empresa. Una vez creada, no debe poder modificarse. Bloquear el campo rut en EmpresaModal en modo edición y rechazar cambios en el backend.",
+      "checklist": [
+        "Backend: ignorar/rechazar rut en PATCH /empresas/{id} (422 si se envía distinto)",
+        "Frontend: campo rut deshabilitado (readonly) en EmpresaModal al editar",
+        "Agregar tooltip explicativo: 'El RUT no puede modificarse después de creada la empresa'",
+        "Test: PATCH con rut distinto → 422 o silencio"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] RUT no oficial — flag informativo para consolidación",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Algunas empresas operan con RUT no oficiales (ficticios o provisionales). Agregar campo booleano rut_no_oficial (default false) visible solo como badge informativo en EmpresaDetail. Solo se usa para consolidación interna — no afecta DTE ni lógica de negocio.",
+      "checklist": [
+        "Modelo: campo Empresa.rut_no_oficial Boolean default False + migración Alembic",
+        "Schema EmpresaCreate/Update/Read incluye rut_no_oficial",
+        "EmpresaModal: checkbox 'RUT no oficial (informativo)' en sección datos",
+        "EmpresaDetail/EmpresaList: badge 'RUT no oficial' visible solo si true",
+        "No afecta validaciones DTE ni lógica de línea de crédito"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] Puntos de contacto visibles en ficha empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "La pantalla de detalle de empresa debe mostrar los puntos de contacto (personas de contacto: nombre, cargo, email, teléfono). Si ya existe modelo ContactoEmpresa, agregar tab o sección en EmpresaDetailModal. Si no existe, crear modelo y CRUD básico.",
+      "checklist": [
+        "Verificar si existe modelo ContactoEmpresa o similar",
+        "Si no existe: modelo ContactoEmpresa (empresa_id FK, nombre, cargo, email, telefono) + migración",
+        "API CRUD /api/empresas/{id}/contactos (GET, POST, PATCH, DELETE)",
+        "EmpresaDetailModal: tab 'Contactos' o sección inline con lista + agregar/editar/eliminar",
+        "Permisos: vendedor puede ver, solo admin puede crear/editar/eliminar"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] Filtros rápidos en Timeline, Facturas y Productos",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los tabs Timeline, Facturas y Productos en EmpresaDetailModal necesitan filtros rápidos preconfigurados para mejorar usabilidad. Chips/pills de acceso rápido: 'Este mes', 'Este año', 'Facturas y pagos' (solo docs oficiales). Complementa los filtros existentes.",
+      "checklist": [
+        "Diseñar chips de filtro rápido: 'Este mes', 'Este año', 'Facturas y pagos'",
+        "Timeline: 'Este mes' = fecha >= inicio_mes, 'Facturas y pagos' = tipos [factura, pago, nc, nd]",
+        "Facturas tab: 'Este mes' y 'Este año' filtran por fecha_emision",
+        "Productos tab: 'Este mes' y 'Este año' filtran por última compra/factura del producto",
+        "Estado activo del chip resaltado (aria-pressed); reset limpia a sin filtro",
+        "Chips no reemplazan filtros existentes — se combinan"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Cotización] Duplicar cotización con precios y fecha actualizados",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en CotizacionDetalle que crea una nueva cotización con los mismos productos/cantidades pero fecha_emision = hoy y precios tomados del catálogo actual (precio_venta vigente). Útil para compras repetidas. Lo mismo desde NV y Factura — ver cards hermanas.",
+      "checklist": [
+        "POST /api/cotizaciones/{id}/duplicar: copia líneas, reemplaza fecha_emision=hoy y precio_unitario desde Producto.precio_venta vigente",
+        "Responde {id} de la cotización nueva → redirigir a /cotizaciones/{nuevo_id}",
+        "Si algún producto fue eliminado del catálogo: incluirlo con precio original + warning en respuesta",
+        "Permiso: cualquier rol con cotizaciones:create puede duplicar",
+        "Botón 'Re-cotizar' en CotizacionDetalle (junto a Editar / Anular)",
+        "Toast con link a la cotización nueva",
+        "Test backend: precios actualizados, fecha hoy, productos descontinuados manejados",
+        "Si algún producto fue eliminado del catálogo: cantidad=0 + warning en respuesta (lista de SKUs afectados)",
+        "Frontend: mostrar banner de advertencia en CotizacionDetalle si hay líneas con cantidad=0 por producto descontinuado",
+        "Test backend: precios actualizados, fecha hoy, cantidad=0 para descontinuados, warning presente"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[NV] Botón Re-cotizar desde Nota de Venta",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en NotaVentaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes del catálogo. Mismo endpoint que duplicar cotización pero iniciando desde NV.",
+      "checklist": [
+        "POST /api/notas-venta/{id}/recotizar: extrae líneas de la NV, aplica misma lógica de precio vigente",
+        "Redirigir a /cotizaciones/{nuevo_id}",
+        "Botón 'Re-cotizar' en NotaVentaDetalle (acción secundaria)",
+        "Toast con link a cotización creada",
+        "Test: NV con productos eliminados del catálogo mantiene precio original + warning",
+        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
+        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
+        "Test: productos descontinuados → cantidad=0 + warning presente"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Factura] Botón Re-cotizar desde Factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en FacturaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes. Mismo flujo que desde NV — facilita recompras facturadas.",
+      "checklist": [
+        "POST /api/facturas/{id}/recotizar: extrae líneas de la factura, aplica precio vigente",
+        "Redirigir a /cotizaciones/{nuevo_id}",
+        "Botón 'Re-cotizar' en FacturaDetalle (acción secundaria)",
+        "Toast con link a cotización creada",
+        "Test: factura con productos descontinuados mantiene precio original + warning",
+        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
+        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
+        "Test: productos descontinuados → cantidad=0 + warning presente"
       ]
     },
     {
@@ -893,6 +990,21 @@
     },
     {
       "list": "In review",
+      "name": "Settings de admin debe poder ordenar y quitar items del sidebar",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Administrador necesita personalizar navegación: ocultar módulos no usados y reordenar sidebar según flujo de negocio. Mejora usabilidad para roles específicos.",
+      "checklist": [
+        "UI settings: drag-drop o checkboxes para visibilidad",
+        "Persistir preferencias por rol (no por usuario)",
+        "Validar que no se oculten módulos críticos (ej: Clientes)",
+        "Default sensato: todos visibles on first load",
+        "Test con admin + vendedor"
+      ]
+    },
+    {
+      "list": "In review",
       "name": "[Bug:Vendedor] Vendedor puede ver OC y proveedores y precios de costo y margen",
       "labels": [
         "Core",
@@ -921,6 +1033,39 @@
         "Validar permisos en /api/reports, /api/collections, /api/credit-notes",
         "Test: vendedor intenta nav directo a URLs → 403",
         "Logging: auditar intentos fallidos desde vendedor"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[DevX] Seed data — Pagos, NC, ND, GD, Boletas, Proveedores, OC",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Seed actual cubre Cotizaciones/NV/Facturas/Clientes pero deja vacíos los módulos posteriores. Demos y entornos nuevos no muestran cobranza, DTE, ni proveedores. Extender scripts/seed_demo.py (o equivalente) con datos coherentes y vinculados al grafo existente.",
+      "checklist": [
+        "Pagos múltiples por Factura (estados parcial/pagada)",
+        "NC vinculadas a facturas existentes (D-16 anulación + ajuste)",
+        "ND vinculadas a facturas existentes",
+        "Guías de despacho desde NV existentes",
+        "Boletas standalone tipo 39 + algunas anuladas vía NC 61",
+        "Proveedores con OC en distintos estados",
+        "OC con líneas y al menos una recibida",
+        "Idempotencia (--reset borra y re-siembra) y respeta secuencias correlativas"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Empresas] Quitar campo \"Prioridad\"",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El campo Prioridad en Empresa no se usa en filtros, reportes ni reglas de negocio. Genera ruido en formularios y export. Eliminar del modelo, UI, filtros y export Excel; migración Alembic drop column.",
+      "checklist": [
+        "Migración Alembic drop column empresas.prioridad",
+        "Quitar campo de EmpresaCreate/EmpresaUpdate/EmpresaRead",
+        "Quitar input de EmpresaModal + columna de EmpresaList + filtro",
+        "Quitar de export Excel y de cualquier reporte",
+        "Audit log: confirmar que listener no falla por columna ausente"
       ]
     },
     {
@@ -1024,147 +1169,6 @@
         "Si (b): mover bandejas como tab dentro de /facturas y eliminar ruta",
         "Documentar decisión en CLAUDE.md o PROGRESS.md",
         "Ajustar sidebar y permisos resultantes"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Cotización] Duplicar cotización con precios y fecha actualizados",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Botón 'Re-cotizar' en CotizacionDetalle que crea una nueva cotización con los mismos productos/cantidades pero fecha_emision = hoy y precios tomados del catálogo actual (precio_venta vigente). Útil para compras repetidas. Lo mismo desde NV y Factura — ver cards hermanas.",
-      "checklist": [
-        "POST /api/cotizaciones/{id}/duplicar: copia líneas, reemplaza fecha_emision=hoy y precio_unitario desde Producto.precio_venta vigente",
-        "Responde {id} de la cotización nueva → redirigir a /cotizaciones/{nuevo_id}",
-        "Si algún producto fue eliminado del catálogo: cantidad=0 + warning en respuesta (lista de SKUs afectados)",
-        "Frontend: mostrar banner de advertencia en CotizacionDetalle si hay líneas con cantidad=0 por producto descontinuado",
-        "Permiso: cualquier rol con cotizaciones:create puede duplicar",
-        "Botón 'Re-cotizar' en CotizacionDetalle (junto a Editar / Anular)",
-        "Toast con link a la cotización nueva",
-        "Test backend: precios actualizados, fecha hoy, cantidad=0 para descontinuados, warning presente"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[NV] Botón Re-cotizar desde Nota de Venta",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Botón 'Re-cotizar' en NotaVentaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes del catálogo. Mismo endpoint que duplicar cotización pero iniciando desde NV.",
-      "checklist": [
-        "POST /api/notas-venta/{id}/recotizar: extrae líneas de la NV, aplica misma lógica de precio vigente",
-        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
-        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
-        "Redirigir a /cotizaciones/{nuevo_id}",
-        "Botón 'Re-cotizar' en NotaVentaDetalle (acción secundaria)",
-        "Toast con link a cotización creada",
-        "Test: productos descontinuados → cantidad=0 + warning presente"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Factura] Botón Re-cotizar desde Factura",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Botón 'Re-cotizar' en FacturaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes. Mismo flujo que desde NV — facilita recompras facturadas.",
-      "checklist": [
-        "POST /api/facturas/{id}/recotizar: extrae líneas de la factura, aplica precio vigente",
-        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
-        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
-        "Redirigir a /cotizaciones/{nuevo_id}",
-        "Botón 'Re-cotizar' en FacturaDetalle (acción secundaria)",
-        "Toast con link a cotización creada",
-        "Test: productos descontinuados → cantidad=0 + warning presente"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Empresa] Quitar forma de pago del modelo Empresa",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Decisión de negocio: la Empresa no tiene forma de pago propia. Cada transacción (cotización, NV, factura) define su propia forma de pago. Eliminar forma_pago de EmpresaCreate/Update/Read, modal y export si existe; la lógica de forma_pago vive en cada documento.",
-      "checklist": [
-        "Confirmar si Empresa.forma_pago existe en modelo (grep)",
-        "Si existe: migración Alembic drop column + backfill",
-        "Quitar forma_pago de EmpresaModal (input)",
-        "Quitar forma_pago de EmpresaRead schema y export Excel",
-        "Validar que cotización/NV/factura sigan teniendo su propio forma_pago"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Empresa] Permisos: solo admins modifican línea de crédito",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Vendedores no deben poder modificar ni ver el campo línea de crédito de una empresa. Solo admins y subadmins pueden editarlo. Implica bloquear el campo en EmpresaModal para vendedor y restringir el endpoint PATCH /empresas/{id}.",
-      "checklist": [
-        "Backend: validar rol antes de actualizar linea_credito en PATCH /empresas/{id}",
-        "Frontend: ocultar / deshabilitar campo línea de crédito en EmpresaModal si rol=vendedor",
-        "Ocultar AprobacionCredito y GET /empresas/{id}/credito para vendedor si aplica",
-        "Test: vendedor envía PATCH con linea_credito → 403"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Empresa] RUT como ID inmutable — no editable post-creación",
-      "labels": [
-        "Core"
-      ],
-      "desc": "El RUT es el identificador estable de la empresa. Una vez creada, no debe poder modificarse. Bloquear el campo rut en EmpresaModal en modo edición y rechazar cambios en el backend.",
-      "checklist": [
-        "Backend: ignorar/rechazar rut en PATCH /empresas/{id} (422 si se envía distinto)",
-        "Frontend: campo rut deshabilitado (readonly) en EmpresaModal al editar",
-        "Agregar tooltip explicativo: 'El RUT no puede modificarse después de creada la empresa'",
-        "Test: PATCH con rut distinto → 422 o silencio"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Empresa] RUT no oficial — flag informativo para consolidación",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Algunas empresas operan con RUT no oficiales (ficticios o provisionales). Agregar campo booleano rut_no_oficial (default false) visible solo como badge informativo en EmpresaDetail. Solo se usa para consolidación interna — no afecta DTE ni lógica de negocio.",
-      "checklist": [
-        "Modelo: campo Empresa.rut_no_oficial Boolean default False + migración Alembic",
-        "Schema EmpresaCreate/Update/Read incluye rut_no_oficial",
-        "EmpresaModal: checkbox 'RUT no oficial (informativo)' en sección datos",
-        "EmpresaDetail/EmpresaList: badge 'RUT no oficial' visible solo si true",
-        "No afecta validaciones DTE ni lógica de línea de crédito"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Empresa] Puntos de contacto visibles en ficha empresa",
-      "labels": [
-        "Core"
-      ],
-      "desc": "La pantalla de detalle de empresa debe mostrar los puntos de contacto (personas de contacto: nombre, cargo, email, teléfono). Si ya existe modelo ContactoEmpresa, agregar tab o sección en EmpresaDetailModal. Si no existe, crear modelo y CRUD básico.",
-      "checklist": [
-        "Verificar si existe modelo ContactoEmpresa o similar",
-        "Si no existe: modelo ContactoEmpresa (empresa_id FK, nombre, cargo, email, telefono) + migración",
-        "API CRUD /api/empresas/{id}/contactos (GET, POST, PATCH, DELETE)",
-        "EmpresaDetailModal: tab 'Contactos' o sección inline con lista + agregar/editar/eliminar",
-        "Permisos: vendedor puede ver, solo admin puede crear/editar/eliminar"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Empresa] Filtros rápidos en Timeline, Facturas y Productos",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los tabs Timeline, Facturas y Productos en EmpresaDetailModal necesitan filtros rápidos preconfigurados para mejorar usabilidad. Chips/pills de acceso rápido: 'Este mes', 'Este año', 'Facturas y pagos' (solo docs oficiales). Complementa los filtros existentes.",
-      "checklist": [
-        "Diseñar chips de filtro rápido: 'Este mes', 'Este año', 'Facturas y pagos'",
-        "Timeline: 'Este mes' = fecha >= inicio_mes, 'Facturas y pagos' = tipos [factura, pago, nc, nd]",
-        "Facturas tab: 'Este mes' y 'Este año' filtran por fecha_emision",
-        "Productos tab: 'Este mes' y 'Este año' filtran por última compra/factura del producto",
-        "Estado activo del chip resaltado (aria-pressed); reset limpia a sin filtro",
-        "Chips no reemplazan filtros existentes — se combinan"
       ]
     }
   ]
