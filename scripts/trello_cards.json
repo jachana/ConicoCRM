@@ -109,6 +109,20 @@
     },
     {
       "list": "Bugs",
+      "name": "[Guía despacho] Números de NV y factura incorrectos",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "En el detalle y PDF de la guía de despacho, los números de NV y factura asociados se muestran incorrectos o no corresponden al documento real.",
+      "checklist": [
+        "Revisar query que obtiene NV y factura vinculadas a la guía de despacho",
+        "Verificar que el folio mostrado es el folio SII y no el ID interno",
+        "Corregir PDF: mostrar número NV y número factura correctos",
+        "Prueba: emitir guía desde NV facturada y verificar ambos números"
+      ]
+    },
+    {
+      "list": "Bugs",
       "name": "Settings siempre visible en sidebar (no removible)",
       "labels": [
         "Bug"
