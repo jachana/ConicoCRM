@@ -9,8 +9,8 @@ export interface User {
 
 export type Module =
   | 'catalogo' | 'clientes' | 'empresas' | 'proveedores' | 'cotizaciones'
-  | 'nota_venta' | 'facturas' | 'ordenes_compra' | 'inventario'
-  | 'rrhh' | 'dashboard' | 'usuarios' | 'guias_despacho'
+  | 'nota_venta' | 'facturas' | 'boletas' | 'ordenes_compra' | 'inventario'
+  | 'rrhh' | 'dashboard' | 'usuarios' | 'guias_despacho' | 'tareas'
 
 export type Action = 'view' | 'create' | 'edit' | 'delete'
 

@@ -62,27 +62,27 @@ const SECTIONS: NavSection[] = [
   {
     label: 'Cobranza',
     items: [
-      { to: '/cobranza',       icon: Banknote,   label: 'Cobranza' },
-      { to: '/facturas',       icon: Receipt,    label: 'Facturas' },
-      { to: '/boletas',        icon: ScrollText, label: 'Boletas' },
-      { to: '/guias-despacho', icon: Truck,      label: 'Guías de Despacho' },
-      { to: '/notas-credito',  icon: FileMinus,  label: 'Notas de Crédito' },
-      { to: '/notas-debito',   icon: FilePlus,   label: 'Notas de Débito' },
-      { to: '/pagos',          icon: CreditCard, label: 'Pagos' },
+      { to: '/cobranza',       icon: Banknote,   label: 'Cobranza',           adminOnly: true },
+      { to: '/facturas',       icon: Receipt,    label: 'Facturas',           module: 'facturas' },
+      { to: '/boletas',        icon: ScrollText, label: 'Boletas',            module: 'boletas' },
+      { to: '/guias-despacho', icon: Truck,      label: 'Guías de Despacho',  module: 'guias_despacho' },
+      { to: '/notas-credito',  icon: FileMinus,  label: 'Notas de Crédito',   adminOnly: true },
+      { to: '/notas-debito',   icon: FilePlus,   label: 'Notas de Débito',    adminOnly: true },
+      { to: '/pagos',          icon: CreditCard, label: 'Pagos',              adminOnly: true },
     ],
   },
   {
     label: 'Compras',
     items: [
-      { to: '/ordenes-compra', icon: ShoppingCart, label: 'Órdenes de Compra' },
-      { to: '/proveedores',    icon: Truck,        label: 'Proveedores' },
+      { to: '/ordenes-compra', icon: ShoppingCart, label: 'Órdenes de Compra', module: 'ordenes_compra' },
+      { to: '/proveedores',    icon: Truck,        label: 'Proveedores',        module: 'proveedores' },
     ],
   },
   {
     label: 'Operación',
     items: [
-      { to: '/reportes', icon: BarChart2, label: 'Reportes' },
-      { to: '/rrhh',     icon: UserCog,   label: 'RRHH', module: 'rrhh' },
+      { to: '/reportes', icon: BarChart2, label: 'Reportes', adminOnly: true },
+      { to: '/rrhh',     icon: UserCog,   label: 'RRHH',     module: 'rrhh' },
     ],
   },
   {
