@@ -214,7 +214,7 @@ def exportar_excel(
     nvs = (
         db.query(NotaVenta)
         .options(joinedload(NotaVenta.cliente), joinedload(NotaVenta.vendedor))
-        .order_by(NotaVenta.numero.desc())
+        .order_by(NotaVenta.fecha.desc(), NotaVenta.numero.desc())
         .all()
     )
     wb = openpyxl.Workbook()
@@ -268,7 +268,7 @@ def listar_nvs(
         q = q.filter(NotaVenta.fecha >= fecha_desde)
     if fecha_hasta:
         q = q.filter(NotaVenta.fecha <= fecha_hasta)
-    return q.order_by(NotaVenta.numero.desc()).all()
+    return q.order_by(NotaVenta.fecha.desc(), NotaVenta.numero.desc()).all()
 
 
 @router.post("/", response_model=NotaVentaOut, status_code=status.HTTP_201_CREATED)

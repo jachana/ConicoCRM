@@ -204,7 +204,7 @@ def listar_boletas(
     if vendedor_id:
         q = q.filter(Boleta.vendedor_id == vendedor_id)
     return (
-        q.order_by(Boleta.numero.desc())
+        q.order_by(Boleta.fecha.desc(), Boleta.numero.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
@@ -234,7 +234,7 @@ def exportar_excel(
         q = q.filter(Boleta.fecha <= fecha_hasta)
     if estado:
         q = q.filter(Boleta.estado.in_(estado))
-    boletas = q.order_by(Boleta.numero.desc()).all()
+    boletas = q.order_by(Boleta.fecha.desc(), Boleta.numero.desc()).all()
 
     wb = openpyxl.Workbook()
     ws = wb.active

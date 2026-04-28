@@ -259,7 +259,7 @@ def exportar_excel(
         q = q.join(CotizacionLinea, CotizacionLinea.cotizacion_id == Cotizacion.id).filter(
             CotizacionLinea.producto_id.in_(producto_id)
         ).distinct()
-    cotizaciones = q.order_by(Cotizacion.numero.desc()).all()
+    cotizaciones = q.order_by(Cotizacion.fecha.desc(), Cotizacion.numero.desc()).all()
 
     col_keys = [k for k in (columns or _COT_DEFAULT_COLUMNS) if k in _COT_EXPORT_COLUMNS]
     if not col_keys:
@@ -329,7 +329,7 @@ def listar_cotizaciones(
         ).distinct()
     if terminos_pago_estado:
         q = q.filter(Cotizacion.terminos_pago_estado == terminos_pago_estado)
-    results = [CotizacionListOut.model_validate(c) for c in q.order_by(Cotizacion.numero.desc()).all()]
+    results = [CotizacionListOut.model_validate(c) for c in q.order_by(Cotizacion.fecha.desc(), Cotizacion.numero.desc()).all()]
     if current_user.role == "vendedor":
         for cot in results:
             cot.margen_total = None

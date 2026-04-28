@@ -99,7 +99,7 @@ def exportar_excel(
     ordenes = (
         db.query(OrdenCompra)
         .options(joinedload(OrdenCompra.proveedor))
-        .order_by(OrdenCompra.numero.desc())
+        .order_by(OrdenCompra.fecha.desc(), OrdenCompra.numero.desc())
         .all()
     )
     wb = openpyxl.Workbook()
@@ -145,7 +145,7 @@ def listar_ordenes(
         q = q.filter(OrdenCompra.fecha >= fecha_desde)
     if fecha_hasta:
         q = q.filter(OrdenCompra.fecha <= fecha_hasta)
-    return q.order_by(OrdenCompra.numero.desc()).all()
+    return q.order_by(OrdenCompra.fecha.desc(), OrdenCompra.numero.desc()).all()
 
 
 @router.post("/", response_model=OrdenCompraOut, status_code=status.HTTP_201_CREATED)

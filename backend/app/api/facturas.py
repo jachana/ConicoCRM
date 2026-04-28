@@ -241,7 +241,7 @@ def exportar_excel(
         q = q.join(FacturaLinea, FacturaLinea.factura_id == Factura.id).filter(
             FacturaLinea.producto_id.in_(producto_id)
         ).distinct()
-    facturas = q.order_by(Factura.numero.desc()).all()
+    facturas = q.order_by(Factura.fecha.desc(), Factura.numero.desc()).all()
 
     col_keys = [k for k in (columns or _FAC_DEFAULT_COLUMNS) if k in _FAC_EXPORT_COLUMNS]
     if not col_keys:
@@ -308,7 +308,7 @@ def listar_facturas(
         q = q.join(FacturaLinea, FacturaLinea.factura_id == Factura.id).filter(
             FacturaLinea.producto_id.in_(producto_id)
         ).distinct()
-    results = [FacturaListOut.model_validate(f) for f in q.order_by(Factura.numero.desc()).all()]
+    results = [FacturaListOut.model_validate(f) for f in q.order_by(Factura.fecha.desc(), Factura.numero.desc()).all()]
     if current_user.role == "vendedor":
         for fac in results:
             fac.margen_total = None

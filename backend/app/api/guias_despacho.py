@@ -163,7 +163,7 @@ def listar_guias_despacho(
         q = q.filter(GuiaDespacho.fecha >= desde)
     if hasta:
         q = q.filter(GuiaDespacho.fecha <= hasta)
-    return q.order_by(GuiaDespacho.id.desc()).offset(skip).limit(limit).all()
+    return q.order_by(GuiaDespacho.fecha.desc(), GuiaDespacho.id.desc()).offset(skip).limit(limit).all()
 
 
 @router.get("/{guia_id}", response_model=GuiaDespachoOut)
