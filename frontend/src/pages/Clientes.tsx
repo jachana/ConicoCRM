@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
-import { Plus, Search, FileSpreadsheet, Inbox } from 'lucide-react'
+import { Plus, Search, FileSpreadsheet, Inbox, Eye } from 'lucide-react'
 import { api } from '../lib/api'
 import type { Cliente, Empresa } from '../types'
+import ClienteDetailModal from '../components/ClienteDetailModal'
 import {
   Button, Input, Textarea, FormField, Badge, EmptyState, Skeleton,
   Table, THead, TBody, TR, TH, TD,
@@ -41,6 +42,7 @@ export default function Clientes() {
   const [error, setError] = useState<string | null>(null)
   const [eliminandoId, setEliminandoId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [verCliente, setVerCliente] = useState<Cliente | null>(null)
 
   const { data: clientes = [], isLoading } = useQuery<Cliente[]>({
     queryKey: ['clientes', debouncedBusqueda],
@@ -154,6 +156,7 @@ export default function Clientes() {
                     </div>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
+                    <Button size="xs" variant="link" onClick={() => setVerCliente(c)}>Ver</Button>
                     <Button size="xs" variant="link" onClick={() => abrirEditar(c)}>Editar</Button>
                     <Button
                       size="xs"
@@ -217,6 +220,7 @@ export default function Clientes() {
                         </div>
                       ) : (
                         <div className="flex items-center justify-end gap-1">
+                          <Button size="xs" variant="link" leftIcon={<Eye size={12} />} onClick={() => setVerCliente(c)}>Ver</Button>
                           <Button size="xs" variant="link" onClick={() => abrirEditar(c)}>Editar</Button>
                           <Button
                             size="xs"
@@ -236,6 +240,13 @@ export default function Clientes() {
           </div>
         </>
       )}
+
+      {/* Detail modal */}
+      <ClienteDetailModal
+        cliente={verCliente}
+        onClose={() => setVerCliente(null)}
+        onEdit={(c) => { setVerCliente(null); abrirEditar(c) }}
+      />
 
       {/* Create/Edit modal */}
       <Modal open={modalOpen} onOpenChange={(o) => { if (!o) cerrarModal() }}>

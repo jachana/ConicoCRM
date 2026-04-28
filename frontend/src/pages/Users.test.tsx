@@ -34,7 +34,7 @@ it('does not show Permisos button for admin users', async () => {
   })
   render(wrap(<Users />))
   await waitFor(() => expect(screen.getByText('a@b.cl')).toBeInTheDocument())
-  expect(screen.queryByText('Permisos')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /permisos/i })).not.toBeInTheDocument()
 })
 
 it('shows Permisos button for non-admin users', async () => {
@@ -42,5 +42,5 @@ it('shows Permisos button for non-admin users', async () => {
     data: [{ id: 2, email: 'v@b.cl', name: 'Vendedor', role: 'vendedor', is_active: true, created_at: '' }],
   })
   render(wrap(<Users />))
-  await waitFor(() => expect(screen.getByText('Permisos')).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByRole('button', { name: /permisos/i })).toBeInTheDocument())
 })

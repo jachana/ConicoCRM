@@ -47,6 +47,20 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+// admin + subadmin only (blocks vendedor)
+function RequireNotVendedor({ children }: { children: React.ReactNode }) {
+  const user = useAuthStore(s => s.user)
+  if (user?.role === 'vendedor') return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
+// admin only
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const user = useAuthStore(s => s.user)
+  if (user?.role !== 'admin') return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 export const router = createBrowserRouter([
   { path: '/login', element: <Login />, errorElement: <RouteError /> },
   {
@@ -55,18 +69,18 @@ export const router = createBrowserRouter([
     errorElement: <RouteError />,
     children: [
       { index: true, element: <Dashboard /> },
-      { path: 'usuarios', element: <Users /> },
-      { path: 'configuracion', element: <Configuracion /> },
+      { path: 'usuarios', element: <RequireAdmin><Users /></RequireAdmin> },
+      { path: 'configuracion', element: <RequireAdmin><Configuracion /></RequireAdmin> },
       { path: 'empresas', element: <Empresas /> },
-      { path: 'proveedores', element: <Proveedores /> },
+      { path: 'proveedores', element: <RequireNotVendedor><Proveedores /></RequireNotVendedor> },
       { path: 'catalogo', element: <Productos /> },
       { path: 'clientes', element: <Clientes /> },
       { path: 'cotizaciones', element: <Cotizaciones /> },
       { path: 'cotizaciones/nueva', element: <CotizacionDetalle /> },
       { path: 'cotizaciones/:id', element: <CotizacionDetalle /> },
-      { path: 'ordenes-compra', element: <OrdenesCompra /> },
-      { path: 'ordenes-compra/nueva', element: <OrdenCompraDetalle /> },
-      { path: 'ordenes-compra/:id', element: <OrdenCompraDetalle /> },
+      { path: 'ordenes-compra', element: <RequireNotVendedor><OrdenesCompra /></RequireNotVendedor> },
+      { path: 'ordenes-compra/nueva', element: <RequireNotVendedor><OrdenCompraDetalle /></RequireNotVendedor> },
+      { path: 'ordenes-compra/:id', element: <RequireNotVendedor><OrdenCompraDetalle /></RequireNotVendedor> },
       { path: 'notas-venta', element: <NotaVentas /> },
       { path: 'notas-venta/nueva', element: <NotaVentaDetalle /> },
       { path: 'notas-venta/:id', element: <NotaVentaDetalle /> },
@@ -79,22 +93,22 @@ export const router = createBrowserRouter([
       { path: 'guias-despacho', element: <GuiasDespachoList /> },
       { path: 'guias-despacho/nueva', element: <GuiaDespachoNueva /> },
       { path: 'guias-despacho/:id', element: <GuiaDespachoDetalle /> },
-      { path: 'notas-credito', element: <NotasCredito /> },
-      { path: 'notas-credito/nueva', element: <NotaCreditoNueva /> },
-      { path: 'notas-credito/:id', element: <NotaCreditoDetalle /> },
-      { path: 'notas-debito', element: <NotasDebito /> },
-      { path: 'notas-debito/nueva', element: <NotaDebitoNueva /> },
-      { path: 'notas-debito/:id', element: <NotaDebitoDetalle /> },
-      { path: 'pagos', element: <Pagos /> },
-      { path: 'aprobaciones', element: <Aprobaciones /> },
-      { path: 'rrhh', element: <RRHH /> },
-      { path: 'inventario', element: <Inventario /> },
-      { path: 'inventario/listas-precios', element: <ListasPrecios /> },
-      { path: 'cobranza', element: <Cobranza /> },
-      { path: 'reportes', element: <Reportes /> },
+      { path: 'notas-credito', element: <RequireNotVendedor><NotasCredito /></RequireNotVendedor> },
+      { path: 'notas-credito/nueva', element: <RequireNotVendedor><NotaCreditoNueva /></RequireNotVendedor> },
+      { path: 'notas-credito/:id', element: <RequireNotVendedor><NotaCreditoDetalle /></RequireNotVendedor> },
+      { path: 'notas-debito', element: <RequireNotVendedor><NotasDebito /></RequireNotVendedor> },
+      { path: 'notas-debito/nueva', element: <RequireNotVendedor><NotaDebitoNueva /></RequireNotVendedor> },
+      { path: 'notas-debito/:id', element: <RequireNotVendedor><NotaDebitoDetalle /></RequireNotVendedor> },
+      { path: 'pagos', element: <RequireNotVendedor><Pagos /></RequireNotVendedor> },
+      { path: 'aprobaciones', element: <RequireNotVendedor><Aprobaciones /></RequireNotVendedor> },
+      { path: 'rrhh', element: <RequireAdmin><RRHH /></RequireAdmin> },
+      { path: 'inventario', element: <RequireNotVendedor><Inventario /></RequireNotVendedor> },
+      { path: 'inventario/listas-precios', element: <RequireNotVendedor><ListasPrecios /></RequireNotVendedor> },
+      { path: 'cobranza', element: <RequireNotVendedor><Cobranza /></RequireNotVendedor> },
+      { path: 'reportes', element: <RequireNotVendedor><Reportes /></RequireNotVendedor> },
       { path: 'tareas', element: <TareasPage /> },
-      { path: 'admin/tareas/config', element: <TareasConfigPage /> },
-      { path: 'admin/auditoria', element: <AdminAuditoria /> },
+      { path: 'admin/tareas/config', element: <RequireAdmin><TareasConfigPage /></RequireAdmin> },
+      { path: 'admin/auditoria', element: <RequireAdmin><AdminAuditoria /></RequireAdmin> },
     ],
   },
 ])

@@ -14,9 +14,9 @@ def _make_cliente(db):
     return c
 
 
-def _make_empresa(db, limite_credito=None):
+def _make_empresa(db, linea_credito=None):
     from app.models.empresa import Empresa
-    e = Empresa(nombre="Test Empresa", limite_credito=limite_credito)
+    e = Empresa(nombre="Test Empresa", linea_credito=linea_credito)
     db.add(e)
     db.commit()
     db.refresh(e)
@@ -69,7 +69,7 @@ def _nv_payload(cliente_id, empresa_id, producto_id, valor_neto):
 def test_vendedor_blocked_over_credit_limit(client, vendedor_token, vendedor_user, db):
     """Vendedor cannot create NV when total exceeds credito_disponible."""
     cliente = _make_cliente(db)
-    empresa = _make_empresa(db, limite_credito=Decimal("100000"))
+    empresa = _make_empresa(db, linea_credito=Decimal("100000"))
     producto = _make_producto(db)
     # 90000 of credit already used via unpaid factura
     _make_factura(db, empresa.id, cliente.id, total=90000)
@@ -86,7 +86,7 @@ def test_vendedor_blocked_over_credit_limit(client, vendedor_token, vendedor_use
 def test_vendedor_allowed_within_credit_limit(client, vendedor_token, vendedor_user, db):
     """Vendedor can create NV when total is within credito_disponible."""
     cliente = _make_cliente(db)
-    empresa = _make_empresa(db, limite_credito=Decimal("100000"))
+    empresa = _make_empresa(db, linea_credito=Decimal("100000"))
     producto = _make_producto(db)
     _make_factura(db, empresa.id, cliente.id, total=50000)
     # NV valor_neto=1000 → total=1190, within disponible (50000)
@@ -101,7 +101,7 @@ def test_vendedor_allowed_within_credit_limit(client, vendedor_token, vendedor_u
 def test_admin_bypasses_credit_limit(client, admin_token, admin_user, db):
     """Admin can create NV even when over credit limit."""
     cliente = _make_cliente(db)
-    empresa = _make_empresa(db, limite_credito=Decimal("1000"))
+    empresa = _make_empresa(db, linea_credito=Decimal("1000"))
     producto = _make_producto(db)
     _make_factura(db, empresa.id, cliente.id, total=1000)
     # Credit is fully used, but admin can still create
@@ -114,9 +114,9 @@ def test_admin_bypasses_credit_limit(client, admin_token, admin_user, db):
 
 
 def test_no_limit_set_vendedor_can_create(client, vendedor_token, vendedor_user, db):
-    """Vendedor can create NV freely when empresa has no limite_credito."""
+    """Vendedor can create NV freely when empresa has no linea_credito."""
     cliente = _make_cliente(db)
-    empresa = _make_empresa(db, limite_credito=None)
+    empresa = _make_empresa(db, linea_credito=None)
     producto = _make_producto(db)
     resp = client.post(
         "/api/nota_ventas/",
@@ -164,7 +164,7 @@ def _make_cotizacion_with_product(db, cliente_id, vendedor_id, empresa_id, produ
 def test_vendedor_blocked_from_cotizacion_over_limit(client, vendedor_token, vendedor_user, db):
     """Vendedor cannot convert cotizacion to NV when it exceeds credito_disponible."""
     cliente = _make_cliente(db)
-    empresa = _make_empresa(db, limite_credito=Decimal("100000"))
+    empresa = _make_empresa(db, linea_credito=Decimal("100000"))
     producto = _make_producto(db)
     _make_factura(db, empresa.id, cliente.id, total=90000)
     # Cotizacion total (with IVA) = 11900, disponible = 10000 → blocked
@@ -182,7 +182,7 @@ def test_vendedor_blocked_from_cotizacion_over_limit(client, vendedor_token, ven
 def test_admin_bypasses_credit_from_cotizacion(client, admin_token, admin_user, db):
     """Admin can convert cotizacion to NV even when over credit limit."""
     cliente = _make_cliente(db)
-    empresa = _make_empresa(db, limite_credito=Decimal("1000"))
+    empresa = _make_empresa(db, linea_credito=Decimal("1000"))
     producto = _make_producto(db)
     _make_factura(db, empresa.id, cliente.id, total=1000)
     cot = _make_cotizacion_with_product(

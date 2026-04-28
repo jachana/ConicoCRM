@@ -527,7 +527,7 @@ export default function CotizacionDetalle() {
   async function checkCredit(saleTotal: number, mode: 'warning' | 'request', onProceed: (() => void) | null, aprobacionPayload?: AprobacionPayload) {
     if (!empresaId) { onProceed?.(); return }
     const empresa = empresas.find(e => e.id === empresaId)
-    if (!empresa?.limite_credito) { onProceed?.(); return }
+    if (!empresa?.linea_credito) { onProceed?.(); return }
     try {
       const res = await api.get<CreditoInfo>(`/api/empresas/${empresaId}/credito`)
       const credito = res.data

@@ -4,6 +4,7 @@
 # Environment
 .env
 .env.prod
+scripts/.trello.env
 
 # Python
 __pycache__/

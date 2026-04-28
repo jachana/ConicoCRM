@@ -4,7 +4,7 @@ import { Card, CardContent, EmptyState, Skeleton } from './ui'
 import { CreditCard } from 'lucide-react'
 
 interface CreditoOut {
-  limite_credito: number | null
+  linea_credito: number | null
   credito_usado: number | null
   credito_disponible: number | null
 }
@@ -49,18 +49,18 @@ export default function EmpresaTabCredito({ empresaId }: Props) {
     )
   }
 
-  if (!data || data.limite_credito == null) {
+  if (!data || data.linea_credito == null) {
     return (
       <EmptyState
         icon={<CreditCard />}
-        title="Sin límite de crédito"
-        description="Esta empresa no tiene límite de crédito configurado."
+        title="Sin línea de crédito"
+        description="Esta empresa no tiene línea de crédito configurada."
       />
     )
   }
 
-  const pct = data.limite_credito > 0
-    ? Math.round((Number(data.credito_usado ?? 0) / Number(data.limite_credito)) * 100)
+  const pct = data.linea_credito > 0
+    ? Math.round((Number(data.credito_usado ?? 0) / Number(data.linea_credito)) * 100)
     : 0
 
   const usadoTone: 'default' | 'warning' | 'danger' = pct > 80 ? 'danger' : pct > 50 ? 'warning' : 'default'
@@ -69,11 +69,11 @@ export default function EmpresaTabCredito({ empresaId }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Stat label="Límite de Crédito" value={fmtMoney(data.limite_credito)} />
+        <Stat label="Línea de Crédito" value={fmtMoney(data.linea_credito)} />
         <Stat label="Crédito Usado" value={fmtMoney(data.credito_usado)} tone={usadoTone} />
         <Stat label="Disponible" value={fmtMoney(data.credito_disponible)} tone={dispTone} />
       </div>
-      {data.limite_credito > 0 && (
+      {data.linea_credito > 0 && (
         <div>
           <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
             <span>Uso del crédito</span>

@@ -146,7 +146,7 @@ def test_deuda_bulk_lista_vacia(client, admin_token):
 def test_deuda_bulk_empresa_sin_facturas(client, admin_token):
     emp = client.post(
         "/api/empresas/",
-        json={"nombre": "Emp Bulk", "plazo_credito": "30 Dias", "limite_credito": 5000000},
+        json={"nombre": "Emp Bulk", "plazo_credito": "30 Dias", "linea_credito": 5000000},
         headers={"Authorization": f"Bearer {admin_token}"},
     ).json()
     r = client.get("/api/empresas/deuda-bulk", headers={"Authorization": f"Bearer {admin_token}"})
@@ -156,7 +156,7 @@ def test_deuda_bulk_empresa_sin_facturas(client, admin_token):
     assert float(item["deuda_total"]) == 0
     assert float(item["deuda_vencida"]) == 0
     assert item["plazo_credito"] == "30 Dias"
-    assert float(item["limite_credito"]) == 5000000
+    assert float(item["linea_credito"]) == 5000000
 
 
 def test_deuda_bulk_con_factura_sin_pagar(client, admin_token):

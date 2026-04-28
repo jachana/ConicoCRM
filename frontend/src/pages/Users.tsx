@@ -14,15 +14,16 @@ import {
 
 const MODULES: Module[] = [
   'catalogo','clientes','empresas','proveedores','cotizaciones','nota_venta',
-  'facturas','ordenes_compra','inventario','rrhh','dashboard','usuarios','guias_despacho',
+  'facturas','boletas','ordenes_compra','inventario','rrhh','dashboard','usuarios','guias_despacho','tareas',
 ]
 const ACTIONS: Action[] = ['view','create','edit','delete']
 
 const MODULE_LABELS: Record<Module, string> = {
   catalogo: 'Catálogo', clientes: 'Clientes', empresas: 'Empresas', proveedores: 'Proveedores',
   cotizaciones: 'Cotizaciones', nota_venta: 'Nota de Venta', facturas: 'Facturas',
-  ordenes_compra: 'Órdenes de Compra', inventario: 'Inventario',
+  boletas: 'Boletas', ordenes_compra: 'Órdenes de Compra', inventario: 'Inventario',
   rrhh: 'RRHH', dashboard: 'Dashboard', usuarios: 'Usuarios', guias_despacho: 'Guías de Despacho',
+  tareas: 'Tareas',
 }
 
 const ACTION_LABELS: Record<Action, string> = {
@@ -171,7 +172,7 @@ export default function Users() {
                       </Tooltip>
                       {u.role !== 'admin' && (
                         <Tooltip label="Permisos">
-                          <Button size="icon-sm" variant="ghost" onClick={() => openPermissions(u)}>
+                          <Button size="icon-sm" variant="ghost" aria-label="Permisos" onClick={() => openPermissions(u)}>
                             <Shield size={14} />
                           </Button>
                         </Tooltip>

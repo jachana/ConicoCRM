@@ -161,7 +161,7 @@ export default function TareasConfigPage() {
                         <SelectContent>
                           {ROL_OPTIONS.map((opt) => (
                             <SelectItem key={opt} value={opt}>
-                              {opt}
+                              {opt === 'owner' ? 'responsable' : opt}
                             </SelectItem>
                           ))}
                         </SelectContent>

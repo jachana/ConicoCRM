@@ -9,8 +9,8 @@ export interface User {
 
 export type Module =
   | 'catalogo' | 'clientes' | 'empresas' | 'proveedores' | 'cotizaciones'
-  | 'nota_venta' | 'facturas' | 'ordenes_compra' | 'inventario'
-  | 'rrhh' | 'dashboard' | 'usuarios' | 'guias_despacho'
+  | 'nota_venta' | 'facturas' | 'boletas' | 'ordenes_compra' | 'inventario'
+  | 'rrhh' | 'dashboard' | 'usuarios' | 'guias_despacho' | 'tareas'
 
 export type Action = 'view' | 'create' | 'edit' | 'delete'
 
@@ -55,7 +55,6 @@ export interface Empresa {
   rut: string | null
   forma_pago: string | null
   linea_credito: number | null
-  limite_credito: number | null
   plazo_credito: string | null
   prioridad: string | null
   sector: string | null
@@ -69,7 +68,7 @@ export interface DeudaBulkItem {
   empresa_id: number
   nombre: string
   plazo_credito: string | null
-  limite_credito: number | null
+  linea_credito: number | null
   deuda_total: number
   deuda_vencida: number
 }

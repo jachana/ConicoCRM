@@ -3,6 +3,31 @@
 ## Execution
 
 When executing implementation plans, always use **superpowers:subagent-driven-development** (never superpowers:executing-plans or inline execution).
+
+## Trello sync
+
+The Trello board (ConicoCRM, id `69f0015d87f756962fb74da8`) is the single source of truth for project status. It is driven by `scripts/trello_cards.json` + `scripts/trello_sync.py` (idempotent — match by card name).
+
+Update Trello whenever any of these happen:
+- A phase / feature / wave item is shipped → move card to the appropriate list (`Friendly Beta 0.1` for shipped MVP work, `In review` if PR open, `Live Beta 0.2` / `Live 1.0` once promoted).
+- A new TODO / pending item / bug is discovered → add a card to `Feature requests` (engineering backlog), `Bugs`, `Client feedback`, or `Ideas` (Wave 4–6 / speculative).
+- A checklist sub-item is completed → tick it on Trello (or, if the whole card is done, move the card list-state).
+- A pending item gains scope (new sub-task) → append to that card's `checklist` array.
+
+Workflow (push, JSON wins):
+1. Edit `scripts/trello_cards.json` — change card's `list`, append `checklist` items, add new card objects, etc. Card `name` is the stable id; never rename casually.
+2. Run `python scripts/trello_sync.py --apply` (no dry-run needed — idempotent and safe to re-run).
+3. Commit `scripts/trello_cards.json` alongside the code change so Trello state is reproducible from git.
+
+Workflow (pull, Trello wins):
+- Run `python scripts/trello_sync.py --pull` to refresh `scripts/trello_cards.json` from current board state. Always do this **before** editing the JSON if the user has been adding/moving cards on Trello directly — otherwise `--apply` will drop their additions.
+- Pull adds Trello-only cards to JSON and removes JSON-only cards from JSON (Trello is canonical for that direction). Only the `Subtareas` checklist is round-tripped; checked/unchecked state lives only on Trello.
+
+Notes:
+- `scripts/.trello.env` is gitignored and holds credentials — never commit it.
+- `--apply` never deletes cards or checklist items; deletions must happen on Trello (then `--pull` to reconcile).
+- Labels in use: `Wave 1`, `Wave 2`, `Tier A`, `DTE/SII`, `Design System`, `Core`, `Roadmap`, `Bug`, `Blocked`.
+
 # Project Rules
 
 ## Tool & Command Policy

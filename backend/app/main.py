@@ -39,6 +39,7 @@ from app.api import tareas as tareas_api
 from app.api import reglas_tarea as reglas_tarea_api
 from app.api import search as search_api
 from app.api import auditoria as auditoria_api
+from app.api import timeline as timeline_api
 from app.middleware.audit_context import AuditContextMiddleware
 from app.services.auditoria import register_listeners as register_audit_listeners
 
@@ -108,3 +109,4 @@ app.include_router(reglas_tarea_api.router, prefix="/api")
 app.include_router(tareas_api.router, prefix="/api/tareas", tags=["tareas"])
 app.include_router(search_api.router, prefix="/api/search", tags=["search"])
 app.include_router(auditoria_api.router, prefix="/api/auditoria", tags=["auditoria"])
+app.include_router(timeline_api.router, prefix="/api", tags=["timeline"])

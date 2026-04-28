@@ -15,6 +15,8 @@ import {
 } from '../components/ui'
 
 const PLAZO_OPTIONS = ['Al contado', '30 Dias', '60 Dias', '90 Dias', 'Especial']
+const FORMA_PAGO_OPTIONS = ['Efectivo', 'Transferencia', 'Cheque', 'Crédito']
+const FORMA_PAGO_SIN_PLAZO = new Set(['Efectivo', 'Transferencia', 'Cheque'])
 
 type SedeForm = { nombre: string; direccion: string }
 const EMPTY_SEDE: SedeForm = { nombre: '', direccion: '' }
@@ -25,7 +27,6 @@ type FormData = {
   rut: string
   forma_pago: string
   linea_credito: string
-  limite_credito: string
   plazo_credito: string
   prioridad: string
   sector: string
@@ -36,7 +37,7 @@ type FormData = {
 
 const EMPTY_FORM: FormData = {
   nombre: '', razon_social: '', rut: '', forma_pago: '',
-  linea_credito: '', limite_credito: '', plazo_credito: '',
+  linea_credito: '', plazo_credito: '',
   prioridad: '', sector: '', email: '', nota_cobranza: '', ubicacion: '',
 }
 
@@ -153,7 +154,6 @@ export default function Empresas() {
       nombre: e.nombre, razon_social: e.razon_social ?? '', rut: e.rut ?? '',
       forma_pago: e.forma_pago ?? '',
       linea_credito: e.linea_credito != null ? String(e.linea_credito) : '',
-      limite_credito: e.limite_credito != null ? String(e.limite_credito) : '',
       plazo_credito: e.plazo_credito ?? '',
       prioridad: e.prioridad ?? '', sector: e.sector ?? '',
       email: e.email ?? '', nota_cobranza: e.nota_cobranza ?? '', ubicacion: e.ubicacion ?? '',
@@ -180,8 +180,6 @@ export default function Empresas() {
       )
       if (data.linea_credito) payload.linea_credito = parseFloat(data.linea_credito)
       else payload.linea_credito = null
-      if (data.limite_credito) payload.limite_credito = parseFloat(data.limite_credito)
-      else payload.limite_credito = null
       if (editando) return api.patch(`/api/empresas/${editando.id}`, payload).then(r => r.data)
       return api.post('/api/empresas/', payload).then(r => r.data)
     },
@@ -474,7 +472,25 @@ export default function Empresas() {
                 </FormField>
 
                 <FormField label="Forma de Pago">
-                  <Input value={form.forma_pago} onChange={e => setForm(f => ({ ...f, forma_pago: e.target.value }))} />
+                  <Select
+                    value={form.forma_pago || 'none'}
+                    onValueChange={v => {
+                      const fp = v === 'none' ? '' : v
+                      setForm(f => ({
+                        ...f,
+                        forma_pago: fp,
+                        plazo_credito: FORMA_PAGO_SIN_PLAZO.has(fp) ? 'Al contado' : f.plazo_credito,
+                      }))
+                    }}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Sin forma de pago —</SelectItem>
+                      {FORMA_PAGO_OPTIONS.map(o => (
+                        <SelectItem key={o} value={o}>{o}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </FormField>
                 <FormField label="Prioridad">
                   <Input value={form.prioridad} onChange={e => setForm(f => ({ ...f, prioridad: e.target.value }))} />
@@ -494,15 +510,6 @@ export default function Empresas() {
                     step="0.01"
                     value={form.linea_credito}
                     onChange={e => setForm(f => ({ ...f, linea_credito: e.target.value }))}
-                  />
-                </FormField>
-                <FormField label="Límite de Crédito ($)">
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.limite_credito}
-                    onChange={e => setForm(f => ({ ...f, limite_credito: e.target.value }))}
                   />
                 </FormField>
 
