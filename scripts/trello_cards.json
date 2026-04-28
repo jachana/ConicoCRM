@@ -1891,6 +1891,33 @@
         "  - '[Empresa] Quitar forma de pago del modelo Empresa' → revisitar (sugerido prefill, no campo de negocio)",
         "Tests: cheque+30d emite ok, efectivo+30d rechazado, vencimiento = emision + plazo, prefill desde empresa funciona"
       ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[NV] Buscador en lista de Notas de Venta",
+      "labels": [
+        "Core"
+      ],
+      "desc": "La lista de Notas de Venta no tiene buscador — para encontrar una NV específica hay que paginar a mano. Agregar barra de búsqueda con match contra los campos más usados.\n\nMismo patrón que el buscador global de productos: un input arriba de la tabla, debounce 300ms, match parcial case-insensitive, normalizado a tildes.",
+      "checklist": [
+        "Input de búsqueda arriba de la tabla NV con placeholder 'Buscar NV (nº, cliente, vendedor, producto, OC...)'",
+        "Backend: GET /api/notas-venta?q=<texto> con búsqueda OR en:",
+        "  - número de NV",
+        "  - nombre/razón social cliente o empresa",
+        "  - RUT cliente/empresa",
+        "  - nombre vendedor",
+        "  - SKU o nombre de producto en el detalle",
+        "  - número de OC referenciada (si existe)",
+        "  - observaciones",
+        "Match parcial, case-insensitive, normalizado (sin tildes)",
+        "Debounce 300ms en frontend (no spammear backend mientras tipea)",
+        "Combinable con filtros existentes (estado, fecha, vendedor) — query AND filtros",
+        "Highlight del match en la fila (opcional, nice-to-have)",
+        "Indicador 'Buscando...' mientras carga; 'Sin resultados' si vacío",
+        "Conservar query en URL (?q=...) para compartir/refresh",
+        "Performance: índice en campos buscables; LIMIT 100 resultados",
+        "Tests: búsqueda por nº NV, RUT cliente, SKU, OC referenciada — todos retornan correcto"
+      ]
     }
   ]
 }
