@@ -52,6 +52,7 @@ class FacturaUpdate(BaseModel):
     empresa_id: int | None = None
     banco_receptor_id: int | None = None
     metodo_pago: str | None = None
+    referencias_docs: list | None = None
 
     @field_validator("metodo_pago")
     @classmethod
@@ -123,6 +124,7 @@ class FacturaOut(BaseModel):
     banco_receptor: BancoReceptorOut | None = None
     nv: NVRef | None = None
     cotizacion: CotizacionRef | None = None
+    referencias_docs: list = []
     lineas: list[FacturaLineaOut] = []
     is_locked: bool
     model_config = {"from_attributes": True}
