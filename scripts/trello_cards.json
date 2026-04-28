@@ -219,7 +219,7 @@
       ]
     },
     {
-      "list": "Bugs",
+      "list": "In review",
       "name": "[Bug:Sidebar] Click en \"Listas de precios\" resalta también \"Inventario\"",
       "labels": [
         "Bug",
@@ -234,7 +234,7 @@
       ]
     },
     {
-      "list": "Bugs",
+      "list": "In review",
       "name": "[Bug:DarkMode] Títulos Auditoría y Cobranza invisibles en dark mode",
       "labels": [
         "Bug",
@@ -249,7 +249,7 @@
       ]
     },
     {
-      "list": "Bugs",
+      "list": "In review",
       "name": "[Bug:i18n] Reglas de tarea muestran \"owner\" en inglés",
       "labels": [
         "Core",
