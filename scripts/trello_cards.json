@@ -223,7 +223,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "Settings de admin debe poder ordenar y quitar items del sidebar",
       "labels": [
         "Core"
@@ -267,7 +267,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[DevX] Seed data — Pagos, NC, ND, GD, Boletas, Proveedores, OC",
       "labels": [
         "Core"
@@ -285,7 +285,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Empresas] Quitar campo \"Prioridad\"",
       "labels": [
         "Core"
@@ -1024,6 +1024,95 @@
         "Si (b): mover bandejas como tab dentro de /facturas y eliminar ruta",
         "Documentar decisión en CLAUDE.md o PROGRESS.md",
         "Ajustar sidebar y permisos resultantes"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] Quitar forma de pago del modelo Empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Decisión de negocio: la Empresa no tiene forma de pago propia. Cada transacción (cotización, NV, factura) define su propia forma de pago. Eliminar forma_pago de EmpresaCreate/Update/Read, modal y export si existe; la lógica de forma_pago vive en cada documento.",
+      "checklist": [
+        "Confirmar si Empresa.forma_pago existe en modelo (grep)",
+        "Si existe: migración Alembic drop column + backfill",
+        "Quitar forma_pago de EmpresaModal (input)",
+        "Quitar forma_pago de EmpresaRead schema y export Excel",
+        "Validar que cotización/NV/factura sigan teniendo su propio forma_pago"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] Permisos: solo admins modifican línea de crédito",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Vendedores no deben poder modificar ni ver el campo línea de crédito de una empresa. Solo admins y subadmins pueden editarlo. Implica bloquear el campo en EmpresaModal para vendedor y restringir el endpoint PATCH /empresas/{id}.",
+      "checklist": [
+        "Backend: validar rol antes de actualizar linea_credito en PATCH /empresas/{id}",
+        "Frontend: ocultar / deshabilitar campo línea de crédito en EmpresaModal si rol=vendedor",
+        "Ocultar AprobacionCredito y GET /empresas/{id}/credito para vendedor si aplica",
+        "Test: vendedor envía PATCH con linea_credito → 403"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] RUT como ID inmutable — no editable post-creación",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El RUT es el identificador estable de la empresa. Una vez creada, no debe poder modificarse. Bloquear el campo rut en EmpresaModal en modo edición y rechazar cambios en el backend.",
+      "checklist": [
+        "Backend: ignorar/rechazar rut en PATCH /empresas/{id} (422 si se envía distinto)",
+        "Frontend: campo rut deshabilitado (readonly) en EmpresaModal al editar",
+        "Agregar tooltip explicativo: 'El RUT no puede modificarse después de creada la empresa'",
+        "Test: PATCH con rut distinto → 422 o silencio"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] RUT no oficial — flag informativo para consolidación",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Algunas empresas operan con RUT no oficiales (ficticios o provisionales). Agregar campo booleano rut_no_oficial (default false) visible solo como badge informativo en EmpresaDetail. Solo se usa para consolidación interna — no afecta DTE ni lógica de negocio.",
+      "checklist": [
+        "Modelo: campo Empresa.rut_no_oficial Boolean default False + migración Alembic",
+        "Schema EmpresaCreate/Update/Read incluye rut_no_oficial",
+        "EmpresaModal: checkbox 'RUT no oficial (informativo)' en sección datos",
+        "EmpresaDetail/EmpresaList: badge 'RUT no oficial' visible solo si true",
+        "No afecta validaciones DTE ni lógica de línea de crédito"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] Puntos de contacto visibles en ficha empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "La pantalla de detalle de empresa debe mostrar los puntos de contacto (personas de contacto: nombre, cargo, email, teléfono). Si ya existe modelo ContactoEmpresa, agregar tab o sección en EmpresaDetailModal. Si no existe, crear modelo y CRUD básico.",
+      "checklist": [
+        "Verificar si existe modelo ContactoEmpresa o similar",
+        "Si no existe: modelo ContactoEmpresa (empresa_id FK, nombre, cargo, email, telefono) + migración",
+        "API CRUD /api/empresas/{id}/contactos (GET, POST, PATCH, DELETE)",
+        "EmpresaDetailModal: tab 'Contactos' o sección inline con lista + agregar/editar/eliminar",
+        "Permisos: vendedor puede ver, solo admin puede crear/editar/eliminar"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] Filtros rápidos en Timeline, Facturas y Productos",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los tabs Timeline, Facturas y Productos en EmpresaDetailModal necesitan filtros rápidos preconfigurados para mejorar usabilidad. Chips/pills de acceso rápido: 'Este mes', 'Este año', 'Facturas y pagos' (solo docs oficiales). Complementa los filtros existentes.",
+      "checklist": [
+        "Diseñar chips de filtro rápido: 'Este mes', 'Este año', 'Facturas y pagos'",
+        "Timeline: 'Este mes' = fecha >= inicio_mes, 'Facturas y pagos' = tipos [factura, pago, nc, nd]",
+        "Facturas tab: 'Este mes' y 'Este año' filtran por fecha_emision",
+        "Productos tab: 'Este mes' y 'Este año' filtran por última compra/factura del producto",
+        "Estado activo del chip resaltado (aria-pressed); reset limpia a sin filtro",
+        "Chips no reemplazan filtros existentes — se combinan"
       ]
     }
   ]
