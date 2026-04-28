@@ -1196,11 +1196,10 @@
       "labels": [
         "Core"
       ],
-      "desc": "Pestaña dedicada de **Migración inicial** (settings/onboarding) con herramientas one-shot para cargar data legacy. Primer proceso: import de Clientes y Empresas desde Excel.\n\nReglas de import:\n- Validar preexistencia por RUT y, si existe, preferir los datos del Excel (update sobre la fila existente — sin perder relaciones / id).\n- Cliente que apunta a un rut_empresa inexistente → crear cliente igual, dejar vínculo pendiente y reportarlo. Nunca descartar la fila por un link colgante.\n- Reporte final por fila: creado / actualizado / vínculo pendiente / error.\n\nLa pestaña queda como contenedor para futuros procesos de iniciación (productos, precios, OC históricas, etc.) — ver checklist.",
+      "desc": "Pestaña dedicada de **Migración inicial** (settings/onboarding) con herramientas one-shot para cargar data legacy. Primer proceso: import de Clientes y Empresas desde Excel.\n\nReglas de import:\n- Validar preexistencia por RUT y, si existe, preferir los datos del Excel (update sobre la fila existente — sin perder relaciones / id).\n- Cliente que apunta a un rut_empresa inexistente → crear cliente igual, dejar vínculo pendiente y reportarlo. Nunca descartar la fila por un link colgante.\n- Reporte final por fila: creado / actualizado / vínculo pendiente / error.\n\nLa pestaña queda como contenedor para futuros procesos de iniciación (productos, precios, OC históricas, etc.) — ver checklist.\n\nCada proceso de iniciación tiene su propia card con prefijo `[Onboarding]`.",
       "checklist": [
         "Nueva pestaña 'Migración inicial' visible solo a admin (settings o sección aparte)",
         "Diseño extensible: cada proceso de iniciación es una card/wizard dentro de la pestaña",
-        "--- Proceso 1: Clientes + Empresas (Excel) ---",
         "UI: upload .xlsx + preview de las primeras filas + plantilla descargable",
         "Plantilla con hojas separadas (Empresas / Clientes) y columnas documentadas",
         "Backend: parser xlsx con validación de columnas y tipos",
@@ -1212,11 +1211,425 @@
         "Validar RUTs (módulo 11) y reportar inválidos sin abortar el batch",
         "Import transaccional por lote: rollback si error fatal, reporte fila a fila si recuperable",
         "Reporte descargable post-import: creado / actualizado / vínculo pendiente / error + motivo",
-        "Tests: empresa nueva, empresa existente (update), cliente con empresa válida, cliente con rut_empresa inexistente, RUT inválido, duplicados dentro del mismo Excel",
-        "--- Backlog futuro de la pestaña ---",
-        "Import de Productos desde Excel",
-        "Import de Lista de precios / descuentos por cliente",
-        "Import de OC / Facturas históricas (solo registro, sin emisión SII)"
+        "Tests: empresa nueva, empresa existente (update), cliente con empresa válida, cliente con rut_empresa inexistente, RUT inválido, duplicados dentro del mismo Excel"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Productos] Edición masiva de precios",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Permitir actualizar precios de múltiples productos a la vez sin entrar a cada ficha individualmente. Casos de uso: ajuste por inflación, cambio de margen por categoría, subida de costos proveedor.\n\nComportamiento esperado:\n- Vista tabla editable en /productos (o modal dedicado) con columnas: nombre, precio actual, precio nuevo.\n- Filtros: por categoría, marca, o selección manual (checkboxes).\n- Soporte para incremento porcentual (ej: +10%) o valor absoluto aplicado al rango seleccionado.\n- Preview de cambios antes de confirmar.\n- Commit atómico: todos o ninguno (rollback si falla alguno).",
+      "checklist": [
+        "Endpoint PATCH /api/productos/bulk-precios (lista de {id, precio_venta})",
+        "Validaciones: precio > 0, usuario con permiso de edición de productos",
+        "UI: modo 'edición masiva' en tabla de productos (toggle o botón)",
+        "Columna 'precio nuevo' editable inline por fila seleccionada",
+        "Herramienta de ajuste rápido: % aumento/descuento aplicado a selección",
+        "Preview diff antes de guardar (precio actual → precio nuevo)",
+        "Commit atómico con feedback de éxito/error por fila",
+        "Actualizar listas de precios vinculadas si aplica"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Clientes] Búsqueda por nombre de empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Al buscar clientes (autocomplete / listado), incluir el nombre de la empresa vinculada como campo de búsqueda adicional. Hoy solo se busca por nombre/RUT del cliente; si el usuario escribe el nombre de la empresa, no aparece ningún resultado aunque el cliente esté asociado.\n\nComportamiento esperado:\n- El input de búsqueda de clientes filtra por: nombre cliente, RUT cliente, **nombre empresa**.\n- Los resultados muestran el nombre del cliente y, en subtexto, el nombre de la empresa.\n- No cambiar el modelo de datos; solo ampliar el query de búsqueda (JOIN con Empresa).",
+      "checklist": [
+        "Identificar todos los endpoints/queries de búsqueda de clientes (autocomplete + listado)",
+        "Ampliar filtro SQL: OR empresa.nombre ILIKE :q (JOIN Empresa donde existe vínculo)",
+        "Verificar que el schema de respuesta ya devuelve nombre_empresa o agregar el campo",
+        "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
+        "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
+        "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Productos / Catálogo (Excel)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Carga inicial del catálogo de productos. Match por SKU; producto existente → UPDATE (preferir datos del Excel), nuevo → CREATE. Soporta familia/categoría, unidad, precio base, costo, IVA, afecto/exento.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Match por SKU normalizado (uppercase, sin espacios)",
+        "Columnas: sku, nombre, descripcion, familia, unidad, precio_base, costo, iva, afecto",
+        "Crear familia/categoría si no existe (o reportar como pendiente según modo)",
+        "Validar tipos numéricos y rangos (precio>=0, iva en {0,19})",
+        "SKU duplicado dentro del mismo Excel → reportar y tomar la última fila"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Bodegas + Sedes de despacho",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Carga inicial de bodegas (almacenes físicos para stock) y sedes de despacho asociadas a empresas. Pre-requisito para import de stock inicial y para asignar despachos por sede.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Hojas separadas: Bodegas / Sedes",
+        "Bodegas: codigo, nombre, direccion, comuna, activa",
+        "Sedes: rut_empresa, alias, direccion, comuna, contacto, telefono",
+        "Sede con rut_empresa inexistente → crear sede 'pendiente' + reportar (no descartar)",
+        "Match bodega por código; sede por (rut_empresa + alias)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Stock inicial por bodega",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Carga el stock físico inicial de cada SKU por bodega. Pre-requisito: productos y bodegas ya cargados. Genera movimiento de inventario tipo 'carga inicial' para auditoría.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Pre-check: productos y bodegas existen",
+        "Columnas: sku, codigo_bodega, cantidad, costo_unitario (opcional)",
+        "SKU o bodega inexistente → reportar fila como error (no crear silencioso)",
+        "Generar Movimiento de Inventario tipo CARGA_INICIAL con fecha de import",
+        "Permitir re-correr: si ya hay carga inicial para SKU+bodega, confirmar antes de sobrescribir",
+        "Cantidades negativas → rechazar"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Lista de precios + descuentos por cliente",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Precios especiales y descuentos por (cliente|empresa) × producto. Ej.: cliente X paga $1.200 por SKU Y, o tiene 15% descuento global. Match por (rut, sku).",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: rut_cliente_o_empresa, sku, precio_especial, descuento_pct, vigencia_desde, vigencia_hasta",
+        "Cliente/empresa o SKU inexistente → reportar pendiente, no descartar",
+        "Validar mutua exclusión: precio_especial XOR descuento_pct (o ambos OK si modelo lo soporta)",
+        "Rechazar descuento_pct fuera de [0,100]",
+        "Re-import: actualiza vigencia/precio de la combinación existente"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Proveedores",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Carga inicial de proveedores (necesario para OC históricas y futuras). Match por RUT.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: rut, razon_social, giro, direccion, comuna, contacto, email, telefono, condicion_pago",
+        "Validar RUT módulo 11",
+        "Match por RUT normalizado; existente → UPDATE",
+        "Modelo Proveedor separado de Empresa (cliente)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import OC históricas (registro)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Órdenes de compra ya emitidas en sistema legacy. Solo registro histórico — no se reemiten ni se envían a proveedor. Pre-requisito: proveedores y productos cargados.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Hojas: Cabecera OC / Detalle OC (linkeadas por numero_oc)",
+        "Cabecera: numero_oc, rut_proveedor, fecha, estado, total_neto, iva, total",
+        "Detalle: numero_oc, sku, cantidad, precio_unitario, descuento",
+        "Marcar registros con flag historico=true → bloquear edición/emisión",
+        "Proveedor o SKU inexistente → reportar fila como error",
+        "Validar totales (suma detalle = cabecera, tolerancia $1)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Facturas / Boletas históricas (registro, sin SII)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "DTEs ya emitidos en plataforma anterior. Solo registro para histórico de cliente y cobranza — NO se reemiten al SII, no consumen folio CAF, no generan PDF nuevo. Marca origen=externo.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Hojas: Cabecera DTE / Detalle DTE",
+        "Cabecera: tipo_dte, folio, rut_receptor, fecha_emision, neto, iva, total, estado_pago",
+        "Detalle: folio, sku, cantidad, precio_unitario, descuento, exento",
+        "Flag origen=externo → bloquea reenvío SII, anulación, NC posterior (a menos que se decida explícito)",
+        "Permitir adjuntar PDF original opcional",
+        "Cliente inexistente → crear stub + marcar pendiente",
+        "NO descontar stock por estos DTE históricos"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Notas de crédito/débito históricas",
+      "labels": [
+        "Core"
+      ],
+      "desc": "NC/ND ya emitidas. Linkean a factura/boleta histórica por folio + tipo. Mismo principio: solo registro, no se reemite al SII.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: tipo (NC/ND), folio, fecha, folio_referencia, tipo_referencia, motivo, neto, iva, total",
+        "Flag origen=externo",
+        "Si folio_referencia no existe → reportar pendiente, dejar NC/ND huérfana (no descartar)",
+        "Aplicar efecto contable solo si la factura referenciada también está cargada"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Guías de despacho históricas",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Guías de despacho ya emitidas. Registro histórico para trazabilidad de entregas. Pueden o no tener factura asociada.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Cabecera: folio_guia, rut_receptor, fecha, sede_destino, tipo_traslado",
+        "Detalle: folio_guia, sku, cantidad",
+        "Flag origen=externo (no reemite SII)",
+        "NO descontar stock por guías históricas",
+        "Link opcional a factura por (folio + tipo) si la factura también fue importada"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Pagos / cartola / cobranzas históricas",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Pagos recibidos ya aplicados a facturas/boletas. Necesario para que la cobranza/saldo pendiente arranque correcto.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: fecha_pago, rut_cliente, monto, medio_pago, referencia, folio_documento, tipo_documento",
+        "Aplicar pago a la factura/boleta importada (reduce saldo pendiente)",
+        "Pago sin documento referenciado → registrar como pago a cuenta (no descartar)",
+        "Documento inexistente → reportar pendiente, dejar pago colgado para reconciliación manual",
+        "Validar que sum(pagos) <= total_documento (o reportar sobrepago)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Notas de venta abiertas (pendientes)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "NV en estado pendiente/parcial al momento del corte de migración. Estas SÍ son operativas en Conico (se pueden facturar/despachar).",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Hojas: Cabecera NV / Detalle NV",
+        "Cabecera: numero_nv, rut_cliente, fecha, vendedor, condicion_pago, estado, observaciones",
+        "Detalle: numero_nv, sku, cantidad, cantidad_facturada, cantidad_despachada, precio, descuento",
+        "Recalcular saldos pendientes (cantidad - facturada / despachada)",
+        "Cliente o SKU inexistente → reportar y bloquear (NV operativa no puede tener huecos)",
+        "Vendedor inexistente → asignar a admin con flag de revisión"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Cotizaciones abiertas",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Cotizaciones vigentes / con seguimiento activo en CRM legacy. Permite continuar el funnel sin perder oportunidades.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Cabecera: numero_cot, rut_cliente, fecha, vigencia_hasta, vendedor, estado, total",
+        "Detalle: numero_cot, sku, cantidad, precio, descuento",
+        "Estado mapeable a borrador/enviada/aceptada/rechazada/vencida",
+        "Cotizaciones con vigencia vencida → import opcional con flag archivada",
+        "Cliente nuevo (no existe) → crear con datos mínimos"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Vendedores / usuarios / roles",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Carga inicial del equipo de ventas y usuarios del sistema. Necesario antes de importar NV/cotizaciones (asignación de vendedor) y comisiones.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: rut, nombre, email, rol, activo, comision_pct, meta_mensual",
+        "Roles válidos: admin, vendedor, cobranza, bodega, contador (lectura)",
+        "Email único; existente → UPDATE (no resetea password)",
+        "Generar password temporal + email de bienvenida (opcional, toggle)",
+        "Match por email (estable) — RUT informativo"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Categorías / familias de productos",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Estructura de catálogo (familia → subfamilia → producto). Pre-requisito recomendado antes de import productos para que el match de familia no genere stubs.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: codigo, nombre, parent_codigo (opcional para árbol)",
+        "Soporta jerarquía (parent_codigo apunta a otra fila del mismo Excel)",
+        "Validar ciclos en el árbol",
+        "Re-import actualiza nombre/parent (no borra hijos)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Carga de CAFs SII (folios)",
+      "labels": [
+        "DTE/SII"
+      ],
+      "desc": "Sube los archivos CAF (XML firmados por SII) por tipo de DTE para que Conico pueda emitir folios. Distinto formato (XML, no Excel).",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Upload .xml CAF (uno por archivo, multi-upload OK)",
+        "Validar firma SII y rango de folios (desde/hasta)",
+        "Reconocer tipo DTE (33/34/39/41/52/56/61) automáticamente del XML",
+        "Detectar solapamiento con CAF ya cargado → rechazar",
+        "Mostrar consumo actual + folios restantes por tipo",
+        "Alerta de folios bajos (umbral configurable)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
+      "checklist": [
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Import Tareas / actividades CRM pendientes",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Tareas y actividades de seguimiento abiertas en CRM legacy (llamadas, emails, reuniones pendientes). Permite que el equipo no pierda pendientes en la migración.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: rut_cliente, tipo, descripcion, fecha_vencimiento, asignado_email, estado, prioridad",
+        "Cliente inexistente → reportar pendiente",
+        "Asignado inexistente → asignar a admin con flag",
+        "Tipos: llamada, email, reunion, visita, cobranza, otro",
+        "Solo importar tareas en estado abierto (pendiente/en_curso)"
       ]
     }
   ]
