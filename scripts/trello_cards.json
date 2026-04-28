@@ -315,25 +315,6 @@
     },
     {
       "list": "In review",
-      "name": "[Bug:HTTPS] Mixed content por redirect de FastAPI sin proxy-headers",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "En producción (HTTPS detrás de reverse proxy), FastAPI emite redirects 307 con Location http:// porque uvicorn corría sin --proxy-headers. El navegador bloquea el request por mixed content. Reproducido en /configuracion -> /api/bancos-receptores (sin trailing slash) -> 307 -> http://...//bancos-receptores/. Fix root cause: añadir --proxy-headers --forwarded-allow-ips=* al CMD de backend/Dockerfile (uvicorn ahora respeta X-Forwarded-Proto). Adicional: trailing slash en llamadas /api/bancos-receptores en Configuracion.tsx y FacturaDetalle.tsx para evitar el redirect en sí. Pendiente: re-deploy backend en Coolify para aplicar Dockerfile.",
-      "checklist": [
-        "Backend: uvicorn --proxy-headers --forwarded-allow-ips=*",
-        "Frontend: trailing slash en /api/bancos-receptores",
-        "Re-deploy backend en Coolify",
-        "Verificar /configuracion sin error de consola",
-        "Auditar otros endpoints que dependen de redirect 307"
-      ],
-      "commits": [
-        "e3ea0038a46f138c2431da98b4900257d0e82a79"
-      ]
-    },
-    {
-      "list": "In review",
       "name": "[Tests] Baseline failures Empresas + Facturas (12 fails)",
       "labels": [
         "Bug"
@@ -658,6 +639,25 @@
         "Si (b): mover bandejas como tab dentro de /facturas y eliminar ruta",
         "Documentar decisión en CLAUDE.md o PROGRESS.md",
         "Ajustar sidebar y permisos resultantes"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:HTTPS] Mixed content por redirect de FastAPI sin proxy-headers",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "En producción (HTTPS detrás de reverse proxy), FastAPI emite redirects 307 con Location http:// porque uvicorn corría sin --proxy-headers. El navegador bloquea el request por mixed content. Reproducido en /configuracion -> /api/bancos-receptores (sin trailing slash) -> 307 -> http://...//bancos-receptores/. Fix root cause: añadir --proxy-headers --forwarded-allow-ips=* al CMD de backend/Dockerfile (uvicorn ahora respeta X-Forwarded-Proto). Adicional: trailing slash en llamadas /api/bancos-receptores en Configuracion.tsx y FacturaDetalle.tsx para evitar el redirect en sí. Pendiente: re-deploy backend en Coolify para aplicar Dockerfile.",
+      "checklist": [
+        "Backend: uvicorn --proxy-headers --forwarded-allow-ips=*",
+        "Frontend: trailing slash en /api/bancos-receptores",
+        "Re-deploy backend en Coolify",
+        "Verificar /configuracion sin error de consola",
+        "Auditar otros endpoints que dependen de redirect 307"
+      ],
+      "commits": [
+        "e3ea0038a46f138c2431da98b4900257d0e82a79"
       ]
     },
     {
@@ -1188,6 +1188,35 @@
         "Phase C6 — Users",
         "Phase D — Login + AppLayout QA",
         "Phase E — Semantic-token sweep + a11y pass (grep gate clean)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Onboarding] Pestaña Migración inicial — import Clientes + Empresas (Excel)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Pestaña dedicada de **Migración inicial** (settings/onboarding) con herramientas one-shot para cargar data legacy. Primer proceso: import de Clientes y Empresas desde Excel.\n\nReglas de import:\n- Validar preexistencia por RUT y, si existe, preferir los datos del Excel (update sobre la fila existente — sin perder relaciones / id).\n- Cliente que apunta a un rut_empresa inexistente → crear cliente igual, dejar vínculo pendiente y reportarlo. Nunca descartar la fila por un link colgante.\n- Reporte final por fila: creado / actualizado / vínculo pendiente / error.\n\nLa pestaña queda como contenedor para futuros procesos de iniciación (productos, precios, OC históricas, etc.) — ver checklist.",
+      "checklist": [
+        "Nueva pestaña 'Migración inicial' visible solo a admin (settings o sección aparte)",
+        "Diseño extensible: cada proceso de iniciación es una card/wizard dentro de la pestaña",
+        "--- Proceso 1: Clientes + Empresas (Excel) ---",
+        "UI: upload .xlsx + preview de las primeras filas + plantilla descargable",
+        "Plantilla con hojas separadas (Empresas / Clientes) y columnas documentadas",
+        "Backend: parser xlsx con validación de columnas y tipos",
+        "Match por RUT normalizado (sin puntos, con guión, dv en mayúscula)",
+        "Empresa existente → UPDATE con datos del Excel (preferir nuevos), preservar id/relaciones",
+        "Empresa nueva → CREATE",
+        "Cliente con rut_empresa inexistente → crear cliente sin empresa + marcar 'vínculo pendiente' (no fallar la fila)",
+        "Cliente con rut_empresa existente → asociar correctamente",
+        "Validar RUTs (módulo 11) y reportar inválidos sin abortar el batch",
+        "Import transaccional por lote: rollback si error fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import: creado / actualizado / vínculo pendiente / error + motivo",
+        "Tests: empresa nueva, empresa existente (update), cliente con empresa válida, cliente con rut_empresa inexistente, RUT inválido, duplicados dentro del mismo Excel",
+        "--- Backlog futuro de la pestaña ---",
+        "Import de Productos desde Excel",
+        "Import de Lista de precios / descuentos por cliente",
+        "Import de OC / Facturas históricas (solo registro, sin emisión SII)"
       ]
     }
   ]
