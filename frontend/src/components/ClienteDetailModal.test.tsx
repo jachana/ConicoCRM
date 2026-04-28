@@ -16,6 +16,13 @@ vi.mock('../api/timeline', async (importOriginal) => {
   }
 })
 
+// Mock api client so ClienteTabFacturas renders without network
+vi.mock('../lib/api', () => ({
+  api: {
+    get: vi.fn().mockResolvedValue({ data: [] }),
+  },
+}))
+
 vi.mock('../stores/auth', () => ({
   useAuthStore: (fn?: (s: { user: { role: string } }) => unknown) =>
     fn ? fn({ user: { role: 'admin' } }) : { user: { role: 'admin' } },
@@ -92,7 +99,21 @@ describe('ClienteDetailModal', () => {
     }, { timeout: 3000 })
   })
 
-  it('3. click "Editar" button calls onEdit with the cliente', () => {
+  it('3. click "Facturas" tab shows EmptyState when no facturas', async () => {
+    const user = userEvent.setup()
+    wrap(
+      <ClienteDetailModal cliente={CLIENTE_FIXTURE} onClose={onClose} onEdit={onEdit} />,
+    )
+
+    const facturasTab = screen.getByRole('tab', { name: /facturas/i })
+    await user.click(facturasTab)
+
+    await waitFor(() => {
+      expect(screen.getByText('Sin facturas')).toBeTruthy()
+    }, { timeout: 3000 })
+  })
+
+  it('4. click "Editar" button calls onEdit with the cliente', () => {
     wrap(
       <ClienteDetailModal cliente={CLIENTE_FIXTURE} onClose={onClose} onEdit={onEdit} />,
     )

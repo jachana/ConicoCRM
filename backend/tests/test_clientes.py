@@ -166,3 +166,78 @@ def test_crear_cliente_con_nuevos_campos(client, admin_token):
     assert data["despacho_o_retiro"] == "despacho"
     assert data["comuna"] == "Las Condes"
     assert data["es_nuevo"] is True
+
+
+# ---------------------------------------------------------------------------
+# Cliente facturas tab — GET /api/clientes/{id}/facturas
+# ---------------------------------------------------------------------------
+
+
+def _crear_factura_para_cliente(client, token, cliente_id, total_neto=500):
+    r = client.post(
+        "/api/facturas/",
+        json={
+            "cliente_id": cliente_id,
+            "lineas": [{"orden": 0, "descripcion": "Item", "cantidad": 1, "valor_neto": total_neto}],
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def test_facturas_cliente_404_si_no_existe(client, admin_token):
+    r = client.get("/api/clientes/99999/facturas", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 404
+
+
+def test_facturas_cliente_lista_con_pendiente(client, admin_token):
+    c = client.post("/api/clientes/", json={"nombre": "ClienteFacTab"}, headers={"Authorization": f"Bearer {admin_token}"}).json()
+    f = _crear_factura_para_cliente(client, admin_token, c["id"], total_neto=1000)
+
+    r = client.get(f"/api/clientes/{c['id']}/facturas", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) == 1
+    assert data[0]["id"] == f["id"]
+    assert data[0]["numero"] == f["numero"]
+    # pendiente = total - monto_pagado (0)
+    assert float(data[0]["pendiente"]) == float(data[0]["total"])
+
+
+def test_facturas_cliente_filtro_estado(client, admin_token):
+    c = client.post("/api/clientes/", json={"nombre": "ClienteFacTabEstado"}, headers={"Authorization": f"Bearer {admin_token}"}).json()
+    _crear_factura_para_cliente(client, admin_token, c["id"])
+
+    # Filtro estado=anulada → 0
+    r = client.get(
+        f"/api/clientes/{c['id']}/facturas?estado=anulada",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_facturas_cliente_vendedor_solo_ve_propias(
+    client, admin_token, vendedor_token, vendedor_user, db
+):
+    """Vendedor solo ve facturas que le pertenecen — paridad con scope timeline."""
+    from app.models.factura import Factura
+
+    c = client.post("/api/clientes/", json={"nombre": "ClienteVendedorFac"}, headers={"Authorization": f"Bearer {admin_token}"}).json()
+    f_propia = _crear_factura_para_cliente(client, admin_token, c["id"], total_neto=1000)
+    f_ajena = _crear_factura_para_cliente(client, admin_token, c["id"], total_neto=2000)
+
+    # Reasignar f_propia al vendedor
+    fac = db.get(Factura, f_propia["id"])
+    fac.vendedor_id = vendedor_user.id
+    db.commit()
+
+    r = client.get(
+        f"/api/clientes/{c['id']}/facturas",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) == 1
+    assert data[0]["id"] == f_propia["id"]

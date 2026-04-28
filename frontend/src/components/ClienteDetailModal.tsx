@@ -5,6 +5,7 @@ import {
 } from './ui'
 import { Pencil } from 'lucide-react'
 import Timeline from './Timeline'
+import ClienteTabFacturas from './ClienteTabFacturas'
 import type { Cliente } from '../types'
 
 interface Props {
@@ -30,6 +31,7 @@ export default function ClienteDetailModal({ cliente, onClose, onEdit }: Props) 
           <TabsList variant="underline" className="px-6 flex-shrink-0">
             <TabsTrigger value="datos">Datos</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            <TabsTrigger value="facturas">Facturas</TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-y-auto px-6 py-5">
@@ -58,6 +60,9 @@ export default function ClienteDetailModal({ cliente, onClose, onEdit }: Props) 
             </TabsContent>
             <TabsContent value="timeline">
               <Timeline scope="cliente" entityId={cliente.id} />
+            </TabsContent>
+            <TabsContent value="facturas">
+              <ClienteTabFacturas clienteId={cliente.id} />
             </TabsContent>
           </div>
         </Tabs>

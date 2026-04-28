@@ -1,3 +1,5 @@
+from datetime import date
+from decimal import Decimal
 from io import BytesIO
 
 import openpyxl
@@ -8,8 +10,10 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_permission
 from app.models.cliente import Cliente
+from app.models.factura import Factura
 from app.models.user import User
 from app.schemas.cliente import ClienteCreate, ClienteOut, ClienteUpdate
+from app.schemas.empresa import EmpresaFacturaDetailItem
 
 router = APIRouter()
 
@@ -116,3 +120,65 @@ def eliminar_cliente(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
     db.delete(c)
     db.commit()
+
+
+@router.get("/{cliente_id}/facturas", response_model=list[EmpresaFacturaDetailItem])
+def facturas_cliente(
+    cliente_id: int,
+    estado: list[str] = Query(default=[]),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    monto_min: Decimal | None = Query(None),
+    monto_max: Decimal | None = Query(None),
+    sort_by: str = Query("fecha"),
+    sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
+    perms: tuple[User, Session] = require_permission("clientes", "view"),
+):
+    """Facturas del cliente para el tab Facturas en ClienteDetailModal.
+
+    Mirrors GET /api/empresas/{id}/facturas — same filters, same shape.
+    Vendedor scope: ve sólo facturas propias (vendedor_id == current_user.id).
+    """
+    current_user, db = perms
+    c = db.get(Cliente, cliente_id)
+    if not c:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
+
+    query = db.query(Factura).filter(Factura.cliente_id == cliente_id)
+    if current_user.role == "vendedor":
+        query = query.filter(Factura.vendedor_id == current_user.id)
+    if estado:
+        query = query.filter(Factura.estado.in_(estado))
+    if fecha_desde:
+        query = query.filter(Factura.fecha >= fecha_desde)
+    if fecha_hasta:
+        query = query.filter(Factura.fecha <= fecha_hasta)
+    if monto_min is not None:
+        query = query.filter(Factura.total >= monto_min)
+    if monto_max is not None:
+        query = query.filter(Factura.total <= monto_max)
+
+    sort_col = {
+        "fecha": Factura.fecha,
+        "numero": Factura.numero,
+        "total": Factura.total,
+        "estado": Factura.estado,
+        "pendiente": Factura.total,
+        "monto_pagado": Factura.monto_pagado,
+    }.get(sort_by, Factura.fecha)
+    query = query.order_by(sort_col.desc() if sort_dir == "desc" else sort_col.asc())
+
+    facturas = query.all()
+    return [
+        EmpresaFacturaDetailItem(
+            id=f.id,
+            numero=f.numero,
+            fecha=f.fecha,
+            estado=f.estado,
+            contacto=f.contacto,
+            total=f.total,
+            monto_pagado=f.monto_pagado or Decimal("0"),
+            pendiente=f.total - (f.monto_pagado or Decimal("0")),
+        )
+        for f in facturas
+    ]
