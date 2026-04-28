@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, computed_field
 
 
 class EmpresaBase(BaseModel):
@@ -44,7 +44,13 @@ class EmpresaRef(BaseModel):
 class EmpresaOut(EmpresaBase):
     id: int
     created_at: datetime
+    logo_path: str | None = Field(default=None, exclude=True)
     model_config = {"from_attributes": True}
+
+    @computed_field
+    @property
+    def has_logo(self) -> bool:
+        return self.logo_path is not None
 
 
 class FacturaResumen(BaseModel):

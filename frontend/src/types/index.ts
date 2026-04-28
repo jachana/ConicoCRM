@@ -61,6 +61,7 @@ export interface Empresa {
   nota_cobranza: string | null
   ubicacion: string | null
   created_at: string
+  has_logo: boolean
 }
 
 export interface DeudaBulkItem {

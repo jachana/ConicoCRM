@@ -31,6 +31,7 @@ from app.schemas.cobranza import ImportXMLError, ImportXMLResult, RecordatorioCr
 from app.services.email import EmailNotConfiguredError, enviar_factura
 from app.services.email import enviar_recordatorio as _send_recordatorio
 from app.services.pdf import generar_pdf_factura
+from app.utils.logo import empresa_logo_data_uri
 from app.services.xml_dte import parse_dte_xml
 
 router = APIRouter()
@@ -589,6 +590,12 @@ def generar_pdf(
     _, db = perms
     factura = _load_factura(db, factura_id)
     config = _get_config_dict(db)
+    if factura.empresa_id:
+        empresa = db.get(Empresa, factura.empresa_id)
+        if empresa:
+            uri = empresa_logo_data_uri(empresa.logo_path)
+            if uri:
+                config["empresa_logo_url"] = uri
     pdf_bytes = generar_pdf_factura(factura, config)
     cliente_nombre = factura.cliente.nombre if factura.cliente else "cliente"
     raw_filename = f"FAC - {factura.numero} {factura.fecha}.{factura.contacto or ''}. {cliente_nombre}.pdf"
@@ -608,6 +615,12 @@ def enviar_email(
     _, db = perms
     factura = _load_factura(db, factura_id)
     config = _get_config_dict(db)
+    if factura.empresa_id:
+        empresa = db.get(Empresa, factura.empresa_id)
+        if empresa:
+            uri = empresa_logo_data_uri(empresa.logo_path)
+            if uri:
+                config["empresa_logo_url"] = uri
     try:
         pdf_bytes = generar_pdf_factura(factura, config)
         enviar_factura(factura, pdf_bytes)

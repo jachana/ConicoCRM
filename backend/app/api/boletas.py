@@ -12,6 +12,7 @@ from app.api.deps import require_permission
 from app.api.dte import _next_numero
 from app.models.boleta import Boleta, BoletaLinea
 from app.models.dte_emision import DteEmision
+from app.models.empresa import Empresa
 from app.models.nota_credito import NotaCredito, NotaCreditoLinea
 from app.models.system_config import SystemConfig
 from app.models.user import User
@@ -19,6 +20,7 @@ from app.schemas.boleta import BoletaCreate, BoletaListOut, BoletaOut, BoletaUpd
 from app.services.boleta_stock import descontar_stock_boleta, revertir_stock_boleta
 from app.services.email import EmailNotConfiguredError, enviar_boleta as _enviar_boleta_email
 from app.services.pdf import generar_pdf_boleta
+from app.utils.logo import empresa_logo_data_uri
 from app.tasks.dte import emit_dte
 
 router = APIRouter()
@@ -344,7 +346,14 @@ def descargar_pdf(
 ):
     _, db = perms
     boleta = _load_boleta(db, boleta_id)
-    pdf_bytes = generar_pdf_boleta(boleta, _config_dict(db))
+    config = _config_dict(db)
+    if boleta.empresa_id:
+        empresa = db.get(Empresa, boleta.empresa_id)
+        if empresa:
+            uri = empresa_logo_data_uri(empresa.logo_path)
+            if uri:
+                config["empresa_logo_url"] = uri
+    pdf_bytes = generar_pdf_boleta(boleta, config)
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
@@ -367,7 +376,14 @@ def enviar_email_boleta(
     destino = body.email or boleta.email_envio
     if not destino:
         raise HTTPException(status_code=422, detail="No hay email destino")
-    pdf_bytes = generar_pdf_boleta(boleta, _config_dict(db))
+    config = _config_dict(db)
+    if boleta.empresa_id:
+        empresa = db.get(Empresa, boleta.empresa_id)
+        if empresa:
+            uri = empresa_logo_data_uri(empresa.logo_path)
+            if uri:
+                config["empresa_logo_url"] = uri
+    pdf_bytes = generar_pdf_boleta(boleta, config)
     try:
         _enviar_boleta_email(boleta, pdf_bytes, destino)
     except EmailNotConfiguredError:

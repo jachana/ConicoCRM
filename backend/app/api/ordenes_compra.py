@@ -23,8 +23,10 @@ from app.schemas.orden_compra import (
     RecepcionPayload,
     OrdenCompraLineaCreate,
 )
+from app.models.empresa import Empresa
 from app.services.email import EmailNotConfiguredError, enviar_orden_compra
 from app.services.pdf import generar_pdf_orden_compra
+from app.utils.logo import empresa_logo_data_uri
 
 router = APIRouter()
 
@@ -252,6 +254,12 @@ def generar_pdf(
     if not orden:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
     config = _get_config_dict(db)
+    if getattr(orden, "empresa_id", None):
+        emp = db.get(Empresa, orden.empresa_id)
+        if emp:
+            uri = empresa_logo_data_uri(emp.logo_path)
+            if uri:
+                config["empresa_logo_url"] = uri
     pdf_bytes = generar_pdf_orden_compra(orden, config)
     filename = f"OC-{orden.numero:05d} {orden.fecha}.pdf"
     return StreamingResponse(
@@ -273,6 +281,12 @@ def enviar_email(
     if orden.estado != "borrador":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Solo se pueden enviar órdenes en estado 'borrador'")
     config = _get_config_dict(db)
+    if getattr(orden, "empresa_id", None):
+        emp = db.get(Empresa, orden.empresa_id)
+        if emp:
+            uri = empresa_logo_data_uri(emp.logo_path)
+            if uri:
+                config["empresa_logo_url"] = uri
     try:
         pdf_bytes = generar_pdf_orden_compra(orden, config)
         enviar_orden_compra(orden, pdf_bytes)
