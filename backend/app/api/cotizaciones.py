@@ -29,6 +29,7 @@ from app.schemas.cotizacion import (
 )
 from app.services.email import EmailNotConfiguredError, enviar_cotizacion
 from app.services.pdf import generar_pdf_cotizacion
+from app.utils.logo import empresa_logo_data_uri
 
 router = APIRouter()
 
@@ -540,6 +541,12 @@ def generar_pdf(
         )
 
     config = _get_config_dict(db)
+    if cot.empresa_id:
+        empresa = db.get(Empresa, cot.empresa_id)
+        if empresa:
+            uri = empresa_logo_data_uri(empresa.logo_path)
+            if uri:
+                config["empresa_logo_url"] = uri
     pdf_bytes = generar_pdf_cotizacion(cot, config)
 
     cliente_nombre = cot.cliente.nombre if cot.cliente else "cliente"
@@ -679,6 +686,12 @@ def enviar_email(
         )
 
     config = _get_config_dict(db)
+    if cot.empresa_id:
+        empresa = db.get(Empresa, cot.empresa_id)
+        if empresa:
+            uri = empresa_logo_data_uri(empresa.logo_path)
+            if uri:
+                config["empresa_logo_url"] = uri
     try:
         pdf_bytes = generar_pdf_cotizacion(cot, config)
         enviar_cotizacion(cot, pdf_bytes)

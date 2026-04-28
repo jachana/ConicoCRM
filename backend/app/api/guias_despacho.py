@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.api.deps import require_permission
 from app.api.dte import _next_numero
 from app.models.dte_emision import DteEmision
+from app.models.empresa import Empresa
 from app.models.guia_despacho import GuiaDespacho, GuiaDespachoLinea
 from app.models.system_config import SystemConfig
 from app.models.user import User
@@ -19,6 +20,7 @@ from app.schemas.guia_despacho import (
 )
 from app.services.email import EmailNotConfiguredError, enviar_guia_despacho as _enviar_guia_email
 from app.services.pdf import generar_pdf_guia_despacho
+from app.utils.logo import empresa_logo_data_uri
 from app.tasks.dte import emit_dte
 
 router = APIRouter()
@@ -288,7 +290,14 @@ def descargar_pdf_guia(
 ):
     _, db = perms
     guia = _load_guia(db, guia_id)
-    pdf_bytes = generar_pdf_guia_despacho(guia, _config_dict(db))
+    config = _config_dict(db)
+    if guia.empresa_id:
+        empresa = db.get(Empresa, guia.empresa_id)
+        if empresa:
+            uri = empresa_logo_data_uri(empresa.logo_path)
+            if uri:
+                config["empresa_logo_url"] = uri
+    pdf_bytes = generar_pdf_guia_despacho(guia, config)
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
@@ -310,7 +319,14 @@ def enviar_email_guia(
                (guia.cliente.email if guia.cliente and getattr(guia.cliente, "email", None) else None))
     if not destino:
         raise HTTPException(status_code=422, detail="No hay email destino")
-    pdf_bytes = generar_pdf_guia_despacho(guia, _config_dict(db))
+    config = _config_dict(db)
+    if guia.empresa_id:
+        empresa = db.get(Empresa, guia.empresa_id)
+        if empresa:
+            uri = empresa_logo_data_uri(empresa.logo_path)
+            if uri:
+                config["empresa_logo_url"] = uri
+    pdf_bytes = generar_pdf_guia_despacho(guia, config)
     try:
         _enviar_guia_email(guia, pdf_bytes, destino)
     except EmailNotConfiguredError:

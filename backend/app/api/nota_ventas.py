@@ -32,6 +32,7 @@ from app.schemas.nota_venta import (
 from app.models.movimiento_inventario import MovimientoInventario
 from app.services.email import EmailNotConfiguredError, enviar_nota_venta
 from app.services.pdf import generar_pdf_nota_venta
+from app.utils.logo import empresa_logo_data_uri
 
 router = APIRouter()
 
@@ -583,6 +584,12 @@ def generar_pdf(
     nv = _load_nv(db, nv_id)
     _check_lineas_invalidas(nv.lineas)
     config = _get_config_dict(db)
+    if nv.empresa_id:
+        empresa = db.get(Empresa, nv.empresa_id)
+        if empresa:
+            uri = empresa_logo_data_uri(empresa.logo_path)
+            if uri:
+                config["empresa_logo_url"] = uri
     pdf_bytes = generar_pdf_nota_venta(nv, config)
     cliente_nombre = nv.cliente.nombre if nv.cliente else "cliente"
     raw_filename = f"NV - {nv.numero} {nv.fecha}.{nv.contacto or ''}. {cliente_nombre}.pdf"
@@ -603,6 +610,12 @@ def enviar_email(
     nv = _load_nv(db, nv_id)
     _check_lineas_invalidas(nv.lineas)
     config = _get_config_dict(db)
+    if nv.empresa_id:
+        empresa = db.get(Empresa, nv.empresa_id)
+        if empresa:
+            uri = empresa_logo_data_uri(empresa.logo_path)
+            if uri:
+                config["empresa_logo_url"] = uri
     try:
         pdf_bytes = generar_pdf_nota_venta(nv, config)
         enviar_nota_venta(nv, pdf_bytes)
