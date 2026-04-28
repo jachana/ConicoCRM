@@ -56,7 +56,7 @@ class DteService:
             }
             for l in factura.lineas
         ]
-        return {
+        payload = {
             "tipo_dte": 33,
             "fecha_emision": (factura.fecha or date.today()).isoformat(),
             "emisor": self._emisor(cfg),
@@ -69,6 +69,20 @@ class DteService:
                 "monto_total": int(factura.total),
             },
         }
+
+        if factura.referencias_docs:
+            payload["referencias"] = [
+                {
+                    "tipo": ref["tipo"],
+                    "folio": ref["folio"],
+                    "fecha": ref.get("fecha", ""),
+                    "razon": ref.get("razon", ""),
+                }
+                for ref in factura.referencias_docs
+                if ref.get("tipo") and ref.get("folio")
+            ]
+
+        return payload
 
     def build_nc_payload(self, nc: NotaCredito, db: Session) -> dict:
         cfg = _get_config(db)
