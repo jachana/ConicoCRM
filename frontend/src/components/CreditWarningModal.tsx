@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { api } from '../lib/api'
 
 export interface CreditoInfo {
-  limite_credito: number
+  linea_credito: number
   credito_usado: number
   credito_disponible: number
 }
@@ -75,8 +75,8 @@ export default function CreditWarningModal({
 
         <div className="space-y-2 mb-5 text-sm bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
           <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">Límite de crédito</span>
-            <span className="font-medium text-gray-900 dark:text-white">{fmtMoney(credito.limite_credito)}</span>
+            <span className="text-gray-600 dark:text-gray-400">Línea de crédito</span>
+            <span className="font-medium text-gray-900 dark:text-white">{fmtMoney(credito.linea_credito)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">Crédito usado</span>

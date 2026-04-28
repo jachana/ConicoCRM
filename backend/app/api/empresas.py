@@ -230,7 +230,7 @@ def deuda_bulk(
                 empresa_id=e.id,
                 nombre=e.nombre,
                 plazo_credito=e.plazo_credito,
-                limite_credito=e.limite_credito,
+                linea_credito=e.linea_credito,
                 deuda_total=deuda_total,
                 deuda_vencida=deuda_vencida,
             )
@@ -301,8 +301,8 @@ def credito_empresa(
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
-    if e.limite_credito is None:
-        return EmpresaCreditoOut(limite_credito=None, credito_usado=None, credito_disponible=None)
+    if e.linea_credito is None:
+        return EmpresaCreditoOut(linea_credito=None, credito_usado=None, credito_disponible=None)
     from decimal import Decimal as D
     facturas = (
         db.query(Factura)
@@ -314,9 +314,9 @@ def credito_empresa(
          if f.total - (f.monto_pagado or D("0")) > 0),
         D("0"),
     )
-    credito_disponible = e.limite_credito - credito_usado
+    credito_disponible = e.linea_credito - credito_usado
     return EmpresaCreditoOut(
-        limite_credito=e.limite_credito,
+        linea_credito=e.linea_credito,
         credito_usado=credito_usado,
         credito_disponible=credito_disponible,
     )

@@ -163,13 +163,17 @@ function DashboardTab() {
 // ─── Facturas ─────────────────────────────────────────────────────────────────
 
 function FacturasTab() {
-  const [estado, setEstado] = useState('')
+  const [estado, setEstado] = useState('pendientes')
   const [showImport, setShowImport] = useState(false)
 
   const { data: facturas = [], isLoading } = useQuery<Factura[]>({
     queryKey: ['cobranza-facturas', estado],
-    queryFn: () =>
-      api.get('/api/facturas/', { params: estado ? { estado } : {} }).then(r => r.data),
+    queryFn: () => {
+      if (estado === 'pendientes') {
+        return api.get('/api/facturas/', { params: { estado: ['emitida', 'parcial'] }, paramsSerializer: { indexes: null } }).then(r => r.data)
+      }
+      return api.get('/api/facturas/', { params: estado ? { estado } : {} }).then(r => r.data)
+    },
   })
 
   return (
@@ -177,16 +181,14 @@ function FacturasTab() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex gap-2">
           <Select
-            value={estado || 'all'}
-            onValueChange={(v) => setEstado(v === 'all' ? '' : v)}
+            value={estado}
+            onValueChange={(v) => setEstado(v)}
           >
             <SelectTrigger size="sm" className="w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los estados</SelectItem>
+              <SelectItem value="pendientes">Pendientes</SelectItem>
               <SelectItem value="emitida">Emitida</SelectItem>
               <SelectItem value="parcial">Parcial</SelectItem>
-              <SelectItem value="pagada">Pagada</SelectItem>
-              <SelectItem value="anulada">Anulada</SelectItem>
             </SelectContent>
           </Select>
         </div>

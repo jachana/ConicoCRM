@@ -94,100 +94,7 @@
       ]
     },
     {
-      "list": "Feature requests",
-      "name": "revamp dashboard, its boring now",
-      "labels": [
-        "Design System"
-      ],
-      "desc": "Dashboard actual carece de engagement visual y organización. Rediseñar con widgets dinámicos, colores, y datos relevantes por rol para mejorar UX y adopción.",
-      "checklist": [
-        "Auditar dashboard actual: qué datos + qué roles lo usan",
-        "Mockups: layout responsive, widgets customizables",
-        "Definir KPIs visuales por rol (vendedor vs admin)",
-        "Implementar new design con charts/cards interactivas",
-        "Test A/B con subset de usuarios"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "Settings de admin debe poder ordenar y quitar items del sidebar",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Administrador necesita personalizar navegación: ocultar módulos no usados y reordenar sidebar según flujo de negocio. Mejora usabilidad para roles específicos.",
-      "checklist": [
-        "UI settings: drag-drop o checkboxes para visibilidad",
-        "Persistir preferencias por rol (no por usuario)",
-        "Validar que no se oculten módulos críticos (ej: Clientes)",
-        "Default sensato: todos visibles on first load",
-        "Test con admin + vendedor"
-      ]
-    },
-    {
       "list": "In review",
-      "name": "[Tests] Baseline failures Empresas + Facturas (12 fails)",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "12 vitest failures pre-existentes en Empresas/Facturas; carryover desde antes de Phase E. Investigar y arreglar para CI verde.",
-      "checklist": [
-        "Reproducir localmente (npm test -- Empresas Facturas)",
-        "Listar failures uno a uno",
-        "Triage: tests obsoletos vs bugs reales",
-        "Fix o skip con motivo documentado",
-        "Validar en CI cuando esté"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Tareas] Vendedor puede ver Tareas de Admins y subadmins",
-      "labels": [
-        "Bug",
-        "Core"
-      ],
-      "desc": "Brecha de seguridad: vendedores acceden a Tareas privadas de admin/subadmin. Solo deben ver tareas propias y asignadas. Fix urgente: validar permisos en queries + frontend.",
-      "checklist": [
-        "Auditar query: filtrar tareas por rol + ownership",
-        "Backend: validar permisos antes de retornar lista",
-        "Frontend: ocultar tabs/vistas no autorizadas",
-        "Reproducir: login vendedor → verificar no ve admin tasks",
-        "Audit logs: registrar acceso anterior"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Vendedor] Vendedor puede ver OC y proveedores y precios de costo y margen",
-      "labels": [
-        "Bug",
-        "Core"
-      ],
-      "desc": "Fuga de información financiera: vendedores ven órdenes de compra, proveedores, costos y márgenes (datos confidenciales). Restringir a admin/gerencia solo.",
-      "checklist": [
-        "Backend: filtrar OC, proveedores, campos de costo por rol",
-        "Frontend: ocultar tabs OC y Proveedores para vendedor",
-        "Validar permisos en cada endpoint (costo, margen)",
-        "Test: vendedor no accede /api/suppliers, /api/purchase-orders",
-        "Audit: revisar logs de acceso vendedor a datos financieros"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[BUG:Vendedor] Vendedor puede ver reportes Y cobranza, Notas de credito y debito",
-      "labels": [
-        "Bug",
-        "Core"
-      ],
-      "desc": "Vendedor accede a reportes financieros, cobranza y notas de crédito/débito (solo admin/contador). Controlador de acceso fallido. Fix: validar rol antes de renderizar vistas.",
-      "checklist": [
-        "Backend: ACL por endpoint (reportes, cobranza, notas fiscal)",
-        "Frontend: menu condicional (ocultar para vendedor)",
-        "Validar permisos en /api/reports, /api/collections, /api/credit-notes",
-        "Test: vendedor intenta nav directo a URLs → 403",
-        "Logging: auditar intentos fallidos desde vendedor"
-      ]
-    },
-    {
-      "list": "Bugs",
       "name": "[Bug:Datos] \"Límite de crédito\" duplica \"Línea de crédito\"",
       "labels": [
         "Core",
@@ -195,6 +102,11 @@
       ],
       "desc": "DECISIÓN: Conservar solo 'linea_credito'. Dropar 'limite_credito' del modelo Empresa. Migración Alembic + actualizar API/schemas/UI.",
       "checklist": [
+        "Mapear todos los usos de cada campo (modelo, API, UI, reportes, lógica crédito)",
+        "Decidir: merge en uno solo vs renombrar con semántica distinta",
+        "Migración Alembic (drop o rename + backfill)",
+        "Ajustar AprobacionCredito + GET /empresas/{id}/credito",
+        "Actualizar UI EmpresaModal + filtros + export",
         "Migración Alembic: drop columna limite_credito",
         "Remover limite_credito de schemas Pydantic y serializers",
         "Ajustar AprobacionCredito + GET /empresas/{id}/credito → usar linea_credito",
@@ -203,7 +115,7 @@
       ]
     },
     {
-      "list": "Bugs",
+      "list": "In review",
       "name": "[Bug:Datos] \"Forma de pago\" duplica \"Plazo de Crédito\"",
       "labels": [
         "Core",
@@ -211,6 +123,11 @@
       ],
       "desc": "DECISIÓN: Son distintos — forma_pago=método (efectivo/transferencia/cheque/crédito), plazo_credito=días. Convertir forma_pago de texto libre a select con opciones fijas. Cuando forma=efectivo/transferencia/cheque → plazo se fuerza a 0.",
       "checklist": [
+        "Mapear usos de forma_pago vs plazo_credito en backend + UI",
+        "Decidir semántica: método vs plazo (o merge)",
+        "Migración Alembic + backfill desde valores existentes",
+        "Ajustar enforce al_contado (Sprint A) y FacturaDetalle banco/método",
+        "Actualizar formularios Empresa/Cliente/Cotización/NV/Factura",
         "Definir enum FormaPago: efectivo, transferencia, cheque, credito",
         "Migración Alembic: cambiar columna a String con CHECK constraint o enum",
         "Backend: validar forma_pago en schemas Pydantic con Literal/Enum",
@@ -220,51 +137,6 @@
     },
     {
       "list": "In review",
-      "name": "[Bug:Sidebar] Click en \"Listas de precios\" resalta también \"Inventario\"",
-      "labels": [
-        "Bug",
-        "Design System"
-      ],
-      "desc": "Al navegar a /listas-precios el sidebar marca como activo tanto el item Listas de precios como Inventario. Probable: active-state hace match por prefijo (/inventario incluye route hermana) o ambos viven en el mismo grupo colapsable.",
-      "checklist": [
-        "Revisar Sidebar.tsx isActive matching (exact vs startsWith)",
-        "Separar grupos o usar match exacto por path",
-        "Validar también en otras rutas hermanas (productos, marcas, etc.)",
-        "Vitest snapshot del active state"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:DarkMode] Títulos Auditoría y Cobranza invisibles en dark mode",
-      "labels": [
-        "Bug",
-        "Design System"
-      ],
-      "desc": "Headers de /admin/auditoria y /cobranza usan color hardcoded (text-gray-900 o similar) sin variante dark, quedando invisibles. Reemplazar por token semántico (text-foreground) y barrer otras páginas con el mismo patrón.",
-      "checklist": [
-        "Fix header /admin/auditoria → token semántico",
-        "Fix header /cobranza → token semántico",
-        "Grep frontend por text-gray-900|text-black sin dark: en headers de página",
-        "Validar contraste WCAG AA en light + dark"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:i18n] Reglas de tarea muestran \"owner\" en inglés",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "Aplicación es es-CL pero la UI de Reglas de Tarea (/admin/tareas/config) muestra el término inglés \"owner\" en lugar de \"responsable\" o \"asignado\". Probable leak desde seed o desde nombres de columna sin traducir.",
-      "checklist": [
-        "Reemplazar owner → responsable/asignado en /admin/tareas/config UI",
-        "Revisar seed ReglaTarea (descripcion/labels)",
-        "Grep en frontend de strings EN restantes en módulo tareas (\"owner\", \"created\", \"due\", etc.)",
-        "Confirmar consistencia con resto de módulos"
-      ]
-    },
-    {
-      "list": "Bugs",
       "name": "[Bug:Cobranza] Facturas y Cobranza muestran data duplicada sin diferenciación",
       "labels": [
         "Core",
@@ -381,6 +253,21 @@
     },
     {
       "list": "Feature requests",
+      "name": "revamp dashboard, its boring now",
+      "labels": [
+        "Design System"
+      ],
+      "desc": "Dashboard actual carece de engagement visual y organización. Rediseñar con widgets dinámicos, colores, y datos relevantes por rol para mejorar UX y adopción.",
+      "checklist": [
+        "Auditar dashboard actual: qué datos + qué roles lo usan",
+        "Mockups: layout responsive, widgets customizables",
+        "Definir KPIs visuales por rol (vendedor vs admin)",
+        "Implementar new design con charts/cards interactivas",
+        "Test A/B con subset de usuarios"
+      ]
+    },
+    {
+      "list": "Feature requests",
       "name": "[DTE] Libros + intercambio DTE recepción",
       "labels": [
         "DTE/SII"
@@ -391,6 +278,21 @@
         "Libro compras (LC)",
         "Recepción DTE entrantes (acuse de recibo, reclamos)",
         "Intercambio según norma SII"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "Settings de admin debe poder ordenar y quitar items del sidebar",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Administrador necesita personalizar navegación: ocultar módulos no usados y reordenar sidebar según flujo de negocio. Mejora usabilidad para roles específicos.",
+      "checklist": [
+        "UI settings: drag-drop o checkboxes para visibilidad",
+        "Persistir preferencias por rol (no por usuario)",
+        "Validar que no se oculten módulos críticos (ej: Clientes)",
+        "Default sensato: todos visibles on first load",
+        "Test con admin + vendedor"
       ]
     },
     {
@@ -1014,6 +916,114 @@
         "Visual QA mobile + desktop",
         "Storybook setup opcional para components/ui/*",
         "Documentar gaps que aparezcan"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Tests] Baseline failures Empresas + Facturas (12 fails)",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "12 vitest failures pre-existentes en Empresas/Facturas; carryover desde antes de Phase E. Investigar y arreglar para CI verde.",
+      "checklist": [
+        "Reproducir localmente (npm test -- Empresas Facturas)",
+        "Listar failures uno a uno",
+        "Triage: tests obsoletos vs bugs reales",
+        "Fix o skip con motivo documentado",
+        "Validar en CI cuando esté"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:Tareas] Vendedor puede ver Tareas de Admins y subadmins",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Brecha de seguridad: vendedores acceden a Tareas privadas de admin/subadmin. Solo deben ver tareas propias y asignadas. Fix urgente: validar permisos en queries + frontend.",
+      "checklist": [
+        "Auditar query: filtrar tareas por rol + ownership",
+        "Backend: validar permisos antes de retornar lista",
+        "Frontend: ocultar tabs/vistas no autorizadas",
+        "Reproducir: login vendedor → verificar no ve admin tasks",
+        "Audit logs: registrar acceso anterior"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:Vendedor] Vendedor puede ver OC y proveedores y precios de costo y margen",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Fuga de información financiera: vendedores ven órdenes de compra, proveedores, costos y márgenes (datos confidenciales). Restringir a admin/gerencia solo.",
+      "checklist": [
+        "Backend: filtrar OC, proveedores, campos de costo por rol",
+        "Frontend: ocultar tabs OC y Proveedores para vendedor",
+        "Validar permisos en cada endpoint (costo, margen)",
+        "Test: vendedor no accede /api/suppliers, /api/purchase-orders",
+        "Audit: revisar logs de acceso vendedor a datos financieros"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[BUG:Vendedor] Vendedor puede ver reportes Y cobranza, Notas de credito y debito",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Vendedor accede a reportes financieros, cobranza y notas de crédito/débito (solo admin/contador). Controlador de acceso fallido. Fix: validar rol antes de renderizar vistas.",
+      "checklist": [
+        "Backend: ACL por endpoint (reportes, cobranza, notas fiscal)",
+        "Frontend: menu condicional (ocultar para vendedor)",
+        "Validar permisos en /api/reports, /api/collections, /api/credit-notes",
+        "Test: vendedor intenta nav directo a URLs → 403",
+        "Logging: auditar intentos fallidos desde vendedor"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:Sidebar] Click en \"Listas de precios\" resalta también \"Inventario\"",
+      "labels": [
+        "Bug",
+        "Design System"
+      ],
+      "desc": "Al navegar a /listas-precios el sidebar marca como activo tanto el item Listas de precios como Inventario. Probable: active-state hace match por prefijo (/inventario incluye route hermana) o ambos viven en el mismo grupo colapsable.",
+      "checklist": [
+        "Revisar Sidebar.tsx isActive matching (exact vs startsWith)",
+        "Separar grupos o usar match exacto por path",
+        "Validar también en otras rutas hermanas (productos, marcas, etc.)",
+        "Vitest snapshot del active state"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:DarkMode] Títulos Auditoría y Cobranza invisibles en dark mode",
+      "labels": [
+        "Bug",
+        "Design System"
+      ],
+      "desc": "Headers de /admin/auditoria y /cobranza usan color hardcoded (text-gray-900 o similar) sin variante dark, quedando invisibles. Reemplazar por token semántico (text-foreground) y barrer otras páginas con el mismo patrón.",
+      "checklist": [
+        "Fix header /admin/auditoria → token semántico",
+        "Fix header /cobranza → token semántico",
+        "Grep frontend por text-gray-900|text-black sin dark: en headers de página",
+        "Validar contraste WCAG AA en light + dark"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:i18n] Reglas de tarea muestran \"owner\" en inglés",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Aplicación es es-CL pero la UI de Reglas de Tarea (/admin/tareas/config) muestra el término inglés \"owner\" en lugar de \"responsable\" o \"asignado\". Probable leak desde seed o desde nombres de columna sin traducir.",
+      "checklist": [
+        "Reemplazar owner → responsable/asignado en /admin/tareas/config UI",
+        "Revisar seed ReglaTarea (descripcion/labels)",
+        "Grep en frontend de strings EN restantes en módulo tareas (\"owner\", \"created\", \"due\", etc.)",
+        "Confirmar consistencia con resto de módulos"
       ]
     }
   ]

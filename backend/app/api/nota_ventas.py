@@ -111,7 +111,7 @@ def _check_credit_limit(db: Session, empresa_id: int | None, total: Decimal, cur
     if not empresa_id:
         return
     empresa = db.get(Empresa, empresa_id)
-    if not empresa or empresa.limite_credito is None:
+    if not empresa or empresa.linea_credito is None:
         return
     facturas = (
         db.query(Factura)
@@ -124,11 +124,11 @@ def _check_credit_limit(db: Session, empresa_id: int | None, total: Decimal, cur
          if f.total - (f.monto_pagado or Decimal("0")) > 0),
         Decimal("0"),
     )
-    credito_disponible = empresa.limite_credito - credito_usado
+    credito_disponible = empresa.linea_credito - credito_usado
     if total > credito_disponible:
         raise HTTPException(
             status_code=402,
-            detail=f"Límite de crédito excedido. Disponible: {credito_disponible}, solicitado: {total}",
+            detail=f"Línea de crédito excedida. Disponible: {credito_disponible}, solicitado: {total}",
         )
 
 

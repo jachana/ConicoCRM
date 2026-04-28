@@ -9,7 +9,6 @@ class EmpresaBase(BaseModel):
     rut: str | None = None
     forma_pago: str | None = None
     linea_credito: Decimal | None = None
-    limite_credito: Decimal | None = None
     plazo_credito: str | None = None
     prioridad: str | None = None
     sector: str | None = None
@@ -28,7 +27,6 @@ class EmpresaUpdate(BaseModel):
     rut: str | None = None
     forma_pago: str | None = None
     linea_credito: Decimal | None = None
-    limite_credito: Decimal | None = None
     plazo_credito: str | None = None
     prioridad: str | None = None
     sector: str | None = None
@@ -70,7 +68,7 @@ class EmpresaDeudaOut(BaseModel):
 
 
 class EmpresaCreditoOut(BaseModel):
-    limite_credito: Decimal | None
+    linea_credito: Decimal | None
     credito_usado: Decimal | None
     credito_disponible: Decimal | None
 
@@ -79,7 +77,7 @@ class EmpresaDeudaBulkItem(BaseModel):
     empresa_id: int
     nombre: str
     plazo_credito: str | None
-    limite_credito: Decimal | None
+    linea_credito: Decimal | None
     deuda_total: Decimal
     deuda_vencida: Decimal
 

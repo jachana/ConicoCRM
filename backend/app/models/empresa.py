@@ -14,7 +14,6 @@ class Empresa(Base):
     rut: Mapped[str | None] = mapped_column(String(20), unique=True, nullable=True, index=True)
     forma_pago: Mapped[str | None] = mapped_column(String(100), nullable=True)
     linea_credito: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
-    limite_credito: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
     plazo_credito: Mapped[str | None] = mapped_column(String(50), nullable=True)
     prioridad: Mapped[str | None] = mapped_column(String(50), nullable=True)
     sector: Mapped[str | None] = mapped_column(String(100), nullable=True)
