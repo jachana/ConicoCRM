@@ -379,6 +379,7 @@ export interface Factura {
   nv: { id: number; numero: number } | null;
   cotizacion: { id: number; numero: number } | null;
   lineas: FacturaLinea[];
+  referencias_docs: Array<{tipo: string; folio: string; fecha: string; razon?: string}> | null;
   is_locked?: boolean;
 }
 

@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 from typing import Self
 from app.schemas.empresa import EmpresaRef
 from app.schemas.banco_receptor import BancoReceptorOut
@@ -59,6 +59,7 @@ class FacturaUpdate(BaseModel):
     banco_receptor_id: int | None = None
     metodo_pago: str | None = None
     plazo_dias: int | None = None
+    referencias_docs: list | None = None
 
     @model_validator(mode="after")
     def check_plazo_metodo(self) -> Self:
@@ -132,6 +133,7 @@ class FacturaOut(BaseModel):
     banco_receptor: BancoReceptorOut | None = None
     nv: NVRef | None = None
     cotizacion: CotizacionRef | None = None
+    referencias_docs: list = Field(default_factory=list)
     lineas: list[FacturaLineaOut] = []
     is_locked: bool
     model_config = {"from_attributes": True}

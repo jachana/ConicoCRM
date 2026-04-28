@@ -1,6 +1,6 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, String, Text, text
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, JSON, Numeric, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -43,6 +43,7 @@ class Factura(Base):
     dte_estado: Mapped[str] = mapped_column(String(20), default="no_emitida", server_default=text("'no_emitida'"))
     xml_raw: Mapped[str | None] = mapped_column(Text, nullable=True)
     ultimo_recordatorio: Mapped[date | None] = mapped_column(Date, nullable=True)
+    referencias_docs: Mapped[list | None] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
