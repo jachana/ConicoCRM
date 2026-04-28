@@ -252,7 +252,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Empresa] Quitar forma de pago del modelo Empresa",
       "labels": [
         "Core"
@@ -267,7 +267,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Empresa] Permisos: solo admins modifican línea de crédito",
       "labels": [
         "Core"
@@ -281,7 +281,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Empresa] RUT como ID inmutable — no editable post-creación",
       "labels": [
         "Core"
@@ -295,7 +295,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Empresa] RUT no oficial — flag informativo para consolidación",
       "labels": [
         "Core"
@@ -341,7 +341,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Cotización] Duplicar cotización con precios y fecha actualizados",
       "labels": [
         "Core"
@@ -361,7 +361,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[NV] Botón Re-cotizar desde Nota de Venta",
       "labels": [
         "Core"
@@ -379,7 +379,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Factura] Botón Re-cotizar desde Factura",
       "labels": [
         "Core"
