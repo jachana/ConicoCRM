@@ -6,12 +6,14 @@ from io import BytesIO
 import openpyxl
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy import cast, or_, String as SqlString
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.auth import get_current_user
 from app.api.deps import require_permission
 from app.api.shared import enforce_al_contado
 from app.database import get_db
+from app.models.cliente import Cliente
 from app.models.cotizacion import Cotizacion
 from app.models.empresa import Empresa
 from app.models.factura import Factura
@@ -33,6 +35,7 @@ from app.models.movimiento_inventario import MovimientoInventario
 from app.services.email import EmailNotConfiguredError, enviar_nota_venta
 from app.services.pdf import generar_pdf_nota_venta
 from app.utils.logo import empresa_logo_data_uri
+from app.utils.search import unaccent_ilike
 
 router = APIRouter()
 
@@ -200,6 +203,7 @@ def _load_nv(db: Session, nv_id: int) -> NotaVenta:
         joinedload(NotaVenta.cotizacion),
         joinedload(NotaVenta.lineas),
         joinedload(NotaVenta.sede_despacho),
+        joinedload(NotaVenta.factura),
     ).filter(NotaVenta.id == nv_id).first()
     if not nv:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nota de venta no encontrada")
@@ -250,25 +254,33 @@ def listar_nvs(
     cliente_id: int | None = Query(None),
     fecha_desde: date | None = Query(None),
     fecha_hasta: date | None = Query(None),
+    q: str = Query(""),
     perms: tuple[User, Session] = require_permission("nota_venta", "view"),
 ):
     _, db = perms
-    q = db.query(NotaVenta).options(
+    query = db.query(NotaVenta).options(
         joinedload(NotaVenta.cliente),
         joinedload(NotaVenta.vendedor),
         joinedload(NotaVenta.empresa),
     )
     if estado:
-        q = q.filter(NotaVenta.estado == estado)
+        query = query.filter(NotaVenta.estado == estado)
     if vendedor_id:
-        q = q.filter(NotaVenta.vendedor_id == vendedor_id)
+        query = query.filter(NotaVenta.vendedor_id == vendedor_id)
     if cliente_id:
-        q = q.filter(NotaVenta.cliente_id == cliente_id)
+        query = query.filter(NotaVenta.cliente_id == cliente_id)
     if fecha_desde:
-        q = q.filter(NotaVenta.fecha >= fecha_desde)
+        query = query.filter(NotaVenta.fecha >= fecha_desde)
     if fecha_hasta:
-        q = q.filter(NotaVenta.fecha <= fecha_hasta)
-    return q.order_by(NotaVenta.fecha.desc(), NotaVenta.numero.desc()).all()
+        query = query.filter(NotaVenta.fecha <= fecha_hasta)
+    if q:
+        query = query.filter(
+            or_(
+                cast(NotaVenta.numero, SqlString).ilike(f"%{q}%"),
+                NotaVenta.cliente.has(unaccent_ilike(Cliente.nombre, f"%{q}%")),
+            )
+        )
+    return query.order_by(NotaVenta.fecha.desc(), NotaVenta.numero.desc()).all()
 
 
 @router.post("/", response_model=NotaVentaOut, status_code=status.HTTP_201_CREATED)

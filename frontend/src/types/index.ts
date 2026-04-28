@@ -241,6 +241,7 @@ export interface Cotizacion {
   vendedor?: { id: number; name: string; email: string }
   lineas?: CotizacionLinea[]
   is_locked?: boolean
+  nv_id?: number | null
 }
 
 export interface Empleado {

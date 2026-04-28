@@ -91,6 +91,7 @@ class CotizacionOut(BaseModel):
     empresa: EmpresaRef | None = None
     lineas: list[CotizacionLineaOut] = []
     is_locked: bool = False
+    nv_id: int | None = None
 
     @computed_field
     @property

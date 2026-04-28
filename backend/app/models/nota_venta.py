@@ -49,7 +49,7 @@ class NotaVenta(Base):
     cliente: Mapped["Cliente"] = relationship("Cliente")
     empresa: Mapped["Empresa | None"] = relationship("Empresa")
     vendedor: Mapped["User | None"] = relationship("User")
-    cotizacion: Mapped["Cotizacion | None"] = relationship("Cotizacion")
+    cotizacion: Mapped["Cotizacion | None"] = relationship("Cotizacion", back_populates="nota_venta")
     lineas: Mapped[list["NotaVentaLinea"]] = relationship(
         "NotaVentaLinea",
         back_populates="nv",

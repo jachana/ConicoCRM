@@ -1,8 +1,8 @@
 import { openPdf } from '../lib/pdf'
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Plus, FileText, Eye, Trash2, FileSpreadsheet, Inbox } from 'lucide-react'
+import { Plus, FileText, Eye, Trash2, FileSpreadsheet, Inbox, Search } from 'lucide-react'
 import { api } from '../lib/api'
 import type { NotaVenta } from '../types'
 import {
@@ -19,6 +19,7 @@ const ESTADO_LABELS: Record<string, string> = {
   entregada:  'Entregada',
   pagada:     'Pagada',
   cancelada:  'Cancelada',
+  facturada:  'Facturada',
 }
 
 const ESTADO_VARIANT: Record<string, 'neutral' | 'info' | 'warning' | 'success' | 'danger'> = {
@@ -27,6 +28,7 @@ const ESTADO_VARIANT: Record<string, 'neutral' | 'info' | 'warning' | 'success' 
   entregada:  'warning',
   pagada:     'success',
   cancelada:  'danger',
+  facturada:  'success',
 }
 
 function fmtMoney(n: number) {
@@ -40,17 +42,26 @@ export default function NotaVentas() {
   const [estado, setEstado] = useState('')
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
+  const [busqueda, setBusqueda] = useState('')
+  const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState('')
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
+    return () => clearTimeout(t)
+  }, [busqueda])
 
   const params = new URLSearchParams()
   if (estado) params.set('estado', estado)
   if (fechaDesde) params.set('fecha_desde', fechaDesde)
   if (fechaHasta) params.set('fecha_hasta', fechaHasta)
+  if (debouncedBusqueda) params.set('q', debouncedBusqueda)
 
   const { data: nvs = [], isLoading } = useQuery<NotaVenta[]>({
-    queryKey: ['nota_ventas', estado, fechaDesde, fechaHasta],
+    queryKey: ['nota_ventas', estado, fechaDesde, fechaHasta, debouncedBusqueda],
     queryFn: () => api.get(`/api/nota_ventas/?${params.toString()}`).then(r => r.data),
+    placeholderData: keepPreviousData,
   })
 
   const deleteMut = useMutation({
@@ -79,6 +90,15 @@ export default function NotaVentas() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
+        <Input
+          type="text"
+          size="sm"
+          placeholder="Buscar por Nº o cliente..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          leftAddon={<Search />}
+          className="w-56"
+        />
         <Select value={estado || 'all'} onValueChange={(v) => setEstado(v === 'all' ? '' : v)}>
           <SelectTrigger size="sm" className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>

@@ -48,6 +48,16 @@ class Cotizacion(Base):
         cascade="all, delete-orphan",
         order_by="CotizacionLinea.orden",
     )
+    nota_venta: Mapped["NotaVenta | None"] = relationship(
+        "NotaVenta",
+        back_populates="cotizacion",
+        uselist=False,
+        foreign_keys="[NotaVenta.cotizacion_id]",
+    )
+
+    @property
+    def nv_id(self) -> int | None:
+        return self.nota_venta.id if self.nota_venta else None
 
     @property
     def margen_total(self) -> "Decimal | None":

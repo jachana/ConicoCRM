@@ -26,6 +26,7 @@ const ESTADO_LABELS: Record<string, string> = {
   entregada:  'Entregada',
   pagada:     'Pagada',
   cancelada:  'Cancelada',
+  facturada:  'Facturada',
 }
 
 const ESTADO_VARIANT: Record<string, 'neutral' | 'info' | 'warning' | 'success' | 'danger'> = {
@@ -34,6 +35,7 @@ const ESTADO_VARIANT: Record<string, 'neutral' | 'info' | 'warning' | 'success' 
   entregada:  'warning',
   pagada:     'success',
   cancelada:  'danger',
+  facturada:  'success',
 }
 
 function getValidTransitions(estado: string, isAdmin: boolean): string[] {

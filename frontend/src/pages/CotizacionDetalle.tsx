@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, RotateCcw, ExternalLink, UserPlus, Lock, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, RotateCcw, ExternalLink, UserPlus, Lock, AlertTriangle, Receipt } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
@@ -774,6 +774,16 @@ export default function CotizacionDetalle() {
               >
                 Crear NV
               </Button>
+              {cotizacion?.nv_id && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  leftIcon={<Receipt />}
+                  onClick={() => navigate(`/notas-venta/${cotizacion.nv_id}`)}
+                >
+                  Ver NV
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"

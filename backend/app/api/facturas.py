@@ -408,6 +408,7 @@ def crear_factura_desde_nv(
     factura.lineas = lineas
     _recalcular_totales(factura)
     nv.is_locked = True
+    nv.estado = "facturada"
     db.commit()
     return _load_factura(db, factura.id)
 

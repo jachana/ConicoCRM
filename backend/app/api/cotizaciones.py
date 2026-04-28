@@ -396,6 +396,7 @@ def obtener_cotizacion(
         joinedload(Cotizacion.vendedor),
         joinedload(Cotizacion.empresa),
         joinedload(Cotizacion.lineas),
+        joinedload(Cotizacion.nota_venta),
     ).filter(Cotizacion.id == cotizacion_id).first()
     if not cot:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
