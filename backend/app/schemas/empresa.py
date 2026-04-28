@@ -7,7 +7,6 @@ class EmpresaBase(BaseModel):
     nombre: str
     razon_social: str | None = None
     rut: str | None = None
-    forma_pago: str | None = None
     linea_credito: Decimal | None = None
     plazo_credito: str | None = None
     sector: str | None = None
@@ -24,7 +23,6 @@ class EmpresaUpdate(BaseModel):
     nombre: str | None = None
     razon_social: str | None = None
     rut: str | None = None
-    forma_pago: str | None = None
     linea_credito: Decimal | None = None
     plazo_credito: str | None = None
     sector: str | None = None

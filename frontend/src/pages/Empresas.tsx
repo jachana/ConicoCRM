@@ -15,8 +15,6 @@ import {
 } from '../components/ui'
 
 const PLAZO_OPTIONS = ['Al contado', '30 Dias', '60 Dias', '90 Dias', 'Especial']
-const FORMA_PAGO_OPTIONS = ['Efectivo', 'Transferencia', 'Cheque', 'Crédito']
-const FORMA_PAGO_SIN_PLAZO = new Set(['Efectivo', 'Transferencia', 'Cheque'])
 
 type SedeForm = { nombre: string; direccion: string }
 const EMPTY_SEDE: SedeForm = { nombre: '', direccion: '' }
@@ -25,7 +23,6 @@ type FormData = {
   nombre: string
   razon_social: string
   rut: string
-  forma_pago: string
   linea_credito: string
   plazo_credito: string
   sector: string
@@ -35,12 +32,12 @@ type FormData = {
 }
 
 const EMPTY_FORM: FormData = {
-  nombre: '', razon_social: '', rut: '', forma_pago: '',
+  nombre: '', razon_social: '', rut: '',
   linea_credito: '', plazo_credito: '',
   sector: '', email: '', nota_cobranza: '', ubicacion: '',
 }
 
-type SortField = 'nombre' | 'rut' | 'sector' | 'forma_pago' | 'ultima_compra' | 'deuda_total' | 'deuda_vencida'
+type SortField = 'nombre' | 'rut' | 'sector' | 'ultima_compra' | 'deuda_total' | 'deuda_vencida'
 
 function fmt(n: number) {
   return '$' + n.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -145,7 +142,6 @@ export default function Empresas() {
     setEditando(e)
     setForm({
       nombre: e.nombre, razon_social: e.razon_social ?? '', rut: e.rut ?? '',
-      forma_pago: e.forma_pago ?? '',
       linea_credito: e.linea_credito != null ? String(e.linea_credito) : '',
       plazo_credito: e.plazo_credito ?? '',
       sector: e.sector ?? '',
@@ -258,7 +254,6 @@ export default function Empresas() {
     { field: 'nombre',        label: 'Nombre' },
     { field: 'rut',           label: 'RUT' },
     { field: 'sector',        label: 'Sector' },
-    { field: 'forma_pago',    label: 'Forma Pago' },
     { field: 'ultima_compra', label: 'Última Compra' },
     { field: 'deuda_total',   label: 'Deuda',   align: 'right' },
     { field: 'deuda_vencida', label: 'Vencida', align: 'right' },
@@ -365,7 +360,6 @@ export default function Empresas() {
                       <TD className="font-medium text-gray-900 dark:text-gray-100">{e.nombre}</TD>
                       <TD className="text-gray-500 dark:text-gray-400 font-num">{e.rut ?? '—'}</TD>
                       <TD className="text-gray-500 dark:text-gray-400">{e.sector ?? '—'}</TD>
-                      <TD className="text-gray-500 dark:text-gray-400">{e.forma_pago ?? '—'}</TD>
                       <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">
                         {e.ultima_compra
                           ? new Date(e.ultima_compra + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -458,27 +452,6 @@ export default function Empresas() {
                   />
                 </FormField>
 
-                <FormField label="Forma de Pago">
-                  <Select
-                    value={form.forma_pago || 'none'}
-                    onValueChange={v => {
-                      const fp = v === 'none' ? '' : v
-                      setForm(f => ({
-                        ...f,
-                        forma_pago: fp,
-                        plazo_credito: FORMA_PAGO_SIN_PLAZO.has(fp) ? 'Al contado' : f.plazo_credito,
-                      }))
-                    }}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">— Sin forma de pago —</SelectItem>
-                      {FORMA_PAGO_OPTIONS.map(o => (
-                        <SelectItem key={o} value={o}>{o}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormField>
                 <FormField label="Sector">
                   <Input value={form.sector} onChange={e => setForm(f => ({ ...f, sector: e.target.value }))} />
                 </FormField>

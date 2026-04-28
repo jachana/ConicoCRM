@@ -92,12 +92,11 @@ def exportar_excel(
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Empresas"
-    ws.append(["ID", "Nombre", "Razón Social", "RUT", "Forma Pago", "Sector", "Email", "Ubicación"])
+    ws.append(["ID", "Nombre", "Razón Social", "RUT", "Sector", "Email", "Ubicación"])
     for e in empresas:
         ws.append([
             e.id, e.nombre, e.razon_social or "", e.rut or "",
-            e.forma_pago or "", e.sector or "",
-            e.email or "", e.ubicacion or "",
+            e.sector or "", e.email or "", e.ubicacion or "",
         ])
     buf = _io.BytesIO()
     wb.save(buf)
