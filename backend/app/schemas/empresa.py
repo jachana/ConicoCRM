@@ -7,6 +7,7 @@ class EmpresaBase(BaseModel):
     nombre: str
     razon_social: str | None = None
     rut: str | None = None
+    rut_no_oficial: bool = False
     linea_credito: Decimal | None = None
     plazo_credito: str | None = None
     sector: str | None = None
@@ -23,6 +24,7 @@ class EmpresaUpdate(BaseModel):
     nombre: str | None = None
     razon_social: str | None = None
     rut: str | None = None
+    rut_no_oficial: bool | None = None
     linea_credito: Decimal | None = None
     plazo_credito: str | None = None
     sector: str | None = None

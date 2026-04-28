@@ -24,6 +24,7 @@ type FormData = {
   nombre: string
   razon_social: string
   rut: string
+  rut_no_oficial: boolean
   linea_credito: string
   plazo_credito: string
   sector: string
@@ -34,6 +35,7 @@ type FormData = {
 
 const EMPTY_FORM: FormData = {
   nombre: '', razon_social: '', rut: '',
+  rut_no_oficial: false,
   linea_credito: '', plazo_credito: '',
   sector: '', email: '', nota_cobranza: '', ubicacion: '',
 }
@@ -144,6 +146,7 @@ export default function Empresas() {
     setEditando(e)
     setForm({
       nombre: e.nombre, razon_social: e.razon_social ?? '', rut: e.rut ?? '',
+      rut_no_oficial: e.rut_no_oficial,
       linea_credito: e.linea_credito != null ? String(e.linea_credito) : '',
       plazo_credito: e.plazo_credito ?? '',
       sector: e.sector ?? '',
@@ -169,6 +172,7 @@ export default function Empresas() {
       const payload: Record<string, unknown> = Object.fromEntries(
         Object.entries(data).map(([k, v]) => [k, v || null])
       )
+      payload.rut_no_oficial = data.rut_no_oficial
       if (data.linea_credito) payload.linea_credito = parseFloat(data.linea_credito)
       else payload.linea_credito = null
       if (editando) return api.patch(`/api/empresas/${editando.id}`, payload).then(r => r.data)
@@ -456,6 +460,18 @@ export default function Empresas() {
                   {editando && (
                     <p className="text-xs text-gray-400 mt-1">El RUT no puede modificarse una vez creada la empresa</p>
                   )}
+                </FormField>
+
+                <FormField label="RUT no oficial" className="col-span-2">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.rut_no_oficial}
+                      onChange={e => setForm(f => ({ ...f, rut_no_oficial: e.target.checked }))}
+                      className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                    />
+                    <span>RUT no oficial (informativo)</span>
+                  </label>
                 </FormField>
 
                 <FormField label="Sector">
