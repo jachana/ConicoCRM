@@ -575,7 +575,10 @@ def actualizar_empresa(
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
-    for field, value in body.model_dump(exclude_unset=True).items():
+    datos = body.model_dump(exclude_unset=True)
+    if "rut" in datos and datos["rut"] != e.rut:
+        raise HTTPException(status_code=422, detail="El RUT no puede modificarse después de creada la empresa")
+    for field, value in datos.items():
         setattr(e, field, value)
     try:
         db.commit()

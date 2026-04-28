@@ -449,7 +449,11 @@ export default function Empresas() {
                     placeholder="76.123.456-7"
                     value={form.rut}
                     onChange={e => setForm(f => ({ ...f, rut: e.target.value }))}
+                    disabled={!!editando}
                   />
+                  {editando && (
+                    <p className="text-xs text-gray-400 mt-1">El RUT no puede modificarse una vez creada la empresa</p>
+                  )}
                 </FormField>
 
                 <FormField label="Sector">
