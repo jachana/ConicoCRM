@@ -145,7 +145,6 @@ def _gen_empresas(db, n=30):
             nombre=nombre,
             razon_social=nombre,
             rut=gen_rut(),
-            forma_pago=random.choice(FORMAS_PAGO),
             sector=random.choice(SECTORES),
         ))
     db.flush()
@@ -175,7 +174,6 @@ def seed_empresas(db):
             nombre=nombre.strip(),
             razon_social=nombre.strip(),
             rut=str(rut).strip() if rut else None,
-            forma_pago=row.get("Forma de Pago") or row.get("Forma de pago"),
             sector=row.get("Sector"),
             nota_cobranza=str(nota).strip() if nota else None,
             ubicacion=ubicacion,

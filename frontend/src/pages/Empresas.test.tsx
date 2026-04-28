@@ -37,7 +37,7 @@ describe('Empresas', () => {
 
   it('renderiza empresa de la lista', async () => {
     vi.mocked(api.get).mockResolvedValue({
-      data: [{ id: 1, nombre: 'Constructora ABC', rut: '76.111.111-1', razon_social: null, forma_pago: null, prioridad: null, sector: null, email: null, nota_cobranza: null, ubicacion: null, created_at: '2026-01-01T00:00:00Z' }],
+      data: [{ id: 1, nombre: 'Constructora ABC', rut: '76.111.111-1', razon_social: null, prioridad: null, sector: null, email: null, nota_cobranza: null, ubicacion: null, created_at: '2026-01-01T00:00:00Z' }],
     })
     wrap(<Empresas />)
     expect(await screen.findByText('Constructora ABC')).toBeTruthy()
