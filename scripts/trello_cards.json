@@ -108,6 +108,21 @@
       ]
     },
     {
+      "list": "Feature requests",
+      "name": "[NV] Adjuntar documentos (OC u otros) y propagarlos a factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "La Nota de Venta debe permitir adjuntar archivos (ej. Orden de Compra del cliente). Los adjuntos deben heredarse al generar la factura desde la NV, y aparecer referenciados en el PDF de factura.",
+      "checklist": [
+        "Modelo: tabla adjuntos vinculada a NV (nombre, archivo, tipo)",
+        "UI NV: sección para subir/ver/eliminar adjuntos (multi-archivo)",
+        "Al generar factura desde NV: copiar adjuntos a la factura",
+        "PDF factura: listar adjuntos con nombre de archivo (y número de OC si aplica)",
+        "Sección de OC: campo de texto libre para número de OC del cliente"
+      ]
+    },
+    {
       "list": "Bugs",
       "name": "PDF cotización no muestra validez/vigencia",
       "labels": [
@@ -121,7 +136,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[W1-03] CI — lint + tests + build Docker",
       "labels": [
         "Wave 1"
@@ -249,7 +264,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Empresas] Logo como imagen subible",
       "labels": [
         "Core"
@@ -338,6 +353,23 @@
         "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
         "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
         "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[NV] Cerrar NV automáticamente al generar factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Al emitir una factura desde una Nota de Venta, la NV debe quedar en estado 'cerrada' automáticamente. Hoy la NV permanece abierta aunque ya tenga factura generada, lo que genera confusión en el listado.\n\nComportamiento esperado:\n- Al crear la factura asociada a una NV: transición automática NV → estado 'cerrada'.\n- NV cerrada no es editable ni permite generar una segunda factura.\n- En el listado de NV: chip de estado 'Facturada' con link a la factura generada.",
+      "checklist": [
+        "Identificar el endpoint/flujo donde se crea la factura desde una NV",
+        "Al commit exitoso de la factura: actualizar NotaVenta.estado → 'cerrada' en la misma transacción",
+        "Guardar referencia factura_id en NotaVenta (si no existe FK)",
+        "NotaVentaRead schema: exponer estado y factura_id/folio",
+        "Bloquear edición y re-facturación de NV cerrada (backend 409 + UI botón deshabilitado)",
+        "Listado NV: chip 'Facturada' en estado cerrada con link a /facturas/{id}",
+        "NV detalle: sección 'Factura generada' con link, similar a cotización → NV"
       ]
     },
     {
