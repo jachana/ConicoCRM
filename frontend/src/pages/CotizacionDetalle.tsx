@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, RotateCcw, ExternalLink, UserPlus, Lock, AlertTriangle } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
+import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
 import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta } from '../types'
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 import UnsavedChangesModal from '../components/UnsavedChangesModal'
@@ -110,7 +111,8 @@ export default function CotizacionDetalle() {
   const qc = useQueryClient()
   const currentUser = useAuthStore(s => s.user)
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'subadmin'
-  const isVendedor = currentUser?.role === 'vendedor'
+  const { role: effectiveRole } = useEffectivePermissions()
+  const isVendedor = (effectiveRole ?? currentUser?.role) === 'vendedor'
 
   const [clienteId, setClienteId] = useState<number | ''>('')
   const [vendedorId, setVendedorId] = useState<number | ''>(currentUser?.id ?? '')
