@@ -21,6 +21,8 @@ class Cotizacion(Base):
     nota: Mapped[str | None] = mapped_column(Text, nullable=True)
     terminos_pago: Mapped[str | None] = mapped_column(String(255), nullable=True)
     terminos_pago_estado: Mapped[str] = mapped_column(String(20), default="aprobado")
+    metodo_pago: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    plazo_dias: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
     validez_dias: Mapped[int] = mapped_column(Integer, default=5, server_default=text("5"))
     correo: Mapped[str | None] = mapped_column(String(255), nullable=True)
     total_neto: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))

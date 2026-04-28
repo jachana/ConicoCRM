@@ -1,6 +1,6 @@
 import re
 from collections.abc import Callable
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from io import BytesIO
 
@@ -24,7 +24,6 @@ from app.schemas.factura import (
     FacturaListOut,
     FacturaOut,
     FacturaUpdate,
-    METODOS_PAGO,
 )
 from app.models.empresa import Empresa
 from app.schemas.cobranza import ImportXMLError, ImportXMLResult, RecordatorioCreate
@@ -326,17 +325,23 @@ def crear_factura(
     if current_user.role not in ("admin", "subadmin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin/subadmin puede crear facturas")
     numero = _asignar_numero_factura(db)
+    fecha = body.fecha or date.today()
+    fecha_venc = body.fecha_vencimiento
+    if fecha_venc is None and body.plazo_dias > 0:
+        fecha_venc = fecha + timedelta(days=body.plazo_dias)
     factura = Factura(
         numero=numero,
         cliente_id=body.cliente_id,
         vendedor_id=body.vendedor_id,
         contacto=body.contacto,
-        fecha=body.fecha or date.today(),
-        fecha_vencimiento=body.fecha_vencimiento,
+        fecha=fecha,
+        fecha_vencimiento=fecha_venc,
         nota=body.nota,
         correo=body.correo,
         empresa_id=body.empresa_id,
         banco_receptor_id=body.banco_receptor_id,
+        metodo_pago=body.metodo_pago,
+        plazo_dias=body.plazo_dias,
     )
     db.add(factura)
     db.flush()
@@ -374,6 +379,8 @@ def crear_factura_desde_nv(
         )
 
     numero = _asignar_numero_factura(db)
+    fecha = date.today()
+    fecha_venc = fecha + timedelta(days=nv.plazo_dias) if nv.plazo_dias > 0 else None
     factura = Factura(
         numero=numero,
         nv_id=nv.id,
@@ -382,9 +389,12 @@ def crear_factura_desde_nv(
         empresa_id=nv.empresa_id,
         vendedor_id=nv.vendedor_id,
         contacto=nv.contacto,
-        fecha=date.today(),
+        fecha=fecha,
+        fecha_vencimiento=fecha_venc,
         nota=nv.nota,
         correo=nv.correo,
+        metodo_pago=nv.metodo_pago,
+        plazo_dias=nv.plazo_dias,
     )
     db.add(factura)
     db.flush()
@@ -499,8 +509,14 @@ def actualizar_factura(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"No se puede modificar una factura en estado '{factura.estado}'"
         )
-    for field, value in body.model_dump(exclude_unset=True).items():
+    update_data = body.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
         setattr(factura, field, value)
+    if "plazo_dias" in update_data and "fecha_vencimiento" not in update_data:
+        if factura.plazo_dias > 0:
+            factura.fecha_vencimiento = factura.fecha + timedelta(days=factura.plazo_dias)
+        else:
+            factura.fecha_vencimiento = None
     db.commit()
     return _load_factura(db, factura_id)
 

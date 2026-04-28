@@ -229,6 +229,8 @@ export interface Cotizacion {
   terminos_pago: string | null
   terminos_pago_estado: string
   validez_dias: number
+  metodo_pago: string | null
+  plazo_dias: number
   fecha_expiracion: string
   correo: string | null
   total_neto: number
@@ -306,6 +308,8 @@ export interface NotaVenta {
   sede_despacho?: SedeDespachoRef | null
   retiro_en_conico: boolean
   terminos_pago: string | null
+  metodo_pago: string | null
+  plazo_dias: number
   total_neto: number
   total_iva: number
   total: number
@@ -365,6 +369,7 @@ export interface Factura {
   fecha_pago: string | null;
   monto_pagado: number | null;
   metodo_pago: string | null;
+  plazo_dias: number;
   margen_total?: number | null;
   created_at: string;
   updated_at: string;
@@ -396,6 +401,7 @@ export interface FacturaList {
   fecha_pago: string | null
   monto_pagado: number | null
   metodo_pago: string | null
+  plazo_dias: number
   created_at: string
   updated_at: string
   cliente: { id: number; nombre: string; rut: string | null } | null

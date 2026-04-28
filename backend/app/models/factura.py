@@ -38,6 +38,7 @@ class Factura(Base):
     fecha_pago: Mapped[date | None] = mapped_column(Date, nullable=True)
     monto_pagado: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     metodo_pago: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    plazo_dias: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
     origen: Mapped[str] = mapped_column(String(10), default="manual", server_default=text("manual"))
     dte_estado: Mapped[str] = mapped_column(String(20), default="no_emitida", server_default=text("'no_emitida'"))
     xml_raw: Mapped[str | None] = mapped_column(Text, nullable=True)

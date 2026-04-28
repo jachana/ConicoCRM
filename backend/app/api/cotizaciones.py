@@ -362,6 +362,8 @@ def crear_cotizacion(
             terminos, body.empresa_id, db, current_user
         ),
         validez_dias=body.validez_dias,
+        metodo_pago=body.metodo_pago,
+        plazo_dias=body.plazo_dias,
     )
     # Auto-populate terminos_pago from empresa.plazo_credito if not provided
     if not cotizacion.terminos_pago and cotizacion.empresa_id:

@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Trash2, FileText, Mail, ArrowLeft, ExternalLink, Receipt, Truck, Lock, RotateCcw } from 'lucide-react'
 import { api } from '../lib/api'
+import { METODOS_PAGO, METODO_PAGO_LABELS, PLAZO_OPTIONS, isPlazoForzadoCero, formatMetodoPlazo } from '../lib/metodo_pago'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
 import type { NotaVenta, NotaVentaLinea, Cliente, User, Producto, Empresa, SedeDespacho } from '../types'
@@ -99,6 +100,8 @@ function nvSnapshot(nv: NotaVenta): string {
     empresaId: nv.empresa_id ?? '',
     retiroEnConico: nv.retiro_en_conico ?? false,
     sedeDespachoId: nv.sede_despacho_id ?? null,
+    metodoPago: nv.metodo_pago ?? '',
+    plazoDias: nv.plazo_dias ?? 0,
     lineas: (nv.lineas ?? []).map(l => ({
       producto_id: l.producto_id ?? null,
       cantidad: l.cantidad,
@@ -128,6 +131,8 @@ export default function NotaVentaDetalle() {
   const [nota, setNota] = useState('')
   const [retiroEnConico, setRetiroEnConico] = useState(false)
   const [sedeDespachoId, setSedeDespachoId] = useState<number | null>(null)
+  const [metodoPago, setMetodoPago] = useState<string>('')
+  const [plazoDias, setPlazoDias] = useState<number>(0)
   const [sedes, setSedes] = useState<SedeDespacho[]>([])
   const [lineas, setLineas] = useState<LineaLocal[]>([newLinea(1)])
   const [empresaId, setEmpresaId] = useState<number | ''>('')
@@ -149,7 +154,7 @@ export default function NotaVentaDetalle() {
 
   const currentSnapshot = useMemo(() => JSON.stringify({
     clienteId, vendedorId, contacto, correo, fecha, nota, empresaId,
-    retiroEnConico, sedeDespachoId,
+    retiroEnConico, sedeDespachoId, metodoPago, plazoDias,
     lineas: lineas.map(l => ({
       producto_id: l.producto_id ?? null,
       cantidad: l.cantidad,
@@ -158,7 +163,7 @@ export default function NotaVentaDetalle() {
       sku: l.sku ?? null,
       formato: l.formato ?? null,
     }))
-  }), [clienteId, vendedorId, contacto, correo, fecha, nota, empresaId, retiroEnConico, sedeDespachoId, lineas])
+  }), [clienteId, vendedorId, contacto, correo, fecha, nota, empresaId, retiroEnConico, sedeDespachoId, metodoPago, plazoDias, lineas])
 
   const isDirty = !isNew && savedSnapshot !== null && currentSnapshot !== savedSnapshot
 
@@ -194,6 +199,8 @@ export default function NotaVentaDetalle() {
       setNota(nv.nota ?? '')
       setRetiroEnConico(nv.retiro_en_conico ?? false)
       setSedeDespachoId(nv.sede_despacho_id ?? null)
+      setMetodoPago(nv.metodo_pago ?? '')
+      setPlazoDias(nv.plazo_dias ?? 0)
       setEmpresaId(nv.empresa_id ?? '')
       setLineas(
         (nv.lineas ?? []).map((l, i) => ({
@@ -380,6 +387,8 @@ export default function NotaVentaDetalle() {
         terminos_pago: empresaSinCredito ? 'al_contado' : null,
         retiro_en_conico: retiroEnConico,
         sede_despacho_id: retiroEnConico ? null : sedeDespachoId,
+        metodo_pago: metodoPago || null,
+        plazo_dias: plazoDias,
       }
       const lineasPayload = lineas.map((l, i) => ({
         orden: i + 1,
@@ -433,6 +442,8 @@ export default function NotaVentaDetalle() {
       setNota(nv.nota ?? '')
       setRetiroEnConico(nv.retiro_en_conico ?? false)
       setSedeDespachoId(nv.sede_despacho_id ?? null)
+      setMetodoPago(nv.metodo_pago ?? '')
+      setPlazoDias(nv.plazo_dias ?? 0)
       setEmpresaId(nv.empresa_id ?? '')
       setLineas(
         (nv.lineas ?? []).map((l, i) => ({
@@ -689,16 +700,47 @@ export default function NotaVentaDetalle() {
               </Select>
             </FormField>
 
-            {empresaId !== '' && (
-              <FormField
-                label="Términos de pago"
-                hint={empresaSinCredito ? 'Esta empresa no tiene línea de crédito.' : undefined}
+            <FormField label="Método de pago">
+              <Select
+                value={metodoPago || 'none'}
+                onValueChange={v => {
+                  const m = v === 'none' ? '' : v
+                  setMetodoPago(m)
+                  if (m && isPlazoForzadoCero(m)) setPlazoDias(0)
+                }}
+                disabled={isLocked}
               >
-                <div className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
-                  {empresaSinCredito ? 'Al contado' : (nv?.terminos_pago ?? '—')}
-                </div>
-              </FormField>
-            )}
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin especificar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin especificar</SelectItem>
+                  {METODOS_PAGO.map(m => (
+                    <SelectItem key={m} value={m}>{METODO_PAGO_LABELS[m]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            <FormField label="Plazo de pago">
+              <Select
+                value={String(plazoDias)}
+                onValueChange={v => setPlazoDias(Number(v))}
+                disabled={isLocked || (!!metodoPago && isPlazoForzadoCero(metodoPago))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PLAZO_OPTIONS.map(o => (
+                    <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+                  ))}
+                  {!PLAZO_OPTIONS.some(o => o.value === plazoDias) && (
+                    <SelectItem value={String(plazoDias)}>{plazoDias} días</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </FormField>
 
             <FormField label="Contacto">
               <Input

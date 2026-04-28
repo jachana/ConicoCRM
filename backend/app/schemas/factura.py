@@ -1,8 +1,10 @@
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, model_validator
+from typing import Self
 from app.schemas.empresa import EmpresaRef
 from app.schemas.banco_receptor import BancoReceptorOut
+from app.schemas.metodo_pago import METODOS_PAGO, validate_metodo_plazo
 
 
 class FacturaLineaCreate(BaseModel):
@@ -35,10 +37,14 @@ class FacturaCreate(BaseModel):
     empresa_id: int | None = None
     banco_receptor_id: int | None = None
     nv_id: int | None = None
+    metodo_pago: str | None = None
+    plazo_dias: int = 0
     lineas: list[FacturaLineaCreate] = []
 
-
-METODOS_PAGO = {"Efectivo", "Transferencia", "Cheque", "Débito", "Crédito", "Mixto"}
+    @model_validator(mode="after")
+    def check_plazo_metodo(self) -> Self:
+        validate_metodo_plazo(self.metodo_pago, self.plazo_dias)
+        return self
 
 
 class FacturaUpdate(BaseModel):
@@ -52,13 +58,15 @@ class FacturaUpdate(BaseModel):
     empresa_id: int | None = None
     banco_receptor_id: int | None = None
     metodo_pago: str | None = None
+    plazo_dias: int | None = None
 
-    @field_validator("metodo_pago")
-    @classmethod
-    def validar_metodo_pago(cls, v: str | None) -> str | None:
-        if v is not None and v not in METODOS_PAGO:
-            raise ValueError(f"metodo_pago debe ser uno de: {sorted(METODOS_PAGO)}")
-        return v
+    @model_validator(mode="after")
+    def check_plazo_metodo(self) -> Self:
+        if self.metodo_pago is not None and self.plazo_dias is not None:
+            validate_metodo_plazo(self.metodo_pago, self.plazo_dias)
+        elif self.metodo_pago is not None and self.metodo_pago not in METODOS_PAGO:
+            raise ValueError(f"metodo_pago inválido. Opciones: {sorted(METODOS_PAGO)}")
+        return self
 
 
 class FacturaEstadoCambio(BaseModel):
@@ -114,6 +122,7 @@ class FacturaOut(BaseModel):
     fecha_pago: date | None = None
     monto_pagado: Decimal | None = None
     metodo_pago: str | None = None
+    plazo_dias: int = 0
     origen: str = "manual"
     created_at: datetime
     updated_at: datetime
@@ -148,6 +157,7 @@ class FacturaListOut(BaseModel):
     fecha_pago: date | None = None
     monto_pagado: Decimal | None = None
     metodo_pago: str | None = None
+    plazo_dias: int = 0
     created_at: datetime
     updated_at: datetime
     cliente: ClienteMinOut | None = None

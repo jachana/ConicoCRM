@@ -32,7 +32,7 @@ const ESTADO_VARIANT: Record<string, 'neutral' | 'info' | 'success' | 'warning' 
   anulada: 'danger',
 }
 
-const METODOS_PAGO = ['Efectivo', 'Transferencia', 'Cheque', 'Débito', 'Crédito', 'Mixto']
+import { METODOS_PAGO, METODO_PAGO_LABELS, PLAZO_OPTIONS, isPlazoForzadoCero, formatMetodoPlazo } from '../lib/metodo_pago'
 
 function getValidTransitions(estado: string): string[] {
   const all: Record<string, string[]> = {
@@ -78,7 +78,7 @@ export default function FacturaDetalle() {
   const [emitiendo, setEmitiendo] = useState(false)
   const [pagoFecha, setPagoFecha] = useState(new Date().toISOString().split('T')[0])
   const [pagoMonto, setPagoMonto] = useState('')
-  const [pagoMetodo, setPagoMetodo] = useState('Transferencia')
+  const [pagoMetodo, setPagoMetodo] = useState('transferencia')
   const [pagoNota, setPagoNota] = useState('')
 
   // Form fields
@@ -92,6 +92,7 @@ export default function FacturaDetalle() {
   const [empresaId, setEmpresaId] = useState<number | ''>('')
   const [bancoReceptorId, setBancoReceptorId] = useState<number | null>(null)
   const [metodoPago, setMetodoPago] = useState<string>('')
+  const [plazoDias, setPlazoDias] = useState<number>(0)
   const [lineas, setLineas] = useState<LineaLocal[]>([])
 
   const { data: factura } = useQuery<Factura>({
@@ -112,6 +113,7 @@ export default function FacturaDetalle() {
       setEmpresaId(factura.empresa_id ?? '')
       setBancoReceptorId(factura.banco_receptor_id ?? null)
       setMetodoPago(factura.metodo_pago ?? '')
+      setPlazoDias(factura.plazo_dias ?? 0)
       setLineas(
         (factura.lineas ?? []).map((l, i) => ({
           ...l,
@@ -200,6 +202,7 @@ export default function FacturaDetalle() {
         empresa_id: empresaId || null,
         banco_receptor_id: bancoReceptorId,
         metodo_pago: metodoPago || null,
+        plazo_dias: plazoDias,
       }
       await api.patch(`/api/facturas/${id}`, payload)
       if (editingLineas) {
@@ -238,6 +241,7 @@ export default function FacturaDetalle() {
       setEmpresaId(factura.empresa_id ?? '')
       setBancoReceptorId(factura.banco_receptor_id ?? null)
       setMetodoPago(factura.metodo_pago ?? '')
+      setPlazoDias(factura.plazo_dias ?? 0)
       setLineas(
         (factura.lineas ?? []).map((l, i) => ({
           ...l,
@@ -554,7 +558,11 @@ export default function FacturaDetalle() {
               <FormField label="Método de pago">
                 <Select
                   value={metodoPago || 'none'}
-                  onValueChange={v => setMetodoPago(v === 'none' ? '' : v)}
+                  onValueChange={v => {
+                    const m = v === 'none' ? '' : v
+                    setMetodoPago(m)
+                    if (m && isPlazoForzadoCero(m)) setPlazoDias(0)
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sin especificar" />
@@ -562,8 +570,28 @@ export default function FacturaDetalle() {
                   <SelectContent>
                     <SelectItem value="none">Sin especificar</SelectItem>
                     {METODOS_PAGO.map(m => (
-                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                      <SelectItem key={m} value={m}>{METODO_PAGO_LABELS[m]}</SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+
+              <FormField label="Plazo de pago">
+                <Select
+                  value={String(plazoDias)}
+                  onValueChange={v => setPlazoDias(Number(v))}
+                  disabled={!!metodoPago && isPlazoForzadoCero(metodoPago)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PLAZO_OPTIONS.map(o => (
+                      <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+                    ))}
+                    {!PLAZO_OPTIONS.some(o => o.value === plazoDias) && (
+                      <SelectItem value={String(plazoDias)}>{plazoDias} días</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </FormField>
@@ -654,7 +682,7 @@ export default function FacturaDetalle() {
               {factura.metodo_pago && (
                 <div>
                   <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Método de pago</span>
-                  <span className="text-sm text-gray-900 dark:text-white">{factura.metodo_pago}</span>
+                  <span className="text-sm text-gray-900 dark:text-white">{formatMetodoPlazo(factura.metodo_pago, factura.plazo_dias ?? 0)}</span>
                 </div>
               )}
               {factura.contacto && (
@@ -957,7 +985,7 @@ export default function FacturaDetalle() {
                   </SelectTrigger>
                   <SelectContent>
                     {METODOS_PAGO.map(m => (
-                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                      <SelectItem key={m} value={m}>{METODO_PAGO_LABELS[m]}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

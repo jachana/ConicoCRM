@@ -1,7 +1,9 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, computed_field, model_validator
+from typing import Self
 from app.schemas.empresa import EmpresaRef
+from app.schemas.metodo_pago import METODOS_PAGO, validate_metodo_plazo
 
 
 class CotizacionLineaCreate(BaseModel):
@@ -35,7 +37,14 @@ class CotizacionCreate(BaseModel):
     empresa_id: int | None = None
     terminos_pago: str | None = None
     validez_dias: int = 5
+    metodo_pago: str | None = None
+    plazo_dias: int = 0
     lineas: list[CotizacionLineaCreate] = []
+
+    @model_validator(mode="after")
+    def check_plazo_metodo(self) -> Self:
+        validate_metodo_plazo(self.metodo_pago, self.plazo_dias)
+        return self
 
 
 class CotizacionUpdate(BaseModel):
@@ -50,6 +59,16 @@ class CotizacionUpdate(BaseModel):
     terminos_pago: str | None = None
     terminos_pago_estado: str | None = None
     validez_dias: int | None = None
+    metodo_pago: str | None = None
+    plazo_dias: int | None = None
+
+    @model_validator(mode="after")
+    def check_plazo_metodo(self) -> Self:
+        if self.metodo_pago is not None and self.plazo_dias is not None:
+            validate_metodo_plazo(self.metodo_pago, self.plazo_dias)
+        elif self.metodo_pago is not None and self.metodo_pago not in METODOS_PAGO:
+            raise ValueError(f"metodo_pago inválido. Opciones: {sorted(METODOS_PAGO)}")
+        return self
 
 
 class ClienteMinOut(BaseModel):
@@ -80,6 +99,8 @@ class CotizacionOut(BaseModel):
     terminos_pago: str | None = None
     terminos_pago_estado: str = "aprobado"
     validez_dias: int = 5
+    metodo_pago: str | None = None
+    plazo_dias: int = 0
     correo: str | None = None
     total_neto: Decimal
     total_iva: Decimal
@@ -113,6 +134,8 @@ class CotizacionListOut(BaseModel):
     terminos_pago: str | None = None
     terminos_pago_estado: str = "aprobado"
     validez_dias: int = 5
+    metodo_pago: str | None = None
+    plazo_dias: int = 0
     total_neto: Decimal
     total_iva: Decimal
     total: Decimal

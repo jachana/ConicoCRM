@@ -13,7 +13,7 @@ from app.schemas.pago import PagoCreate, PagoOut
 
 router = APIRouter()
 
-_METODOS_PAGO = {"efectivo", "transferencia", "cheque", "debito", "credito", "deposito"}
+from app.schemas.metodo_pago import METODOS_PAGO as _METODOS_PAGO
 
 
 def _recalcular_estado_factura(db: Session, factura: Factura) -> None:

@@ -29,6 +29,8 @@ class NotaVenta(Base):
     )
     retiro_en_conico: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
     terminos_pago: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    metodo_pago: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    plazo_dias: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
     correo: Mapped[str | None] = mapped_column(String(255), nullable=True)
     total_neto: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     total_iva: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))

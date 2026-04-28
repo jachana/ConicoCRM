@@ -308,6 +308,8 @@ def crear_nv(
         sede_despacho_id=body.sede_despacho_id,
         retiro_en_conico=body.retiro_en_conico,
         terminos_pago=body.terminos_pago,
+        metodo_pago=body.metodo_pago,
+        plazo_dias=body.plazo_dias,
     )
     db.add(nv)
     db.flush()
@@ -367,6 +369,8 @@ def crear_nv_desde_cotizacion(
         nota=cot.nota,
         correo=cot.correo,
         retiro_en_conico=True,  # default until user sets dispatch address
+        metodo_pago=cot.metodo_pago,
+        plazo_dias=cot.plazo_dias,
     )
     db.add(nv)
     db.flush()

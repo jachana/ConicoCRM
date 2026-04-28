@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Trash2, FileText, Mail, ArrowLeft, Building2, Phone, RotateCcw, ExternalLink, UserPlus, Lock, AlertTriangle, Receipt } from 'lucide-react'
 import { api } from '../lib/api'
+import { METODOS_PAGO, METODO_PAGO_LABELS, PLAZO_OPTIONS, isPlazoForzadoCero, formatMetodoPlazo } from '../lib/metodo_pago'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
 import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta } from '../types'
@@ -159,12 +160,14 @@ export default function CotizacionDetalle() {
   const [terminosPago, setTerminosPago] = useState('')
   const [terminosPagoEstado, setTerminosPagoEstado] = useState('aprobado')
   const [validezDias, setValidezDias] = useState<number>(5)
+  const [metodoPago, setMetodoPago] = useState<string>('')
+  const [plazoDias, setPlazoDias] = useState<number>(0)
 
   const lineasErrors = useMemo(() => getLineasErrors(lineas), [lineas])
 
   const currentSnapshot = useMemo(() => JSON.stringify({
     clienteId, vendedorId, contacto, correo, fecha, estado, nota, empresaId,
-    terminosPago, validezDias,
+    terminosPago, validezDias, metodoPago, plazoDias,
     lineas: lineas.map(l => ({
       producto_id: l.producto_id ?? null,
       cantidad: l.cantidad,
@@ -174,7 +177,7 @@ export default function CotizacionDetalle() {
       sku: l.sku ?? null,
       formato: l.formato ?? null,
     }))
-  }), [clienteId, vendedorId, contacto, correo, fecha, estado, nota, empresaId, terminosPago, validezDias, lineas])
+  }), [clienteId, vendedorId, contacto, correo, fecha, estado, nota, empresaId, terminosPago, validezDias, metodoPago, plazoDias, lineas])
 
   const isDirty = !isNew && savedSnapshot !== null && currentSnapshot !== savedSnapshot
 
@@ -236,6 +239,8 @@ export default function CotizacionDetalle() {
       setTerminosPago(cotizacion.terminos_pago ?? '')
       setTerminosPagoEstado(cotizacion.terminos_pago_estado ?? 'aprobado')
       setValidezDias(cotizacion.validez_dias ?? 5)
+      setMetodoPago(cotizacion.metodo_pago ?? '')
+      setPlazoDias(cotizacion.plazo_dias ?? 0)
       setLineas(
         (cotizacion.lineas ?? []).map((l, i) => calcLinea({
           ...l,
@@ -576,6 +581,8 @@ export default function CotizacionDetalle() {
         empresa_id: empresaId || null,
         terminos_pago: empresaSinCredito ? 'al_contado' : (terminosPago || null),
         validez_dias: validezDias,
+        metodo_pago: metodoPago || null,
+        plazo_dias: plazoDias,
       }
       const lineasPayload = lineas.map((l, i) => ({
         orden: i + 1,
@@ -634,6 +641,8 @@ export default function CotizacionDetalle() {
       setTerminosPago(cotizacion.terminos_pago ?? '')
       setTerminosPagoEstado(cotizacion.terminos_pago_estado ?? 'aprobado')
       setValidezDias(cotizacion.validez_dias ?? 5)
+      setMetodoPago(cotizacion.metodo_pago ?? '')
+      setPlazoDias(cotizacion.plazo_dias ?? 0)
       setLineas(
         (cotizacion.lineas ?? []).map((l, i) => calcLinea({
           ...l,
@@ -1142,6 +1151,48 @@ export default function CotizacionDetalle() {
                   Cotización expirada
                 </p>
               )}
+            </FormField>
+
+            <FormField label="Método de pago">
+              <Select
+                value={metodoPago || 'none'}
+                onValueChange={v => {
+                  const m = v === 'none' ? '' : v
+                  setMetodoPago(m)
+                  if (m && isPlazoForzadoCero(m)) setPlazoDias(0)
+                }}
+                disabled={isLocked}
+              >
+                <SelectTrigger className={df('metodoPago', metodoPago) ? dirtyBorder : ''}>
+                  <SelectValue placeholder="Sin especificar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin especificar</SelectItem>
+                  {METODOS_PAGO.map(m => (
+                    <SelectItem key={m} value={m}>{METODO_PAGO_LABELS[m]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            <FormField label="Plazo de pago">
+              <Select
+                value={String(plazoDias)}
+                onValueChange={v => setPlazoDias(Number(v))}
+                disabled={isLocked || (!!metodoPago && isPlazoForzadoCero(metodoPago))}
+              >
+                <SelectTrigger className={df('plazoDias', plazoDias) ? dirtyBorder : ''}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PLAZO_OPTIONS.map(o => (
+                    <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+                  ))}
+                  {!PLAZO_OPTIONS.some(o => o.value === plazoDias) && (
+                    <SelectItem value={String(plazoDias)}>{plazoDias} días</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </FormField>
           </div>
         </CardContent>

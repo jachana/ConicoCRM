@@ -1,8 +1,10 @@
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
+from typing import Self
 from app.schemas.empresa import EmpresaRef
 from app.schemas.sede_despacho import SedeDespachoRef
+from app.schemas.metodo_pago import METODOS_PAGO, validate_metodo_plazo
 
 
 class NotaVentaLineaCreate(BaseModel):
@@ -36,6 +38,13 @@ class NotaVentaCreate(BaseModel):
     sede_despacho_id: int | None = None
     retiro_en_conico: bool = False
     terminos_pago: str | None = None
+    metodo_pago: str | None = None
+    plazo_dias: int = 0
+
+    @model_validator(mode="after")
+    def check_plazo_metodo(self) -> Self:
+        validate_metodo_plazo(self.metodo_pago, self.plazo_dias)
+        return self
 
 
 class NotaVentaUpdate(BaseModel):
@@ -49,6 +58,16 @@ class NotaVentaUpdate(BaseModel):
     sede_despacho_id: int | None = None
     retiro_en_conico: bool | None = None
     terminos_pago: str | None = None
+    metodo_pago: str | None = None
+    plazo_dias: int | None = None
+
+    @model_validator(mode="after")
+    def check_plazo_metodo(self) -> Self:
+        if self.metodo_pago is not None and self.plazo_dias is not None:
+            validate_metodo_plazo(self.metodo_pago, self.plazo_dias)
+        elif self.metodo_pago is not None and self.metodo_pago not in METODOS_PAGO:
+            raise ValueError(f"metodo_pago inválido. Opciones: {sorted(METODOS_PAGO)}")
+        return self
 
 
 class EstadoCambio(BaseModel):
@@ -104,6 +123,8 @@ class NotaVentaOut(BaseModel):
     sede_despacho: SedeDespachoRef | None = None
     retiro_en_conico: bool = False
     terminos_pago: str | None = None
+    metodo_pago: str | None = None
+    plazo_dias: int = 0
     is_locked: bool = False
     model_config = {"from_attributes": True}
 
@@ -131,5 +152,7 @@ class NotaVentaListOut(BaseModel):
     sede_despacho_id: int | None = None
     retiro_en_conico: bool = False
     terminos_pago: str | None = None
+    metodo_pago: str | None = None
+    plazo_dias: int = 0
     is_locked: bool = False
     model_config = {"from_attributes": True}
