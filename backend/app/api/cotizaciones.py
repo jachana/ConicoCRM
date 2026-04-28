@@ -228,7 +228,7 @@ def exportar_excel(
     columns: list[str] | None = Query(None),
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     q = (
         db.query(Cotizacion)
         .options(
@@ -263,6 +263,8 @@ def exportar_excel(
     col_keys = [k for k in (columns or _COT_DEFAULT_COLUMNS) if k in _COT_EXPORT_COLUMNS]
     if not col_keys:
         col_keys = _COT_DEFAULT_COLUMNS
+    if current_user.role == "vendedor":
+        col_keys = [k for k in col_keys if k != "margen"]
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -297,7 +299,7 @@ def listar_cotizaciones(
     terminos_pago_estado: str | None = Query(None),
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     q = db.query(Cotizacion).options(
         joinedload(Cotizacion.cliente),
         joinedload(Cotizacion.vendedor),
@@ -326,7 +328,13 @@ def listar_cotizaciones(
         ).distinct()
     if terminos_pago_estado:
         q = q.filter(Cotizacion.terminos_pago_estado == terminos_pago_estado)
-    return q.order_by(Cotizacion.numero.desc()).all()
+    results = [CotizacionListOut.model_validate(c) for c in q.order_by(Cotizacion.numero.desc()).all()]
+    if current_user.role == "vendedor":
+        for cot in results:
+            cot.margen_total = None
+            for linea in cot.lineas:
+                linea.margen = None
+    return results
 
 
 @router.post("/", response_model=CotizacionOut, status_code=status.HTTP_201_CREATED)
@@ -381,7 +389,7 @@ def obtener_cotizacion(
     cotizacion_id: int,
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     cot = db.query(Cotizacion).options(
         joinedload(Cotizacion.cliente),
         joinedload(Cotizacion.vendedor),
@@ -390,6 +398,12 @@ def obtener_cotizacion(
     ).filter(Cotizacion.id == cotizacion_id).first()
     if not cot:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    if current_user.role == "vendedor":
+        from app.schemas.cotizacion import CotizacionOut as _CotizacionOut
+        out = _CotizacionOut.model_validate(cot)
+        for linea in out.lineas:
+            linea.margen = None
+        return out
     return cot
 
 

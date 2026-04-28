@@ -404,8 +404,14 @@ def obtener_nv(
     nv_id: int,
     perms: tuple[User, Session] = require_permission("nota_venta", "view"),
 ):
-    _, db = perms
-    return _load_nv(db, nv_id)
+    current_user, db = perms
+    nv = _load_nv(db, nv_id)
+    if current_user.role == "vendedor":
+        out = NotaVentaOut.model_validate(nv)
+        for linea in out.lineas:
+            linea.margen = None
+        return out
+    return nv
 
 
 @router.patch("/{nv_id}", response_model=NotaVentaOut)

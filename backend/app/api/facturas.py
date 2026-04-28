@@ -211,7 +211,7 @@ def exportar_excel(
     columns: list[str] | None = Query(None),
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     q = (
         db.query(Factura)
         .options(
@@ -246,6 +246,8 @@ def exportar_excel(
     col_keys = [k for k in (columns or _FAC_DEFAULT_COLUMNS) if k in _FAC_EXPORT_COLUMNS]
     if not col_keys:
         col_keys = _FAC_DEFAULT_COLUMNS
+    if current_user.role == "vendedor":
+        col_keys = [k for k in col_keys if k != "margen"]
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -279,7 +281,7 @@ def listar_facturas(
     producto_id: list[int] | None = Query(None),
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     q = db.query(Factura).options(
         joinedload(Factura.cliente),
         joinedload(Factura.vendedor),
@@ -306,7 +308,13 @@ def listar_facturas(
         q = q.join(FacturaLinea, FacturaLinea.factura_id == Factura.id).filter(
             FacturaLinea.producto_id.in_(producto_id)
         ).distinct()
-    return q.order_by(Factura.numero.desc()).all()
+    results = [FacturaListOut.model_validate(f) for f in q.order_by(Factura.numero.desc()).all()]
+    if current_user.role == "vendedor":
+        for fac in results:
+            fac.margen_total = None
+            for linea in fac.lineas:
+                linea.margen = None
+    return results
 
 
 @router.post("/", response_model=FacturaOut, status_code=status.HTTP_201_CREATED)
@@ -465,8 +473,14 @@ def obtener_factura(
     factura_id: int,
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
-    _, db = perms
-    return _load_factura(db, factura_id)
+    current_user, db = perms
+    factura = _load_factura(db, factura_id)
+    if current_user.role == "vendedor":
+        out = FacturaOut.model_validate(factura)
+        for linea in out.lineas:
+            linea.margen = None
+        return out
+    return factura
 
 
 @router.patch("/{factura_id}", response_model=FacturaOut)

@@ -1,6 +1,79 @@
 """Tests that vendedor role gets 403 on admin/subadmin-only endpoints."""
+import os
+import sys
+from datetime import date
+from decimal import Decimal
+
+# Ensure env is set before any app import (conftest sets these too but be explicit)
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-unit-tests")
 
 _DATE_PARAMS = {"date_from": "2026-01-01", "date_to": "2026-04-30"}
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _make_cotizacion_with_margen(vendedor_user):
+    """Insert a Cotizacion with one linea that has a non-null margen value."""
+    from tests.conftest import TestingSession
+    from app.models.cliente import Cliente
+    from app.models.producto import Producto
+    from app.models.cotizacion import Cotizacion, CotizacionLinea
+
+    db = TestingSession()
+    try:
+        cliente = Cliente(nombre="Test Cliente Margen")
+        db.add(cliente)
+        db.flush()
+
+        producto = Producto(
+            nombre="Prod Margen",
+            precio_costo=Decimal("500"),
+            precio_venta=Decimal("1000"),
+            stock_actual=10,
+        )
+        db.add(producto)
+        db.flush()
+
+        total_neto = Decimal("1000")
+        iva = total_neto * Decimal("0.19")
+        total = total_neto + iva
+        margen = (Decimal("1000") - Decimal("500")) / Decimal("1000")  # 0.5
+
+        cot = Cotizacion(
+            numero=99001,
+            cliente_id=cliente.id,
+            vendedor_id=vendedor_user.id,
+            fecha=date(2026, 4, 28),
+            estado="no_definido",
+            total_neto=total_neto,
+            total_iva=iva,
+            total=total,
+            validez_dias=5,
+        )
+        db.add(cot)
+        db.flush()
+
+        linea = CotizacionLinea(
+            cotizacion_id=cot.id,
+            orden=1,
+            producto_id=producto.id,
+            sku="SKU-TEST",
+            descripcion="Producto test",
+            cantidad=1,
+            valor_neto=Decimal("1000"),
+            total_neto=total_neto,
+            iva=iva,
+            total=total,
+            margen=margen,
+        )
+        db.add(linea)
+        db.commit()
+        return cot.id
+    finally:
+        db.close()
 
 
 def test_vendedor_cannot_get_cobranza_dashboard(client, vendedor_token):
@@ -87,3 +160,50 @@ def test_subadmin_can_get_reporte_ventas(client, subadmin_token):
         headers={"Authorization": f"Bearer {subadmin_token}"},
     )
     assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Margen visibility tests
+# ---------------------------------------------------------------------------
+
+def test_vendedor_cotizacion_list_hides_margen(client, vendedor_user, vendedor_token):
+    _make_cotizacion_with_margen(vendedor_user)
+    resp = client.get(
+        "/api/cotizaciones/",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) > 0
+    for cot in data:
+        assert cot["margen_total"] is None
+        for linea in cot.get("lineas", []):
+            assert linea["margen"] is None
+
+
+def test_vendedor_nv_list_hides_margen(client, vendedor_user, vendedor_token):
+    # The NV list schema (NotaVentaListOut) does not include lineas or margen_total,
+    # so margen never appears in the list response. This test confirms the list
+    # endpoint returns 200 and doesn't expose any margen key.
+    resp = client.get(
+        "/api/nota_ventas/",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert resp.status_code == 200
+    for nv in resp.json():
+        assert "margen" not in nv
+        assert "margen_total" not in nv
+
+
+def test_admin_cotizacion_list_sees_margen(client, admin_user, admin_token, vendedor_user):
+    _make_cotizacion_with_margen(vendedor_user)
+    resp = client.get(
+        "/api/cotizaciones/",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) > 0
+    # At least one cotizacion should have a non-null margen_total
+    has_margen = any(cot["margen_total"] is not None for cot in data)
+    assert has_margen, "Admin should see margen_total on cotizaciones with margin data"
