@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useAuthStore } from '../stores/auth'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { Plus, FileSpreadsheet, Eye, Pencil, Trash2, Inbox } from 'lucide-react'
@@ -15,8 +16,6 @@ import {
 } from '../components/ui'
 
 const PLAZO_OPTIONS = ['Al contado', '30 Dias', '60 Dias', '90 Dias', 'Especial']
-const FORMA_PAGO_OPTIONS = ['Efectivo', 'Transferencia', 'Cheque', 'Crédito']
-const FORMA_PAGO_SIN_PLAZO = new Set(['Efectivo', 'Transferencia', 'Cheque'])
 
 type SedeForm = { nombre: string; direccion: string }
 const EMPTY_SEDE: SedeForm = { nombre: '', direccion: '' }
@@ -25,7 +24,7 @@ type FormData = {
   nombre: string
   razon_social: string
   rut: string
-  forma_pago: string
+  rut_no_oficial: boolean
   linea_credito: string
   plazo_credito: string
   sector: string
@@ -35,12 +34,13 @@ type FormData = {
 }
 
 const EMPTY_FORM: FormData = {
-  nombre: '', razon_social: '', rut: '', forma_pago: '',
+  nombre: '', razon_social: '', rut: '',
+  rut_no_oficial: false,
   linea_credito: '', plazo_credito: '',
   sector: '', email: '', nota_cobranza: '', ubicacion: '',
 }
 
-type SortField = 'nombre' | 'rut' | 'sector' | 'forma_pago' | 'ultima_compra' | 'deuda_total' | 'deuda_vencida'
+type SortField = 'nombre' | 'rut' | 'sector' | 'ultima_compra' | 'deuda_total' | 'deuda_vencida'
 
 function fmt(n: number) {
   return '$' + n.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -48,6 +48,7 @@ function fmt(n: number) {
 
 export default function Empresas() {
   const qc = useQueryClient()
+  const user = useAuthStore(s => s.user)
   const [busqueda, setBusqueda] = useState('')
   const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
 
@@ -145,7 +146,7 @@ export default function Empresas() {
     setEditando(e)
     setForm({
       nombre: e.nombre, razon_social: e.razon_social ?? '', rut: e.rut ?? '',
-      forma_pago: e.forma_pago ?? '',
+      rut_no_oficial: e.rut_no_oficial,
       linea_credito: e.linea_credito != null ? String(e.linea_credito) : '',
       plazo_credito: e.plazo_credito ?? '',
       sector: e.sector ?? '',
@@ -171,6 +172,7 @@ export default function Empresas() {
       const payload: Record<string, unknown> = Object.fromEntries(
         Object.entries(data).map(([k, v]) => [k, v || null])
       )
+      payload.rut_no_oficial = data.rut_no_oficial
       if (data.linea_credito) payload.linea_credito = parseFloat(data.linea_credito)
       else payload.linea_credito = null
       if (editando) return api.patch(`/api/empresas/${editando.id}`, payload).then(r => r.data)
@@ -258,7 +260,6 @@ export default function Empresas() {
     { field: 'nombre',        label: 'Nombre' },
     { field: 'rut',           label: 'RUT' },
     { field: 'sector',        label: 'Sector' },
-    { field: 'forma_pago',    label: 'Forma Pago' },
     { field: 'ultima_compra', label: 'Última Compra' },
     { field: 'deuda_total',   label: 'Deuda',   align: 'right' },
     { field: 'deuda_vencida', label: 'Vencida', align: 'right' },
@@ -365,7 +366,6 @@ export default function Empresas() {
                       <TD className="font-medium text-gray-900 dark:text-gray-100">{e.nombre}</TD>
                       <TD className="text-gray-500 dark:text-gray-400 font-num">{e.rut ?? '—'}</TD>
                       <TD className="text-gray-500 dark:text-gray-400">{e.sector ?? '—'}</TD>
-                      <TD className="text-gray-500 dark:text-gray-400">{e.forma_pago ?? '—'}</TD>
                       <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">
                         {e.ultima_compra
                           ? new Date(e.ultima_compra + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -455,30 +455,25 @@ export default function Empresas() {
                     placeholder="76.123.456-7"
                     value={form.rut}
                     onChange={e => setForm(f => ({ ...f, rut: e.target.value }))}
+                    disabled={!!editando}
                   />
+                  {editando && (
+                    <p className="text-xs text-gray-400 mt-1">El RUT no puede modificarse una vez creada la empresa</p>
+                  )}
                 </FormField>
 
-                <FormField label="Forma de Pago">
-                  <Select
-                    value={form.forma_pago || 'none'}
-                    onValueChange={v => {
-                      const fp = v === 'none' ? '' : v
-                      setForm(f => ({
-                        ...f,
-                        forma_pago: fp,
-                        plazo_credito: FORMA_PAGO_SIN_PLAZO.has(fp) ? 'Al contado' : f.plazo_credito,
-                      }))
-                    }}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">— Sin forma de pago —</SelectItem>
-                      {FORMA_PAGO_OPTIONS.map(o => (
-                        <SelectItem key={o} value={o}>{o}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <FormField label="RUT no oficial" className="col-span-2">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.rut_no_oficial}
+                      onChange={e => setForm(f => ({ ...f, rut_no_oficial: e.target.checked }))}
+                      className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                    />
+                    <span>RUT no oficial (informativo)</span>
+                  </label>
                 </FormField>
+
                 <FormField label="Sector">
                   <Input value={form.sector} onChange={e => setForm(f => ({ ...f, sector: e.target.value }))} />
                 </FormField>
@@ -493,6 +488,7 @@ export default function Empresas() {
                     step="0.01"
                     value={form.linea_credito}
                     onChange={e => setForm(f => ({ ...f, linea_credito: e.target.value }))}
+                    disabled={user?.role === 'vendedor'}
                   />
                 </FormField>
 

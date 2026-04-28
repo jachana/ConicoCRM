@@ -34,10 +34,16 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        <Field label="RUT" value={empresa.rut ?? '—'} />
+        <div>
+          <Field label="RUT" value={empresa.rut ?? '—'} />
+          {empresa.rut_no_oficial && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 mt-1">
+              RUT no oficial
+            </span>
+          )}
+        </div>
         <Field label="Razón Social" value={empresa.razon_social ?? '—'} />
         <Field label="Sector" value={empresa.sector ?? '—'} />
-        <Field label="Forma de Pago" value={empresa.forma_pago ?? '—'} />
         <Field label="Plazo de Crédito" value={empresa.plazo_credito ?? '—'} />
         <Field label="Línea de Crédito" value={fmtMoney(empresa.linea_credito)} />
         <Field label="Última Compra" value={fmtDate(empresa.ultima_compra)} highlight />

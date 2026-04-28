@@ -20,6 +20,7 @@ from app.models.sede_despacho import SedeDespacho  # noqa: F401
 from app.models.producto import Producto
 from app.models.system_config import SystemConfig
 from app.models.user import User
+from app.schemas.cotizacion import RecotizarOut
 from app.schemas.nota_venta import (
     EstadoCambio,
     NotaVentaCreate,
@@ -604,3 +605,25 @@ def enviar_email(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Error al enviar email: {e}")
     return {"detail": "Email enviado correctamente"}
+
+
+@router.post("/{nv_id}/recotizar", response_model=RecotizarOut, status_code=status.HTTP_201_CREATED)
+def recotizar_nv(
+    nv_id: int,
+    perms: tuple[User, Session] = require_permission("cotizaciones", "create"),
+):
+    from app.api.cotizaciones import _build_recotizar
+    current_user, db = perms
+    nv = (
+        db.query(NotaVenta)
+        .options(joinedload(NotaVenta.lineas))
+        .filter(NotaVenta.id == nv_id)
+        .first()
+    )
+    if not nv:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nota de venta no encontrada")
+    return _build_recotizar(
+        db, current_user,
+        nv.lineas, nv.cliente_id, nv.empresa_id, nv.vendedor_id,
+        nv.contacto, nv.nota, nv.correo,
+    )

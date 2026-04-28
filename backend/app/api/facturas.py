@@ -16,6 +16,7 @@ from app.models.nota_venta import NotaVenta
 from app.models.producto import Producto
 from app.models.system_config import SystemConfig
 from app.models.user import User
+from app.schemas.cotizacion import RecotizarOut
 from app.schemas.factura import (
     FacturaCreate,
     FacturaEstadoCambio,
@@ -620,3 +621,25 @@ def enviar_recordatorio(
     factura.ultimo_recordatorio = date.today()
     db.commit()
     return {"detail": "Recordatorio enviado"}
+
+
+@router.post("/{factura_id}/recotizar", response_model=RecotizarOut, status_code=status.HTTP_201_CREATED)
+def recotizar_factura(
+    factura_id: int,
+    perms: tuple[User, Session] = require_permission("cotizaciones", "create"),
+):
+    from app.api.cotizaciones import _build_recotizar
+    current_user, db = perms
+    factura = (
+        db.query(Factura)
+        .options(joinedload(Factura.lineas))
+        .filter(Factura.id == factura_id)
+        .first()
+    )
+    if not factura:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Factura no encontrada")
+    return _build_recotizar(
+        db, current_user,
+        factura.lineas, factura.cliente_id, factura.empresa_id, factura.vendedor_id,
+        factura.contacto, factura.nota, factura.correo,
+    )

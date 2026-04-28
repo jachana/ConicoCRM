@@ -53,7 +53,7 @@ export interface Empresa {
   nombre: string
   razon_social: string | null
   rut: string | null
-  forma_pago: string | null
+  rut_no_oficial: boolean
   linea_credito: number | null
   plazo_credito: string | null
   sector: string | null

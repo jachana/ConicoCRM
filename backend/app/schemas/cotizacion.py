@@ -126,6 +126,11 @@ class CotizacionListOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class RecotizarOut(BaseModel):
+    id: int
+    warnings: list[str] = []
+
+
 class SystemConfigOut(BaseModel):
     key: str
     value: str

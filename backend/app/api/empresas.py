@@ -92,12 +92,11 @@ def exportar_excel(
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Empresas"
-    ws.append(["ID", "Nombre", "Razón Social", "RUT", "Forma Pago", "Sector", "Email", "Ubicación"])
+    ws.append(["ID", "Nombre", "Razón Social", "RUT", "Sector", "Email", "Ubicación"])
     for e in empresas:
         ws.append([
             e.id, e.nombre, e.razon_social or "", e.rut or "",
-            e.forma_pago or "", e.sector or "",
-            e.email or "", e.ubicacion or "",
+            e.sector or "", e.email or "", e.ubicacion or "",
         ])
     buf = _io.BytesIO()
     wb.save(buf)
@@ -572,11 +571,16 @@ def actualizar_empresa(
     body: EmpresaUpdate,
     perms: tuple[User, Session] = require_permission("empresas", "edit"),
 ):
-    _, db = perms
+    user, db = perms
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
-    for field, value in body.model_dump(exclude_unset=True).items():
+    datos = body.model_dump(exclude_unset=True)
+    if "rut" in datos and datos["rut"] != e.rut:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="El RUT no puede modificarse después de creada la empresa")
+    if "linea_credito" in datos and user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores pueden modificar la línea de crédito")
+    for field, value in datos.items():
         setattr(e, field, value)
     try:
         db.commit()
