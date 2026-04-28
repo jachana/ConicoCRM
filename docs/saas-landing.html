@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Conico — El software que tú usas. Tu contador sigue con el suyo.</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="description" content="CRM y emisor electrónico para Pymes chilenas con contador externo. Cotiza, factura, controla inventario y ordena tu equipo en una sola plataforma." />
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #f7f8fa;
+    --bg-band: #0f172a;
+    --ink: #0f172a;
+    --ink-soft: #475569;
+    --ink-mute: #94a3b8;
+    --line: #e2e8f0;
+    --primary: #1e3a8a;
+    --primary-2: #2563eb;
+    --accent: #ea580c;
+    --ok: #15803d;
+    --warn: #b45309;
+    --bad: #b91c1c;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 2px rgba(15,23,42,.06), 0 1px 1px rgba(15,23,42,.04);
+    --shadow-md: 0 8px 24px -8px rgba(15,23,42,.18), 0 2px 4px rgba(15,23,42,.06);
+    --max: 1200px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--primary-2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1, h2, h3, h4 { color: var(--ink); margin: 0 0 0.4em; line-height: 1.15; letter-spacing: -0.02em; font-weight: 700; }
+  h1 { font-size: clamp(36px, 5vw, 56px); }
+  h2 { font-size: clamp(26px, 3vw, 38px); }
+  h3 { font-size: 20px; letter-spacing: -0.01em; }
+  p { margin: 0 0 1em; color: var(--ink-soft); }
+  .container { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+  .eyebrow { display: inline-block; padding: 5px 12px; border-radius: 999px; background: rgba(37,99,235,.08); color: var(--primary-2); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border-radius: var(--radius); font-weight: 600; font-size: 15px; transition: transform .08s, box-shadow .15s; border: 1px solid transparent; cursor: pointer; }
+  .btn-primary { background: var(--primary); color: white; box-shadow: var(--shadow-md); }
+  .btn-primary:hover { background: #1e40af; text-decoration: none; transform: translateY(-1px); }
+  .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn-ghost:hover { background: var(--bg-soft); text-decoration: none; }
+  .btn-accent { background: var(--accent); color: white; }
+  .btn-accent:hover { background: #c2410c; text-decoration: none; }
+
+  /* ==== Nav ==== */
+  nav {
+    position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,.92);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav .row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; gap: 24px; }
+  .logo { font-weight: 800; font-size: 22px; letter-spacing: -0.02em; }
+  .logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 24px; align-items: center; }
+  .nav-links a { color: var(--ink-soft); font-size: 14px; font-weight: 500; }
+  .nav-links a:hover { color: var(--primary-2); text-decoration: none; }
+  @media (max-width: 760px) { .nav-links { display: none; } }
+
+  /* ==== Hero ==== */
+  .hero { padding: 72px 0 48px; }
+  .hero .grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 64px; align-items: center; }
+  @media (max-width: 920px) { .hero .grid { grid-template-columns: 1fr; gap: 32px; } }
+  .hero h1 strong { color: var(--primary); }
+  .hero p.lead { font-size: 19px; color: var(--ink-soft); max-width: 540px; }
+  .hero .cta-row { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+  .hero .trust { margin-top: 24px; display: flex; gap: 18px; color: var(--ink-mute); font-size: 13px; align-items: center; flex-wrap: wrap; }
+  .hero .trust b { color: var(--ink); font-weight: 600; }
+
+  /* ==== Hero visual (mockup) ==== */
+  .mockup {
+    background: linear-gradient(140deg, #1e3a8a 0%, #2563eb 100%);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 30px 60px -20px rgba(30,58,138,.35);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .mockup .window {
+    background: white;
+    border-radius: 8px;
+    color: var(--ink);
+    box-shadow: 0 8px 32px -4px rgba(0,0,0,.2);
+    overflow: hidden;
+  }
+  .mockup .window-bar { display: flex; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--bg-soft); }
+  .mockup .window-bar span { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; }
+  .mockup .window-content { padding: 18px 18px 22px; }
+  .mockup .doc-title { display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .mockup .doc-title b { font-size: 17px; }
+  .mockup .doc-title small { color: var(--ink-mute); font-size: 12px; }
+  .mockup .doc-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; font-size: 12px; color: var(--ink-mute); margin-bottom: 14px; }
+  .mockup .doc-meta div b { color: var(--ink); font-weight: 600; display: block; font-size: 13px; }
+  .mockup .doc-lines { font-size: 12px; }
+  .mockup .doc-lines .row-line { display: grid; grid-template-columns: 2fr 0.5fr 0.7fr 0.8fr; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+  .mockup .doc-total { display: flex; justify-content: flex-end; padding-top: 12px; }
+  .mockup .doc-total .col { text-align: right; }
+  .mockup .doc-total .col b { font-size: 18px; color: var(--primary); }
+  .mockup .badge-ok {
+    position: absolute; top: 18px; right: 18px;
+    background: var(--ok); color: white; padding: 6px 12px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+  }
+
+  /* ==== Sections ==== */
+  section { padding: 64px 0; }
+  section.tight { padding: 40px 0; }
+  section.dark { background: var(--bg-band); color: white; }
+  section.dark h2, section.dark h3 { color: white; }
+  section.dark p { color: #cbd5e1; }
+  section.soft { background: var(--bg-soft); }
+
+  .section-head { max-width: 720px; margin: 0 auto 40px; text-align: center; }
+  .section-head h2 strong { color: var(--primary); }
+  section.dark .section-head h2 strong { color: #93c5fd; }
+
+  /* ==== Pain section ==== */
+  .pain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 860px) { .pain-grid { grid-template-columns: 1fr; } }
+  .pain-card {
+    background: white; border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 22px; box-shadow: var(--shadow-sm);
+  }
+  .pain-card .icon { width: 36px; height: 36px; border-radius: 8px; background: rgba(234,88,12,.1); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; color: var(--accent); font-weight: 800; }
+  .pain-card h3 { margin-bottom: 6px; }
+  .pain-card p { margin: 0; font-size: 14.5px; }
+
+  /* ==== Feature row ==== */
+  .feat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; padding: 36px 0; }
+  .feat-row.reverse > div:first-child { order: 2; }
+  @media (max-width: 860px) {
+    .feat-row { grid-template-columns: 1fr; gap: 24px; padding: 24px 0; }
+    .feat-row.reverse > div:first-child { order: 0; }
+  }
+  .feat-row h3 { font-size: 26px; margin-bottom: 14px; letter-spacing: -0.015em; }
+  .feat-row ul { padding-left: 20px; color: var(--ink-soft); }
+  .feat-row ul li { margin-bottom: 6px; }
+  .feat-visual { background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 28px; min-height: 260px; display: flex; align-items: center; justify-content: center; color: var(--ink-mute); }
+  .feat-visual.kpi-vis { background: white; }
+
+  .kpi-vis .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; }
+  .kpi-card { padding: 16px; background: var(--bg-soft); border-radius: 8px; border: 1px solid var(--line); }
+  .kpi-card .label { color: var(--ink-mute); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .kpi-card .num { font-size: 24px; font-weight: 700; color: var(--ink); margin-top: 4px; }
+  .kpi-card .delta { font-size: 11px; color: var(--ok); font-weight: 600; }
+  .kpi-card .delta.bad { color: var(--bad); }
+
+  /* ==== Contador highlight ==== */
+  .contador-band {
+    background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+    padding: 56px 0;
+  }
+  .contador-band .container { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+  @media (max-width: 860px) { .contador-band .container { grid-template-columns: 1fr; } }
+  .contador-band h2 { color: #7c2d12; }
+  .contador-band p { color: #7c2d12; opacity: 0.8; }
+  .contador-mock { background: white; border-radius: var(--radius-lg); padding: 22px; box-shadow: var(--shadow-md); border: 1px solid #fdba74; }
+  .contador-mock .from { font-size: 12px; color: var(--ink-mute); }
+  .contador-mock .to { font-size: 12px; color: var(--ink-mute); margin-bottom: 10px; }
+  .contador-mock .subj { font-weight: 700; margin-bottom: 14px; }
+  .contador-mock .body { font-size: 14px; color: var(--ink-soft); }
+  .contador-mock .attach { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px dashed var(--line); border-radius: 6px; font-size: 12px; margin-right: 6px; margin-top: 6px; color: var(--primary); }
+
+  /* ==== Pricing ==== */
+  .price-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  @media (max-width: 1100px) { .price-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .price-grid { grid-template-columns: 1fr; } }
+  .price-card {
+    background: white; border: 1px solid var(--line); border-radius: var(--radius-lg);
+    padding: 26px 22px; display: flex; flex-direction: column; gap: 16px;
+    transition: border-color .15s, box-shadow .15s, transform .15s;
+  }
+  .price-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .price-card.featured { border-color: var(--primary-2); border-width: 2px; position: relative; }
+  .price-card.featured::before {
+    content: "Más elegido"; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--primary); color: white; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 999px;
+  }
+  .price-card .name { font-size: 15px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-mute); }
+  .price-card .name.featured { color: var(--primary); }
+  .price-card .price { font-size: 36px; font-weight: 800; color: var(--ink); letter-spacing: -0.02em; }
+  .price-card .price small { font-size: 14px; color: var(--ink-mute); font-weight: 500; }
+  .price-card .price-sub { color: var(--ink-mute); font-size: 13px; margin-top: -8px; }
+  .price-card ul { padding: 0; margin: 0; list-style: none; }
+  .price-card ul li { padding: 7px 0; font-size: 14px; color: var(--ink-soft); display: flex; align-items: flex-start; gap: 8px; border-bottom: 1px solid var(--line); }
+  .price-card ul li:last-child { border-bottom: none; }
+  .price-card ul li::before { content: "✓"; color: var(--ok); font-weight: 800; flex-shrink: 0; }
+  .price-card ul li.x::before { content: "—"; color: var(--ink-mute); }
+
+  .price-toggle { display: inline-flex; align-items: center; gap: 10px; background: var(--bg-soft); padding: 6px; border-radius: 999px; margin: 16px auto 24px; }
+  .price-toggle button { border: none; background: transparent; padding: 8px 16px; border-radius: 999px; font-weight: 600; font-size: 14px; cursor: pointer; color: var(--ink-mute); }
+  .price-toggle button.active { background: white; color: var(--ink); box-shadow: var(--shadow-sm); }
+  .save-tag { font-size: 11px; color: var(--ok); font-weight: 700; margin-left: 4px; }
+
+  /* ==== Comparison ==== */
+  table.compare { width: 100%; border-collapse: collapse; background: white; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid var(--line); }
+  table.compare th, table.compare td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--line); font-size: 14px; }
+  table.compare th { background: var(--bg-soft); font-weight: 700; font-size: 13px; color: var(--ink-soft); }
+  table.compare td.highlight { background: rgba(37,99,235,.05); font-weight: 600; }
+  table.compare .check { color: var(--ok); font-weight: 800; }
+  table.compare .x { color: var(--ink-mute); }
+
+  /* ==== FAQ ==== */
+  .faq { max-width: 820px; margin: 0 auto; }
+  .faq details { background: white; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 10px; box-shadow: var(--shadow-sm); }
+  .faq summary { font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; color: var(--ink-mute); font-size: 22px; line-height: 1; transition: transform .15s; }
+  .faq details[open] summary::after { content: "−"; transform: scale(1.1); }
+  .faq details[open] { border-color: var(--primary-2); }
+  .faq p { margin: 12px 0 0; }
+
+  /* ==== CTA Final ==== */
+  .cta-final { padding: 80px 0; text-align: center; background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%); }
+  .cta-final h2 { margin-bottom: 14px; }
+  .cta-final p { max-width: 540px; margin: 0 auto 28px; }
+
+  /* ==== Footer ==== */
+  footer { background: var(--bg-band); color: #cbd5e1; padding: 48px 0 32px; }
+  footer h4 { color: white; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 16px; }
+  footer .grid-foot { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; }
+  @media (max-width: 760px) { footer .grid-foot { grid-template-columns: 1fr 1fr; } }
+  footer ul { list-style: none; padding: 0; margin: 0; }
+  footer ul li { padding: 5px 0; font-size: 14px; }
+  footer ul li a { color: #cbd5e1; }
+  footer ul li a:hover { color: white; }
+  footer .legal { border-top: 1px solid #1e293b; margin-top: 32px; padding-top: 20px; font-size: 12px; color: var(--ink-mute); display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container row">
+    <div class="logo">Coni<span>co</span></div>
+    <div class="nav-links">
+      <a href="#producto">Producto</a>
+      <a href="#contador">Tu contador</a>
+      <a href="#planes">Planes</a>
+      <a href="#comparacion">Comparación</a>
+      <a href="#faq">Preguntas</a>
+      <a href="/login">Iniciar sesión</a>
+      <a href="#cta" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;">Probar gratis</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+  <div class="container">
+    <div class="grid">
+      <div>
+        <span class="eyebrow">Para Pymes con contador</span>
+        <h1 style="margin-top: 16px;">Tu software. <strong>Tu contador sigue con el suyo.</strong></h1>
+        <p class="lead">
+          Conico es el CRM y emisor electrónico para Pymes chilenas que ya tienen contador.
+          Cotiza, factura, controla inventario y ordena tu equipo en una sola plataforma.
+          Tu contador hace lo suyo con su software — Conico te entrega el reporte mensual listo.
+        </p>
+        <div class="cta-row">
+          <a href="#cta" class="btn btn-primary">Probar 14 días gratis →</a>
+          <a href="#producto" class="btn btn-ghost">Ver cómo funciona</a>
+        </div>
+        <div class="trust">
+          <span><b>Sin tarjeta</b> para empezar</span>
+          <span>·</span>
+          <span><b>SII certificado</b> vía Lioren</span>
+          <span>·</span>
+          <span><b>Cancela</b> cuando quieras</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="mockup">
+          <span class="badge-ok">✓ DTE aceptado SII</span>
+          <div class="window">
+            <div class="window-bar"><span></span><span></span><span></span></div>
+            <div class="window-content">
+              <div class="doc-title">
+                <div><b>Factura electrónica N° 12.842</b></div>
+                <small>15 abr 2026</small>
+              </div>
+              <div class="doc-meta">
+                <div><b>Cliente</b>Constructora Aravena Ltda.</div>
+                <div><b>RUT</b>76.234.567-8</div>
+                <div><b>Vendedor</b>Camila Riveros</div>
+                <div><b>Vencimiento</b>15 may 2026 (30 días)</div>
+              </div>
+              <div class="doc-lines">
+                <div class="row-line"><b>Cable THHN 12 AWG (rollo 100m)</b><span>4</span><span>$32.500</span><span>$130.000</span></div>
+                <div class="row-line"><b>Conector RJ45 cat 6 (pack 100)</b><span>2</span><span>$18.900</span><span>$37.800</span></div>
+                <div class="row-line"><b>Tablero eléctrico 12 vías</b><span>1</span><span>$94.500</span><span>$94.500</span></div>
+              </div>
+              <div class="doc-total">
+                <div class="col">
+                  <small style="color: var(--ink-mute);">Neto $262.300 · IVA $49.837</small><br />
+                  <b>Total $312.137</b>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== PAIN ==================== -->
+<section class="soft" id="producto">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">El problema</span>
+      <h2 style="margin-top: 12px;">Tu Pyme tiene contador. <strong>¿Y la operación del día a día?</strong></h2>
+      <p style="font-size: 17px;">Si todavía cotizas en Word, llevas inventario en Excel y emites con un facturador básico, estás perdiendo tiempo cada día.</p>
+    </div>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="icon">!</div>
+        <h3>Cotizas en Word</h3>
+        <p>Cada vendedor tiene su plantilla. Los precios se desactualizan. Pierdes 20 minutos por cotización y nadie sabe quién prometió qué.</p>
+      </div>
+      <div class="pain-card">
+        <div class="icon">!</div>
+        <h3>El inventario está en Excel</h3>
+        <p>Vendiste algo que no había stock. El bodeguero no sabe lo que vendió ventas. Las compras se hacen al ojo.</p>
+      </div>
+      <div class="pain-card">
+        <div class="icon">!</div>
+        <h3>El contador te pide los datos cada mes</h3>
+        <p>Lo arman a mano. Le mandas Excel sueltos. Hay errores. Vuelve a pedirte. Pierdes una mañana entera todos los meses.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SOLUTION FEATURES ==================== -->
+<section>
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">La solución</span>
+      <h2 style="margin-top: 12px;">Un solo lugar para <strong>cotizar, despachar, facturar y cobrar</strong></h2>
+    </div>
+
+    <div class="feat-row">
+      <div>
+        <span class="eyebrow">Flujo comercial</span>
+        <h3 style="margin-top: 10px;">Cotización → Nota de Venta → Factura → Pago</h3>
+        <p>Una sola pantalla, datos que se heredan, documentos que quedan amarrados. El vendedor cotiza, el bodeguero despacha, contabilidad factura, cobranza cobra. Todo conectado.</p>
+        <ul>
+          <li>Numeración correlativa SII garantizada</li>
+          <li>Bloqueo automático: factura emitida no se edita</li>
+          <li>Boleta o factura desde la misma Nota de Venta</li>
+          <li>Notas de crédito y débito si hay devoluciones</li>
+          <li>Pagos parciales o totales registrados</li>
+        </ul>
+      </div>
+      <div class="feat-visual kpi-vis">
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="label">Cotizaciones abiertas</div><div class="num">23</div><div class="delta">+4 esta semana</div></div>
+          <div class="kpi-card"><div class="label">Por despachar</div><div class="num">8</div><div class="delta">2 vencen hoy</div></div>
+          <div class="kpi-card"><div class="label">Facturado mes</div><div class="num">$47,2M</div><div class="delta">+12% vs mes anterior</div></div>
+          <div class="kpi-card"><div class="label">Por cobrar</div><div class="num">$8,4M</div><div class="delta bad">3 vencidas</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat-row reverse">
+      <div>
+        <span class="eyebrow">Inventario serio</span>
+        <h3 style="margin-top: 10px;">El stock se actualiza solo. Las compras también.</h3>
+        <p>Cuando vendes, el stock baja. Cuando recibes una orden de compra, sube. Alertas de stock bajo, listas de precios cargables desde Excel, costos por lote, marca y volumen por producto, hasta 5 PDFs por ficha.</p>
+        <ul>
+          <li>Movimientos de inventario trazables</li>
+          <li>Multi-bodega en planes Business+</li>
+          <li>Listas de precios actualizables desde Excel</li>
+          <li>Sugerencias automáticas: "este cliente suele comprar X"</li>
+        </ul>
+      </div>
+      <div class="feat-visual">
+        <div style="width: 100%; padding: 14px;">
+          <div style="display: flex; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid var(--line); margin-bottom: 10px;">
+            <b style="font-size: 14px;">Stock crítico</b>
+            <small style="color: var(--ink-mute);">3 productos</small>
+          </div>
+          <div style="display: grid; gap: 8px; font-size: 13px;">
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; padding: 8px; background: rgba(185,28,28,.06); border-radius: 6px;"><span><b>Cable THHN 12 AWG</b></span><span style="color: var(--bad);">4 / 50</span><span style="text-align: right;"><a href="#">Pedir →</a></span></div>
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; padding: 8px; background: rgba(180,83,9,.06); border-radius: 6px;"><span><b>Conector RJ45</b></span><span style="color: var(--warn);">12 / 100</span><span style="text-align: right;"><a href="#">Pedir →</a></span></div>
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; padding: 8px; background: rgba(180,83,9,.06); border-radius: 6px;"><span><b>Tablero 12 vías</b></span><span style="color: var(--warn);">2 / 15</span><span style="text-align: right;"><a href="#">Pedir →</a></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat-row">
+      <div>
+        <span class="eyebrow">CRM real</span>
+        <h3 style="margin-top: 10px;">Cada cliente con su historia, cada vendedor con sus pendientes</h3>
+        <p>Ficha 360 del cliente: cotizaciones, ventas, facturas, llamadas, notas. Pipeline de oportunidades activable. Tareas automáticas: cotización por vencer, factura mora, stock bajo. Aprobaciones de crédito y márgenes con flujo asíncrono.</p>
+        <ul>
+          <li>Pipeline kanban opcional (oportunidades → ganadas)</li>
+          <li>Timeline unificado por cliente y empresa</li>
+          <li>Aprobaciones: vendedor propone, admin aprueba</li>
+          <li>Búsqueda global Cmd+K en toda la plataforma</li>
+          <li>Dashboard configurable por rol</li>
+        </ul>
+      </div>
+      <div class="feat-visual">
+        <div style="width: 100%; padding: 6px;">
+          <div style="font-size: 12px; color: var(--ink-mute); padding-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;">Mis pendientes — Hoy</div>
+          <div style="display: grid; gap: 8px;">
+            <div style="padding: 12px; background: white; border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-sm);">
+              <div style="font-size: 11px; color: var(--accent); font-weight: 700;">COTIZACIÓN POR VENCER</div>
+              <div style="font-weight: 600; font-size: 14px; margin-top: 2px;">Cot. #12.741 — Aravena Ltda.</div>
+              <div style="font-size: 12px; color: var(--ink-mute);">Vence en 2 días · $1.890.000</div>
+            </div>
+            <div style="padding: 12px; background: white; border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-sm);">
+              <div style="font-size: 11px; color: var(--bad); font-weight: 700;">FACTURA EN MORA</div>
+              <div style="font-weight: 600; font-size: 14px; margin-top: 2px;">F. #8.421 — Inmobiliaria del Sur</div>
+              <div style="font-size: 12px; color: var(--ink-mute);">15 días vencida · $437.200</div>
+            </div>
+            <div style="padding: 12px; background: white; border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-sm);">
+              <div style="font-size: 11px; color: var(--warn); font-weight: 700;">APROBAR MARGEN</div>
+              <div style="font-weight: 600; font-size: 14px; margin-top: 2px;">Cot. #12.802 — propuesta -8% margen</div>
+              <div style="font-size: 12px; color: var(--ink-mute);">Camila R. solicita revisión</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== CONTADOR HIGHLIGHT ==================== -->
+<section class="contador-band" id="contador">
+  <div class="container">
+    <div>
+      <span class="eyebrow" style="background: rgba(124,45,18,.12); color: #7c2d12;">Diferenciador</span>
+      <h2 style="margin-top: 12px;">Tu contador queda feliz <strong>sin que tú hagas nada</strong></h2>
+      <p style="font-size: 17px;">
+        Conico arma el reporte mensual y se lo envía a tu contador automáticamente.
+        Excel con ventas, compras, notas de crédito y débito del mes — listo para subir a Softland, Nubox o lo que él use.
+        Tú no haces nada. Él hace su trabajo más rápido. Todos contentos.
+      </p>
+      <div style="display: flex; gap: 24px; margin-top: 20px; font-size: 14px; color: #7c2d12;">
+        <div>✓ Email automático cada mes</div>
+        <div>✓ Excel formato estándar</div>
+        <div>✓ Tu contador no necesita login</div>
+      </div>
+    </div>
+    <div class="contador-mock">
+      <div class="from"><b>De:</b> reportes@conico.cl</div>
+      <div class="to"><b>Para:</b> contador@constructora-aravena.cl</div>
+      <div class="subj">Resumen mensual abril 2026 — Constructora Aravena Ltda.</div>
+      <div class="body">
+        Hola Patricio,<br /><br />
+        Te enviamos el resumen del mes con todos los documentos electrónicos emitidos y recibidos.
+        Adjuntamos el Excel listo para tu sistema contable.
+      </div>
+      <div style="margin-top: 14px;">
+        <span class="attach">📎 ventas_abril_2026.xlsx</span>
+        <span class="attach">📎 compras_abril_2026.xlsx</span>
+        <span class="attach">📎 notas_credito_debito.xlsx</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== PRICING ==================== -->
+<section id="planes" class="soft">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Planes y precios</span>
+      <h2 style="margin-top: 12px;">Paga por lo que <strong>realmente usas</strong></h2>
+      <p style="font-size: 17px;">Sin trucos. Cobramos por usuarios, documentos electrónicos y volumen. Las funciones son para todos.</p>
+      <div class="price-toggle" role="tablist" aria-label="Frecuencia de facturación">
+        <button class="active" type="button">Anual <span class="save-tag">-17%</span></button>
+        <button type="button">Mensual</button>
+      </div>
+    </div>
+
+    <div class="price-grid">
+      <div class="price-card">
+        <div class="name">Starter</div>
+        <div>
+          <div class="price">$10.790<small>/mes</small></div>
+          <div class="price-sub">$129.490 al año · IVA incluido</div>
+        </div>
+        <a href="#cta" class="btn btn-ghost" style="justify-content: center;">Empezar gratis</a>
+        <ul>
+          <li>1 usuario</li>
+          <li>200 productos</li>
+          <li><b>60 documentos SII / mes</b></li>
+          <li>1 bodega</li>
+          <li>Cotización · NV · Factura · Boleta</li>
+          <li>Notas crédito y débito</li>
+          <li>Reporte mensual al contador</li>
+          <li>Email 48h</li>
+        </ul>
+      </div>
+
+      <div class="price-card featured">
+        <div class="name featured">Pro</div>
+        <div>
+          <div class="price">$29.040<small>/mes</small></div>
+          <div class="price-sub">$348.490 al año · IVA incluido</div>
+        </div>
+        <a href="#cta" class="btn btn-primary" style="justify-content: center;">Probar 14 días</a>
+        <ul>
+          <li><b>5 usuarios</b></li>
+          <li>5.000 productos</li>
+          <li><b>250 documentos SII / mes</b></li>
+          <li>2 bodegas</li>
+          <li>OC a proveedores · Inventario serio</li>
+          <li>Aprobaciones crédito y margen</li>
+          <li>Tareas automáticas · Cmd+K</li>
+          <li>Pipeline · Customer Portal</li>
+          <li>Email + chat 24h</li>
+        </ul>
+      </div>
+
+      <div class="price-card">
+        <div class="name">Business</div>
+        <div>
+          <div class="price">$62.240<small>/mes</small></div>
+          <div class="price-sub">$746.890 al año · DTE incluido*</div>
+        </div>
+        <a href="#cta" class="btn btn-ghost" style="justify-content: center;">Hablar con ventas</a>
+        <ul>
+          <li><b>15 usuarios</b></li>
+          <li>50.000 productos</li>
+          <li><b>DTE ilimitado*</b></li>
+          <li>10 bodegas</li>
+          <li>Multi-bodega · Lote/serie</li>
+          <li>Comisiones · Audit log</li>
+          <li>Reportes financieros</li>
+          <li>Notificaciones email digest</li>
+          <li>Chat prioritario 8h</li>
+        </ul>
+      </div>
+
+      <div class="price-card">
+        <div class="name">Enterprise</div>
+        <div>
+          <div class="price">desde $124.490<small>/mes</small></div>
+          <div class="price-sub">Multi-empresa · SLA</div>
+        </div>
+        <a href="#cta" class="btn btn-ghost" style="justify-content: center;">Contáctanos</a>
+        <ul>
+          <li>Usuarios ilimitados</li>
+          <li>Productos ilimitados</li>
+          <li>DTE ilimitado*</li>
+          <li>Multi-tenant interno</li>
+          <li>SSO Google / Microsoft</li>
+          <li>API + webhooks</li>
+          <li>Onboarding dedicado</li>
+          <li>SLA + WhatsApp + AM</li>
+        </ul>
+      </div>
+    </div>
+
+    <p style="text-align: center; color: var(--ink-mute); font-size: 13px; margin-top: 24px;">
+      * Business y Enterprise integran con Lioren. Si ya tienes Lioren, lo conectamos. Si no, te lo configuramos en el setup.<br />
+      Sobre el cupo en Starter y Pro: $200 por documento adicional. Cancelas cuando quieras, sin permanencia.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== COMPARACIÓN ==================== -->
+<section id="comparacion">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Comparación</span>
+      <h2 style="margin-top: 12px;">¿En qué somos <strong>distintos</strong>?</h2>
+      <p>Conico Pro vs alternativas en el mismo rango de precio.</p>
+    </div>
+    <div style="overflow-x: auto;">
+      <table class="compare">
+        <thead>
+          <tr>
+            <th>Característica</th>
+            <th class="highlight">Conico Pro<br /><small style="font-weight: 500; color: var(--ink-mute);">$29.040 anual</small></th>
+            <th>Alternativa A<br /><small style="font-weight: 500; color: var(--ink-mute);">~$37k anual</small></th>
+            <th>Alternativa B<br /><small style="font-weight: 500; color: var(--ink-mute);">~$33k anual</small></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Cotización + NV + Factura + Boleta</td><td class="highlight check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>Inventario con OC a proveedores</td><td class="highlight check">✓</td><td class="check">parcial</td><td class="x">—</td></tr>
+          <tr><td>Aprobaciones de crédito y márgenes</td><td class="highlight check">✓</td><td class="x">—</td><td class="x">—</td></tr>
+          <tr><td>Pipeline / Oportunidades</td><td class="highlight check">✓</td><td class="x">—</td><td class="x">—</td></tr>
+          <tr><td>Customer Portal (cliente ve sus facturas)</td><td class="highlight check">✓</td><td class="x">—</td><td class="x">—</td></tr>
+          <tr><td>Búsqueda global Cmd+K</td><td class="highlight check">✓</td><td class="x">—</td><td class="x">—</td></tr>
+          <tr><td>Tareas y recordatorios automáticos</td><td class="highlight check">✓</td><td class="x">—</td><td class="x">—</td></tr>
+          <tr><td>Reporte mensual al contador</td><td class="highlight check">✓</td><td class="x">—</td><td class="x">parcial</td></tr>
+          <tr><td>Reportes por marca / cliente</td><td class="highlight check">✓</td><td class="x">—</td><td class="x">—</td></tr>
+          <tr><td>Documentos SII incluidos</td><td class="highlight">250 / mes</td><td>~500 / mes</td><td>~300 / mes</td></tr>
+          <tr><td>Usuarios incluidos</td><td class="highlight">5</td><td>5</td><td>3</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TESTIMONIALS PLACEHOLDER ==================== -->
+<section class="dark">
+  <div class="container">
+    <div class="section-head">
+      <h2>Lo que dicen <strong style="color: #fbbf24;">los primeros usuarios</strong></h2>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;" class="testimonials">
+      <div style="background: rgba(255,255,255,.05); padding: 24px; border-radius: var(--radius); border-left: 3px solid #fbbf24;">
+        <p style="color: white; font-size: 16px; line-height: 1.6;">"Cotizo en la mitad del tiempo. Y mi contador dejó de pedirme cosas a fin de mes."</p>
+        <div style="margin-top: 14px; font-size: 13px; color: #cbd5e1;"><b style="color: white;">Camila R.</b> · Distribuidora eléctrica · 6 personas</div>
+      </div>
+      <div style="background: rgba(255,255,255,.05); padding: 24px; border-radius: var(--radius); border-left: 3px solid #fbbf24;">
+        <p style="color: white; font-size: 16px; line-height: 1.6;">"Antes vendíamos sin saber el stock real. Ahora el bodeguero, el vendedor y yo vemos lo mismo."</p>
+        <div style="margin-top: 14px; font-size: 13px; color: #cbd5e1;"><b style="color: white;">Patricio M.</b> · Ferretería industrial · 12 personas</div>
+      </div>
+      <div style="background: rgba(255,255,255,.05); padding: 24px; border-radius: var(--radius); border-left: 3px solid #fbbf24;">
+        <p style="color: white; font-size: 16px; line-height: 1.6;">"Cambié de dos sistemas a uno. Pago menos y trabajo mejor."</p>
+        <div style="margin-top: 14px; font-size: 13px; color: #cbd5e1;"><b style="color: white;">Andrea V.</b> · Importadora gastronomía · 4 personas</div>
+      </div>
+    </div>
+    <p style="text-align: center; color: var(--ink-mute); font-size: 12px; margin-top: 24px;">
+      *Testimonios representativos pendientes de captura post-launch.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== FAQ ==================== -->
+<section id="faq" class="soft">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Preguntas frecuentes</span>
+      <h2 style="margin-top: 12px;">Lo que normalmente <strong>nos preguntan antes de empezar</strong></h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>¿Necesito Lioren para usar Conico?</summary>
+        <p>Sí. Conico se integra con Lioren para emitir documentos electrónicos al SII. En Starter y Pro el plan Lioren ya está incluido en el precio. En Business y Enterprise puedes traer tu plan Lioren existente o lo contratamos por ti como add-on. Si no tienes plan SII todavía, el setup asistido lo deja funcionando.</p>
+      </details>
+      <details>
+        <summary>¿Conico reemplaza a mi contador?</summary>
+        <p>No. Conico maneja la operación diaria (cotizar, vender, facturar, controlar inventario). Tu contador sigue haciendo la contabilidad mensual con su software (Softland, Nubox, ContaNet, lo que sea). Lo que hacemos es enviarle el reporte mensual ya armado para que su trabajo sea más rápido.</p>
+      </details>
+      <details>
+        <summary>¿Qué pasa si crezco y supero los límites del plan?</summary>
+        <p>Subes al siguiente plan con un click. Te prorrateamos el cambio. También puedes pagar add-ons (usuarios extra, productos extra, documentos extra) sin cambiar de plan.</p>
+      </details>
+      <details>
+        <summary>¿Tengo que firmar contrato anual?</summary>
+        <p>No. Puedes pagar mensual sin permanencia. El plan anual tiene 17% de descuento (≈ 2 meses gratis), pero es elección tuya. Si cancelas, exportamos todos tus datos en CSV y Excel sin costo.</p>
+      </details>
+      <details>
+        <summary>¿Y si vengo de Bsale, Manager, Nubox u otro sistema?</summary>
+        <p>Te migramos gratis. Importamos productos, clientes, empresas y pasamos los CAF de Lioren si los tienes. El setup toma entre 1 y 5 días según tamaño de la base.</p>
+      </details>
+      <details>
+        <summary>¿Mis datos están seguros?</summary>
+        <p>Servidores en Chile, backups diarios automáticos, accesos por usuario con permisos granulares, 2FA disponible y obligatorio en planes superiores. Si cancelas, descargas todo lo tuyo y lo borramos.</p>
+      </details>
+      <details>
+        <summary>¿Funciona en celular?</summary>
+        <p>El navegador del celular está soportado para tareas frecuentes (consultar, aprobar, ver reportes). La app móvil dedicada está en roadmap.</p>
+      </details>
+      <details>
+        <summary>¿Y si solo necesito cotizar y todavía no facturo?</summary>
+        <p>Tenemos un plan gratis llamado <b>Conico Cotiza</b> con cotizaciones ilimitadas* hasta 20/mes, clientes y productos. Sin DTE, sin Notas de Venta. Cuando empieces a facturar, pasas a Starter.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== CTA FINAL ==================== -->
+<section class="cta-final" id="cta">
+  <div class="container">
+    <span class="eyebrow">Empieza ahora</span>
+    <h2 style="margin-top: 12px;">14 días gratis. Sin tarjeta. Sin compromiso.</h2>
+    <p>Activa tu cuenta en 90 segundos. Importa tus clientes y productos, emite tu primera factura, y deja que tu contador reciba el reporte automáticamente cada fin de mes.</p>
+    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+      <a href="/signup" class="btn btn-primary">Crear cuenta gratis →</a>
+      <a href="/demo" class="btn btn-ghost">Agendar demo de 20 min</a>
+    </div>
+    <div style="margin-top: 24px; font-size: 13px; color: var(--ink-mute);">
+      ¿Eres contador? <a href="/contadores">Conoce el programa de partners →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== FOOTER ==================== -->
+<footer>
+  <div class="container">
+    <div class="grid-foot">
+      <div>
+        <div class="logo" style="color: white; margin-bottom: 12px;">Coni<span>co</span></div>
+        <p style="color: #cbd5e1; font-size: 14px;">El software operativo de la Pyme chilena con contador externo.</p>
+        <p style="color: var(--ink-mute); font-size: 13px;">Hecho en Chile · Datos en Chile · Soporte en Chile</p>
+      </div>
+      <div>
+        <h4>Producto</h4>
+        <ul>
+          <li><a href="#producto">Funcionalidades</a></li>
+          <li><a href="#planes">Planes</a></li>
+          <li><a href="#comparacion">Comparación</a></li>
+          <li><a href="/demo">Demo</a></li>
+          <li><a href="/changelog">Cambios</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Recursos</h4>
+        <ul>
+          <li><a href="/contadores">Para contadores</a></li>
+          <li><a href="/blog">Blog</a></li>
+          <li><a href="/ayuda">Centro de ayuda</a></li>
+          <li><a href="/sii">Guía SII</a></li>
+          <li><a href="/api">API</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Empresa</h4>
+        <ul>
+          <li><a href="/contacto">Contacto</a></li>
+          <li><a href="/terminos">Términos</a></li>
+          <li><a href="/privacidad">Privacidad</a></li>
+          <li><a href="/seguridad">Seguridad</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="legal">
+      <span>© 2026 Conico SpA · RUT XX.XXX.XXX-X</span>
+      <span>contacto@conico.cl · +56 9 XXXX XXXX</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

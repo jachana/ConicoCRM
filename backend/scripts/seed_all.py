@@ -18,6 +18,13 @@ from app.models.empleado import Empleado
 from app.models.cotizacion import Cotizacion, CotizacionLinea
 from app.models.nota_venta import NotaVenta, NotaVentaLinea
 from app.models.factura import Factura, FacturaLinea
+from app.models.proveedor import Proveedor
+from app.models.orden_compra import OrdenCompra, OrdenCompraLinea
+from app.models.pago import Pago
+from app.models.nota_credito import NotaCredito, NotaCreditoLinea
+from app.models.nota_debito import NotaDebito, NotaDebitoLinea
+from app.models.guia_despacho import GuiaDespacho, GuiaDespachoLinea
+from app.models.boleta import Boleta, BoletaLinea
 from app.core.security import get_password_hash
 
 DATA_DIR = os.environ.get("DATA_SEED_DIR", "/data_seed")
@@ -169,7 +176,6 @@ def seed_empresas(db):
             razon_social=nombre.strip(),
             rut=str(rut).strip() if rut else None,
             forma_pago=row.get("Forma de Pago") or row.get("Forma de pago"),
-            prioridad=str(row.get("Prioridad")).strip() if row.get("Prioridad") else None,
             sector=row.get("Sector"),
             nota_cobranza=str(nota).strip() if nota else None,
             ubicacion=ubicacion,
@@ -453,6 +459,314 @@ def seed_facturas(db, notas):
     db.flush()
     print(f"  facturas: {created} created")
 
+NOMBRES_PROV = [
+    "Lubricantes del Norte",
+    "Distribuidora Pacífico",
+    "Química Industrial Copiapó",
+    "Aceites y Grasas del Sur",
+    "Suministros Mineros Atacama",
+    "Comercial Petroandina",
+    "Importadora TechLub",
+    "Proveedora Nacional de Lubricantes",
+]
+
+RAZONES_NC = [
+    "Devolución de mercadería",
+    "Error en precio",
+    "Descuento acordado",
+    "Producto defectuoso",
+    "Devolución parcial",
+    "Ajuste comercial",
+    "Exceso en facturación",
+    "Bonificación especial",
+]
+
+RAZONES_ND = [
+    "Diferencia de precio no facturada",
+    "Gastos de flete adicional",
+    "Recargo por mora",
+    "Ajuste por cambio de tipo de cambio",
+    "Intereses por pago atrasado",
+]
+
+
+def seed_proveedores(db):
+    if db.query(Proveedor).count():
+        print("  proveedores: already present, skipping")
+        return db.query(Proveedor).all()
+    created = 0
+    for nombre in NOMBRES_PROV:
+        contacto = gen_nombre()
+        db.add(Proveedor(
+            nombre=nombre,
+            rut=gen_rut(),
+            contacto=contacto,
+            email=gen_email(contacto),
+            telefono=f"+562{random.randint(20000000, 29999999)}",
+        ))
+        created += 1
+    db.flush()
+    print(f"  proveedores: {created} created")
+    return db.query(Proveedor).all()
+
+
+def seed_ordenes_compra(db, proveedores, productos):
+    if db.query(OrdenCompra).count():
+        print("  ordenes_compra: already present, skipping")
+        return db.query(OrdenCompra).all()
+    ESTADOS_OC = ["borrador", "borrador", "enviada", "enviada", "recibida"]
+    numero, created, ordenes = 80001, 0, []
+    for _ in range(15):
+        proveedor = random.choice(proveedores)
+        n_lineas = random.randint(1, 4)
+        items = random.sample(productos, min(n_lineas, len(productos)))
+        total_neto = Decimal("0")
+        linea_data = []
+        for i, prod in enumerate(items):
+            qty = random.randint(5, 50)
+            precio = prod.precio_costo if prod.precio_costo else Decimal("30000")
+            line_neto = (precio * qty).quantize(Decimal("1"))
+            iva = (line_neto * Decimal("0.19")).quantize(Decimal("1"))
+            total_neto += line_neto
+            linea_data.append(dict(
+                orden=i + 1,
+                producto_id=prod.id,
+                sku=prod.sku,
+                descripcion=prod.nombre,
+                cantidad=qty,
+                cantidad_recibida=qty if random.random() > 0.5 else 0,
+                valor_neto=precio,
+                total_neto=line_neto,
+                iva=iva,
+                total=line_neto + iva,
+            ))
+        total_iva = (total_neto * Decimal("0.19")).quantize(Decimal("1"))
+        fecha = rand_date(300)
+        oc = OrdenCompra(
+            numero=numero,
+            proveedor_id=proveedor.id,
+            fecha=fecha,
+            fecha_entrega_esperada=fecha + timedelta(days=random.randint(7, 30)),
+            estado=random.choice(ESTADOS_OC),
+            total_neto=total_neto,
+            total_iva=total_iva,
+            total=total_neto + total_iva,
+        )
+        db.add(oc); db.flush()
+        for ld in linea_data:
+            db.add(OrdenCompraLinea(orden_compra_id=oc.id, **ld))
+        ordenes.append(oc)
+        numero += 1; created += 1
+    db.flush()
+    print(f"  ordenes_compra: {created} created")
+    return ordenes
+
+
+def seed_pagos(db, facturas, admin_user):
+    if db.query(Pago).count():
+        print("  pagos: already present, skipping")
+        return
+    pagadas = [f for f in facturas if f.estado == "pagada"]
+    created = 0
+    for f in pagadas:
+        monto = f.monto_pagado if f.monto_pagado else f.total
+        db.add(Pago(
+            factura_id=f.id,
+            fecha=f.fecha_pago if f.fecha_pago else f.fecha,
+            monto=monto,
+            metodo_pago=f.metodo_pago if f.metodo_pago else "Transferencia",
+            registrado_por_id=admin_user.id,
+        ))
+        created += 1
+    db.flush()
+    print(f"  pagos: {created} created")
+
+
+def seed_notas_credito(db, clientes):
+    if db.query(NotaCredito).count():
+        print("  notas_credito: already present, skipping")
+        return
+    numero, created = 70001, 0
+    for razon in RAZONES_NC:
+        cliente = random.choice(clientes)
+        monto_neto = Decimal(str(random.randint(10, 500) * 1000))
+        monto_iva = (monto_neto * Decimal("0.19")).quantize(Decimal("1"))
+        monto_total = monto_neto + monto_iva
+        nc = NotaCredito(
+            numero=numero,
+            fecha=rand_date(200),
+            cliente_id=cliente.id,
+            razon=razon,
+            monto_neto=monto_neto,
+            monto_iva=monto_iva,
+            monto_total=monto_total,
+        )
+        db.add(nc); db.flush()
+        n_lineas = random.randint(1, 3)
+        for i in range(n_lineas):
+            precio_unit = (monto_neto / n_lineas).quantize(Decimal("1"))
+            db.add(NotaCreditoLinea(
+                nota_credito_id=nc.id,
+                orden=i + 1,
+                descripcion=razon,
+                cantidad=Decimal("1"),
+                precio_unitario=precio_unit,
+                subtotal=precio_unit,
+            ))
+        numero += 1; created += 1
+    db.flush()
+    print(f"  notas_credito: {created} created")
+
+
+def seed_notas_debito(db, clientes):
+    if db.query(NotaDebito).count():
+        print("  notas_debito: already present, skipping")
+        return
+    numero, created = 75001, 0
+    for razon in RAZONES_ND:
+        cliente = random.choice(clientes)
+        monto_neto = Decimal(str(random.randint(5, 200) * 1000))
+        monto_iva = (monto_neto * Decimal("0.19")).quantize(Decimal("1"))
+        monto_total = monto_neto + monto_iva
+        nd = NotaDebito(
+            numero=numero,
+            fecha=rand_date(180),
+            cliente_id=cliente.id,
+            razon=razon,
+            monto_neto=monto_neto,
+            monto_iva=monto_iva,
+            monto_total=monto_total,
+        )
+        db.add(nd); db.flush()
+        n_lineas = random.randint(1, 2)
+        for i in range(n_lineas):
+            precio_unit = (monto_neto / n_lineas).quantize(Decimal("1"))
+            db.add(NotaDebitoLinea(
+                nota_debito_id=nd.id,
+                orden=i + 1,
+                descripcion=razon,
+                cantidad=Decimal("1"),
+                precio_unitario=precio_unit,
+                subtotal=precio_unit,
+            ))
+        numero += 1; created += 1
+    db.flush()
+    print(f"  notas_debito: {created} created")
+
+
+def seed_guias_despacho(db, clientes, empresas, productos):
+    if db.query(GuiaDespacho).count():
+        print("  guias_despacho: already present, skipping")
+        return
+    # motivo_traslado: 1=venta, 2=compra, 3=consignación, 5=traslado
+    MOTIVOS = [1, 1, 1, 2, 3, 5]
+    numero, created = 65001, 0
+    for _ in range(10):
+        cliente = random.choice(clientes)
+        empresa = random.choice(empresas) if random.random() > 0.4 else None
+        n_lineas = random.randint(1, 4)
+        items = random.sample(productos, min(n_lineas, len(productos)))
+        total_neto = Decimal("0")
+        linea_data = []
+        for i, prod in enumerate(items):
+            qty = Decimal(str(random.randint(1, 10)))
+            precio = prod.precio_venta if prod.precio_venta else Decimal("50000")
+            line_neto = (precio * qty).quantize(Decimal("1"))
+            iva = (line_neto * Decimal("0.19")).quantize(Decimal("1"))
+            total_neto += line_neto
+            linea_data.append(dict(
+                orden=i + 1,
+                producto_id=prod.id,
+                descripcion=prod.nombre,
+                cantidad=qty,
+                precio_unitario=precio,
+                descuento_pct=Decimal("0"),
+                exenta=False,
+                total_neto=line_neto,
+                iva=iva,
+                total_linea=line_neto + iva,
+            ))
+        total_iva = (total_neto * Decimal("0.19")).quantize(Decimal("1"))
+        gd = GuiaDespacho(
+            numero=numero,
+            fecha=rand_date(300),
+            motivo_traslado=random.choice(MOTIVOS),
+            direccion_destino=f"Av. {random.choice(APELLIDOS)} {random.randint(100, 9999)}",
+            comuna_destino=random.choice(COMUNAS),
+            cliente_id=cliente.id,
+            empresa_id=empresa.id if empresa else None,
+            estado="emitida",
+            total_neto=total_neto,
+            total_iva=total_iva,
+            total=total_neto + total_iva,
+        )
+        db.add(gd); db.flush()
+        for ld in linea_data:
+            db.add(GuiaDespachoLinea(guia_despacho_id=gd.id, **ld))
+        numero += 1; created += 1
+    db.flush()
+    print(f"  guias_despacho: {created} created")
+
+
+def seed_boletas(db, clientes, productos, vendedores):
+    if db.query(Boleta).count():
+        print("  boletas: already present, skipping")
+        return
+    TIPOS_DTE = ["39", "39", "39", "41"]
+    METODOS = ["efectivo", "efectivo", "debito", "credito", "transferencia"]
+    numero, created = 90001, 0
+    for _ in range(12):
+        cliente = random.choice(clientes) if random.random() > 0.3 else None
+        vendedor = random.choice(vendedores)
+        tipo = random.choice(TIPOS_DTE)
+        n_lineas = random.randint(1, 4)
+        items = random.sample(productos, min(n_lineas, len(productos)))
+        total_neto = Decimal("0")
+        linea_data = []
+        for i, prod in enumerate(items):
+            qty = Decimal(str(random.randint(1, 5)))
+            precio = prod.precio_venta if prod.precio_venta else Decimal("50000")
+            exenta = tipo == "41"
+            line_neto = (precio * qty).quantize(Decimal("1"))
+            iva = Decimal("0") if exenta else (line_neto * Decimal("0.19")).quantize(Decimal("1"))
+            total_neto += line_neto
+            linea_data.append(dict(
+                orden=i + 1,
+                producto_id=prod.id,
+                descripcion=prod.nombre,
+                cantidad=qty,
+                precio_unitario=precio,
+                descuento_pct=Decimal("0"),
+                exenta=exenta,
+                total_neto=line_neto,
+                iva=iva,
+                total_linea=line_neto + iva,
+            ))
+        total_iva = Decimal("0") if tipo == "41" else (total_neto * Decimal("0.19")).quantize(Decimal("1"))
+        total = total_neto + total_iva
+        b = Boleta(
+            numero=numero,
+            fecha=rand_date(200),
+            tipo_dte=tipo,
+            cliente_id=cliente.id if cliente else None,
+            nombre_receptor=cliente.nombre if cliente else None,
+            rut_receptor=cliente.rut if cliente else None,
+            vendedor_id=vendedor.id,
+            metodo_pago=random.choice(METODOS),
+            total_neto=total_neto,
+            total_iva=total_iva,
+            total=total,
+            monto_pagado=total,
+            estado="emitida",
+        )
+        db.add(b); db.flush()
+        for ld in linea_data:
+            db.add(BoletaLinea(boleta_id=b.id, **ld))
+        numero += 1; created += 1
+    db.flush()
+    print(f"  boletas: {created} created")
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -461,6 +775,7 @@ def main():
         print("Seeding Conico database...\n")
 
         users = seed_users(db)
+        admin_user = next((u for u in users if u.role == "admin"), users[0])
         vendedores = [u for u in users if u.role == "vendedor"]
         if not vendedores:
             vendedores = users  # fallback: use any available user
@@ -473,6 +788,15 @@ def main():
         cotizaciones = seed_cotizaciones(db, clientes, vendedores, empresas, productos)
         notas = seed_notas_venta(db, cotizaciones, clientes, vendedores, empresas, productos)
         seed_facturas(db, notas)
+
+        facturas = db.query(Factura).all()
+        proveedores = seed_proveedores(db)
+        seed_ordenes_compra(db, proveedores, productos)
+        seed_pagos(db, facturas, admin_user)
+        seed_notas_credito(db, clientes)
+        seed_notas_debito(db, clientes)
+        seed_guias_despacho(db, clientes, empresas, productos)
+        seed_boletas(db, clientes, productos, vendedores)
 
         db.commit()
         print("\nDone.")

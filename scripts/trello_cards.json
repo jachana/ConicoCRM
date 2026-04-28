@@ -94,64 +94,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "[Bug:Datos] \"Límite de crédito\" duplica \"Línea de crédito\"",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "DECISIÓN: Conservar solo 'linea_credito'. Dropar 'limite_credito' del modelo Empresa. Migración Alembic + actualizar API/schemas/UI.",
-      "checklist": [
-        "Mapear todos los usos de cada campo (modelo, API, UI, reportes, lógica crédito)",
-        "Decidir: merge en uno solo vs renombrar con semántica distinta",
-        "Migración Alembic (drop o rename + backfill)",
-        "Ajustar AprobacionCredito + GET /empresas/{id}/credito",
-        "Actualizar UI EmpresaModal + filtros + export",
-        "Migración Alembic: drop columna limite_credito",
-        "Remover limite_credito de schemas Pydantic y serializers",
-        "Ajustar AprobacionCredito + GET /empresas/{id}/credito → usar linea_credito",
-        "Actualizar UI EmpresaModal: quitar campo Límite, renombrar Línea si hace falta",
-        "Grep frontend/backend por 'limite_credito' y limpiar referencias"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Datos] \"Forma de pago\" duplica \"Plazo de Crédito\"",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "DECISIÓN: Son distintos — forma_pago=método (efectivo/transferencia/cheque/crédito), plazo_credito=días. Convertir forma_pago de texto libre a select con opciones fijas. Cuando forma=efectivo/transferencia/cheque → plazo se fuerza a 0.",
-      "checklist": [
-        "Mapear usos de forma_pago vs plazo_credito en backend + UI",
-        "Decidir semántica: método vs plazo (o merge)",
-        "Migración Alembic + backfill desde valores existentes",
-        "Ajustar enforce al_contado (Sprint A) y FacturaDetalle banco/método",
-        "Actualizar formularios Empresa/Cliente/Cotización/NV/Factura",
-        "Definir enum FormaPago: efectivo, transferencia, cheque, credito",
-        "Migración Alembic: cambiar columna a String con CHECK constraint o enum",
-        "Backend: validar forma_pago en schemas Pydantic con Literal/Enum",
-        "Frontend: reemplazar Input por Select en Empresa/Cliente/Cotización/NV/Factura",
-        "Lógica: forma≠credito → forzar plazo_credito=0 en formularios"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Cobranza] Facturas y Cobranza muestran data duplicada sin diferenciación",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "DECISIÓN: Mantener separadas con scope diferenciado. /facturas = todas las facturas. /cobranza = solo pendientes (emitida/parcial), con aging y recordatorios. Backend ya filtra por _PENDIENTES; ajustar frontend Cobranza.tsx para no listar facturas pagadas/anuladas.",
-      "checklist": [
-        "Decidir alcance /cobranza vs /facturas",
-        "Si (a): /cobranza default a vencidas + próximas a vencer + antigüedad",
-        "Si (b): mover bandejas como tab dentro de /facturas y eliminar ruta",
-        "Documentar decisión en CLAUDE.md o PROGRESS.md",
-        "Ajustar sidebar y permisos resultantes"
-      ]
-    },
-    {
       "list": "Client feedback",
       "name": "[Cobranza] Envío automático de recordatorios",
       "labels": [
@@ -983,6 +925,48 @@
     },
     {
       "list": "In review",
+      "name": "[Bug:Datos] \"Límite de crédito\" duplica \"Línea de crédito\"",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "DECISIÓN: Conservar solo 'linea_credito'. Dropar 'limite_credito' del modelo Empresa. Migración Alembic + actualizar API/schemas/UI.",
+      "checklist": [
+        "Mapear todos los usos de cada campo (modelo, API, UI, reportes, lógica crédito)",
+        "Decidir: merge en uno solo vs renombrar con semántica distinta",
+        "Migración Alembic (drop o rename + backfill)",
+        "Ajustar AprobacionCredito + GET /empresas/{id}/credito",
+        "Actualizar UI EmpresaModal + filtros + export",
+        "Migración Alembic: drop columna limite_credito",
+        "Remover limite_credito de schemas Pydantic y serializers",
+        "Ajustar AprobacionCredito + GET /empresas/{id}/credito → usar linea_credito",
+        "Actualizar UI EmpresaModal: quitar campo Límite, renombrar Línea si hace falta",
+        "Grep frontend/backend por 'limite_credito' y limpiar referencias"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:Datos] \"Forma de pago\" duplica \"Plazo de Crédito\"",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "DECISIÓN: Son distintos — forma_pago=método (efectivo/transferencia/cheque/crédito), plazo_credito=días. Convertir forma_pago de texto libre a select con opciones fijas. Cuando forma=efectivo/transferencia/cheque → plazo se fuerza a 0.",
+      "checklist": [
+        "Mapear usos de forma_pago vs plazo_credito en backend + UI",
+        "Decidir semántica: método vs plazo (o merge)",
+        "Migración Alembic + backfill desde valores existentes",
+        "Ajustar enforce al_contado (Sprint A) y FacturaDetalle banco/método",
+        "Actualizar formularios Empresa/Cliente/Cotización/NV/Factura",
+        "Definir enum FormaPago: efectivo, transferencia, cheque, credito",
+        "Migración Alembic: cambiar columna a String con CHECK constraint o enum",
+        "Backend: validar forma_pago en schemas Pydantic con Literal/Enum",
+        "Frontend: reemplazar Input por Select en Empresa/Cliente/Cotización/NV/Factura",
+        "Lógica: forma≠credito → forzar plazo_credito=0 en formularios"
+      ]
+    },
+    {
+      "list": "In review",
       "name": "[Bug:Sidebar] Click en \"Listas de precios\" resalta también \"Inventario\"",
       "labels": [
         "Bug",
@@ -1024,6 +1008,22 @@
         "Revisar seed ReglaTarea (descripcion/labels)",
         "Grep en frontend de strings EN restantes en módulo tareas (\"owner\", \"created\", \"due\", etc.)",
         "Confirmar consistencia con resto de módulos"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:Cobranza] Facturas y Cobranza muestran data duplicada sin diferenciación",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "DECISIÓN: Mantener separadas con scope diferenciado. /facturas = todas las facturas. /cobranza = solo pendientes (emitida/parcial), con aging y recordatorios. Backend ya filtra por _PENDIENTES; ajustar frontend Cobranza.tsx para no listar facturas pagadas/anuladas.",
+      "checklist": [
+        "Decidir alcance /cobranza vs /facturas",
+        "Si (a): /cobranza default a vencidas + próximas a vencer + antigüedad",
+        "Si (b): mover bandejas como tab dentro de /facturas y eliminar ruta",
+        "Documentar decisión en CLAUDE.md o PROGRESS.md",
+        "Ajustar sidebar y permisos resultantes"
       ]
     }
   ]

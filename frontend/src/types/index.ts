@@ -56,7 +56,6 @@ export interface Empresa {
   forma_pago: string | null
   linea_credito: number | null
   plazo_credito: string | null
-  prioridad: string | null
   sector: string | null
   email: string | null
   nota_cobranza: string | null

@@ -18,8 +18,7 @@ interface Props {
 export default function EmpresaDetailModal({ empresa, onClose, onEdit }: Props) {
   if (!empresa) return null
 
-  const subtitle = [empresa.rut, empresa.sector, empresa.prioridad ? `Prioridad ${empresa.prioridad}` : null]
-    .filter(Boolean).join(' · ')
+  const subtitle = [empresa.rut, empresa.sector].filter(Boolean).join(' · ')
 
   return (
     <Modal open onOpenChange={(o) => { if (!o) onClose() }}>

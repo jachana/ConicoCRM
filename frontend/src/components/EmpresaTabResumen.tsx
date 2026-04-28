@@ -39,7 +39,6 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
         <Field label="Sector" value={empresa.sector ?? '—'} />
         <Field label="Forma de Pago" value={empresa.forma_pago ?? '—'} />
         <Field label="Plazo de Crédito" value={empresa.plazo_credito ?? '—'} />
-        <Field label="Prioridad" value={empresa.prioridad ?? '—'} />
         <Field label="Línea de Crédito" value={fmtMoney(empresa.linea_credito)} />
         <Field label="Última Compra" value={fmtDate(empresa.ultima_compra)} highlight />
         <Field label="Email" value={empresa.email ?? '—'} />

@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import MisPendientesWidget from '../MisPendientesWidget'
 import { useEffectivePermissions } from '../../hooks/useEffectivePermissions'
+import { usePreferencesStore } from '../../stores/preferences'
 import type { Module } from '../../types'
 
 interface SidebarProps {
@@ -105,6 +106,7 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
 
   const { permissions: myPermissions, role: effectiveRole } = useEffectivePermissions()
   const isAdminUser = effectiveRole === 'admin' || effectiveRole === 'subadmin'
+  const sidebarHidden = usePreferencesStore(s => s.preferencias.sidebar_hidden ?? [])
 
   const canViewInventario = !!user && effectiveRole !== 'vendedor' && myPermissions?.inventario?.view !== false
 
@@ -126,6 +128,7 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
   const aprobacionesCount = aprobacionesPendientes.length
 
   const isVisible = (item: NavItem) =>
+    !sidebarHidden.includes(item.to) &&
     (!item.module || myPermissions?.[item.module]?.view !== false) &&
     (!item.adminOnly || isAdminUser)
 

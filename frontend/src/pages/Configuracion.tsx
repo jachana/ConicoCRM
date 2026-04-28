@@ -100,6 +100,8 @@ export default function Configuracion() {
 
       {isAdmin && <ViewAsSection />}
 
+      {isAdmin && <SidebarSection />}
+
       {isAdmin && isLoading ? (
         <div className="space-y-5">
           {[0, 1, 2].map(i => (
@@ -274,6 +276,84 @@ function ViewAsSection() {
           <Button onClick={handleActivate} disabled={!selectedId}>Activar</Button>
         </div>
       )}
+    </Card>
+  )
+}
+
+const SIDEBAR_ITEMS: { to: string; label: string }[] = [
+  { to: '/',                          label: 'Dashboard' },
+  { to: '/aprobaciones',              label: 'Aprobaciones' },
+  { to: '/tareas',                    label: 'Tareas' },
+  { to: '/clientes',                  label: 'Clientes' },
+  { to: '/empresas',                  label: 'Empresas' },
+  { to: '/cotizaciones',              label: 'Cotizaciones' },
+  { to: '/notas-venta',               label: 'Notas de Venta' },
+  { to: '/catalogo',                  label: 'Catálogo' },
+  { to: '/inventario',                label: 'Inventario' },
+  { to: '/inventario/listas-precios', label: 'Listas de precios' },
+  { to: '/cobranza',                  label: 'Cobranza' },
+  { to: '/facturas',                  label: 'Facturas' },
+  { to: '/boletas',                   label: 'Boletas' },
+  { to: '/guias-despacho',            label: 'Guías de Despacho' },
+  { to: '/notas-credito',             label: 'Notas de Crédito' },
+  { to: '/notas-debito',              label: 'Notas de Débito' },
+  { to: '/pagos',                     label: 'Pagos' },
+  { to: '/ordenes-compra',            label: 'Órdenes de Compra' },
+  { to: '/proveedores',               label: 'Proveedores' },
+  { to: '/reportes',                  label: 'Reportes' },
+  { to: '/rrhh',                      label: 'RRHH' },
+  { to: '/usuarios',                  label: 'Usuarios' },
+  { to: '/configuracion',             label: 'Configuración' },
+  { to: '/admin/tareas/config',       label: 'Reglas de tareas' },
+  { to: '/admin/auditoria',           label: 'Auditoría' },
+]
+
+function SidebarSection() {
+  const hidden = usePreferencesStore(s => s.preferencias.sidebar_hidden ?? [])
+  const setSidebarHidden = usePreferencesStore(s => s.setSidebarHidden)
+  const [saving, setSaving] = useState<string | null>(null)
+
+  async function handleToggle(to: string, currentlyVisible: boolean) {
+    const updated = currentlyVisible
+      ? [...hidden, to]
+      : hidden.filter(h => h !== to)
+    setSaving(to)
+    try {
+      const result = await patchPreferencias({ sidebar_hidden: updated })
+      setSidebarHidden(result.sidebar_hidden ?? updated)
+    } catch {
+      toast.error('Error al guardar')
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  return (
+    <Card padded>
+      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Visibilidad del sidebar</h2>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+        Activa o desactiva los ítems que aparecen en el menú lateral. Esto afecta solo tu cuenta.
+      </p>
+      <div className="space-y-1">
+        {SIDEBAR_ITEMS.map(item => {
+          const isVisible = !hidden.includes(item.to)
+          return (
+            <label
+              key={item.to}
+              className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 py-0.5 cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                checked={isVisible}
+                disabled={saving === item.to}
+                onChange={() => handleToggle(item.to, isVisible)}
+                className="rounded border-gray-300 dark:border-gray-700 text-brand-500 focus:ring-brand-500"
+              />
+              {item.label}
+            </label>
+          )
+        })}
+      </div>
     </Card>
   )
 }

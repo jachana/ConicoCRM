@@ -7,7 +7,7 @@ import type { Empresa, EmpresaListItem, DeudaBulkItem, SedeDespacho } from '../t
 import EmpresaFilters from '../components/EmpresaFilters'
 import EmpresaDetailModal from '../components/EmpresaDetailModal'
 import {
-  Button, Input, Textarea, Badge, EmptyState, Skeleton, FormField,
+  Button, Input, Textarea, EmptyState, Skeleton, FormField,
   Card, CardContent,
   Table, THead, TBody, TR, TH, TD,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
@@ -28,7 +28,6 @@ type FormData = {
   forma_pago: string
   linea_credito: string
   plazo_credito: string
-  prioridad: string
   sector: string
   email: string
   nota_cobranza: string
@@ -38,16 +37,10 @@ type FormData = {
 const EMPTY_FORM: FormData = {
   nombre: '', razon_social: '', rut: '', forma_pago: '',
   linea_credito: '', plazo_credito: '',
-  prioridad: '', sector: '', email: '', nota_cobranza: '', ubicacion: '',
+  sector: '', email: '', nota_cobranza: '', ubicacion: '',
 }
 
-type SortField = 'nombre' | 'rut' | 'sector' | 'forma_pago' | 'prioridad' | 'ultima_compra' | 'deuda_total' | 'deuda_vencida'
-
-const PRIORIDAD_VARIANT: Record<string, 'brand' | 'info' | 'neutral'> = {
-  Alta:  'brand',
-  Media: 'info',
-  Baja:  'neutral',
-}
+type SortField = 'nombre' | 'rut' | 'sector' | 'forma_pago' | 'ultima_compra' | 'deuda_total' | 'deuda_vencida'
 
 function fmt(n: number) {
   return '$' + n.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -155,7 +148,7 @@ export default function Empresas() {
       forma_pago: e.forma_pago ?? '',
       linea_credito: e.linea_credito != null ? String(e.linea_credito) : '',
       plazo_credito: e.plazo_credito ?? '',
-      prioridad: e.prioridad ?? '', sector: e.sector ?? '',
+      sector: e.sector ?? '',
       email: e.email ?? '', nota_cobranza: e.nota_cobranza ?? '', ubicacion: e.ubicacion ?? '',
     })
     setError(null); setModalOpen(true)
@@ -266,7 +259,6 @@ export default function Empresas() {
     { field: 'rut',           label: 'RUT' },
     { field: 'sector',        label: 'Sector' },
     { field: 'forma_pago',    label: 'Forma Pago' },
-    { field: 'prioridad',     label: 'Prioridad' },
     { field: 'ultima_compra', label: 'Última Compra' },
     { field: 'deuda_total',   label: 'Deuda',   align: 'right' },
     { field: 'deuda_vencida', label: 'Vencida', align: 'right' },
@@ -374,11 +366,6 @@ export default function Empresas() {
                       <TD className="text-gray-500 dark:text-gray-400 font-num">{e.rut ?? '—'}</TD>
                       <TD className="text-gray-500 dark:text-gray-400">{e.sector ?? '—'}</TD>
                       <TD className="text-gray-500 dark:text-gray-400">{e.forma_pago ?? '—'}</TD>
-                      <TD>
-                        {e.prioridad
-                          ? <Badge variant={PRIORIDAD_VARIANT[e.prioridad] ?? 'neutral'} size="sm">{e.prioridad}</Badge>
-                          : <span className="text-gray-400">—</span>}
-                      </TD>
                       <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">
                         {e.ultima_compra
                           ? new Date(e.ultima_compra + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -492,10 +479,6 @@ export default function Empresas() {
                     </SelectContent>
                   </Select>
                 </FormField>
-                <FormField label="Prioridad">
-                  <Input value={form.prioridad} onChange={e => setForm(f => ({ ...f, prioridad: e.target.value }))} />
-                </FormField>
-
                 <FormField label="Sector">
                   <Input value={form.sector} onChange={e => setForm(f => ({ ...f, sector: e.target.value }))} />
                 </FormField>

@@ -5,6 +5,7 @@ export type AtajoBusqueda = 'ctrl_k' | 'ctrl_p' | 'ctrl_shift_f' | 'alt_s'
 export interface Preferencias {
   busqueda_boton_visible: boolean
   busqueda_atajo: AtajoBusqueda
+  sidebar_hidden: string[]
 }
 
 export async function getPreferencias(): Promise<Preferencias> {

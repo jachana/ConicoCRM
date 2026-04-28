@@ -10,7 +10,6 @@ class EmpresaBase(BaseModel):
     forma_pago: str | None = None
     linea_credito: Decimal | None = None
     plazo_credito: str | None = None
-    prioridad: str | None = None
     sector: str | None = None
     email: str | None = None
     nota_cobranza: str | None = None
@@ -28,7 +27,6 @@ class EmpresaUpdate(BaseModel):
     forma_pago: str | None = None
     linea_credito: Decimal | None = None
     plazo_credito: str | None = None
-    prioridad: str | None = None
     sector: str | None = None
     email: str | None = None
     nota_cobranza: str | None = None

@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Conico — Estado del Producto (2026-04-24)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root {
+    --bg: #0b0d10;
+    --panel: #14181d;
+    --panel-2: #1b2128;
+    --fg: #e7ecf2;
+    --muted: #8c97a3;
+    --accent: #4f8cff;
+    --ok: #46c47c;
+    --warn: #f5a524;
+    --bad: #ef4444;
+    --border: #232a32;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, system-ui, sans-serif; }
+  body { padding: 32px 24px 96px; max-width: 1100px; margin: 0 auto; line-height: 1.5; }
+  h1 { font-size: 32px; margin: 0 0 4px; letter-spacing: -0.02em; }
+  h2 { font-size: 22px; margin: 36px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); letter-spacing: -0.01em; }
+  h3 { font-size: 16px; margin: 24px 0 8px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; }
+  p, li { color: var(--fg); }
+  .meta { color: var(--muted); font-size: 13px; }
+  .grid { display: grid; gap: 12px; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 720px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .kpi { display: flex; flex-direction: column; gap: 4px; }
+  .kpi .num { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+  .kpi .label { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: top; }
+  th { background: var(--panel-2); color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.06em; }
+  tr:last-child td { border-bottom: none; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; }
+  .pill-ok { background: rgba(70,196,124,.12); color: var(--ok); }
+  .pill-warn { background: rgba(245,165,36,.12); color: var(--warn); }
+  .pill-bad { background: rgba(239,68,68,.12); color: var(--bad); }
+  .pill-muted { background: rgba(140,151,163,.12); color: var(--muted); }
+  .tier { font-weight: 700; color: var(--accent); }
+  ul { padding-left: 20px; }
+  code { background: var(--panel-2); padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 32px 0; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .footer { margin-top: 64px; color: var(--muted); font-size: 12px; }
+  @media print {
+    body { background: white; color: black; }
+    .card, table { background: white; border: 1px solid #ddd; }
+    th { background: #f6f6f6; color: #333; }
+    h1, h2, h3 { color: black; }
+    .pill-ok { background: #e7f7ee; color: #1a7f3c; }
+    .pill-warn { background: #fff4e0; color: #8a5a00; }
+    .pill-bad { background: #fde8e8; color: #a01a1a; }
+    .pill-muted { background: #eee; color: #555; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Conico — Estado del Producto</h1>
+  <p class="meta">Análisis profundo · CRM/ERP para Pymes chilenas · Snapshot 2026-04-24</p>
+</header>
+
+<section>
+  <h2>1. KPIs de implementación</h2>
+  <div class="grid grid-4">
+    <div class="card kpi"><span class="num">15</span><span class="label">Módulos productivos</span></div>
+    <div class="card kpi"><span class="num">38</span><span class="label">Modelos SQLAlchemy</span></div>
+    <div class="card kpi"><span class="num">37</span><span class="label">Routers API</span></div>
+    <div class="card kpi"><span class="num">36</span><span class="label">Páginas frontend</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Capacidades implementadas (qué ya está)</h2>
+
+  <h3>Núcleo comercial</h3>
+  <table>
+    <thead><tr><th>Módulo</th><th>Alcance</th><th>Estado</th></tr></thead>
+    <tbody>
+      <tr><td>Auth + permisos</td><td>JWT access/refresh, 3 roles, toggles módulo×acción por usuario, vendedor scoping</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Empresas</td><td>CRUD, tabs (clientes, facturas, productos, cotizaciones), sedes de despacho 1..N, control de crédito</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Clientes</td><td>CRUD, búsqueda RUT/nombre, campos CRM (forma_pago, captación, compromiso, último_contacto)</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Productos v2</td><td>Marcas, IVA configurable, documentos PDF, listas de precios (Excel/CSV), stale-cost, sugerencias por historial</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Cotizaciones</td><td>Numeración correlativa, validez_dias, descuento por línea, márgenes, PDF, email SMTP, autocomplete con búsqueda por SKU/tag</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Notas de Venta</td><td>Generación desde cero o desde cotización, sede de despacho, retiro en local, descuento de stock, chain locking</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Facturas</td><td>Generación desde NV, banco receptor, método pago, fecha vencimiento, pagos parciales (Pagos 1..N)</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Notas de Crédito / Débito</td><td>Modelo, líneas, razón, integración DTE 61/56</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Pagos</td><td>1..N por factura, métodos múltiples, estado parcial</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Órdenes de Compra</td><td>CRUD, recepción parcial/total, PDF, email proveedor, alimenta inventario</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Inventario</td><td>Stock, movimientos (entrada/salida/ajuste), alertas stock bajo, historial</td><td><span class="pill pill-ok">listo</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Capacidades CRM avanzadas</h3>
+  <table>
+    <thead><tr><th>Módulo</th><th>Alcance</th><th>Estado</th></tr></thead>
+    <tbody>
+      <tr><td>Aprobaciones de crédito</td><td>NV que excede cupo se materializa solo tras aprobación admin (payload JSON)</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Aprobaciones de margen</td><td>Vendedor propone valor_neto por línea, admin aprueba; "latest wins"</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Aprobaciones de costo</td><td>Cambios en lista de precios sujetos a aprobación</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Cobranza</td><td>Vista dedicada, configuración de frecuencia por empresa, recordatorio manual</td><td><span class="pill pill-warn">parcial</span></td></tr>
+      <tr><td>Reportes</td><td>Por marca (4 hojas Excel + CSV), filtros multi-cliente, KPIs (ganancia, margen, ticket)</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Tareas + recordatorios</td><td>6 reglas auto-generadas (Celery horario), idempotencia por dedup_key, /tareas + widget sidebar + timeline por entidad</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Búsqueda global Cmd+K</td><td>Fan-out a 8 entidades, permission-aware, atajo configurable</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>Dashboard configurable</td><td>8 widgets, drag-and-drop, layout por rol, templates predefinidos</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>RRHH</td><td>Empleados, documentos en disco, vacaciones</td><td><span class="pill pill-ok">listo</span></td></tr>
+      <tr><td>DTE / SII</td><td>Factura electrónica 33, NC 61, ND 56 vía Lioren; webhook HMAC; Celery polling</td><td><span class="pill pill-warn">núcleo listo, faltan tipos</span></td></tr>
+    </tbody>
+  </table>
+
+  <p class="meta">Total módulos productivos: 15 · 11 verdes, 4 amarillos.</p>
+</section>
+
+<section>
+  <h2>3. Brecha vs CRM/ERP estándar para Pymes chilenas</h2>
+  <p class="legend">
+    <span><span class="pill pill-bad">crítico</span> bloquea venta/uso real en Pyme</span>
+    <span><span class="pill pill-warn">importante</span> diferenciador competitivo</span>
+    <span><span class="pill pill-muted">deseable</span> nice to have</span>
+  </p>
+
+  <h3>Tributario / SII</h3>
+  <table>
+    <thead><tr><th>Capacidad</th><th>Estado</th><th>Prioridad</th></tr></thead>
+    <tbody>
+      <tr><td>Factura electrónica DTE 33</td><td>Listo (Lioren)</td><td><span class="pill pill-ok">—</span></td></tr>
+      <tr><td>Nota de crédito DTE 61</td><td>Listo</td><td><span class="pill pill-ok">—</span></td></tr>
+      <tr><td>Nota de débito DTE 56</td><td>Listo</td><td><span class="pill pill-ok">—</span></td></tr>
+      <tr><td>Boleta electrónica DTE 39 / exenta 41</td><td>No</td><td><span class="pill pill-bad">crítico</span></td></tr>
+      <tr><td>Guía de despacho electrónica DTE 52</td><td>No</td><td><span class="pill pill-bad">crítico</span></td></tr>
+      <tr><td>Factura exenta DTE 34 / Factura de compra DTE 46</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Recepción/intercambio DTE de proveedores</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Libro de compras / ventas electrónico</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Propuesta F29 (códigos por mes)</td><td>No</td><td><span class="pill pill-muted">deseable</span></td></tr>
+      <tr><td>Acuse de recibo (RCV)</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Finanzas</h3>
+  <table>
+    <thead><tr><th>Capacidad</th><th>Estado</th><th>Prioridad</th></tr></thead>
+    <tbody>
+      <tr><td>Multi-moneda + tipo de cambio + UF</td><td>No (asume CLP)</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Conciliación bancaria (cartola → pagos)</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Cuentas por cobrar / pagar (aging completo)</td><td>Parcial (cobranza ventas)</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Estado de resultado / cash flow básico</td><td>No</td><td><span class="pill pill-muted">deseable</span></td></tr>
+      <tr><td>Comisiones a vendedores</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Facturación recurrente (suscripciones)</td><td>No</td><td><span class="pill pill-muted">deseable</span></td></tr>
+      <tr><td>Centros de costo</td><td>No</td><td><span class="pill pill-muted">deseable</span></td></tr>
+      <tr><td>Exportación a contabilidad (Defontana, Softland, Manager, ContaNet)</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>CRM puro</h3>
+  <table>
+    <thead><tr><th>Capacidad</th><th>Estado</th><th>Prioridad</th></tr></thead>
+    <tbody>
+      <tr><td>Pipeline / oportunidades (kanban)</td><td>No</td><td><span class="pill pill-bad">crítico</span></td></tr>
+      <tr><td>Timeline unificado por cliente/empresa</td><td>Parcial (tareas timeline; falta cotis/NV/facturas/notas/llamadas en una vista)</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Notas y llamadas registradas</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Notificaciones in-app + email digest</td><td>No (solo tareas)</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Customer portal (cliente ve sus facturas/cotizaciones)</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Marketing: campañas / segmentos / leads</td><td>No</td><td><span class="pill pill-muted">deseable</span></td></tr>
+      <tr><td>Plantillas de email configurables</td><td>No</td><td><span class="pill pill-muted">deseable</span></td></tr>
+      <tr><td>Bulk actions en tablas</td><td>No</td><td><span class="pill pill-muted">deseable</span></td></tr>
+      <tr><td>Importación masiva clientes/empresas (Excel)</td><td>Parcial (productos sí; clientes/empresas falta)</td><td><span class="pill pill-warn">importante</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Operación / inventario</h3>
+  <table>
+    <thead><tr><th>Capacidad</th><th>Estado</th><th>Prioridad</th></tr></thead>
+    <tbody>
+      <tr><td>Multi-bodega</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Trazabilidad por lote / serie</td><td>Parcial (Lotes existen en ProductoModal)</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Punto de venta (POS) con boleta</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Códigos de barra / lectura</td><td>No</td><td><span class="pill pill-muted">deseable</span></td></tr>
+      <tr><td>Conversiones de unidad / packs</td><td>No (campo formato libre)</td><td><span class="pill pill-muted">deseable</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Plataforma / no funcionales</h3>
+  <table>
+    <thead><tr><th>Capacidad</th><th>Estado</th><th>Prioridad</th></tr></thead>
+    <tbody>
+      <tr><td>Auditoría / activity log</td><td>No</td><td><span class="pill pill-bad">crítico</span></td></tr>
+      <tr><td>2FA / TOTP</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>SSO Google / Microsoft</td><td>No</td><td><span class="pill pill-muted">deseable</span></td></tr>
+      <tr><td>Multi-tenant (modelo + UI)</td><td>No</td><td><span class="pill pill-warn">importante (si SaaS)</span></td></tr>
+      <tr><td>Mobile / PWA responsive</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Backups automáticos + restore documentado</td><td>No</td><td><span class="pill pill-bad">crítico</span></td></tr>
+      <tr><td>CI/CD (lint + test + deploy)</td><td>No</td><td><span class="pill pill-bad">crítico</span></td></tr>
+      <tr><td>Observabilidad (logs estructurados, error tracking, métricas)</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>Documentación API pública</td><td>No</td><td><span class="pill pill-muted">deseable</span></td></tr>
+      <tr><td>Webhooks salientes a integradores</td><td>Parcial (DTE entrante)</td><td><span class="pill pill-muted">deseable</span></td></tr>
+      <tr><td>Integraciones medios de pago (Transbank, Mercado Pago, Khipu, Webpay)</td><td>No</td><td><span class="pill pill-warn">importante</span></td></tr>
+      <tr><td>WhatsApp Business / SMS</td><td>No</td><td><span class="pill pill-muted">deseable</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>4. Roadmap propuesto (priorizado)</h2>
+
+  <h3>Wave 1 — Hardening producción (2 sprints)</h3>
+  <p class="meta">Antes de vender: lo que hace al sistema confiable para una Pyme operando con dinero real.</p>
+  <ol>
+    <li><span class="tier">P0</span> Audit log global (modelo + middleware + vista admin filtrable)</li>
+    <li><span class="tier">P0</span> Backups Postgres automáticos (cron + S3/Glacier) + script de restore probado</li>
+    <li><span class="tier">P0</span> CI: lint TS + pytest backend + vitest frontend + build Docker en cada PR</li>
+    <li><span class="tier">P0</span> Boleta electrónica 39/41 (vía Lioren) + flujo desde NV "boleta o factura"</li>
+    <li><span class="tier">P0</span> Guía de despacho electrónica 52 desde NV</li>
+    <li><span class="tier">P0</span> Observabilidad: logs estructurados (loguru/JSON), Sentry, /healthz</li>
+    <li><span class="tier">P1</span> 2FA (TOTP) en login; reset password por email</li>
+  </ol>
+
+  <h3>Wave 2 — CRM diferenciador (3 sprints)</h3>
+  <ol>
+    <li><span class="tier">P0</span> Pipeline / Oportunidades (kanban + conversión a cotización)</li>
+    <li><span class="tier">P0</span> Timeline unificado por cliente/empresa (cotis + NV + facturas + tareas + notas + llamadas)</li>
+    <li><span class="tier">P1</span> Notas/llamadas registradas en cliente y empresa</li>
+    <li><span class="tier">P1</span> Notificaciones (campana in-app + email digest configurable)</li>
+    <li><span class="tier">P1</span> Plantillas de email configurables (cotización, factura, recordatorio)</li>
+    <li><span class="tier">P2</span> Importación masiva clientes/empresas via Excel</li>
+    <li><span class="tier">P2</span> Bulk actions en tablas (cambiar estado, exportar selección, eliminar lote)</li>
+  </ol>
+
+  <h3>Wave 3 — Tributario completo (2 sprints)</h3>
+  <ol>
+    <li><span class="tier">P0</span> Recepción / intercambio DTE de proveedores + acuse de recibo (RCV)</li>
+    <li><span class="tier">P0</span> Libro de compras / ventas electrónico (export SII)</li>
+    <li><span class="tier">P1</span> DTE 34 (factura exenta) + DTE 46 (factura de compra)</li>
+    <li><span class="tier">P1</span> Propuesta F29 mensual</li>
+  </ol>
+
+  <h3>Wave 4 — Finanzas (3 sprints)</h3>
+  <ol>
+    <li><span class="tier">P0</span> Conciliación bancaria (importar cartola Banco de Chile/BCI/Santander → match con pagos)</li>
+    <li><span class="tier">P0</span> Comisiones por vendedor (config % + reporte mensual)</li>
+    <li><span class="tier">P1</span> Multi-moneda + UF (TC manual o vía indicadores SII)</li>
+    <li><span class="tier">P1</span> Exportación a contabilidad (Defontana / Softland / ContaNet) — al menos un conector</li>
+    <li><span class="tier">P2</span> Cash flow + estado de resultados básico</li>
+    <li><span class="tier">P2</span> Facturación recurrente / suscripciones</li>
+  </ol>
+
+  <h3>Wave 5 — Operación avanzada (2 sprints)</h3>
+  <ol>
+    <li><span class="tier">P1</span> Multi-bodega (movimientos por bodega, transferencias)</li>
+    <li><span class="tier">P1</span> Trazabilidad lote/serie en NV y OC (consolidar Lotes existentes)</li>
+    <li><span class="tier">P2</span> POS minimal (boleta rápida, lectura código de barras, vuelto)</li>
+  </ol>
+
+  <h3>Wave 6 — Producto SaaS (4 sprints, opcional)</h3>
+  <ol>
+    <li><span class="tier">P0</span> Multi-tenant: <code>tenant_id</code> en todas las tablas + middleware de scope</li>
+    <li><span class="tier">P0</span> Customer portal (login cliente externo, ver sus facturas/cotizaciones, descargar PDF)</li>
+    <li><span class="tier">P1</span> Mobile/PWA responsive para todas las páginas core</li>
+    <li><span class="tier">P1</span> Integraciones medios de pago (Transbank Webpay, Mercado Pago, Khipu)</li>
+    <li><span class="tier">P2</span> WhatsApp Business para envío de PDF y recordatorios</li>
+    <li><span class="tier">P2</span> SSO Google/Microsoft</li>
+    <li><span class="tier">P2</span> API pública + webhooks salientes para integradores</li>
+  </ol>
+</section>
+
+<section>
+  <h2>5. KPIs a instrumentar</h2>
+  <ul>
+    <li><b>Adopción interna:</b> usuarios activos diarios, % vendedores con cotización abierta esta semana.</li>
+    <li><b>Velocidad de venta:</b> días promedio cotización → NV, NV → factura, factura → pago.</li>
+    <li><b>Salud cobranza:</b> facturas vencidas / emitidas, días promedio mora, ratio recuperación 30/60/90 días.</li>
+    <li><b>Calidad inventario:</b> % productos con costo stale, ajustes manuales por mes, stock crítico vs alertas resueltas.</li>
+    <li><b>Confiabilidad SII:</b> % DTE aceptado en primer intento, tiempo medio emitida → aceptada, rechazos por causa.</li>
+    <li><b>Plataforma:</b> error rate API, p95 latencia endpoints calientes (search, sugerencias, dashboard), uptime.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>6. Decisiones bloqueantes pendientes</h2>
+  <ol>
+    <li><b>Stock NV:</b> ¿descuento al crear o al despachar? — pendiente confirmar con cliente desde 2026-04-22.</li>
+    <li><b>Pipeline:</b> ¿estados fijos hardcoded o configurables por admin?</li>
+    <li><b>Multi-tenant:</b> ¿se vende como SaaS multi-cliente o queda single-tenant on-prem? Impacta Wave 6 y refactor de queries.</li>
+    <li><b>POS:</b> ¿Conico debe reemplazar caja o convivir con un POS externo (vía DTE 39)?</li>
+    <li><b>Contabilidad:</b> ¿integramos con un proveedor (cuál priorizar) o exportamos archivo plano?</li>
+  </ol>
+</section>
+
+<p class="footer">
+  Generado por análisis de codebase + memoria de proyecto · Conico · 2026-04-24<br/>
+  Documentos relacionados: <code>PROGRESS.md</code>, <code>docs/architecture.md</code>, <code>docs/backlog.md</code>, <code>docs/roadmap-crm.md</code>, <code>docs/AGENTS.md</code>
+</p>
+
+</body>
+</html>

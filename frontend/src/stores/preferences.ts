@@ -7,11 +7,13 @@ interface State {
   setAll: (p: Preferencias) => void
   setAtajo: (a: AtajoBusqueda) => void
   setBotonVisible: (v: boolean) => void
+  setSidebarHidden: (hidden: string[]) => void
 }
 
 const DEFAULTS: Preferencias = {
   busqueda_boton_visible: true,
   busqueda_atajo: 'ctrl_k',
+  sidebar_hidden: [],
 }
 
 export const usePreferencesStore = create<State>(set => ({
@@ -20,4 +22,5 @@ export const usePreferencesStore = create<State>(set => ({
   setAll: p => set({ preferencias: p, hydrated: true }),
   setAtajo: a => set(s => ({ preferencias: { ...s.preferencias, busqueda_atajo: a } })),
   setBotonVisible: v => set(s => ({ preferencias: { ...s.preferencias, busqueda_boton_visible: v } })),
+  setSidebarHidden: hidden => set(s => ({ preferencias: { ...s.preferencias, sidebar_hidden: hidden } })),
 }))

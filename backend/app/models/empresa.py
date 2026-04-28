@@ -15,7 +15,6 @@ class Empresa(Base):
     forma_pago: Mapped[str | None] = mapped_column(String(100), nullable=True)
     linea_credito: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
     plazo_credito: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    prioridad: Mapped[str | None] = mapped_column(String(50), nullable=True)
     sector: Mapped[str | None] = mapped_column(String(100), nullable=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     nota_cobranza: Mapped[str | None] = mapped_column(Text, nullable=True)
