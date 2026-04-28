@@ -108,6 +108,19 @@
       ]
     },
     {
+      "list": "Bugs",
+      "name": "PDF cotización no muestra validez/vigencia",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "El PDF generado para cotizaciones no incluye la fecha de validez (vigencia). El cliente no sabe hasta cuándo es válida la oferta.",
+      "checklist": [
+        "Identificar campo de vigencia en modelo Cotización",
+        "Agregar campo 'Válido hasta' en template PDF de cotización",
+        "Manejar caso donde vigencia es null/no definida"
+      ]
+    },
+    {
       "list": "Feature requests",
       "name": "[W1-03] CI — lint + tests + build Docker",
       "labels": [
@@ -329,18 +342,19 @@
     },
     {
       "list": "Feature requests",
-      "name": "[Clientes] Búsqueda por nombre de empresa",
+      "name": "[Cotizaciones] Link a NV generada en cotización cerrada",
       "labels": [
         "Core"
       ],
-      "desc": "Al buscar clientes (autocomplete / listado), incluir el nombre de la empresa vinculada como campo de búsqueda adicional. Hoy solo se busca por nombre/RUT del cliente; si el usuario escribe el nombre de la empresa, no aparece ningún resultado aunque el cliente esté asociado.\n\nComportamiento esperado:\n- El input de búsqueda de clientes filtra por: nombre cliente, RUT cliente, **nombre empresa**.\n- Los resultados muestran el nombre del cliente y, en subtexto, el nombre de la empresa.\n- No cambiar el modelo de datos; solo ampliar el query de búsqueda (JOIN con Empresa).",
+      "desc": "Cuando una cotización se cierra (estado 'cerrada' / convertida), debe mostrar un link directo a la Nota de Venta generada. Hoy no hay trazabilidad visual entre cotización y NV.\n\nComportamiento esperado:\n- En el detalle de cotización cerrada: badge o sección 'NV generada' con link a /notas-venta/{id}.\n- Si la NV fue eliminada posterior al cierre, mostrar referencia con aviso 'NV eliminada'.\n- En el listado de cotizaciones: columna/icono que indique si tiene NV asociada.",
       "checklist": [
-        "Identificar todos los endpoints/queries de búsqueda de clientes (autocomplete + listado)",
-        "Ampliar filtro SQL: OR empresa.nombre ILIKE :q (JOIN Empresa donde existe vínculo)",
-        "Verificar que el schema de respuesta ya devuelve nombre_empresa o agregar el campo",
-        "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
-        "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
-        "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
+        "Verificar si Cotizacion ya tiene FK nota_venta_id o campo equivalente",
+        "Si no existe: agregar Cotizacion.nota_venta_id (nullable FK) + migración Alembic",
+        "Al convertir cotización → NV: guardar nota_venta_id en la cotización",
+        "CotizacionRead schema: exponer nota_venta_id y opcionalmente nota_venta_folio",
+        "CotizacionDetalle UI: mostrar link 'Ver NV #folio' cuando nota_venta_id existe",
+        "Manejar caso NV eliminada: mostrar referencia inerte con aviso",
+        "Listado de cotizaciones: indicador visual (icono/chip) si tiene NV asociada"
       ]
     },
     {
