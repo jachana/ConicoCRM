@@ -94,68 +94,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "[UI] EmpresaModal dark mode + nota cobranza overflow",
-      "labels": [
-        "Bug",
-        "Design System"
-      ],
-      "desc": "Dos bugs visuales en EmpresaModal:\n\n1. **Dark mode**: algunos textos dentro del modal de editar empresa usan colores hardcodeados (text-gray-X, text-black, etc.) en vez de tokens semánticos, quedando ilegibles en dark mode.\n\n2. **Nota cobranza overflow**: el campo/texto de nota de cobranza desborda el contenedor del modal y queda fuera del área scrollable, impidiendo seleccionarlo o editarlo.",
-      "checklist": [
-        "Reproducir ambos bugs en dark mode con EmpresaModal abierto en modo edición",
-        "Dark mode: grep EmpresaModal por clases hardcodeadas (text-gray-, text-black, bg-white, border-gray-) y reemplazar con tokens semánticos (text-foreground, bg-background, etc.)",
-        "Revisar también inputs, labels y placeholders dentro del modal",
-        "Nota cobranza: identificar el elemento que desborda (textarea o div)",
-        "Fijar overflow: asegurar que el contenido del modal tenga overflow-y-auto con max-h apropiado, o que el campo textarea tenga min-h y resize-y correctos",
-        "Verificar que el modal completo sea scrollable si el contenido supera la altura de pantalla",
-        "QA: probar en light y dark mode, pantallas pequeñas (1280px) y grandes"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "PDF cotización no muestra validez/vigencia",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "REABIERTO 2026-04-28: el commit 051fddd (fix(cotizacion): mostrar validez/vigencia en PDF) no se ve reflejado en el PDF generado — verificar despliegue, template path y caché. La fecha de validez sigue sin aparecer.\n\nOriginal: el PDF generado para cotizaciones no incluye la fecha de validez (vigencia). El cliente no sabe hasta cuándo es válida la oferta.",
-      "checklist": [
-        "Identificar campo de vigencia en modelo Cotización",
-        "Agregar campo 'Válido hasta' en template PDF de cotización",
-        "Manejar caso donde vigencia es null/no definida",
-        "REGRESIÓN: reproducir en producción/staging — confirmar que el deploy 051fddd está vivo (Coolify last_online_at + commit)",
-        "Verificar template renderiza el campo (no else silencioso por null)",
-        "Forzar regeneración (no servir PDF cacheado)",
-        "Test E2E: crear cotización con vigencia → descargar PDF → assert texto 'Válido hasta' presente"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "Settings siempre visible en sidebar (no removible)",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "El ítem de Settings en el sidebar puede ocultarse o quitarse. Debe estar fijo y no ser removible por ningún usuario ni rol.",
-      "checklist": [
-        "Identificar lógica que controla visibilidad del sidebar",
-        "Marcar Settings como ítem fijo (no sujeto a personalización ni permisos de ocultado)",
-        "Verificar que aplica para todos los roles (vendedor, admin, gerente)"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Guía despacho] Números de NV y factura incorrectos",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "En el detalle y PDF de la guía de despacho, los números de NV y factura asociados se muestran incorrectos o no corresponden al documento real.",
-      "checklist": [
-        "Revisar query que obtiene NV y factura vinculadas a la guía de despacho",
-        "Verificar que el folio mostrado es el folio SII y no el ID interno",
-        "Corregir PDF: mostrar número NV y número factura correctos",
-        "Prueba: emitir guía desde NV facturada y verificar ambos números"
-      ]
-    },
-    {
       "list": "Client feedback",
       "name": "[Cobranza] Envío automático de recordatorios",
       "labels": [
@@ -717,7 +655,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "Búsquedas insensibles a tildes (normalización unicode)",
       "labels": [
         "Core"
@@ -755,6 +693,19 @@
     },
     {
       "list": "Feature requests",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
+      "checklist": [
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
+      ]
+    },
+    {
+      "list": "Feature requests",
       "name": "[Onboarding] Import Tareas / actividades CRM pendientes",
       "labels": [
         "Core"
@@ -777,7 +728,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Cotizaciones] Link a NV generada en cotización cerrada",
       "labels": [
         "Core"
@@ -794,7 +745,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Factura] Documentos referenciados (OC, HES, contrato, guía, NV)",
       "labels": [
         "Core",
@@ -892,7 +843,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[NV] Cerrar NV automáticamente al generar factura",
       "labels": [
         "Core"
@@ -925,35 +876,6 @@
     },
     {
       "list": "Feature requests",
-      "name": "[Pagos] Recuperar método de pago — combinable con plazo (cheque a 30 días, transferencia a 30, etc.)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Recuperar el campo 'método de pago' por documento (cotización, NV, factura) y permitir combinarlo libremente con el plazo. Hoy el catálogo es muy limitado y asume que cualquier método distinto de 'crédito' es al contado — eso es incorrecto.\n\nCasos reales del cliente (Paly, 28-04):\n- Cheque a 30 días\n- Transferencia a 30 días\n- Al contado con tarjeta\n- Al contado con transferencia\n- Vale vista (típicamente al contado)\n\n**Cambio de regla anterior:** la decisión previa ('cheque/transferencia/efectivo → plazo forzado a 0') queda obsoleta. Cheque y transferencia SÍ pueden ir con plazo. Solo efectivo y tarjeta presencial fuerzan plazo=0.\n\nModelo: dos campos independientes en cada documento — `metodo_pago` (catálogo fijo) y `plazo_dias` (0..N). El display los combina: '{Método} a {N} días' o '{Método} al contado'.",
-      "checklist": [
-        "Catálogo MétodoPago: efectivo, tarjeta_credito, tarjeta_debito, transferencia, cheque, vale_vista, credito_simple, otros",
-        "Modelo: metodo_pago (FK/enum) + plazo_dias (int) por documento (Cotización, NV, Factura)",
-        "Reglas de validación:",
-        "  - efectivo / tarjeta_debito / tarjeta_credito (presencial) → plazo_dias forzado a 0",
-        "  - cheque / transferencia / vale_vista → plazo_dias libre (0, 30, 60, 90, custom)",
-        "  - credito_simple → plazo_dias > 0 obligatorio (es la condición de venta a plazo)",
-        "Display: 'Transferencia a 30 días', 'Cheque al contado', 'Vale vista al contado'",
-        "UI: dos selectores en form de NV/Factura/Cotización — Método (select) + Plazo (select 0/30/60/90 + custom)",
-        "Defaults inteligentes: si vendedor selecciona 'efectivo' → plazo se bloquea en 0",
-        "Defaults por cliente: la Empresa puede tener un método+plazo SUGERIDO (no obligatorio) que prefilla el form",
-        "  - NOTA: esto NO contradice '[Empresa] Quitar forma de pago' — ahí se quitó el campo COMO regla; aquí vuelve como SUGERENCIA prefill (override por documento)",
-        "Cálculo fecha_vencimiento de factura: fecha_emision + plazo_dias (single source of truth)",
-        "Reportes cobranza: agrupar por método (cuánto en cheques pendientes, cuánto en transferencias)",
-        "Filtro lista facturas: por método + por rango de plazo",
-        "Migración: facturas existentes con forma_pago texto libre → mapear a catálogo + setear plazo_dias=0 si efectivo/tarjeta",
-        "Resolver pendientes en review:",
-        "  - '[Bug:Datos] Forma de pago duplica Plazo de Crédito' → cerrada por esta card (regla actualizada)",
-        "  - '[Empresa] Quitar forma de pago del modelo Empresa' → revisitar (sugerido prefill, no campo de negocio)",
-        "Tests: cheque+30d emite ok, efectivo+30d rechazado, vencimiento = emision + plazo, prefill desde empresa funciona"
-      ]
-    },
-    {
-      "list": "Feature requests",
       "name": "[NV] Bloquear edición al emitir factura",
       "labels": [
         "Core"
@@ -968,7 +890,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[NV] Buscador en lista de Notas de Venta",
       "labels": [
         "Core"
@@ -1117,6 +1039,24 @@
     },
     {
       "list": "In review",
+      "name": "[UI] EmpresaModal dark mode + nota cobranza overflow",
+      "labels": [
+        "Bug",
+        "Design System"
+      ],
+      "desc": "Dos bugs visuales en EmpresaModal:\n\n1. **Dark mode**: algunos textos dentro del modal de editar empresa usan colores hardcodeados (text-gray-X, text-black, etc.) en vez de tokens semánticos, quedando ilegibles en dark mode.\n\n2. **Nota cobranza overflow**: el campo/texto de nota de cobranza desborda el contenedor del modal y queda fuera del área scrollable, impidiendo seleccionarlo o editarlo.",
+      "checklist": [
+        "Reproducir ambos bugs en dark mode con EmpresaModal abierto en modo edición",
+        "Dark mode: grep EmpresaModal por clases hardcodeadas (text-gray-, text-black, bg-white, border-gray-) y reemplazar con tokens semánticos (text-foreground, bg-background, etc.)",
+        "Revisar también inputs, labels y placeholders dentro del modal",
+        "Nota cobranza: identificar el elemento que desborda (textarea o div)",
+        "Fijar overflow: asegurar que el contenido del modal tenga overflow-y-auto con max-h apropiado, o que el campo textarea tenga min-h y resize-y correctos",
+        "Verificar que el modal completo sea scrollable si el contenido supera la altura de pantalla",
+        "QA: probar en light y dark mode, pantallas pequeñas (1280px) y grandes"
+      ]
+    },
+    {
+      "list": "In review",
       "name": "Settings de admin debe poder ordenar y quitar items del sidebar",
       "labels": [
         "Core"
@@ -1246,6 +1186,23 @@
     },
     {
       "list": "In review",
+      "name": "PDF cotización no muestra validez/vigencia",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "REABIERTO 2026-04-28: el commit 051fddd (fix(cotizacion): mostrar validez/vigencia en PDF) no se ve reflejado en el PDF generado — verificar despliegue, template path y caché. La fecha de validez sigue sin aparecer.\n\nOriginal: el PDF generado para cotizaciones no incluye la fecha de validez (vigencia). El cliente no sabe hasta cuándo es válida la oferta.",
+      "checklist": [
+        "Identificar campo de vigencia en modelo Cotización",
+        "Agregar campo 'Válido hasta' en template PDF de cotización",
+        "Manejar caso donde vigencia es null/no definida",
+        "REGRESIÓN: reproducir en producción/staging — confirmar que el deploy 051fddd está vivo (Coolify last_online_at + commit)",
+        "Verificar template renderiza el campo (no else silencioso por null)",
+        "Forzar regeneración (no servir PDF cacheado)",
+        "Test E2E: crear cotización con vigencia → descargar PDF → assert texto 'Válido hasta' presente"
+      ]
+    },
+    {
+      "list": "In review",
       "name": "[W1-03] CI — lint + tests + build Docker",
       "labels": [
         "Wave 1"
@@ -1257,6 +1214,19 @@
         "Tests (pytest + vitest)",
         "Build Docker images",
         "Cache deps + parallelización"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "Settings siempre visible en sidebar (no removible)",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "El ítem de Settings en el sidebar puede ocultarse o quitarse. Debe estar fijo y no ser removible por ningún usuario ni rol.",
+      "checklist": [
+        "Identificar lógica que controla visibilidad del sidebar",
+        "Marcar Settings como ítem fijo (no sujeto a personalización ni permisos de ocultado)",
+        "Verificar que aplica para todos los roles (vendedor, admin, gerente)"
       ]
     },
     {
@@ -1273,6 +1243,20 @@
         "Frontend: ocultar tabs/vistas no autorizadas",
         "Reproducir: login vendedor → verificar no ve admin tasks",
         "Audit logs: registrar acceso anterior"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Guía despacho] Números de NV y factura incorrectos",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "En el detalle y PDF de la guía de despacho, los números de NV y factura asociados se muestran incorrectos o no corresponden al documento real.",
+      "checklist": [
+        "Revisar query que obtiene NV y factura vinculadas a la guía de despacho",
+        "Verificar que el folio mostrado es el folio SII y no el ID interno",
+        "Corregir PDF: mostrar número NV y número factura correctos",
+        "Prueba: emitir guía desde NV facturada y verificar ambos números"
       ]
     },
     {
@@ -1465,19 +1449,6 @@
     },
     {
       "list": "In review",
-      "name": "Búsquedas insensibles a tildes (normalización unicode)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
-      "checklist": [
-        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
-        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
-        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
-      ]
-    },
-    {
-      "list": "In review",
       "name": "[Factura] Estado 'pagado' derivado de pagos — no editable manualmente",
       "labels": [
         "Core",
@@ -1497,6 +1468,35 @@
         "Migración: si hay facturas en BD con estado_pago='pagado' y sum(pagos)=0, dejarlas pendientes y reportar (no auto-pagar)",
         "Tests: factura con 0 pagos → pendiente; pagos parciales → parcial; pagos = total → pagado; anular pago → vuelve atrás",
         "Tests: PATCH a estado_pago retorna 422 / es ignorado"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Pagos] Recuperar método de pago — combinable con plazo (cheque a 30 días, transferencia a 30, etc.)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Recuperar el campo 'método de pago' por documento (cotización, NV, factura) y permitir combinarlo libremente con el plazo. Hoy el catálogo es muy limitado y asume que cualquier método distinto de 'crédito' es al contado — eso es incorrecto.\n\nCasos reales del cliente (Paly, 28-04):\n- Cheque a 30 días\n- Transferencia a 30 días\n- Al contado con tarjeta\n- Al contado con transferencia\n- Vale vista (típicamente al contado)\n\n**Cambio de regla anterior:** la decisión previa ('cheque/transferencia/efectivo → plazo forzado a 0') queda obsoleta. Cheque y transferencia SÍ pueden ir con plazo. Solo efectivo y tarjeta presencial fuerzan plazo=0.\n\nModelo: dos campos independientes en cada documento — `metodo_pago` (catálogo fijo) y `plazo_dias` (0..N). El display los combina: '{Método} a {N} días' o '{Método} al contado'.",
+      "checklist": [
+        "Catálogo MétodoPago: efectivo, tarjeta_credito, tarjeta_debito, transferencia, cheque, vale_vista, credito_simple, otros",
+        "Modelo: metodo_pago (FK/enum) + plazo_dias (int) por documento (Cotización, NV, Factura)",
+        "Reglas de validación:",
+        "  - efectivo / tarjeta_debito / tarjeta_credito (presencial) → plazo_dias forzado a 0",
+        "  - cheque / transferencia / vale_vista → plazo_dias libre (0, 30, 60, 90, custom)",
+        "  - credito_simple → plazo_dias > 0 obligatorio (es la condición de venta a plazo)",
+        "Display: 'Transferencia a 30 días', 'Cheque al contado', 'Vale vista al contado'",
+        "UI: dos selectores en form de NV/Factura/Cotización — Método (select) + Plazo (select 0/30/60/90 + custom)",
+        "Defaults inteligentes: si vendedor selecciona 'efectivo' → plazo se bloquea en 0",
+        "Defaults por cliente: la Empresa puede tener un método+plazo SUGERIDO (no obligatorio) que prefilla el form",
+        "  - NOTA: esto NO contradice '[Empresa] Quitar forma de pago' — ahí se quitó el campo COMO regla; aquí vuelve como SUGERENCIA prefill (override por documento)",
+        "Cálculo fecha_vencimiento de factura: fecha_emision + plazo_dias (single source of truth)",
+        "Reportes cobranza: agrupar por método (cuánto en cheques pendientes, cuánto en transferencias)",
+        "Filtro lista facturas: por método + por rango de plazo",
+        "Migración: facturas existentes con forma_pago texto libre → mapear a catálogo + setear plazo_dias=0 si efectivo/tarjeta",
+        "Resolver pendientes en review:",
+        "  - '[Bug:Datos] Forma de pago duplica Plazo de Crédito' → cerrada por esta card (regla actualizada)",
+        "  - '[Empresa] Quitar forma de pago del modelo Empresa' → revisitar (sugerido prefill, no campo de negocio)",
+        "Tests: cheque+30d emite ok, efectivo+30d rechazado, vencimiento = emision + plazo, prefill desde empresa funciona"
       ]
     },
     {
