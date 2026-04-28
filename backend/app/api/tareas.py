@@ -205,18 +205,15 @@ def timeline(
     entidad_id: int,
     perms: tuple[User, Session] = require_permission("tareas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     col = ENTIDAD_FK_MAP.get(entidad_tipo)
     if col is None:
         raise HTTPException(404, detail="Tipo de entidad inválido")
 
-    tareas = (
-        db.query(Tarea)
-        .options(joinedload(Tarea.asignado))
-        .filter(col == entidad_id)
-        .order_by(Tarea.due_date.desc())
-        .all()
-    )
+    q = db.query(Tarea).options(joinedload(Tarea.asignado)).filter(col == entidad_id)
+    if not has_permission(db, current_user, "tareas", "view_all"):
+        q = q.filter(Tarea.asignado_id == current_user.id)
+    tareas = q.order_by(Tarea.due_date.desc()).all()
     return [serialize_tarea(t) for t in tareas]
 
 

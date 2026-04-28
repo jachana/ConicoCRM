@@ -135,7 +135,9 @@ def crear_nc(
 def listar_nc(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
     return db.query(NotaCredito).options(joinedload(NotaCredito.lineas)).order_by(NotaCredito.numero.desc()).all()
 
 
@@ -144,7 +146,9 @@ def get_nc(
     nc_id: int,
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
     nc = db.query(NotaCredito).options(joinedload(NotaCredito.lineas)).filter_by(id=nc_id).first()
     if not nc:
         raise HTTPException(status_code=404, detail="Nota de crédito no encontrada")
@@ -210,7 +214,9 @@ def crear_nd(
 def listar_nd(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
     return db.query(NotaDebito).options(joinedload(NotaDebito.lineas)).order_by(NotaDebito.numero.desc()).all()
 
 
@@ -219,7 +225,9 @@ def get_nd(
     nd_id: int,
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
     nd = db.query(NotaDebito).options(joinedload(NotaDebito.lineas)).filter_by(id=nd_id).first()
     if not nd:
         raise HTTPException(status_code=404, detail="Nota de débito no encontrada")

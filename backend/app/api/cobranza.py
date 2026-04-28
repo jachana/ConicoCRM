@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import date
 from decimal import Decimal
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from app.api.deps import require_permission
 from app.models.cobranza_config import CobranzaConfig
@@ -35,7 +35,9 @@ def _get_or_create_config(db: Session, empresa_id: int) -> CobranzaConfig:
 
 @router.get("/dashboard", response_model=CobranzaDashboardOut)
 def dashboard(perms: tuple[User, Session] = require_permission("facturas", "view")):
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
     today = date.today()
 
     facturas = (
@@ -110,7 +112,9 @@ def dashboard(perms: tuple[User, Session] = require_permission("facturas", "view
 
 @router.get("/recordatorios", response_model=list[RecordatorioItemOut])
 def recordatorios(perms: tuple[User, Session] = require_permission("facturas", "view")):
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
     today = date.today()
 
     facturas = (

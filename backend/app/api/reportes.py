@@ -7,7 +7,7 @@ from decimal import Decimal
 from io import BytesIO, StringIO
 
 import openpyxl
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
@@ -70,6 +70,8 @@ def reporte_ventas(
 ):
     _validate_dates(date_from, date_to)
     current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
     base_q = (
         db.query(Factura)
@@ -80,8 +82,6 @@ def reporte_ventas(
             Factura.estado != "anulada",
         )
     )
-    if current_user.role == "vendedor":
-        base_q = base_q.filter(Factura.vendedor_id == current_user.id)
 
     facturas = base_q.all()
 
@@ -106,8 +106,6 @@ def reporte_ventas(
         Factura.fecha <= prev_to,
         Factura.estado != "anulada",
     )
-    if current_user.role == "vendedor":
-        prev_q = prev_q.filter(Factura.vendedor_id == current_user.id)
     prev_total_raw = prev_q.scalar()
     prev_total = Decimal(str(prev_total_raw)) if prev_total_raw else _ZERO
 
@@ -171,8 +169,6 @@ def reporte_ventas(
         Boleta.fecha <= date_to,
         Boleta.estado != "anulada",
     )
-    if current_user.role == "vendedor":
-        boletas_q = boletas_q.filter(Boleta.vendedor_id == current_user.id)
     boletas = boletas_q.all()
 
     total_boletas = sum((b.total for b in boletas), _ZERO)
@@ -216,7 +212,9 @@ def reporte_cobranza(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
     today = date.today()
 
@@ -342,7 +340,9 @@ def reporte_inventario(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
     # --- KPIs: current stock (date range ignored) ---
     productos = db.query(Producto).all()
@@ -431,7 +431,9 @@ def reporte_compras(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
     ocs: list[OrdenCompra] = (
         db.query(OrdenCompra)
@@ -504,6 +506,8 @@ def reporte_margenes(
 ):
     _validate_dates(date_from, date_to)
     current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
     base_q = (
         db.query(Factura)
@@ -514,8 +518,6 @@ def reporte_margenes(
             Factura.estado != "anulada",
         )
     )
-    if current_user.role == "vendedor":
-        base_q = base_q.filter(Factura.vendedor_id == current_user.id)
 
     facturas: list[Factura] = base_q.all()
 
@@ -813,7 +815,9 @@ def reporte_por_marca(
 ):
     _validate_dates(date_from, date_to)
     current_user, db = perms
-    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+    vendedor_id = None
     return _get_por_marca(date_from, date_to, db, vendedor_id, cliente_id, marca_id)
 
 
@@ -827,7 +831,9 @@ def exportar_por_marca_excel(
 ):
     _validate_dates(date_from, date_to)
     current_user, db = perms
-    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+    vendedor_id = None
     data = _get_por_marca(date_from, date_to, db, vendedor_id, cliente_id, marca_id)
 
     wb = openpyxl.Workbook()
@@ -900,7 +906,9 @@ def exportar_por_marca_csv(
 ):
     _validate_dates(date_from, date_to)
     current_user, db = perms
-    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+    vendedor_id = None
     data = _get_por_marca(date_from, date_to, db, vendedor_id, cliente_id, marca_id)
 
     buf = StringIO()
@@ -963,7 +971,9 @@ def reporte_dte(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
     date_to_exclusive = date_to + timedelta(days=1)
 
@@ -1182,6 +1192,8 @@ def exportar_ventas_excel(
 ):
     _validate_dates(date_from, date_to)
     current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
     base_q = (
         db.query(Factura)
@@ -1192,8 +1204,6 @@ def exportar_ventas_excel(
             Factura.estado != "anulada",
         )
     )
-    if current_user.role == "vendedor":
-        base_q = base_q.filter(Factura.vendedor_id == current_user.id)
 
     facturas = base_q.all()
 
@@ -1228,7 +1238,9 @@ def exportar_cobranza_excel(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
     today = date.today()
 
@@ -1293,7 +1305,9 @@ def exportar_inventario_excel(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
     data = _get_inventario(date_from, date_to, db)
     productos = data["productos"]
@@ -1340,7 +1354,9 @@ def exportar_compras_excel(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
     ocs: list[OrdenCompra] = (
         db.query(OrdenCompra)
@@ -1385,8 +1401,10 @@ def exportar_margenes_excel(
 ):
     _validate_dates(date_from, date_to)
     current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
-    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    vendedor_id = None
     data = _get_margenes(date_from, date_to, db, vendedor_id)
     por_producto = data["por_producto"]
     por_factura = data["por_factura"]
@@ -1431,7 +1449,9 @@ def exportar_dte_excel(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
     date_to_exclusive = date_to + timedelta(days=1)
 
@@ -1778,7 +1798,9 @@ def exportar_ventas_pdf(
 ):
     _validate_dates(date_from, date_to)
     current_user, db = perms
-    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+    vendedor_id = None
     data = _get_ventas(date_from, date_to, db, vendedor_id)
     kpis = data["kpis"]
 
@@ -1823,7 +1845,9 @@ def exportar_cobranza_pdf(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
     data = _get_cobranza(date_from, date_to, db)
     kpis = data["kpis"]
     buckets = data["buckets"]
@@ -1867,7 +1891,9 @@ def exportar_inventario_pdf(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
     data = _get_inventario(date_from, date_to, db)
     kpis = data["kpis"]
 
@@ -1912,7 +1938,9 @@ def exportar_compras_pdf(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
     data = _get_compras(date_from, date_to, db)
     kpis = data["kpis"]
 
@@ -1956,7 +1984,9 @@ def exportar_margenes_pdf(
 ):
     _validate_dates(date_from, date_to)
     current_user, db = perms
-    vendedor_id = current_user.id if current_user.role == "vendedor" else None
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+    vendedor_id = None
     data = _get_margenes(date_from, date_to, db, vendedor_id)
 
     por_producto_full = data["por_producto"]
@@ -2009,7 +2039,9 @@ def exportar_dte_pdf(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
     data = _get_dte(date_from, date_to, db)
     kpis = data["kpis"]
 
