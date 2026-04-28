@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Trash2, FileText, Mail, ArrowLeft, ExternalLink, Receipt, Truck, Lock } from 'lucide-react'
+import { Plus, Trash2, FileText, Mail, ArrowLeft, ExternalLink, Receipt, Truck, Lock, RotateCcw } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
@@ -474,6 +474,24 @@ export default function NotaVentaDetalle() {
     onSuccess: (res: any) => navigate(`/facturas/${res.data.id}`),
   })
 
+  const recotizarMut = useMutation({
+    mutationFn: () => api.post(`/api/nota_ventas/${id}/recotizar`).then(r => r.data),
+    onSuccess: (data: { id: number; warnings: string[] }) => {
+      if (data.warnings.length > 0) {
+        toast.warning(`Re-cotización creada con ${data.warnings.length} producto(s) descontinuado(s): ${data.warnings.join(', ')}`, {
+          action: { label: 'Ver', onClick: () => navigate(`/cotizaciones/${data.id}`) },
+          duration: 8000,
+        })
+      } else {
+        toast.success('Cotización duplicada con precios actualizados', {
+          action: { label: 'Ver', onClick: () => navigate(`/cotizaciones/${data.id}`) },
+        })
+      }
+      navigate(`/cotizaciones/${data.id}`)
+    },
+    onError: () => toast.error('Error al re-cotizar'),
+  })
+
   const validTransitions = !isNew && nv ? getValidTransitions(nv.estado, isAdmin) : []
   const dirtyBorder = 'border-warning-400 dark:border-warning-500'
 
@@ -568,6 +586,16 @@ export default function NotaVentaDetalle() {
                   Generar guía
                 </Button>
               )}
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={<RotateCcw />}
+                onClick={() => recotizarMut.mutate()}
+                loading={recotizarMut.isPending}
+                disabled={recotizarMut.isPending}
+              >
+                Re-cotizar
+              </Button>
               {nv?.factura_id != null && (
                 <Button
                   size="sm"

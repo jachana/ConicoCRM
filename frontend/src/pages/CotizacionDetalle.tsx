@@ -682,6 +682,24 @@ export default function CotizacionDetalle() {
     },
   })
 
+  const recotizarMut = useMutation({
+    mutationFn: () => api.post(`/api/cotizaciones/${id}/recotizar`).then(r => r.data),
+    onSuccess: (data: { id: number; warnings: string[] }) => {
+      if (data.warnings.length > 0) {
+        toast.warning(`Re-cotización creada con ${data.warnings.length} producto(s) descontinuado(s): ${data.warnings.join(', ')}`, {
+          action: { label: 'Ver', onClick: () => navigate(`/cotizaciones/${data.id}`) },
+          duration: 8000,
+        })
+      } else {
+        toast.success('Cotización duplicada con precios actualizados', {
+          action: { label: 'Ver', onClick: () => navigate(`/cotizaciones/${data.id}`) },
+        })
+      }
+      navigate(`/cotizaciones/${data.id}`)
+    },
+    onError: () => toast.error('Error al re-cotizar'),
+  })
+
   const dirtyBorder = 'border-warning-400 dark:border-warning-500'
 
   const pdfDisabledTitle =
@@ -756,6 +774,16 @@ export default function CotizacionDetalle() {
               >
                 Crear NV
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={<RotateCcw />}
+                onClick={() => recotizarMut.mutate()}
+                loading={recotizarMut.isPending}
+                disabled={recotizarMut.isPending}
+              >
+                Re-cotizar
+              </Button>
             </>
           )}
           {!isAdmin && !isNew && Object.keys(propuestas).length > 0 && (
@@ -783,6 +811,12 @@ export default function CotizacionDetalle() {
       {error && (
         <div className="mb-4 px-4 py-3 bg-danger-50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-800 rounded-lg text-sm text-danger-600 dark:text-danger-400">
           {error}
+        </div>
+      )}
+
+      {!isNew && lineas.some(l => l.cantidad === 0) && (
+        <div className="mb-4 px-4 py-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-800 rounded-lg text-sm text-warning-700 dark:text-warning-300">
+          Esta cotización tiene productos descontinuados (cantidad 0). Revisa las líneas antes de continuar.
         </div>
       )}
 

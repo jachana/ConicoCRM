@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { FileText, Mail, ArrowLeft, ExternalLink, Pencil, Plus, Trash2, Lock } from 'lucide-react'
+import { FileText, Mail, ArrowLeft, ExternalLink, Pencil, Plus, Trash2, Lock, RotateCcw } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import type { Factura, FacturaLinea, Cliente, User, Empresa, Pago, BancoReceptor } from '../types'
@@ -281,6 +281,24 @@ export default function FacturaDetalle() {
     },
   })
 
+  const recotizarMut = useMutation({
+    mutationFn: () => api.post(`/api/facturas/${id}/recotizar`).then(r => r.data),
+    onSuccess: (data: { id: number; warnings: string[] }) => {
+      if (data.warnings.length > 0) {
+        toast.warning(`Re-cotización creada con ${data.warnings.length} producto(s) descontinuado(s): ${data.warnings.join(', ')}`, {
+          action: { label: 'Ver', onClick: () => navigate(`/cotizaciones/${data.id}`) },
+          duration: 8000,
+        })
+      } else {
+        toast.success('Cotización duplicada con precios actualizados', {
+          action: { label: 'Ver', onClick: () => navigate(`/cotizaciones/${data.id}`) },
+        })
+      }
+      navigate(`/cotizaciones/${data.id}`)
+    },
+    onError: () => toast.error('Error al re-cotizar'),
+  })
+
   const validTransitions = factura ? getValidTransitions(factura.estado) : []
   const canDelete = factura?.estado === 'emitida'
 
@@ -381,6 +399,16 @@ export default function FacturaDetalle() {
             loading={emailMut.isPending}
           >
             Email
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            leftIcon={<RotateCcw />}
+            onClick={() => recotizarMut.mutate()}
+            loading={recotizarMut.isPending}
+            disabled={recotizarMut.isPending}
+          >
+            Re-cotizar
           </Button>
           {!factura?.is_locked && (
             !editing ? (
