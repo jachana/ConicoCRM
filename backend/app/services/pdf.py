@@ -9,9 +9,10 @@ TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templa
 def generar_pdf_cotizacion(cotizacion, config: dict) -> bytes:
     env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
     template = env.get_template("cotizacion.html")
+    validez = cotizacion.validez_dias if cotizacion.validez_dias is not None else 5
     fecha_expiracion = (
-        cotizacion.fecha + timedelta(days=cotizacion.validez_dias)
-        if cotizacion.fecha and cotizacion.validez_dias
+        cotizacion.fecha + timedelta(days=validez)
+        if cotizacion.fecha and validez > 0
         else None
     )
     html_str = template.render(cotizacion=cotizacion, config=config, fecha_expiracion=fecha_expiracion)

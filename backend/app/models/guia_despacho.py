@@ -55,6 +55,7 @@ class GuiaDespacho(Base):
     cliente: Mapped["Cliente | None"] = relationship("Cliente")
     empresa: Mapped["Empresa | None"] = relationship("Empresa")
     vendedor: Mapped["User | None"] = relationship("User")
+    nota_venta: Mapped["NotaVenta | None"] = relationship("NotaVenta")
     lineas: Mapped[list["GuiaDespachoLinea"]] = relationship(
         "GuiaDespachoLinea",
         back_populates="guia_despacho",

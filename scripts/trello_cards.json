@@ -94,91 +94,25 @@
       ]
     },
     {
-      "list": "Client feedback",
-      "name": "[Cobranza] Envío automático de recordatorios",
+      "list": "In review",
+      "name": "[UI] EmpresaModal dark mode + nota cobranza overflow",
       "labels": [
-        "Core"
+        "Bug",
+        "Design System"
       ],
-      "desc": "Hoy solo envío manual; cliente espera automático según frecuencia configurada por empresa.",
+      "desc": "Dos bugs visuales en EmpresaModal:\n\n1. **Dark mode**: algunos textos dentro del modal de editar empresa usan colores hardcodeados (text-gray-X, text-black, etc.) en vez de tokens semánticos, quedando ilegibles en dark mode.\n\n2. **Nota cobranza overflow**: el campo/texto de nota de cobranza desborda el contenedor del modal y queda fuera del área scrollable, impidiendo seleccionarlo o editarlo.",
       "checklist": [
-        "Job Celery diario que lee CobranzaConfig.frecuencia por empresa",
-        "Envía recordatorio email a facturas vencidas según ventana",
-        "Actualiza ultimo_recordatorio",
-        "Toggle por factura para excluir"
+        "Reproducir ambos bugs en dark mode con EmpresaModal abierto en modo edición",
+        "Dark mode: grep EmpresaModal por clases hardcodeadas (text-gray-, text-black, bg-white, border-gray-) y reemplazar con tokens semánticos (text-foreground, bg-background, etc.)",
+        "Revisar también inputs, labels y placeholders dentro del modal",
+        "Nota cobranza: identificar el elemento que desborda (textarea o div)",
+        "Fijar overflow: asegurar que el contenido del modal tenga overflow-y-auto con max-h apropiado, o que el campo textarea tenga min-h y resize-y correctos",
+        "Verificar que el modal completo sea scrollable si el contenido supera la altura de pantalla",
+        "QA: probar en light y dark mode, pantallas pequeñas (1280px) y grandes"
       ]
     },
     {
-      "list": "Bugs",
-      "name": "[Guía despacho] Números de NV y factura incorrectos",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "En el detalle y PDF de la guía de despacho, los números de NV y factura asociados se muestran incorrectos o no corresponden al documento real.",
-      "checklist": [
-        "Revisar query que obtiene NV y factura vinculadas a la guía de despacho",
-        "Verificar que el folio mostrado es el folio SII y no el ID interno",
-        "Corregir PDF: mostrar número NV y número factura correctos",
-        "Prueba: emitir guía desde NV facturada y verificar ambos números"
-      ]
-    },
-    {
-      "list": "Bugs",
-      "name": "Settings siempre visible en sidebar (no removible)",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "El ítem de Settings en el sidebar puede ocultarse o quitarse. Debe estar fijo y no ser removible por ningún usuario ni rol.",
-      "checklist": [
-        "Identificar lógica que controla visibilidad del sidebar",
-        "Marcar Settings como ítem fijo (no sujeto a personalización ni permisos de ocultado)",
-        "Verificar que aplica para todos los roles (vendedor, admin, gerente)"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Seguridad] Vendedor no puede modificar plazo de crédito",
-      "labels": [
-        "Core"
-      ],
-      "desc": "El rol vendedor no debe poder cambiar el plazo de crédito del cliente ni en la NV/cotización. Solo admin y gerente pueden modificarlo.",
-      "checklist": [
-        "Backend: bloquear campo plazo_credito en NV/cotización para rol vendedor",
-        "UI: campo plazo de crédito read-only cuando el usuario es vendedor",
-        "Validar también en endpoint de cliente (PATCH) — vendedor no puede editar plazo"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[NV] Bloquear edición al emitir factura",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Cuando se emite una factura desde una NV, la NV debe quedar bloqueada (read-only). No se puede editar líneas, precios ni cantidades una vez facturada.",
-      "checklist": [
-        "Estado NV: agregar estado 'facturada' al emitir factura",
-        "Backend: rechazar PUT/PATCH sobre NV con estado 'facturada'",
-        "UI: deshabilitar todos los campos editables y botones de acción cuando NV está facturada",
-        "Mostrar banner/badge 'Facturada' con link a la factura emitida",
-        "Solo admin puede desbloquear (opcional, con log de auditoría)"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[NV] Adjuntar documentos (OC u otros) y propagarlos a factura",
-      "labels": [
-        "Core"
-      ],
-      "desc": "La Nota de Venta debe permitir adjuntar archivos (ej. Orden de Compra del cliente). Los adjuntos deben heredarse al generar la factura desde la NV, y aparecer referenciados en el PDF de factura.",
-      "checklist": [
-        "Modelo: tabla adjuntos vinculada a NV (nombre, archivo, tipo)",
-        "UI NV: sección para subir/ver/eliminar adjuntos (multi-archivo)",
-        "Al generar factura desde NV: copiar adjuntos a la factura",
-        "PDF factura: listar adjuntos con nombre de archivo (y número de OC si aplica)",
-        "Sección de OC: campo de texto libre para número de OC del cliente"
-      ]
-    },
-    {
-      "list": "Bugs",
+      "list": "In review",
       "name": "PDF cotización no muestra validez/vigencia",
       "labels": [
         "Bug"
@@ -196,17 +130,43 @@
     },
     {
       "list": "In review",
-      "name": "[W1-03] CI — lint + tests + build Docker",
+      "name": "Settings siempre visible en sidebar (no removible)",
       "labels": [
-        "Wave 1"
+        "Bug"
       ],
-      "desc": "Pipeline CI ausente. Marcado como skip en wave 1 status — reactivar cuando team crezca o pre-release a Live Beta.",
+      "desc": "El ítem de Settings en el sidebar puede ocultarse o quitarse. Debe estar fijo y no ser removible por ningún usuario ni rol.",
       "checklist": [
-        "GitHub Actions workflow",
-        "Lint (ruff backend + eslint frontend)",
-        "Tests (pytest + vitest)",
-        "Build Docker images",
-        "Cache deps + parallelización"
+        "Identificar lógica que controla visibilidad del sidebar",
+        "Marcar Settings como ítem fijo (no sujeto a personalización ni permisos de ocultado)",
+        "Verificar que aplica para todos los roles (vendedor, admin, gerente)"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Guía despacho] Números de NV y factura incorrectos",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "En el detalle y PDF de la guía de despacho, los números de NV y factura asociados se muestran incorrectos o no corresponden al documento real.",
+      "checklist": [
+        "Revisar query que obtiene NV y factura vinculadas a la guía de despacho",
+        "Verificar que el folio mostrado es el folio SII y no el ID interno",
+        "Corregir PDF: mostrar número NV y número factura correctos",
+        "Prueba: emitir guía desde NV facturada y verificar ambos números"
+      ]
+    },
+    {
+      "list": "Client feedback",
+      "name": "[Cobranza] Envío automático de recordatorios",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Hoy solo envío manual; cliente espera automático según frecuencia configurada por empresa.",
+      "checklist": [
+        "Job Celery diario que lee CobranzaConfig.frecuencia por empresa",
+        "Envía recordatorio email a facturas vencidas según ventana",
+        "Actualiza ultimo_recordatorio",
+        "Toggle por factura para excluir"
       ]
     },
     {
@@ -323,22 +283,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "[Empresas] Logo como imagen subible",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Hoy el logo de empresa se configura como texto/URL. Permitir upload de imagen (PNG/JPG/SVG) con preview en EmpresaModal y render en PDFs (cotización, factura, boleta, guía de despacho, NC/ND). Almacenar en volumen uploads_data con validación de tipo y tamaño.",
-      "checklist": [
-        "Campo Empresa.logo_path (o relación a archivo) + migración Alembic",
-        "Endpoint upload con validación MIME (PNG/JPG/SVG) + límite tamaño (~2MB)",
-        "Preview en EmpresaModal con botón eliminar/reemplazar",
-        "Render en templates WeasyPrint (cotizacion/factura/boleta/guia/nc/nd)",
-        "Fallback texto cuando no hay logo",
-        "Servir asset protegido (auth) desde backend"
-      ]
-    },
-    {
       "list": "Feature requests",
       "name": "[Empresa] Puntos de contacto visibles en ficha empresa",
       "labels": [
@@ -415,108 +359,19 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "[Listados] Orden cronológico por defecto — más reciente primero",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los listados de documentos (Cotizaciones, NV, Facturas, Boletas, NC, ND, Guías de Despacho) deben ordenarse por defecto con el más reciente primero (ORDER BY fecha_emision DESC o created_at DESC). Hoy el orden varía o es inconsistente entre módulos.\n\nNo requiere cambio en UI de columnas — solo fijar el default en el backend y mantener la columna de fecha ordenable asc/desc.",
-      "checklist": [
-        "Auditar orden actual de cada endpoint: GET /cotizaciones, /notas-venta, /facturas, /boletas, /notas-credito, /notas-debito, /guias-despacho",
-        "Estandarizar: ORDER BY fecha_emision DESC (o created_at DESC si no existe fecha_emision)",
-        "Verificar que el frontend no sobreescriba el orden al recibir la respuesta",
-        "Columna de fecha en cada listado: soportar click para invertir orden (asc/desc)",
-        "Asegurar que el orden se mantiene con paginación (no romper en página 2+)"
-      ]
-    },
-    {
       "list": "Feature requests",
-      "name": "[Cotizaciones] Descuento requiere aprobación — vendedor no puede aplicarlo directo",
+      "name": "[Clientes] Búsqueda por nombre de empresa",
       "labels": [
         "Core"
       ],
-      "desc": "El vendedor no debe poder aplicar descuentos libremente en una cotización. En su lugar debe solicitar el descuento al admin/supervisor, quien lo aprueba o rechaza.\n\nFlujo esperado:\n- Vendedor propone descuento (% o monto) → cotización queda en estado 'descuento pendiente'.\n- Admin recibe notificación/alerta y puede aprobar o rechazar con comentario.\n- Si aprobado: descuento se aplica y cotización vuelve a estado normal.\n- Si rechazado: cotización sigue sin descuento, vendedor ve el motivo.\n- Config: umbral configurable (ej: descuentos > 5% requieren aprobación; menores, libres).",
+      "desc": "Al buscar clientes (autocomplete / listado), incluir el nombre de la empresa vinculada como campo de búsqueda adicional. Hoy solo se busca por nombre/RUT del cliente; si el usuario escribe el nombre de la empresa, no aparece ningún resultado aunque el cliente esté asociado.\n\nComportamiento esperado:\n- El input de búsqueda de clientes filtra por: nombre cliente, RUT cliente, **nombre empresa**.\n- Los resultados muestran el nombre del cliente y, en subtexto, el nombre de la empresa.\n- No cambiar el modelo de datos; solo ampliar el query de búsqueda (JOIN con Empresa).",
       "checklist": [
-        "Definir umbral configurable: % máximo de descuento libre por vendedor (config por empresa)",
-        "Modelo SolicitudDescuento (cotizacion_id, vendedor_id, descuento_solicitado, estado, revisor_id, comentario)",
-        "Migración Alembic",
-        "Endpoint POST /cotizaciones/{id}/solicitar-descuento",
-        "Endpoint PATCH /solicitudes-descuento/{id} (aprobar/rechazar — solo admin/supervisor)",
-        "Cotización con descuento pendiente: bloquear emisión hasta resolución",
-        "UI vendedor: input descuento muestra 'solicitar' si supera umbral, aplica directo si está dentro",
-        "UI admin: lista de solicitudes pendientes con aprobar/rechazar + campo comentario",
-        "Notificación in-app al admin al crear solicitud; al vendedor al resolver",
-        "Cotización detalle: mostrar estado de aprobación y quién aprobó/rechazó"
-      ]
-    },
-    {
-      "list": "Bugs",
-      "name": "[UI] EmpresaModal dark mode + nota cobranza overflow",
-      "labels": [
-        "Bug",
-        "Design System"
-      ],
-      "desc": "Dos bugs visuales en EmpresaModal:\n\n1. **Dark mode**: algunos textos dentro del modal de editar empresa usan colores hardcodeados (text-gray-X, text-black, etc.) en vez de tokens semánticos, quedando ilegibles en dark mode.\n\n2. **Nota cobranza overflow**: el campo/texto de nota de cobranza desborda el contenedor del modal y queda fuera del área scrollable, impidiendo seleccionarlo o editarlo.",
-      "checklist": [
-        "Reproducir ambos bugs en dark mode con EmpresaModal abierto en modo edición",
-        "Dark mode: grep EmpresaModal por clases hardcodeadas (text-gray-, text-black, bg-white, border-gray-) y reemplazar con tokens semánticos (text-foreground, bg-background, etc.)",
-        "Revisar también inputs, labels y placeholders dentro del modal",
-        "Nota cobranza: identificar el elemento que desborda (textarea o div)",
-        "Fijar overflow: asegurar que el contenido del modal tenga overflow-y-auto con max-h apropiado, o que el campo textarea tenga min-h y resize-y correctos",
-        "Verificar que el modal completo sea scrollable si el contenido supera la altura de pantalla",
-        "QA: probar en light y dark mode, pantallas pequeñas (1280px) y grandes"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[NV] Cerrar NV automáticamente al generar factura",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Al emitir una factura desde una Nota de Venta, la NV debe quedar en estado 'cerrada' automáticamente. Hoy la NV permanece abierta aunque ya tenga factura generada, lo que genera confusión en el listado.\n\nComportamiento esperado:\n- Al crear la factura asociada a una NV: transición automática NV → estado 'cerrada'.\n- NV cerrada no es editable ni permite generar una segunda factura.\n- En el listado de NV: chip de estado 'Facturada' con link a la factura generada.",
-      "checklist": [
-        "Identificar el endpoint/flujo donde se crea la factura desde una NV",
-        "Al commit exitoso de la factura: actualizar NotaVenta.estado → 'cerrada' en la misma transacción",
-        "Guardar referencia factura_id en NotaVenta (si no existe FK)",
-        "NotaVentaRead schema: exponer estado y factura_id/folio",
-        "Bloquear edición y re-facturación de NV cerrada (backend 409 + UI botón deshabilitado)",
-        "Listado NV: chip 'Facturada' en estado cerrada con link a /facturas/{id}",
-        "NV detalle: sección 'Factura generada' con link, similar a cotización → NV"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Productos] Tags de tipo: hidráulico, motor, transmisión (multi-valor)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los productos necesitan un campo 'Tipo' que funcione como tags (multi-selección), no como categoría exclusiva. Un producto puede ser simultáneamente 'hidráulico' y 'de motor'.\n\nTipos iniciales: hidráulico, motor, transmisión. El listado debe ser configurable (admin agrega/quita tipos).\n\nComportamiento esperado:\n- ProductoModal: selector multi-tag para tipo (chips seleccionables + opción de crear nuevo tipo).\n- Listado de productos: columna de tipos como chips, filtrable por uno o varios tipos.\n- PDF/documentos: mostrar tipos del producto si aplica.",
-      "checklist": [
-        "Modelo TipoProducto (id, nombre) + tabla M2M ProductoTipo (producto_id, tipo_id) + migraciones",
-        "Seed inicial: hidráulico, motor, transmisión",
-        "CRUD /api/tipos-producto (GET lista, POST, DELETE — solo admin)",
-        "ProductoCreate/Update schema: campo tipos: list[int] (ids)",
-        "ProductoRead schema: exponer tipos como lista de strings/objetos",
-        "ProductoModal UI: multi-select chips para tipos (con opción crear nuevo)",
-        "Listado productos: columna 'Tipos' con chips + filtro multi-selección por tipo",
-        "Búsqueda/filtro: GET /api/productos?tipo=hidraulico soporta múltiples valores"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Cotizaciones] Link a NV generada en cotización cerrada",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Cuando una cotización se cierra (estado 'cerrada' / convertida), debe mostrar un link directo a la Nota de Venta generada. Hoy no hay trazabilidad visual entre cotización y NV.\n\nComportamiento esperado:\n- En el detalle de cotización cerrada: badge o sección 'NV generada' con link a /notas-venta/{id}.\n- Si la NV fue eliminada posterior al cierre, mostrar referencia con aviso 'NV eliminada'.\n- En el listado de cotizaciones: columna/icono que indique si tiene NV asociada.",
-      "checklist": [
-        "Verificar si Cotizacion ya tiene FK nota_venta_id o campo equivalente",
-        "Si no existe: agregar Cotizacion.nota_venta_id (nullable FK) + migración Alembic",
-        "Al convertir cotización → NV: guardar nota_venta_id en la cotización",
-        "CotizacionRead schema: exponer nota_venta_id y opcionalmente nota_venta_folio",
-        "CotizacionDetalle UI: mostrar link 'Ver NV #folio' cuando nota_venta_id existe",
-        "Manejar caso NV eliminada: mostrar referencia inerte con aviso",
-        "Listado de cotizaciones: indicador visual (icono/chip) si tiene NV asociada"
+        "Identificar todos los endpoints/queries de búsqueda de clientes (autocomplete + listado)",
+        "Ampliar filtro SQL: OR empresa.nombre ILIKE :q (JOIN Empresa donde existe vínculo)",
+        "Verificar que el schema de respuesta ya devuelve nombre_empresa o agregar el campo",
+        "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
+        "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
+        "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
       ]
     },
     {
@@ -862,7 +717,7 @@
       ]
     },
     {
-      "list": "In review",
+      "list": "Feature requests",
       "name": "Búsquedas insensibles a tildes (normalización unicode)",
       "labels": [
         "Core"
@@ -899,19 +754,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "Búsquedas insensibles a tildes (normalización unicode)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
-      "checklist": [
-        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
-        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
-        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
-      ]
-    },
-    {
       "list": "Feature requests",
       "name": "[Onboarding] Import Tareas / actividades CRM pendientes",
       "labels": [
@@ -932,6 +774,299 @@
         "Asignado inexistente → asignar a admin con flag",
         "Tipos: llamada, email, reunion, visita, cobranza, otro",
         "Solo importar tareas en estado abierto (pendiente/en_curso)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Cotizaciones] Link a NV generada en cotización cerrada",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Cuando una cotización se cierra (estado 'cerrada' / convertida), debe mostrar un link directo a la Nota de Venta generada. Hoy no hay trazabilidad visual entre cotización y NV.\n\nComportamiento esperado:\n- En el detalle de cotización cerrada: badge o sección 'NV generada' con link a /notas-venta/{id}.\n- Si la NV fue eliminada posterior al cierre, mostrar referencia con aviso 'NV eliminada'.\n- En el listado de cotizaciones: columna/icono que indique si tiene NV asociada.",
+      "checklist": [
+        "Verificar si Cotizacion ya tiene FK nota_venta_id o campo equivalente",
+        "Si no existe: agregar Cotizacion.nota_venta_id (nullable FK) + migración Alembic",
+        "Al convertir cotización → NV: guardar nota_venta_id en la cotización",
+        "CotizacionRead schema: exponer nota_venta_id y opcionalmente nota_venta_folio",
+        "CotizacionDetalle UI: mostrar link 'Ver NV #folio' cuando nota_venta_id existe",
+        "Manejar caso NV eliminada: mostrar referencia inerte con aviso",
+        "Listado de cotizaciones: indicador visual (icono/chip) si tiene NV asociada"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Factura] Documentos referenciados (OC, HES, contrato, guía, NV)",
+      "labels": [
+        "Core",
+        "DTE/SII"
+      ],
+      "desc": "Las facturas frecuentemente referencian otros documentos — la más común es la Orden de Compra del cliente, pero también HES, contrato, resolución, guía de despacho previa, o nota de venta interna. Hoy ese dato no se captura ni se persiste, lo que rompe el match contable del cliente y obliga a re-emitir.\n\nModelo: lista de referencias por factura (N:1). Cada referencia tiene tipo, folio, fecha y razón. Se mapea al bloque <Referencia> del XML SII al emitir DTE.\n\nTipos de documento referenciado SII (TpoDocRef):\n- 33/34/39/41/52/56/61 → DTEs (NC referencia a factura, factura referencia a guía, etc.)\n- 801 Orden de Compra (caso más común)\n- 802 Nota de Pedido\n- 803 Contrato\n- 804 Resolución\n- 805 Proceso ChileCompra\n- 806 Ficha ChileCompra\n- 807 DUS\n- 808 B/L\n- 809 AWB\n- 810 MIC/DTA\n- 811 Carta de Porte\n- HES, NV interna, etc. (tipo libre con código de texto)",
+      "checklist": [
+        "Modelo: ReferenciaFactura (factura_id, tipo_doc, folio, fecha, razon, codigo_tipo_sii)",
+        "Soportar 1..N referencias por factura (lista, no campo único)",
+        "Tipo de doc desde catálogo SII (33,34,39,41,52,56,61,801..811) + tipo libre 'OTROS' con texto",
+        "UI emisión: sección 'Documentos referenciados' en formulario de factura, agregar/quitar filas",
+        "Caso rápido: botón 'Referenciar OC' con input de número + fecha (autocompleta tipo=801)",
+        "Validación: si tipo es DTE (33,34,...), folio debe ser numérico; si es 801/HES/contrato, libre",
+        "Persistencia: tabla referencias_factura con FK a factura (cascade delete)",
+        "Render en ficha de factura: bloque visible con todas las referencias",
+        "PDF/preview: incluir referencias bajo el detalle (igual que el SII las imprime)",
+        "DTE XML emisión (Lioren): mapear referencias al bloque <Referencia> del XML",
+        "Filtro/búsqueda en lista de facturas: 'Buscar por OC referenciada' (input → match en folio referencia tipo 801)",
+        "Ficha de Empresa/Cliente: columna 'OC' en historial de facturas (primera referencia tipo 801)",
+        "Migración legacy: campo opcional en import facturas históricas (tipo + folio + fecha)",
+        "Tests: emitir factura con 0/1/N referencias, validar XML SII, búsqueda por OC retorna factura"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Productos] Tags de tipo: hidráulico, motor, transmisión (multi-valor)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los productos necesitan un campo 'Tipo' que funcione como tags (multi-selección), no como categoría exclusiva. Un producto puede ser simultáneamente 'hidráulico' y 'de motor'.\n\nTipos iniciales: hidráulico, motor, transmisión. El listado debe ser configurable (admin agrega/quita tipos).\n\nComportamiento esperado:\n- ProductoModal: selector multi-tag para tipo (chips seleccionables + opción de crear nuevo tipo).\n- Listado de productos: columna de tipos como chips, filtrable por uno o varios tipos.\n- PDF/documentos: mostrar tipos del producto si aplica.",
+      "checklist": [
+        "Modelo TipoProducto (id, nombre) + tabla M2M ProductoTipo (producto_id, tipo_id) + migraciones",
+        "Seed inicial: hidráulico, motor, transmisión",
+        "CRUD /api/tipos-producto (GET lista, POST, DELETE — solo admin)",
+        "ProductoCreate/Update schema: campo tipos: list[int] (ids)",
+        "ProductoRead schema: exponer tipos como lista de strings/objetos",
+        "ProductoModal UI: multi-select chips para tipos (con opción crear nuevo)",
+        "Listado productos: columna 'Tipos' con chips + filtro multi-selección por tipo",
+        "Búsqueda/filtro: GET /api/productos?tipo=hidraulico soporta múltiples valores"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Factura] Adjuntar archivo de Orden de Compra (PDF/imagen) y reutilizar al facturar",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Hoy el cliente envía la OC por email/WhatsApp como PDF o foto, y al momento de facturar hay que ir a buscarla — se pierde, se traspapela, o el vendedor no la tiene a mano. Permitir subir el archivo de la OC al sistema y dejarlo accesible desde la ficha de empresa/cliente y desde la factura que la referencia.\n\nFlujo:\n1. Subir archivo OC (PDF / JPG / PNG) en sección 'Órdenes de compra del cliente' (ficha empresa o vista global). Capturar metadata: número OC, fecha, monto, vigencia, archivo.\n2. Al emitir factura → selector 'Adjuntar OC del cliente' lista las OC subidas para esa empresa, sin facturar (o parcialmente facturadas). Al elegir, se auto-llena el bloque de Documentos referenciados (tipo 801, folio, fecha).\n3. La factura queda con link al archivo + en la referencia SII.\n\nRelación con cards existentes:\n- Complementa '[Factura] Documentos referenciados (OC, HES, contrato, guía, NV)' — esta card aporta el storage/upload, la otra el modelo de referencias.\n- Distinto de '[Onboarding] Import OC históricas' (eso es batch xlsx legacy).",
+      "checklist": [
+        "Modelo: OrdenCompraCliente (empresa_id, numero, fecha, monto, vigencia_hasta, archivo_url, estado)",
+        "Estados: vigente / facturada_parcial / facturada_total / vencida / anulada",
+        "Storage: subir archivo (PDF/JPG/PNG, max 10MB) — usar mismo bucket/disk que adjuntos existentes",
+        "UI: sección 'Órdenes de compra' en ficha de Empresa con upload + tabla + preview",
+        "Vista global '/ordenes-compra-clientes' filtrable por empresa, estado, vigencia",
+        "Modal upload: drag&drop archivo + form con número OC, fecha, monto (opcional), vigencia",
+        "Validación: número OC único por empresa (warning si duplicado, no bloqueo)",
+        "Emisión factura: nuevo selector 'Adjuntar OC del cliente' que lista OC vigentes/parciales de esa empresa",
+        "Al seleccionar OC → auto-llenar Documento Referenciado (tipo=801, folio=numero, fecha=fecha)",
+        "Auto-llenar también link al archivo (queda visible en la ficha de la factura)",
+        "Tracking: cuando una factura referencia una OC, marcar OC como facturada_parcial/total según monto",
+        "Permitir despegar OC de factura (revertir estado)",
+        "Permisos: vendedor sube OC de su cliente; admin ve todas",
+        "Tests: subir, listar, asociar a factura, estado se actualiza, archivo accesible vía URL firmada"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Productos] Características técnicas / normas (ISO 46, SAE 80, DIN 451, ACEA C3...)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los productos (lubricantes, grasas, aditivos) cumplen con normas y especificaciones técnicas de la industria. Los clientes los buscan así: 'necesito algo ISO 46', '¿tienes algo ACEA C3?'. Hoy esa info vive en la descripción libre — no se puede filtrar, no se puede sugerir equivalentes, y no aparece estructurada en cotizaciones.\n\nEsto es distinto del card existente '[Productos] Tags de tipo' (hidráulico/motor/transmisión = uso). Características = especificación técnica que cumple.\n\nEjemplos por familia:\n- ISO VG: ISO 22, ISO 32, ISO 46, ISO 68, ISO 100, ISO 150, ISO 220, ISO 320, ISO 460\n- SAE motor: SAE 5W-30, 10W-40, 15W-40, 20W-50\n- SAE engranaje: SAE 80, 80W-90, 85W-140, 140\n- DIN: DIN 51524 HLP, DIN 51517 CLP, DIN 51825 KP\n- ACEA: A3/B4, C3, E7, E9\n- API motor: API SN, SP, CK-4, CJ-4, CI-4\n- API engranaje: API GL-4, GL-5\n- NLGI grasas: NLGI 00, 0, 1, 2, 3\n- Otros: AGMA, Cummins, MB-Approval, Volvo VDS, Caterpillar TO-4, Allison TES-295\n\nModelo: cada característica tiene una **familia/norma** (ISO, SAE, DIN, ACEA, API, NLGI, OEM...) y un **valor** (46, 80W-90, C3, GL-5...). Multi-valor por producto.",
+      "checklist": [
+        "Modelo: NormaTecnica (id, familia, valor, descripcion_opcional)",
+        "Familias seed: ISO_VG, SAE_MOTOR, SAE_ENGRANAJE, DIN, ACEA, API_MOTOR, API_ENGRANAJE, NLGI, OEM",
+        "Tabla M2M ProductoNorma (producto_id, norma_id)",
+        "Seed inicial con valores comunes de cada familia (ver desc)",
+        "CRUD /api/normas-tecnicas (admin agrega valores nuevos; familias semi-fijas)",
+        "Validación: valor único por familia (no permitir duplicar 'ISO 46' dos veces)",
+        "ProductoModal UI: sección 'Características técnicas' con selector agrupado por familia (acordeón o tabs)",
+        "Chip por norma seleccionada con formato 'ISO 46', 'ACEA C3', etc.",
+        "Listado productos: columna 'Características' con chips (max 3 visibles + '+N')",
+        "Filtro avanzado: multi-select por familia + valor (ej: 'ISO VG = 46 OR 68')",
+        "**Buscador global: todas las normas son tokens buscables** — typing 'ISO 46', 'ACEA C3', 'GL-5', 'NLGI 2', '15W-40' encuentra productos que las cumplen",
+        "Indexar normas en el índice de búsqueda global (mismo donde están SKU, nombre, categoría)",
+        "Match parcial y case-insensitive: 'iso46', 'iso 46', 'ISO46' → todos matchean",
+        "Aplicar mismo principio a las tags de tipo existentes (hidráulico, motor, transmisión) — buscables en la barra global",
+        "Autocompletar en el buscador: al tipear 'ISO' sugerir 'ISO 22, ISO 32, ISO 46...' como chips",
+        "Producto detail: bloque 'Cumple con' agrupado por familia",
+        "Cotización/Factura/NV: mostrar características bajo el nombre del producto (opcional, toggle)",
+        "PDF cotización: incluir características (los técnicos del cliente las verifican)",
+        "Sugerencias 'producto similar': priorizar productos con normas en común (Wave 4 backlog)",
+        "Import productos (Excel onboarding): columna opcional 'normas' (formato 'ISO 46;SAE 10W-40;ACEA C3')",
+        "Tests: crear/asociar/quitar normas, filtro retorna correcto, búsqueda por norma matchea"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[NV] Cerrar NV automáticamente al generar factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Al emitir una factura desde una Nota de Venta, la NV debe quedar en estado 'cerrada' automáticamente. Hoy la NV permanece abierta aunque ya tenga factura generada, lo que genera confusión en el listado.\n\nComportamiento esperado:\n- Al crear la factura asociada a una NV: transición automática NV → estado 'cerrada'.\n- NV cerrada no es editable ni permite generar una segunda factura.\n- En el listado de NV: chip de estado 'Facturada' con link a la factura generada.",
+      "checklist": [
+        "Identificar el endpoint/flujo donde se crea la factura desde una NV",
+        "Al commit exitoso de la factura: actualizar NotaVenta.estado → 'cerrada' en la misma transacción",
+        "Guardar referencia factura_id en NotaVenta (si no existe FK)",
+        "NotaVentaRead schema: exponer estado y factura_id/folio",
+        "Bloquear edición y re-facturación de NV cerrada (backend 409 + UI botón deshabilitado)",
+        "Listado NV: chip 'Facturada' en estado cerrada con link a /facturas/{id}",
+        "NV detalle: sección 'Factura generada' con link, similar a cotización → NV"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[NV] Adjuntar documentos (OC u otros) y propagarlos a factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "La Nota de Venta debe permitir adjuntar archivos (ej. Orden de Compra del cliente). Los adjuntos deben heredarse al generar la factura desde la NV, y aparecer referenciados en el PDF de factura.",
+      "checklist": [
+        "Modelo: tabla adjuntos vinculada a NV (nombre, archivo, tipo)",
+        "UI NV: sección para subir/ver/eliminar adjuntos (multi-archivo)",
+        "Al generar factura desde NV: copiar adjuntos a la factura",
+        "PDF factura: listar adjuntos con nombre de archivo (y número de OC si aplica)",
+        "Sección de OC: campo de texto libre para número de OC del cliente"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Pagos] Recuperar método de pago — combinable con plazo (cheque a 30 días, transferencia a 30, etc.)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Recuperar el campo 'método de pago' por documento (cotización, NV, factura) y permitir combinarlo libremente con el plazo. Hoy el catálogo es muy limitado y asume que cualquier método distinto de 'crédito' es al contado — eso es incorrecto.\n\nCasos reales del cliente (Paly, 28-04):\n- Cheque a 30 días\n- Transferencia a 30 días\n- Al contado con tarjeta\n- Al contado con transferencia\n- Vale vista (típicamente al contado)\n\n**Cambio de regla anterior:** la decisión previa ('cheque/transferencia/efectivo → plazo forzado a 0') queda obsoleta. Cheque y transferencia SÍ pueden ir con plazo. Solo efectivo y tarjeta presencial fuerzan plazo=0.\n\nModelo: dos campos independientes en cada documento — `metodo_pago` (catálogo fijo) y `plazo_dias` (0..N). El display los combina: '{Método} a {N} días' o '{Método} al contado'.",
+      "checklist": [
+        "Catálogo MétodoPago: efectivo, tarjeta_credito, tarjeta_debito, transferencia, cheque, vale_vista, credito_simple, otros",
+        "Modelo: metodo_pago (FK/enum) + plazo_dias (int) por documento (Cotización, NV, Factura)",
+        "Reglas de validación:",
+        "  - efectivo / tarjeta_debito / tarjeta_credito (presencial) → plazo_dias forzado a 0",
+        "  - cheque / transferencia / vale_vista → plazo_dias libre (0, 30, 60, 90, custom)",
+        "  - credito_simple → plazo_dias > 0 obligatorio (es la condición de venta a plazo)",
+        "Display: 'Transferencia a 30 días', 'Cheque al contado', 'Vale vista al contado'",
+        "UI: dos selectores en form de NV/Factura/Cotización — Método (select) + Plazo (select 0/30/60/90 + custom)",
+        "Defaults inteligentes: si vendedor selecciona 'efectivo' → plazo se bloquea en 0",
+        "Defaults por cliente: la Empresa puede tener un método+plazo SUGERIDO (no obligatorio) que prefilla el form",
+        "  - NOTA: esto NO contradice '[Empresa] Quitar forma de pago' — ahí se quitó el campo COMO regla; aquí vuelve como SUGERENCIA prefill (override por documento)",
+        "Cálculo fecha_vencimiento de factura: fecha_emision + plazo_dias (single source of truth)",
+        "Reportes cobranza: agrupar por método (cuánto en cheques pendientes, cuánto en transferencias)",
+        "Filtro lista facturas: por método + por rango de plazo",
+        "Migración: facturas existentes con forma_pago texto libre → mapear a catálogo + setear plazo_dias=0 si efectivo/tarjeta",
+        "Resolver pendientes en review:",
+        "  - '[Bug:Datos] Forma de pago duplica Plazo de Crédito' → cerrada por esta card (regla actualizada)",
+        "  - '[Empresa] Quitar forma de pago del modelo Empresa' → revisitar (sugerido prefill, no campo de negocio)",
+        "Tests: cheque+30d emite ok, efectivo+30d rechazado, vencimiento = emision + plazo, prefill desde empresa funciona"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[NV] Bloquear edición al emitir factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Cuando se emite una factura desde una NV, la NV debe quedar bloqueada (read-only). No se puede editar líneas, precios ni cantidades una vez facturada.",
+      "checklist": [
+        "Estado NV: agregar estado 'facturada' al emitir factura",
+        "Backend: rechazar PUT/PATCH sobre NV con estado 'facturada'",
+        "UI: deshabilitar todos los campos editables y botones de acción cuando NV está facturada",
+        "Mostrar banner/badge 'Facturada' con link a la factura emitida",
+        "Solo admin puede desbloquear (opcional, con log de auditoría)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[NV] Buscador en lista de Notas de Venta",
+      "labels": [
+        "Core"
+      ],
+      "desc": "La lista de Notas de Venta no tiene buscador — para encontrar una NV específica hay que paginar a mano. Agregar barra de búsqueda con match contra los campos más usados.\n\nMismo patrón que el buscador global de productos: un input arriba de la tabla, debounce 300ms, match parcial case-insensitive, normalizado a tildes.",
+      "checklist": [
+        "Input de búsqueda arriba de la tabla NV con placeholder 'Buscar NV (nº, cliente, vendedor, producto, OC...)'",
+        "Backend: GET /api/notas-venta?q=<texto> con búsqueda OR en:",
+        "  - número de NV",
+        "  - nombre/razón social cliente o empresa",
+        "  - RUT cliente/empresa",
+        "  - nombre vendedor",
+        "  - SKU o nombre de producto en el detalle",
+        "  - número de OC referenciada (si existe)",
+        "  - observaciones",
+        "Match parcial, case-insensitive, normalizado (sin tildes)",
+        "Debounce 300ms en frontend (no spammear backend mientras tipea)",
+        "Combinable con filtros existentes (estado, fecha, vendedor) — query AND filtros",
+        "Highlight del match en la fila (opcional, nice-to-have)",
+        "Indicador 'Buscando...' mientras carga; 'Sin resultados' si vacío",
+        "Conservar query en URL (?q=...) para compartir/refresh",
+        "Performance: índice en campos buscables; LIMIT 100 resultados",
+        "Tests: búsqueda por nº NV, RUT cliente, SKU, OC referenciada — todos retornan correcto"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Seguridad] Vendedor no puede modificar plazo de crédito",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El rol vendedor no debe poder cambiar el plazo de crédito del cliente ni en la NV/cotización. Solo admin y gerente pueden modificarlo.",
+      "checklist": [
+        "Backend: bloquear campo plazo_credito en NV/cotización para rol vendedor",
+        "UI: campo plazo de crédito read-only cuando el usuario es vendedor",
+        "Validar también en endpoint de cliente (PATCH) — vendedor no puede editar plazo"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] RUTs adicionales (multi-RUT) + validación dígito verificador",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Reemplazar el checkbox 'RUT no oficial' por un modelo de **RUTs adicionales** asociados a la Empresa. Una empresa tiene 1 RUT oficial (el actual, único, inmutable) y N RUTs adicionales (informativos, para consolidación interna — facturación cruzada, holdings, RUT provisional, ficticios).\n\nAdemás, validar TODOS los RUTs (oficial y adicionales) con la ecuación del dígito verificador (módulo 11) en backend y frontend — hoy se acepta cualquier string.\n\nReemplaza el campo booleano `rut_no_oficial` (deprecar / migrar a la nueva tabla).",
+      "checklist": [
+        "Modelo: nueva tabla EmpresaRutAdicional (id, empresa_id FK, rut, dv, etiqueta opcional, created_at) + migración Alembic",
+        "Migración data: por cada Empresa con rut_no_oficial=true, mover su rut a EmpresaRutAdicional + dropar columna rut_no_oficial",
+        "Schema EmpresaRead incluye `ruts_adicionales: list[{rut, etiqueta}]`",
+        "API: POST/DELETE /api/empresas/{id}/ruts-adicionales (no editable in-place — agregar/borrar)",
+        "Util compartido `validar_rut(rut)` con módulo 11 (dv calculado, K para 10, normalizar puntos/guión)",
+        "Backend: aplicar validar_rut en EmpresaCreate, RutAdicionalCreate y todos los endpoints que reciben RUT (clientes, contactos)",
+        "Frontend: helper validateRut() en utils + usar en EmpresaModal, ClienteModal, autocompletes",
+        "EmpresaModal: sección 'RUTs adicionales' con lista + botón 'Agregar RUT' (input con validación inline + label opcional)",
+        "EmpresaDetail: mostrar RUTs adicionales como chips bajo el RUT oficial",
+        "Buscador global de empresas/clientes: matchear también contra ruts_adicionales",
+        "Tests backend: validar_rut acepta válidos, rechaza inválidos, normaliza formato; CRUD ruts adicionales; búsqueda por rut adicional",
+        "Tests frontend: input rechaza RUT inválido con mensaje 'Dígito verificador no coincide'",
+        "Deprecación limpia: borrar referencias a `rut_no_oficial` en código y UI"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Cotizaciones] Descuento requiere aprobación — vendedor no puede aplicarlo directo",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El vendedor no debe poder aplicar descuentos libremente en una cotización. En su lugar debe solicitar el descuento al admin/supervisor, quien lo aprueba o rechaza.\n\nFlujo esperado:\n- Vendedor propone descuento (% o monto) → cotización queda en estado 'descuento pendiente'.\n- Admin recibe notificación/alerta y puede aprobar o rechazar con comentario.\n- Si aprobado: descuento se aplica y cotización vuelve a estado normal.\n- Si rechazado: cotización sigue sin descuento, vendedor ve el motivo.\n- Config: umbral configurable (ej: descuentos > 5% requieren aprobación; menores, libres).",
+      "checklist": [
+        "Definir umbral configurable: % máximo de descuento libre por vendedor (config por empresa)",
+        "Modelo SolicitudDescuento (cotizacion_id, vendedor_id, descuento_solicitado, estado, revisor_id, comentario)",
+        "Migración Alembic",
+        "Endpoint POST /cotizaciones/{id}/solicitar-descuento",
+        "Endpoint PATCH /solicitudes-descuento/{id} (aprobar/rechazar — solo admin/supervisor)",
+        "Cotización con descuento pendiente: bloquear emisión hasta resolución",
+        "UI vendedor: input descuento muestra 'solicitar' si supera umbral, aplica directo si está dentro",
+        "UI admin: lista de solicitudes pendientes con aprobar/rechazar + campo comentario",
+        "Notificación in-app al admin al crear solicitud; al vendedor al resolver",
+        "Cotización detalle: mostrar estado de aprobación y quién aprobó/rechazó"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[PDF] Validez/vigencia visible en todos los documentos",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El plazo de validez/vigencia debe aparecer en el PDF de TODOS los documentos donde aplica, no solo cotización. Hoy falta o es inconsistente.\n\nDocs afectados:\n- Cotización: campo `vigencia_hasta` (ya existe modelo, falta render real — ver bug reabierto separado).\n- Nota de Venta: vigencia de la oferta / fecha de entrega comprometida.\n- Factura / Boleta: si aplica plazo de pago, mostrar 'Vence el DD/MM/AAAA' (fecha_emision + plazo_credito).\n- Guía de despacho: vigencia del traslado SII (si normativa lo exige).\n- OC del cliente: vigencia capturada al subir.\n- NC/ND: heredan referencia, no aplica vigencia propia.\n\nBloque visual unificado en footer/header del template (mismo patrón en todos los PDFs).",
+      "checklist": [
+        "Auditar templates PDF actuales: cotización, NV, factura, boleta, guía despacho, OC — listar cuál muestra vigencia hoy",
+        "Definir bloque común 'Validez / Vencimiento' reutilizable (partial Jinja o componente compartido)",
+        "Cotización: render `vigencia_hasta` con label 'Válido hasta DD/MM/AAAA' (resolver bug reabierto)",
+        "NV: agregar `vigencia_hasta` al template; si null, ocultar bloque",
+        "Factura/Boleta: calcular `vence_el = fecha_emision + plazo_credito` y mostrar 'Vence: DD/MM/AAAA' cuando plazo > 0",
+        "Guía de despacho: revisar si SII requiere fecha de vigencia del traslado y agregarla",
+        "OC: mostrar `vigencia_hasta` capturada en upload",
+        "Tests por cada PDF: con vigencia → texto presente; sin vigencia → bloque oculto (no 'None' ni '-')",
+        "QA visual: descargar PDFs reales en staging y verificar legibilidad (no se corta, contraste OK)"
       ]
     },
     {
@@ -982,6 +1117,150 @@
     },
     {
       "list": "In review",
+      "name": "Settings de admin debe poder ordenar y quitar items del sidebar",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Administrador necesita personalizar navegación: ocultar módulos no usados y reordenar sidebar según flujo de negocio. Mejora usabilidad para roles específicos.",
+      "checklist": [
+        "UI settings: drag-drop o checkboxes para visibilidad",
+        "Persistir preferencias por rol (no por usuario)",
+        "Validar que no se oculten módulos críticos (ej: Clientes)",
+        "Default sensato: todos visibles on first load",
+        "Test con admin + vendedor"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Factura] Botón Re-cotizar desde Factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en FacturaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes. Mismo flujo que desde NV — facilita recompras facturadas.",
+      "checklist": [
+        "POST /api/facturas/{id}/recotizar: extrae líneas de la factura, aplica precio vigente",
+        "Redirigir a /cotizaciones/{nuevo_id}",
+        "Botón 'Re-cotizar' en FacturaDetalle (acción secundaria)",
+        "Toast con link a cotización creada",
+        "Test: factura con productos descontinuados mantiene precio original + warning",
+        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
+        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
+        "Test: productos descontinuados → cantidad=0 + warning presente"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[NV] Botón Re-cotizar desde Nota de Venta",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en NotaVentaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes del catálogo. Mismo endpoint que duplicar cotización pero iniciando desde NV.",
+      "checklist": [
+        "POST /api/notas-venta/{id}/recotizar: extrae líneas de la NV, aplica misma lógica de precio vigente",
+        "Redirigir a /cotizaciones/{nuevo_id}",
+        "Botón 'Re-cotizar' en NotaVentaDetalle (acción secundaria)",
+        "Toast con link a cotización creada",
+        "Test: NV con productos eliminados del catálogo mantiene precio original + warning",
+        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
+        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
+        "Test: productos descontinuados → cantidad=0 + warning presente"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:i18n] Reglas de tarea muestran \"owner\" en inglés",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Aplicación es es-CL pero la UI de Reglas de Tarea (/admin/tareas/config) muestra el término inglés \"owner\" en lugar de \"responsable\" o \"asignado\". Probable leak desde seed o desde nombres de columna sin traducir.",
+      "checklist": [
+        "Reemplazar owner → responsable/asignado en /admin/tareas/config UI",
+        "Revisar seed ReglaTarea (descripcion/labels)",
+        "Grep en frontend de strings EN restantes en módulo tareas (\"owner\", \"created\", \"due\", etc.)",
+        "Confirmar consistencia con resto de módulos"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Empresa] RUT como ID inmutable — no editable post-creación",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El RUT es el identificador estable de la empresa. Una vez creada, no debe poder modificarse. Bloquear el campo rut en EmpresaModal en modo edición y rechazar cambios en el backend.",
+      "checklist": [
+        "Backend: ignorar/rechazar rut en PATCH /empresas/{id} (422 si se envía distinto)",
+        "Frontend: campo rut deshabilitado (readonly) en EmpresaModal al editar",
+        "Agregar tooltip explicativo: 'El RUT no puede modificarse después de creada la empresa'",
+        "Test: PATCH con rut distinto → 422 o silencio"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Empresas] Quitar campo \"Prioridad\"",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El campo Prioridad en Empresa no se usa en filtros, reportes ni reglas de negocio. Genera ruido en formularios y export. Eliminar del modelo, UI, filtros y export Excel; migración Alembic drop column.",
+      "checklist": [
+        "Migración Alembic drop column empresas.prioridad",
+        "Quitar campo de EmpresaCreate/EmpresaUpdate/EmpresaRead",
+        "Quitar input de EmpresaModal + columna de EmpresaList + filtro",
+        "Quitar de export Excel y de cualquier reporte",
+        "Audit log: confirmar que listener no falla por columna ausente"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Empresa] Permisos: solo admins modifican línea de crédito",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Vendedores no deben poder modificar ni ver el campo línea de crédito de una empresa. Solo admins y subadmins pueden editarlo. Implica bloquear el campo en EmpresaModal para vendedor y restringir el endpoint PATCH /empresas/{id}.",
+      "checklist": [
+        "Backend: validar rol antes de actualizar linea_credito en PATCH /empresas/{id}",
+        "Frontend: ocultar / deshabilitar campo línea de crédito en EmpresaModal si rol=vendedor",
+        "Ocultar AprobacionCredito y GET /empresas/{id}/credito para vendedor si aplica",
+        "Test: vendedor envía PATCH con linea_credito → 403"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Cotización] Duplicar cotización con precios y fecha actualizados",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en CotizacionDetalle que crea una nueva cotización con los mismos productos/cantidades pero fecha_emision = hoy y precios tomados del catálogo actual (precio_venta vigente). Útil para compras repetidas. Lo mismo desde NV y Factura — ver cards hermanas.",
+      "checklist": [
+        "POST /api/cotizaciones/{id}/duplicar: copia líneas, reemplaza fecha_emision=hoy y precio_unitario desde Producto.precio_venta vigente",
+        "Responde {id} de la cotización nueva → redirigir a /cotizaciones/{nuevo_id}",
+        "Si algún producto fue eliminado del catálogo: incluirlo con precio original + warning en respuesta",
+        "Permiso: cualquier rol con cotizaciones:create puede duplicar",
+        "Botón 'Re-cotizar' en CotizacionDetalle (junto a Editar / Anular)",
+        "Toast con link a la cotización nueva",
+        "Test backend: precios actualizados, fecha hoy, productos descontinuados manejados",
+        "Si algún producto fue eliminado del catálogo: cantidad=0 + warning en respuesta (lista de SKUs afectados)",
+        "Frontend: mostrar banner de advertencia en CotizacionDetalle si hay líneas con cantidad=0 por producto descontinuado",
+        "Test backend: precios actualizados, fecha hoy, cantidad=0 para descontinuados, warning presente"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[W1-03] CI — lint + tests + build Docker",
+      "labels": [
+        "Wave 1"
+      ],
+      "desc": "Pipeline CI ausente. Marcado como skip en wave 1 status — reactivar cuando team crezca o pre-release a Live Beta.",
+      "checklist": [
+        "GitHub Actions workflow",
+        "Lint (ruff backend + eslint frontend)",
+        "Tests (pytest + vitest)",
+        "Build Docker images",
+        "Cache deps + parallelización"
+      ]
+    },
+    {
+      "list": "In review",
       "name": "[Bug:Tareas] Vendedor puede ver Tareas de Admins y subadmins",
       "labels": [
         "Core",
@@ -994,21 +1273,6 @@
         "Frontend: ocultar tabs/vistas no autorizadas",
         "Reproducir: login vendedor → verificar no ve admin tasks",
         "Audit logs: registrar acceso anterior"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "Settings de admin debe poder ordenar y quitar items del sidebar",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Administrador necesita personalizar navegación: ocultar módulos no usados y reordenar sidebar según flujo de negocio. Mejora usabilidad para roles específicos.",
-      "checklist": [
-        "UI settings: drag-drop o checkboxes para visibilidad",
-        "Persistir preferencias por rol (no por usuario)",
-        "Validar que no se oculten módulos críticos (ej: Clientes)",
-        "Default sensato: todos visibles on first load",
-        "Test con admin + vendedor"
       ]
     },
     {
@@ -1045,6 +1309,22 @@
     },
     {
       "list": "In review",
+      "name": "[Empresas] Logo como imagen subible",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Hoy el logo de empresa se configura como texto/URL. Permitir upload de imagen (PNG/JPG/SVG) con preview en EmpresaModal y render en PDFs (cotización, factura, boleta, guía de despacho, NC/ND). Almacenar en volumen uploads_data con validación de tipo y tamaño.",
+      "checklist": [
+        "Campo Empresa.logo_path (o relación a archivo) + migración Alembic",
+        "Endpoint upload con validación MIME (PNG/JPG/SVG) + límite tamaño (~2MB)",
+        "Preview en EmpresaModal con botón eliminar/reemplazar",
+        "Render en templates WeasyPrint (cotizacion/factura/boleta/guia/nc/nd)",
+        "Fallback texto cuando no hay logo",
+        "Servir asset protegido (auth) desde backend"
+      ]
+    },
+    {
+      "list": "In review",
       "name": "[DevX] Seed data — Pagos, NC, ND, GD, Boletas, Proveedores, OC",
       "labels": [
         "Core"
@@ -1059,64 +1339,6 @@
         "Proveedores con OC en distintos estados",
         "OC con líneas y al menos una recibida",
         "Idempotencia (--reset borra y re-siembra) y respeta secuencias correlativas"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Empresa] Quitar forma de pago del modelo Empresa",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Decisión de negocio: la Empresa no tiene forma de pago propia. Cada transacción (cotización, NV, factura) define su propia forma de pago. Eliminar forma_pago de EmpresaCreate/Update/Read, modal y export si existe; la lógica de forma_pago vive en cada documento.",
-      "checklist": [
-        "Confirmar si Empresa.forma_pago existe en modelo (grep)",
-        "Si existe: migración Alembic drop column + backfill",
-        "Quitar forma_pago de EmpresaModal (input)",
-        "Quitar forma_pago de EmpresaRead schema y export Excel",
-        "Validar que cotización/NV/factura sigan teniendo su propio forma_pago"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Empresas] Quitar campo \"Prioridad\"",
-      "labels": [
-        "Core"
-      ],
-      "desc": "El campo Prioridad en Empresa no se usa en filtros, reportes ni reglas de negocio. Genera ruido en formularios y export. Eliminar del modelo, UI, filtros y export Excel; migración Alembic drop column.",
-      "checklist": [
-        "Migración Alembic drop column empresas.prioridad",
-        "Quitar campo de EmpresaCreate/EmpresaUpdate/EmpresaRead",
-        "Quitar input de EmpresaModal + columna de EmpresaList + filtro",
-        "Quitar de export Excel y de cualquier reporte",
-        "Audit log: confirmar que listener no falla por columna ausente"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Empresa] Permisos: solo admins modifican línea de crédito",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Vendedores no deben poder modificar ni ver el campo línea de crédito de una empresa. Solo admins y subadmins pueden editarlo. Implica bloquear el campo en EmpresaModal para vendedor y restringir el endpoint PATCH /empresas/{id}.",
-      "checklist": [
-        "Backend: validar rol antes de actualizar linea_credito en PATCH /empresas/{id}",
-        "Frontend: ocultar / deshabilitar campo línea de crédito en EmpresaModal si rol=vendedor",
-        "Ocultar AprobacionCredito y GET /empresas/{id}/credito para vendedor si aplica",
-        "Test: vendedor envía PATCH con linea_credito → 403"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Empresa] RUT como ID inmutable — no editable post-creación",
-      "labels": [
-        "Core"
-      ],
-      "desc": "El RUT es el identificador estable de la empresa. Una vez creada, no debe poder modificarse. Bloquear el campo rut en EmpresaModal en modo edición y rechazar cambios en el backend.",
-      "checklist": [
-        "Backend: ignorar/rechazar rut en PATCH /empresas/{id} (422 si se envía distinto)",
-        "Frontend: campo rut deshabilitado (readonly) en EmpresaModal al editar",
-        "Agregar tooltip explicativo: 'El RUT no puede modificarse después de creada la empresa'",
-        "Test: PATCH con rut distinto → 422 o silencio"
       ]
     },
     {
@@ -1193,26 +1415,6 @@
     },
     {
       "list": "In review",
-      "name": "[Cotización] Duplicar cotización con precios y fecha actualizados",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Botón 'Re-cotizar' en CotizacionDetalle que crea una nueva cotización con los mismos productos/cantidades pero fecha_emision = hoy y precios tomados del catálogo actual (precio_venta vigente). Útil para compras repetidas. Lo mismo desde NV y Factura — ver cards hermanas.",
-      "checklist": [
-        "POST /api/cotizaciones/{id}/duplicar: copia líneas, reemplaza fecha_emision=hoy y precio_unitario desde Producto.precio_venta vigente",
-        "Responde {id} de la cotización nueva → redirigir a /cotizaciones/{nuevo_id}",
-        "Si algún producto fue eliminado del catálogo: incluirlo con precio original + warning en respuesta",
-        "Permiso: cualquier rol con cotizaciones:create puede duplicar",
-        "Botón 'Re-cotizar' en CotizacionDetalle (junto a Editar / Anular)",
-        "Toast con link a la cotización nueva",
-        "Test backend: precios actualizados, fecha hoy, productos descontinuados manejados",
-        "Si algún producto fue eliminado del catálogo: cantidad=0 + warning en respuesta (lista de SKUs afectados)",
-        "Frontend: mostrar banner de advertencia en CotizacionDetalle si hay líneas con cantidad=0 por producto descontinuado",
-        "Test backend: precios actualizados, fecha hoy, cantidad=0 para descontinuados, warning presente"
-      ]
-    },
-    {
-      "list": "In review",
       "name": "[Bug:DarkMode] Títulos Auditoría y Cobranza invisibles en dark mode",
       "labels": [
         "Bug",
@@ -1224,57 +1426,6 @@
         "Fix header /cobranza → token semántico",
         "Grep frontend por text-gray-900|text-black sin dark: en headers de página",
         "Validar contraste WCAG AA en light + dark"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[NV] Botón Re-cotizar desde Nota de Venta",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Botón 'Re-cotizar' en NotaVentaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes del catálogo. Mismo endpoint que duplicar cotización pero iniciando desde NV.",
-      "checklist": [
-        "POST /api/notas-venta/{id}/recotizar: extrae líneas de la NV, aplica misma lógica de precio vigente",
-        "Redirigir a /cotizaciones/{nuevo_id}",
-        "Botón 'Re-cotizar' en NotaVentaDetalle (acción secundaria)",
-        "Toast con link a cotización creada",
-        "Test: NV con productos eliminados del catálogo mantiene precio original + warning",
-        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
-        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
-        "Test: productos descontinuados → cantidad=0 + warning presente"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:i18n] Reglas de tarea muestran \"owner\" en inglés",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "Aplicación es es-CL pero la UI de Reglas de Tarea (/admin/tareas/config) muestra el término inglés \"owner\" en lugar de \"responsable\" o \"asignado\". Probable leak desde seed o desde nombres de columna sin traducir.",
-      "checklist": [
-        "Reemplazar owner → responsable/asignado en /admin/tareas/config UI",
-        "Revisar seed ReglaTarea (descripcion/labels)",
-        "Grep en frontend de strings EN restantes en módulo tareas (\"owner\", \"created\", \"due\", etc.)",
-        "Confirmar consistencia con resto de módulos"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Factura] Botón Re-cotizar desde Factura",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Botón 'Re-cotizar' en FacturaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes. Mismo flujo que desde NV — facilita recompras facturadas.",
-      "checklist": [
-        "POST /api/facturas/{id}/recotizar: extrae líneas de la factura, aplica precio vigente",
-        "Redirigir a /cotizaciones/{nuevo_id}",
-        "Botón 'Re-cotizar' en FacturaDetalle (acción secundaria)",
-        "Toast con link a cotización creada",
-        "Test: factura con productos descontinuados mantiene precio original + warning",
-        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
-        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
-        "Test: productos descontinuados → cantidad=0 + warning presente"
       ]
     },
     {
@@ -1313,31 +1464,69 @@
       ]
     },
     {
-      "list": "Friendly Beta 0.1",
-      "name": "[Fase 1] Fundación — Auth + Roles + Layout",
+      "list": "In review",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
       "labels": [
         "Core"
       ],
-      "desc": "JWT auth (access + refresh), roles (admin/subadmin/vendedor), permisos configurables por usuario, layout sidebar colapsable + dark/light theme.",
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
       "checklist": [
-        "JWT access + refresh tokens",
-        "Roles admin/subadmin/vendedor",
-        "Permisos toggles por usuario (módulo × acción)",
-        "Gestión usuarios CRUD",
-        "Sidebar colapsable + dark/light theme"
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
       ]
     },
     {
-      "list": "Friendly Beta 0.1",
-      "name": "[Fase 2] Datos maestros",
+      "list": "In review",
+      "name": "[Factura] Estado 'pagado' derivado de pagos — no editable manualmente",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "El estado de pago de una factura (pendiente / parcial / pagado / vencida) debe ser **derivado** de la suma de pagos aplicados, nunca editable a mano. Hoy es posible marcar 'pagado' sin registrar el pago, lo que rompe la cobranza, los reportes de cartola y la conciliación con el cliente.\n\nRegla: estado_pago = f(total_factura, sum(pagos.monto))\n- 0                       → pendiente (o vencida si fecha_venc < hoy)\n- 0 < pagado < total      → parcial\n- pagado >= total         → pagado\n\nPara 'marcar como pagado' rápido (sin querer registrar pago real), el flujo correcto es: registrar un pago por el saldo pendiente con medio='ajuste' o 'condonado' (queda trazable). No debe existir botón ni endpoint que cambie el estado directamente.",
+      "checklist": [
+        "Backend: estado_pago se computa desde pagos al leer (property/computed), no se persiste mutable",
+        "Eliminar endpoint/campo que permita PATCH directo a estado_pago",
+        "Eliminar botón 'Marcar como pagado' del frontend (Factura, Cobranza, lista)",
+        "Reemplazar por flujo: 'Registrar pago' (modal de pago con monto = saldo pendiente prellenado)",
+        "Soportar medio_pago='ajuste'/'condonado' para casos sin plata real (queda en cartola con motivo)",
+        "Permisos: registrar pago tipo 'ajuste'/'condonado' solo admin",
+        "Auditoría: cada pago queda con usuario + timestamp + motivo (ya debería estar)",
+        "Reverso: anular un pago revierte el estado automáticamente (no requiere acción extra)",
+        "Recalcular estado al crear/editar/anular pago — single source of truth",
+        "Migración: si hay facturas en BD con estado_pago='pagado' y sum(pagos)=0, dejarlas pendientes y reportar (no auto-pagar)",
+        "Tests: factura con 0 pagos → pendiente; pagos parciales → parcial; pagos = total → pagado; anular pago → vuelve atrás",
+        "Tests: PATCH a estado_pago retorna 422 / es ignorado"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Listados] Orden cronológico por defecto — más reciente primero",
       "labels": [
         "Core"
       ],
-      "desc": "Productos, Clientes y Proveedores con CRUD + búsqueda + Excel.",
+      "desc": "Los listados de documentos (Cotizaciones, NV, Facturas, Boletas, NC, ND, Guías de Despacho) deben ordenarse por defecto con el más reciente primero (ORDER BY fecha_emision DESC o created_at DESC). Hoy el orden varía o es inconsistente entre módulos.\n\nNo requiere cambio en UI de columnas — solo fijar el default en el backend y mantener la columna de fecha ordenable asc/desc.",
       "checklist": [
-        "Catálogo Productos (CRUD, búsqueda, alerta stock bajo, Excel)",
-        "Clientes (CRUD, búsqueda nombre/RUT, Excel)",
-        "Proveedores (CRUD, Excel)"
+        "Auditar orden actual de cada endpoint: GET /cotizaciones, /notas-venta, /facturas, /boletas, /notas-credito, /notas-debito, /guias-despacho",
+        "Estandarizar: ORDER BY fecha_emision DESC (o created_at DESC si no existe fecha_emision)",
+        "Verificar que el frontend no sobreescriba el orden al recibir la respuesta",
+        "Columna de fecha en cada listado: soportar click para invertir orden (asc/desc)",
+        "Asegurar que el orden se mantiene con paginación (no romper en página 2+)"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Empresa] Quitar forma de pago del modelo Empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Decisión de negocio: la Empresa no tiene forma de pago propia. Cada transacción (cotización, NV, factura) define su propia forma de pago. Eliminar forma_pago de EmpresaCreate/Update/Read, modal y export si existe; la lógica de forma_pago vive en cada documento.",
+      "checklist": [
+        "Confirmar si Empresa.forma_pago existe en modelo (grep)",
+        "Si existe: migración Alembic drop column + backfill",
+        "Quitar forma_pago de EmpresaModal (input)",
+        "Quitar forma_pago de EmpresaRead schema y export Excel",
+        "Validar que cotización/NV/factura sigan teniendo su propio forma_pago"
       ]
     },
     {
@@ -1355,6 +1544,93 @@
         "Estados no_definido → abierta → cerrada_fv → rechazada",
         "Export Excel",
         "SystemConfig key/value para config global"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Vista como] Admin preview de roles",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Frontend-only role preview con stores/viewAs.ts + intersección admin∩target + banner sticky.",
+      "checklist": [
+        "stores/viewAs.ts (zustand + sessionStorage)",
+        "hooks/useEffectivePermissions.ts (intersección admin∩target)",
+        "Banner sticky warning con role='status' + botón 'Salir de vista'",
+        "Sidebar gating module-based + adminOnly silenciado",
+        "Counters silenciados (stock-bajo, aprobaciones-pendientes)",
+        "Migrados: Dashboard, Productos, TareaDrawer/Tareas, Aprobaciones, AdminAuditoria, TareasConfig, Configuracion",
+        "Logout purga conico-view-as",
+        "Backend untouched (banner lo explicita)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[W2-02] Timeline unificado cliente/empresa",
+      "labels": [
+        "Tier A",
+        "Wave 2"
+      ],
+      "desc": "Endpoints /api/clientes|empresas/{id}/timeline con 9 tipos + Timeline.tsx reusable + EmpresaDetailModal 5to tab + ClienteDetailModal MVP.",
+      "checklist": [
+        "Backend app/api/timeline.py: GET /api/clientes/{id}/timeline + /empresas/{id}/timeline",
+        "Query params: tipos (csv 9 tipos) + limit (1-200, default 50) + offset",
+        "Response {items, total, limit, offset}, sort (fecha, id) DESC",
+        "Vendedor scope: scope realista NC/ND/Pago basado en estructura",
+        "NC empresa-scope vía Cliente.empresa_id JOIN + branch boleta-anónima",
+        "Frontend api/timeline.ts typed client",
+        "Timeline.tsx reusable con useInfiniteQuery + 9 filter pills aria-pressed",
+        "ESTADO_VARIANT en tokens, font-num en monto, focus-visible ring",
+        "Skeleton + EmptyState (Inbox) + error banner role='alert'",
+        "EmpresaDetailModal 5to tab Timeline (entre Resumen y Facturas)",
+        "ClienteDetailModal MVP con tabs Datos | Timeline + botón 'Ver' (Eye)",
+        "16 backend tests pytest + 5 vitest Timeline + 3 vitest ClienteDetailModal",
+        "TODO W2-02-followup: N+1 9 SELECTs (low priority)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 2] Datos maestros",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Productos, Clientes y Proveedores con CRUD + búsqueda + Excel.",
+      "checklist": [
+        "Catálogo Productos (CRUD, búsqueda, alerta stock bajo, Excel)",
+        "Clientes (CRUD, búsqueda nombre/RUT, Excel)",
+        "Proveedores (CRUD, Excel)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 1] Fundación — Auth + Roles + Layout",
+      "labels": [
+        "Core"
+      ],
+      "desc": "JWT auth (access + refresh), roles (admin/subadmin/vendedor), permisos configurables por usuario, layout sidebar colapsable + dark/light theme.",
+      "checklist": [
+        "JWT access + refresh tokens",
+        "Roles admin/subadmin/vendedor",
+        "Permisos toggles por usuario (módulo × acción)",
+        "Gestión usuarios CRUD",
+        "Sidebar colapsable + dark/light theme"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 10] Control de crédito + aprobaciones",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Crédito por empresa + flujo de aprobación asíncrono para NV que excede el cupo.",
+      "checklist": [
+        "GET /api/empresas/{id}/credito (usado vs disponible)",
+        "Cotización: warning no bloqueante si excede crédito",
+        "NV nueva: si excede → flujo aprobación asíncrono",
+        "AprobacionCredito (origen, payload JSON, estado pendiente/aprobada/denegada)",
+        "Admin aprueba → NV creada automáticamente",
+        "CreditWarningModal sin polling",
+        "Página /aprobaciones unificada (crédito + margen)"
       ]
     },
     {
@@ -1397,6 +1673,21 @@
     },
     {
       "list": "Friendly Beta 0.1",
+      "name": "[Fase 7] Inventario",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Stock por producto + movimientos + alertas + ajuste manual con motivo.",
+      "checklist": [
+        "Stock actual por producto",
+        "Movimientos: entrada (OC), salida (NV), ajuste manual",
+        "Historial global y por producto (filtros tipo/fecha/producto)",
+        "Alertas stock bajo: badge sidebar, banner /inventario, indicador catálogo",
+        "Ajuste manual: motivo (conteo_fisico/merma/correccion/otro) + nota"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
       "name": "[Fase 6] Órdenes de Compra",
       "labels": [
         "Core"
@@ -1409,21 +1700,6 @@
         "PDF WeasyPrint + email SMTP a proveedor",
         "Recepción: crea MovimientoInventario (entrada) + actualiza stock",
         "Frontend list + detail wired al router"
-      ]
-    },
-    {
-      "list": "Friendly Beta 0.1",
-      "name": "[Fase 7] Inventario",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Stock por producto + movimientos + alertas + ajuste manual con motivo.",
-      "checklist": [
-        "Stock actual por producto",
-        "Movimientos: entrada (OC), salida (NV), ajuste manual",
-        "Historial global y por producto (filtros tipo/fecha/producto)",
-        "Alertas stock bajo: badge sidebar, banner /inventario, indicador catálogo",
-        "Ajuste manual: motivo (conteo_fisico/merma/correccion/otro) + nota"
       ]
     },
     {
@@ -1454,23 +1730,6 @@
         "Templates predefinidos: Ventas / Operacional / Completo",
         "Vendedor scoping automático",
         "Gráficos KPI/barras/línea (Recharts) + tablas inline"
-      ]
-    },
-    {
-      "list": "Friendly Beta 0.1",
-      "name": "[Fase 10] Control de crédito + aprobaciones",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Crédito por empresa + flujo de aprobación asíncrono para NV que excede el cupo.",
-      "checklist": [
-        "GET /api/empresas/{id}/credito (usado vs disponible)",
-        "Cotización: warning no bloqueante si excede crédito",
-        "NV nueva: si excede → flujo aprobación asíncrono",
-        "AprobacionCredito (origen, payload JSON, estado pendiente/aprobada/denegada)",
-        "Admin aprueba → NV creada automáticamente",
-        "CreditWarningModal sin polling",
-        "Página /aprobaciones unificada (crédito + margen)"
       ]
     },
     {
@@ -1766,48 +2025,6 @@
     },
     {
       "list": "Friendly Beta 0.1",
-      "name": "[W2-02] Timeline unificado cliente/empresa",
-      "labels": [
-        "Tier A",
-        "Wave 2"
-      ],
-      "desc": "Endpoints /api/clientes|empresas/{id}/timeline con 9 tipos + Timeline.tsx reusable + EmpresaDetailModal 5to tab + ClienteDetailModal MVP.",
-      "checklist": [
-        "Backend app/api/timeline.py: GET /api/clientes/{id}/timeline + /empresas/{id}/timeline",
-        "Query params: tipos (csv 9 tipos) + limit (1-200, default 50) + offset",
-        "Response {items, total, limit, offset}, sort (fecha, id) DESC",
-        "Vendedor scope: scope realista NC/ND/Pago basado en estructura",
-        "NC empresa-scope vía Cliente.empresa_id JOIN + branch boleta-anónima",
-        "Frontend api/timeline.ts typed client",
-        "Timeline.tsx reusable con useInfiniteQuery + 9 filter pills aria-pressed",
-        "ESTADO_VARIANT en tokens, font-num en monto, focus-visible ring",
-        "Skeleton + EmptyState (Inbox) + error banner role='alert'",
-        "EmpresaDetailModal 5to tab Timeline (entre Resumen y Facturas)",
-        "ClienteDetailModal MVP con tabs Datos | Timeline + botón 'Ver' (Eye)",
-        "16 backend tests pytest + 5 vitest Timeline + 3 vitest ClienteDetailModal",
-        "TODO W2-02-followup: N+1 9 SELECTs (low priority)"
-      ]
-    },
-    {
-      "list": "Friendly Beta 0.1",
-      "name": "[Vista como] Admin preview de roles",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Frontend-only role preview con stores/viewAs.ts + intersección admin∩target + banner sticky.",
-      "checklist": [
-        "stores/viewAs.ts (zustand + sessionStorage)",
-        "hooks/useEffectivePermissions.ts (intersección admin∩target)",
-        "Banner sticky warning con role='status' + botón 'Salir de vista'",
-        "Sidebar gating module-based + adminOnly silenciado",
-        "Counters silenciados (stock-bajo, aprobaciones-pendientes)",
-        "Migrados: Dashboard, Productos, TareaDrawer/Tareas, Aprobaciones, AdminAuditoria, TareasConfig, Configuracion",
-        "Logout purga conico-view-as",
-        "Backend untouched (banner lo explicita)"
-      ]
-    },
-    {
-      "list": "Friendly Beta 0.1",
       "name": "[Design System v2] Phases 0–E — Refined SaaS migration",
       "labels": [
         "Design System"
@@ -1840,207 +2057,6 @@
         "Phase C6 — Users",
         "Phase D — Login + AppLayout QA",
         "Phase E — Semantic-token sweep + a11y pass (grep gate clean)"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Factura] Documentos referenciados (OC, HES, contrato, guía, NV)",
-      "labels": [
-        "Core",
-        "DTE/SII"
-      ],
-      "desc": "Las facturas frecuentemente referencian otros documentos — la más común es la Orden de Compra del cliente, pero también HES, contrato, resolución, guía de despacho previa, o nota de venta interna. Hoy ese dato no se captura ni se persiste, lo que rompe el match contable del cliente y obliga a re-emitir.\n\nModelo: lista de referencias por factura (N:1). Cada referencia tiene tipo, folio, fecha y razón. Se mapea al bloque <Referencia> del XML SII al emitir DTE.\n\nTipos de documento referenciado SII (TpoDocRef):\n- 33/34/39/41/52/56/61 → DTEs (NC referencia a factura, factura referencia a guía, etc.)\n- 801 Orden de Compra (caso más común)\n- 802 Nota de Pedido\n- 803 Contrato\n- 804 Resolución\n- 805 Proceso ChileCompra\n- 806 Ficha ChileCompra\n- 807 DUS\n- 808 B/L\n- 809 AWB\n- 810 MIC/DTA\n- 811 Carta de Porte\n- HES, NV interna, etc. (tipo libre con código de texto)",
-      "checklist": [
-        "Modelo: ReferenciaFactura (factura_id, tipo_doc, folio, fecha, razon, codigo_tipo_sii)",
-        "Soportar 1..N referencias por factura (lista, no campo único)",
-        "Tipo de doc desde catálogo SII (33,34,39,41,52,56,61,801..811) + tipo libre 'OTROS' con texto",
-        "UI emisión: sección 'Documentos referenciados' en formulario de factura, agregar/quitar filas",
-        "Caso rápido: botón 'Referenciar OC' con input de número + fecha (autocompleta tipo=801)",
-        "Validación: si tipo es DTE (33,34,...), folio debe ser numérico; si es 801/HES/contrato, libre",
-        "Persistencia: tabla referencias_factura con FK a factura (cascade delete)",
-        "Render en ficha de factura: bloque visible con todas las referencias",
-        "PDF/preview: incluir referencias bajo el detalle (igual que el SII las imprime)",
-        "DTE XML emisión (Lioren): mapear referencias al bloque <Referencia> del XML",
-        "Filtro/búsqueda en lista de facturas: 'Buscar por OC referenciada' (input → match en folio referencia tipo 801)",
-        "Ficha de Empresa/Cliente: columna 'OC' en historial de facturas (primera referencia tipo 801)",
-        "Migración legacy: campo opcional en import facturas históricas (tipo + folio + fecha)",
-        "Tests: emitir factura con 0/1/N referencias, validar XML SII, búsqueda por OC retorna factura"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Factura] Estado 'pagado' derivado de pagos — no editable manualmente",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "El estado de pago de una factura (pendiente / parcial / pagado / vencida) debe ser **derivado** de la suma de pagos aplicados, nunca editable a mano. Hoy es posible marcar 'pagado' sin registrar el pago, lo que rompe la cobranza, los reportes de cartola y la conciliación con el cliente.\n\nRegla: estado_pago = f(total_factura, sum(pagos.monto))\n- 0                       → pendiente (o vencida si fecha_venc < hoy)\n- 0 < pagado < total      → parcial\n- pagado >= total         → pagado\n\nPara 'marcar como pagado' rápido (sin querer registrar pago real), el flujo correcto es: registrar un pago por el saldo pendiente con medio='ajuste' o 'condonado' (queda trazable). No debe existir botón ni endpoint que cambie el estado directamente.",
-      "checklist": [
-        "Backend: estado_pago se computa desde pagos al leer (property/computed), no se persiste mutable",
-        "Eliminar endpoint/campo que permita PATCH directo a estado_pago",
-        "Eliminar botón 'Marcar como pagado' del frontend (Factura, Cobranza, lista)",
-        "Reemplazar por flujo: 'Registrar pago' (modal de pago con monto = saldo pendiente prellenado)",
-        "Soportar medio_pago='ajuste'/'condonado' para casos sin plata real (queda en cartola con motivo)",
-        "Permisos: registrar pago tipo 'ajuste'/'condonado' solo admin",
-        "Auditoría: cada pago queda con usuario + timestamp + motivo (ya debería estar)",
-        "Reverso: anular un pago revierte el estado automáticamente (no requiere acción extra)",
-        "Recalcular estado al crear/editar/anular pago — single source of truth",
-        "Migración: si hay facturas en BD con estado_pago='pagado' y sum(pagos)=0, dejarlas pendientes y reportar (no auto-pagar)",
-        "Tests: factura con 0 pagos → pendiente; pagos parciales → parcial; pagos = total → pagado; anular pago → vuelve atrás",
-        "Tests: PATCH a estado_pago retorna 422 / es ignorado"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Factura] Adjuntar archivo de Orden de Compra (PDF/imagen) y reutilizar al facturar",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Hoy el cliente envía la OC por email/WhatsApp como PDF o foto, y al momento de facturar hay que ir a buscarla — se pierde, se traspapela, o el vendedor no la tiene a mano. Permitir subir el archivo de la OC al sistema y dejarlo accesible desde la ficha de empresa/cliente y desde la factura que la referencia.\n\nFlujo:\n1. Subir archivo OC (PDF / JPG / PNG) en sección 'Órdenes de compra del cliente' (ficha empresa o vista global). Capturar metadata: número OC, fecha, monto, vigencia, archivo.\n2. Al emitir factura → selector 'Adjuntar OC del cliente' lista las OC subidas para esa empresa, sin facturar (o parcialmente facturadas). Al elegir, se auto-llena el bloque de Documentos referenciados (tipo 801, folio, fecha).\n3. La factura queda con link al archivo + en la referencia SII.\n\nRelación con cards existentes:\n- Complementa '[Factura] Documentos referenciados (OC, HES, contrato, guía, NV)' — esta card aporta el storage/upload, la otra el modelo de referencias.\n- Distinto de '[Onboarding] Import OC históricas' (eso es batch xlsx legacy).",
-      "checklist": [
-        "Modelo: OrdenCompraCliente (empresa_id, numero, fecha, monto, vigencia_hasta, archivo_url, estado)",
-        "Estados: vigente / facturada_parcial / facturada_total / vencida / anulada",
-        "Storage: subir archivo (PDF/JPG/PNG, max 10MB) — usar mismo bucket/disk que adjuntos existentes",
-        "UI: sección 'Órdenes de compra' en ficha de Empresa con upload + tabla + preview",
-        "Vista global '/ordenes-compra-clientes' filtrable por empresa, estado, vigencia",
-        "Modal upload: drag&drop archivo + form con número OC, fecha, monto (opcional), vigencia",
-        "Validación: número OC único por empresa (warning si duplicado, no bloqueo)",
-        "Emisión factura: nuevo selector 'Adjuntar OC del cliente' que lista OC vigentes/parciales de esa empresa",
-        "Al seleccionar OC → auto-llenar Documento Referenciado (tipo=801, folio=numero, fecha=fecha)",
-        "Auto-llenar también link al archivo (queda visible en la ficha de la factura)",
-        "Tracking: cuando una factura referencia una OC, marcar OC como facturada_parcial/total según monto",
-        "Permitir despegar OC de factura (revertir estado)",
-        "Permisos: vendedor sube OC de su cliente; admin ve todas",
-        "Tests: subir, listar, asociar a factura, estado se actualiza, archivo accesible vía URL firmada"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Productos] Características técnicas / normas (ISO 46, SAE 80, DIN 451, ACEA C3...)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los productos (lubricantes, grasas, aditivos) cumplen con normas y especificaciones técnicas de la industria. Los clientes los buscan así: 'necesito algo ISO 46', '¿tienes algo ACEA C3?'. Hoy esa info vive en la descripción libre — no se puede filtrar, no se puede sugerir equivalentes, y no aparece estructurada en cotizaciones.\n\nEsto es distinto del card existente '[Productos] Tags de tipo' (hidráulico/motor/transmisión = uso). Características = especificación técnica que cumple.\n\nEjemplos por familia:\n- ISO VG: ISO 22, ISO 32, ISO 46, ISO 68, ISO 100, ISO 150, ISO 220, ISO 320, ISO 460\n- SAE motor: SAE 5W-30, 10W-40, 15W-40, 20W-50\n- SAE engranaje: SAE 80, 80W-90, 85W-140, 140\n- DIN: DIN 51524 HLP, DIN 51517 CLP, DIN 51825 KP\n- ACEA: A3/B4, C3, E7, E9\n- API motor: API SN, SP, CK-4, CJ-4, CI-4\n- API engranaje: API GL-4, GL-5\n- NLGI grasas: NLGI 00, 0, 1, 2, 3\n- Otros: AGMA, Cummins, MB-Approval, Volvo VDS, Caterpillar TO-4, Allison TES-295\n\nModelo: cada característica tiene una **familia/norma** (ISO, SAE, DIN, ACEA, API, NLGI, OEM...) y un **valor** (46, 80W-90, C3, GL-5...). Multi-valor por producto.",
-      "checklist": [
-        "Modelo: NormaTecnica (id, familia, valor, descripcion_opcional)",
-        "Familias seed: ISO_VG, SAE_MOTOR, SAE_ENGRANAJE, DIN, ACEA, API_MOTOR, API_ENGRANAJE, NLGI, OEM",
-        "Tabla M2M ProductoNorma (producto_id, norma_id)",
-        "Seed inicial con valores comunes de cada familia (ver desc)",
-        "CRUD /api/normas-tecnicas (admin agrega valores nuevos; familias semi-fijas)",
-        "Validación: valor único por familia (no permitir duplicar 'ISO 46' dos veces)",
-        "ProductoModal UI: sección 'Características técnicas' con selector agrupado por familia (acordeón o tabs)",
-        "Chip por norma seleccionada con formato 'ISO 46', 'ACEA C3', etc.",
-        "Listado productos: columna 'Características' con chips (max 3 visibles + '+N')",
-        "Filtro avanzado: multi-select por familia + valor (ej: 'ISO VG = 46 OR 68')",
-        "**Buscador global: todas las normas son tokens buscables** — typing 'ISO 46', 'ACEA C3', 'GL-5', 'NLGI 2', '15W-40' encuentra productos que las cumplen",
-        "Indexar normas en el índice de búsqueda global (mismo donde están SKU, nombre, categoría)",
-        "Match parcial y case-insensitive: 'iso46', 'iso 46', 'ISO46' → todos matchean",
-        "Aplicar mismo principio a las tags de tipo existentes (hidráulico, motor, transmisión) — buscables en la barra global",
-        "Autocompletar en el buscador: al tipear 'ISO' sugerir 'ISO 22, ISO 32, ISO 46...' como chips",
-        "Producto detail: bloque 'Cumple con' agrupado por familia",
-        "Cotización/Factura/NV: mostrar características bajo el nombre del producto (opcional, toggle)",
-        "PDF cotización: incluir características (los técnicos del cliente las verifican)",
-        "Sugerencias 'producto similar': priorizar productos con normas en común (Wave 4 backlog)",
-        "Import productos (Excel onboarding): columna opcional 'normas' (formato 'ISO 46;SAE 10W-40;ACEA C3')",
-        "Tests: crear/asociar/quitar normas, filtro retorna correcto, búsqueda por norma matchea"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Pagos] Recuperar método de pago — combinable con plazo (cheque a 30 días, transferencia a 30, etc.)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Recuperar el campo 'método de pago' por documento (cotización, NV, factura) y permitir combinarlo libremente con el plazo. Hoy el catálogo es muy limitado y asume que cualquier método distinto de 'crédito' es al contado — eso es incorrecto.\n\nCasos reales del cliente (Paly, 28-04):\n- Cheque a 30 días\n- Transferencia a 30 días\n- Al contado con tarjeta\n- Al contado con transferencia\n- Vale vista (típicamente al contado)\n\n**Cambio de regla anterior:** la decisión previa ('cheque/transferencia/efectivo → plazo forzado a 0') queda obsoleta. Cheque y transferencia SÍ pueden ir con plazo. Solo efectivo y tarjeta presencial fuerzan plazo=0.\n\nModelo: dos campos independientes en cada documento — `metodo_pago` (catálogo fijo) y `plazo_dias` (0..N). El display los combina: '{Método} a {N} días' o '{Método} al contado'.",
-      "checklist": [
-        "Catálogo MétodoPago: efectivo, tarjeta_credito, tarjeta_debito, transferencia, cheque, vale_vista, credito_simple, otros",
-        "Modelo: metodo_pago (FK/enum) + plazo_dias (int) por documento (Cotización, NV, Factura)",
-        "Reglas de validación:",
-        "  - efectivo / tarjeta_debito / tarjeta_credito (presencial) → plazo_dias forzado a 0",
-        "  - cheque / transferencia / vale_vista → plazo_dias libre (0, 30, 60, 90, custom)",
-        "  - credito_simple → plazo_dias > 0 obligatorio (es la condición de venta a plazo)",
-        "Display: 'Transferencia a 30 días', 'Cheque al contado', 'Vale vista al contado'",
-        "UI: dos selectores en form de NV/Factura/Cotización — Método (select) + Plazo (select 0/30/60/90 + custom)",
-        "Defaults inteligentes: si vendedor selecciona 'efectivo' → plazo se bloquea en 0",
-        "Defaults por cliente: la Empresa puede tener un método+plazo SUGERIDO (no obligatorio) que prefilla el form",
-        "  - NOTA: esto NO contradice '[Empresa] Quitar forma de pago' — ahí se quitó el campo COMO regla; aquí vuelve como SUGERENCIA prefill (override por documento)",
-        "Cálculo fecha_vencimiento de factura: fecha_emision + plazo_dias (single source of truth)",
-        "Reportes cobranza: agrupar por método (cuánto en cheques pendientes, cuánto en transferencias)",
-        "Filtro lista facturas: por método + por rango de plazo",
-        "Migración: facturas existentes con forma_pago texto libre → mapear a catálogo + setear plazo_dias=0 si efectivo/tarjeta",
-        "Resolver pendientes en review:",
-        "  - '[Bug:Datos] Forma de pago duplica Plazo de Crédito' → cerrada por esta card (regla actualizada)",
-        "  - '[Empresa] Quitar forma de pago del modelo Empresa' → revisitar (sugerido prefill, no campo de negocio)",
-        "Tests: cheque+30d emite ok, efectivo+30d rechazado, vencimiento = emision + plazo, prefill desde empresa funciona"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[NV] Buscador en lista de Notas de Venta",
-      "labels": [
-        "Core"
-      ],
-      "desc": "La lista de Notas de Venta no tiene buscador — para encontrar una NV específica hay que paginar a mano. Agregar barra de búsqueda con match contra los campos más usados.\n\nMismo patrón que el buscador global de productos: un input arriba de la tabla, debounce 300ms, match parcial case-insensitive, normalizado a tildes.",
-      "checklist": [
-        "Input de búsqueda arriba de la tabla NV con placeholder 'Buscar NV (nº, cliente, vendedor, producto, OC...)'",
-        "Backend: GET /api/notas-venta?q=<texto> con búsqueda OR en:",
-        "  - número de NV",
-        "  - nombre/razón social cliente o empresa",
-        "  - RUT cliente/empresa",
-        "  - nombre vendedor",
-        "  - SKU o nombre de producto en el detalle",
-        "  - número de OC referenciada (si existe)",
-        "  - observaciones",
-        "Match parcial, case-insensitive, normalizado (sin tildes)",
-        "Debounce 300ms en frontend (no spammear backend mientras tipea)",
-        "Combinable con filtros existentes (estado, fecha, vendedor) — query AND filtros",
-        "Highlight del match en la fila (opcional, nice-to-have)",
-        "Indicador 'Buscando...' mientras carga; 'Sin resultados' si vacío",
-        "Conservar query en URL (?q=...) para compartir/refresh",
-        "Performance: índice en campos buscables; LIMIT 100 resultados",
-        "Tests: búsqueda por nº NV, RUT cliente, SKU, OC referenciada — todos retornan correcto"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Empresa] RUTs adicionales (multi-RUT) + validación dígito verificador",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Reemplazar el checkbox 'RUT no oficial' por un modelo de **RUTs adicionales** asociados a la Empresa. Una empresa tiene 1 RUT oficial (el actual, único, inmutable) y N RUTs adicionales (informativos, para consolidación interna — facturación cruzada, holdings, RUT provisional, ficticios).\n\nAdemás, validar TODOS los RUTs (oficial y adicionales) con la ecuación del dígito verificador (módulo 11) en backend y frontend — hoy se acepta cualquier string.\n\nReemplaza el campo booleano `rut_no_oficial` (deprecar / migrar a la nueva tabla).",
-      "checklist": [
-        "Modelo: nueva tabla EmpresaRutAdicional (id, empresa_id FK, rut, dv, etiqueta opcional, created_at) + migración Alembic",
-        "Migración data: por cada Empresa con rut_no_oficial=true, mover su rut a EmpresaRutAdicional + dropar columna rut_no_oficial",
-        "Schema EmpresaRead incluye `ruts_adicionales: list[{rut, etiqueta}]`",
-        "API: POST/DELETE /api/empresas/{id}/ruts-adicionales (no editable in-place — agregar/borrar)",
-        "Util compartido `validar_rut(rut)` con módulo 11 (dv calculado, K para 10, normalizar puntos/guión)",
-        "Backend: aplicar validar_rut en EmpresaCreate, RutAdicionalCreate y todos los endpoints que reciben RUT (clientes, contactos)",
-        "Frontend: helper validateRut() en utils + usar en EmpresaModal, ClienteModal, autocompletes",
-        "EmpresaModal: sección 'RUTs adicionales' con lista + botón 'Agregar RUT' (input con validación inline + label opcional)",
-        "EmpresaDetail: mostrar RUTs adicionales como chips bajo el RUT oficial",
-        "Buscador global de empresas/clientes: matchear también contra ruts_adicionales",
-        "Tests backend: validar_rut acepta válidos, rechaza inválidos, normaliza formato; CRUD ruts adicionales; búsqueda por rut adicional",
-        "Tests frontend: input rechaza RUT inválido con mensaje 'Dígito verificador no coincide'",
-        "Deprecación limpia: borrar referencias a `rut_no_oficial` en código y UI"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[PDF] Validez/vigencia visible en todos los documentos",
-      "labels": [
-        "Core"
-      ],
-      "desc": "El plazo de validez/vigencia debe aparecer en el PDF de TODOS los documentos donde aplica, no solo cotización. Hoy falta o es inconsistente.\n\nDocs afectados:\n- Cotización: campo `vigencia_hasta` (ya existe modelo, falta render real — ver bug reabierto separado).\n- Nota de Venta: vigencia de la oferta / fecha de entrega comprometida.\n- Factura / Boleta: si aplica plazo de pago, mostrar 'Vence el DD/MM/AAAA' (fecha_emision + plazo_credito).\n- Guía de despacho: vigencia del traslado SII (si normativa lo exige).\n- OC del cliente: vigencia capturada al subir.\n- NC/ND: heredan referencia, no aplica vigencia propia.\n\nBloque visual unificado en footer/header del template (mismo patrón en todos los PDFs).",
-      "checklist": [
-        "Auditar templates PDF actuales: cotización, NV, factura, boleta, guía despacho, OC — listar cuál muestra vigencia hoy",
-        "Definir bloque común 'Validez / Vencimiento' reutilizable (partial Jinja o componente compartido)",
-        "Cotización: render `vigencia_hasta` con label 'Válido hasta DD/MM/AAAA' (resolver bug reabierto)",
-        "NV: agregar `vigencia_hasta` al template; si null, ocultar bloque",
-        "Factura/Boleta: calcular `vence_el = fecha_emision + plazo_credito` y mostrar 'Vence: DD/MM/AAAA' cuando plazo > 0",
-        "Guía de despacho: revisar si SII requiere fecha de vigencia del traslado y agregarla",
-        "OC: mostrar `vigencia_hasta` capturada en upload",
-        "Tests por cada PDF: con vigencia → texto presente; sin vigencia → bloque oculto (no 'None' ni '-')",
-        "QA visual: descargar PDFs reales en staging y verificar legibilidad (no se corta, contraste OK)"
       ]
     }
   ]

@@ -63,11 +63,13 @@ def _calcular_lineas_y_totales_guia(guia: GuiaDespacho) -> None:
 
 
 def _load_guia(db: Session, guia_id: int) -> GuiaDespacho:
+    from app.models.nota_venta import NotaVenta
     guia = (
         db.query(GuiaDespacho)
         .options(
             joinedload(GuiaDespacho.cliente),
             joinedload(GuiaDespacho.vendedor),
+            joinedload(GuiaDespacho.nota_venta).joinedload(NotaVenta.factura),
             selectinload(GuiaDespacho.lineas),
         )
         .filter(GuiaDespacho.id == guia_id)

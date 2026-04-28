@@ -48,8 +48,11 @@
     {% if guia_despacho.direccion_destino %}
     <p><strong>Dirección destino:</strong> {{ guia_despacho.direccion_destino }}{% if guia_despacho.comuna_destino %}, {{ guia_despacho.comuna_destino }}{% endif %}</p>
     {% endif %}
-    {% if guia_despacho.nota_venta_id %}
-    <p><strong>Nota de Venta vinculada:</strong> N°{{ guia_despacho.nota_venta_id }}</p>
+    {% if guia_despacho.nota_venta %}
+    <p><strong>Nota de Venta vinculada:</strong> N°{{ guia_despacho.nota_venta.numero }}</p>
+    {% if guia_despacho.nota_venta.factura %}
+    <p><strong>Factura vinculada:</strong> N°{{ guia_despacho.nota_venta.factura.folio_sii or guia_despacho.nota_venta.factura.numero }}</p>
+    {% endif %}
     {% endif %}
   </div>
 

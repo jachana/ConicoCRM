@@ -136,7 +136,7 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
         <Card variant="subtle">
           <CardContent className="py-2.5">
             <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Nota de Cobranza</div>
-            <div className="text-sm text-gray-700 dark:text-gray-300">{empresa.nota_cobranza}</div>
+            <div className="text-sm text-gray-700 dark:text-gray-300 break-words whitespace-pre-wrap">{empresa.nota_cobranza}</div>
           </CardContent>
         </Card>
       )}

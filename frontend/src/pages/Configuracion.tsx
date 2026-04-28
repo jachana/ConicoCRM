@@ -303,7 +303,6 @@ const SIDEBAR_ITEMS: { to: string; label: string }[] = [
   { to: '/reportes',                  label: 'Reportes' },
   { to: '/rrhh',                      label: 'RRHH' },
   { to: '/usuarios',                  label: 'Usuarios' },
-  { to: '/configuracion',             label: 'Configuración' },
   { to: '/admin/tareas/config',       label: 'Reglas de tareas' },
   { to: '/admin/auditoria',           label: 'Auditoría' },
 ]

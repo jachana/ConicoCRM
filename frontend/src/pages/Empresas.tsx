@@ -299,7 +299,7 @@ export default function Empresas() {
         <Card variant="subtle">
           <CardContent className="py-3">
             <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Deuda Vencida</div>
-            <div className={`text-lg font-bold font-num ${totalVencida > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-400'}`}>
+            <div className={`text-lg font-bold font-num ${totalVencida > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-400 dark:text-gray-500'}`}>
               {fmt(totalVencida)}
             </div>
           </CardContent>
@@ -458,7 +458,7 @@ export default function Empresas() {
                     disabled={!!editando}
                   />
                   {editando && (
-                    <p className="text-xs text-gray-400 mt-1">El RUT no puede modificarse una vez creada la empresa</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">El RUT no puede modificarse una vez creada la empresa</p>
                   )}
                 </FormField>
 
@@ -468,7 +468,7 @@ export default function Empresas() {
                       type="checkbox"
                       checked={form.rut_no_oficial}
                       onChange={e => setForm(f => ({ ...f, rut_no_oficial: e.target.checked }))}
-                      className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                      className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500"
                     />
                     <span>RUT no oficial (informativo)</span>
                   </label>

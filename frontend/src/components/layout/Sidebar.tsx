@@ -128,7 +128,7 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
   const aprobacionesCount = aprobacionesPendientes.length
 
   const isVisible = (item: NavItem) =>
-    !sidebarHidden.includes(item.to) &&
+    (item.to === '/configuracion' || !sidebarHidden.includes(item.to)) &&
     (!item.module || myPermissions?.[item.module]?.view !== false) &&
     (!item.adminOnly || isAdminUser)
 
