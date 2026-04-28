@@ -1028,6 +1028,53 @@
     },
     {
       "list": "Feature requests",
+      "name": "[Cotización] Duplicar cotización con precios y fecha actualizados",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en CotizacionDetalle que crea una nueva cotización con los mismos productos/cantidades pero fecha_emision = hoy y precios tomados del catálogo actual (precio_venta vigente). Útil para compras repetidas. Lo mismo desde NV y Factura — ver cards hermanas.",
+      "checklist": [
+        "POST /api/cotizaciones/{id}/duplicar: copia líneas, reemplaza fecha_emision=hoy y precio_unitario desde Producto.precio_venta vigente",
+        "Responde {id} de la cotización nueva → redirigir a /cotizaciones/{nuevo_id}",
+        "Si algún producto fue eliminado del catálogo: incluirlo con precio original + warning en respuesta",
+        "Permiso: cualquier rol con cotizaciones:create puede duplicar",
+        "Botón 'Re-cotizar' en CotizacionDetalle (junto a Editar / Anular)",
+        "Toast con link a la cotización nueva",
+        "Test backend: precios actualizados, fecha hoy, productos descontinuados manejados"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[NV] Botón Re-cotizar desde Nota de Venta",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en NotaVentaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes del catálogo. Mismo endpoint que duplicar cotización pero iniciando desde NV.",
+      "checklist": [
+        "POST /api/notas-venta/{id}/recotizar: extrae líneas de la NV, aplica misma lógica de precio vigente",
+        "Redirigir a /cotizaciones/{nuevo_id}",
+        "Botón 'Re-cotizar' en NotaVentaDetalle (acción secundaria)",
+        "Toast con link a cotización creada",
+        "Test: NV con productos eliminados del catálogo mantiene precio original + warning"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Factura] Botón Re-cotizar desde Factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en FacturaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes. Mismo flujo que desde NV — facilita recompras facturadas.",
+      "checklist": [
+        "POST /api/facturas/{id}/recotizar: extrae líneas de la factura, aplica precio vigente",
+        "Redirigir a /cotizaciones/{nuevo_id}",
+        "Botón 'Re-cotizar' en FacturaDetalle (acción secundaria)",
+        "Toast con link a cotización creada",
+        "Test: factura con productos descontinuados mantiene precio original + warning"
+      ]
+    },
+    {
+      "list": "Feature requests",
       "name": "[Empresa] Quitar forma de pago del modelo Empresa",
       "labels": [
         "Core"
