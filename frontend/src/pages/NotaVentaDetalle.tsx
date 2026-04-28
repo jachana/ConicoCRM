@@ -114,6 +114,7 @@ export default function NotaVentaDetalle() {
   const qc = useQueryClient()
   const currentUser = useAuthStore(s => s.user)
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'subadmin'
+  const isVendedor = currentUser?.role === 'vendedor'
 
   const [clienteId, setClienteId] = useState<number | ''>('')
   const [vendedorId, setVendedorId] = useState<number | ''>(currentUser?.id ?? '')
@@ -781,7 +782,7 @@ export default function NotaVentaDetalle() {
               <TH className="text-right w-28">Total Neto</TH>
               <TH className="text-right w-24">IVA</TH>
               <TH className="text-right w-28">Total</TH>
-              <TH className="text-right w-20">Margen</TH>
+              {!isVendedor && <TH className="text-right w-20">Margen</TH>}
               <TH className="w-10" />
             </TR>
           </THead>
@@ -859,11 +860,13 @@ export default function NotaVentaDetalle() {
                 <TD className="text-right text-gray-700 dark:text-gray-300 font-num font-medium">{fmtMoney(linea.total_neto)}</TD>
                 <TD className="text-right text-gray-500 dark:text-gray-400 font-num">{fmtMoney(linea.iva)}</TD>
                 <TD className="text-right text-gray-900 dark:text-white font-num font-medium">{fmtMoney(linea.total)}</TD>
-                <TD className="text-right font-num">
-                  {linea.margen !== null
-                    ? <span className={linea.margen >= 0.15 ? 'text-success-600 dark:text-success-400' : 'text-warning-600 dark:text-warning-400'}>{(linea.margen * 100).toFixed(1)}%</span>
-                    : <span className="text-gray-400">—</span>}
-                </TD>
+                {!isVendedor && (
+                  <TD className="text-right font-num">
+                    {linea.margen !== null
+                      ? <span className={linea.margen >= 0.15 ? 'text-success-600 dark:text-success-400' : 'text-warning-600 dark:text-warning-400'}>{(linea.margen * 100).toFixed(1)}%</span>
+                      : <span className="text-gray-400">—</span>}
+                  </TD>
+                )}
                 <TD>
                   <Button
                     size="icon-xs"

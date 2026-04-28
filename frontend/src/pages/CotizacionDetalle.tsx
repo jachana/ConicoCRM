@@ -110,6 +110,7 @@ export default function CotizacionDetalle() {
   const qc = useQueryClient()
   const currentUser = useAuthStore(s => s.user)
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'subadmin'
+  const isVendedor = currentUser?.role === 'vendedor'
 
   const [clienteId, setClienteId] = useState<number | ''>('')
   const [vendedorId, setVendedorId] = useState<number | ''>(currentUser?.id ?? '')
@@ -1110,7 +1111,7 @@ export default function CotizacionDetalle() {
               <TH className="text-right w-32">Precio Unit.</TH>
               <TH className="text-right w-20">Desc %</TH>
               <TH className="text-right w-32">Total Neto</TH>
-              <TH className="text-right w-20">Margen</TH>
+              {!isVendedor && <TH className="text-right w-20">Margen</TH>}
               <TH className="w-8" />
             </TR>
           </THead>
@@ -1213,47 +1214,49 @@ export default function CotizacionDetalle() {
                   )}
                 </TD>
                 <TD className="text-right text-gray-700 dark:text-gray-300 text-sm font-medium font-num">{fmtMoney(linea.total_neto)}</TD>
-                <TD>
-                  <div className="flex items-center justify-end gap-0.5">
-                    {isAdmin ? (
-                      <Input
-                        size="sm"
-                        type="number"
-                        step="0.1"
-                        value={linea.margen !== null ? linea.margen * 100 : ''}
-                        onChange={e => handleMargenChange(idx, e.target.value)}
-                        placeholder="—"
-                        disabled={isLocked}
-                        className={`w-16 text-right font-num ${linea.margen !== null && Number(linea.margen) < 0.15 ? 'border-warning-400 dark:border-warning-500 text-warning-600 dark:text-warning-400' : 'text-success-600 dark:text-success-400'}`}
-                      />
-                    ) : linea.id != null ? (
-                      <Input
-                        size="sm"
-                        type="number"
-                        step="0.1"
-                        value={linea.id != null && propuestas[linea.id] != null
-                          ? (propuestas[linea.id].margenPropuesto * 100).toFixed(1)
-                          : (linea.margen !== null ? (Number(linea.margen) * 100).toFixed(1) : '')}
-                        onChange={e => linea.id != null && handleMargenPropuesta(linea.id, e.target.value)}
-                        placeholder="—"
-                        disabled={isLocked}
-                        title="Proponer cambio de margen"
-                        className={`w-16 text-right font-num border-dashed ${
-                          linea.id != null && propuestas[linea.id] != null
-                            ? 'border-info-400 text-info-600 dark:text-info-400'
-                            : linea.margen !== null && Number(linea.margen) < 0.15
-                            ? 'border-warning-300 text-warning-600 dark:text-warning-400'
-                            : 'text-success-600 dark:text-success-400'
-                        }`}
-                      />
-                    ) : (
-                      <span className={`text-xs font-num ${linea.margen !== null && Number(linea.margen) < 0.15 ? 'text-warning-600 dark:text-warning-400' : 'text-success-600 dark:text-success-400'}`}>
-                        {linea.margen !== null ? `${(Number(linea.margen) * 100).toFixed(1)}` : '—'}
-                      </span>
-                    )}
-                    <span className="text-xs text-gray-400">%</span>
-                  </div>
-                </TD>
+                {!isVendedor && (
+                  <TD>
+                    <div className="flex items-center justify-end gap-0.5">
+                      {isAdmin ? (
+                        <Input
+                          size="sm"
+                          type="number"
+                          step="0.1"
+                          value={linea.margen !== null ? linea.margen * 100 : ''}
+                          onChange={e => handleMargenChange(idx, e.target.value)}
+                          placeholder="—"
+                          disabled={isLocked}
+                          className={`w-16 text-right font-num ${linea.margen !== null && Number(linea.margen) < 0.15 ? 'border-warning-400 dark:border-warning-500 text-warning-600 dark:text-warning-400' : 'text-success-600 dark:text-success-400'}`}
+                        />
+                      ) : linea.id != null ? (
+                        <Input
+                          size="sm"
+                          type="number"
+                          step="0.1"
+                          value={linea.id != null && propuestas[linea.id] != null
+                            ? (propuestas[linea.id].margenPropuesto * 100).toFixed(1)
+                            : (linea.margen !== null ? (Number(linea.margen) * 100).toFixed(1) : '')}
+                          onChange={e => linea.id != null && handleMargenPropuesta(linea.id, e.target.value)}
+                          placeholder="—"
+                          disabled={isLocked}
+                          title="Proponer cambio de margen"
+                          className={`w-16 text-right font-num border-dashed ${
+                            linea.id != null && propuestas[linea.id] != null
+                              ? 'border-info-400 text-info-600 dark:text-info-400'
+                              : linea.margen !== null && Number(linea.margen) < 0.15
+                              ? 'border-warning-300 text-warning-600 dark:text-warning-400'
+                              : 'text-success-600 dark:text-success-400'
+                          }`}
+                        />
+                      ) : (
+                        <span className={`text-xs font-num ${linea.margen !== null && Number(linea.margen) < 0.15 ? 'text-warning-600 dark:text-warning-400' : 'text-success-600 dark:text-success-400'}`}>
+                          {linea.margen !== null ? `${(Number(linea.margen) * 100).toFixed(1)}` : '—'}
+                        </span>
+                      )}
+                      <span className="text-xs text-gray-400">%</span>
+                    </div>
+                  </TD>
+                )}
                 <TD>
                   {!isLocked && (
                     <Tooltip label="Eliminar línea">

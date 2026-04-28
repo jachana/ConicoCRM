@@ -22,6 +22,7 @@ export default function Productos() {
   const qc = useQueryClient()
   const user = useAuthStore(s => s.user)
   const { role: effectiveRole } = useEffectivePermissions()
+  const isVendedor = (effectiveRole ?? user?.role) === 'vendedor'
   const [busqueda, setBusqueda] = useState('')
 
   const { data: productos = [], isLoading } = useQuery<Producto[]>({
@@ -107,7 +108,7 @@ export default function Productos() {
               <TR>
                 <TH>Nombre</TH>
                 <TH>Marca</TH>
-                <TH className="text-right">Precio costo</TH>
+                {!isVendedor && <TH className="text-right">Precio costo</TH>}
                 <TH className="text-right">Precio venta</TH>
                 <TH className="text-right">Stock</TH>
                 <TH className="text-right">Mín.</TH>
@@ -126,7 +127,7 @@ export default function Productos() {
                     <TD className="text-gray-500 dark:text-gray-400 text-xs">
                       {p.marca ? p.marca.nombre : <span className="text-gray-300 dark:text-gray-600">—</span>}
                     </TD>
-                    <TD className="text-right text-gray-500 dark:text-gray-400 font-num">{formatPrecio(Number(p.precio_costo ?? 0))}</TD>
+                    {!isVendedor && <TD className="text-right text-gray-500 dark:text-gray-400 font-num">{formatPrecio(Number(p.precio_costo ?? 0))}</TD>}
                     <TD className="text-right font-medium text-gray-900 dark:text-white font-num">{formatPrecio(Number(p.precio_venta))}</TD>
                     <TD className={`text-right font-num ${stockBajo ? 'text-danger-600 dark:text-danger-400 font-semibold' : 'text-gray-900 dark:text-white font-medium'}`}>
                       {stockBajo ? (
