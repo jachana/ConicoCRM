@@ -27,6 +27,7 @@ from app.schemas.producto import (
     ProductoOutPublic,
     ProductoUpdate,
 )
+from app.utils.search import unaccent_ilike
 from app.schemas.movimiento_inventario import MovimientoListOut
 
 
@@ -113,9 +114,9 @@ def buscar_productos(
         pattern = f"%{q}%"
         query = query.filter(
             or_(
-                Producto.nombre.ilike(pattern),
-                Producto.sku.ilike(pattern),
-                ProductoTag.nombre.ilike(pattern),
+                unaccent_ilike(Producto.nombre, pattern),
+                unaccent_ilike(Producto.sku, pattern),
+                unaccent_ilike(ProductoTag.nombre, pattern),
             )
         ).distinct()
     rows = query.order_by(Producto.nombre).limit(20).all()
@@ -185,9 +186,9 @@ def listar_productos(
         pattern = f"%{q}%"
         query = query.filter(
             or_(
-                Producto.nombre.ilike(pattern),
-                Producto.sku.ilike(pattern),
-                ProductoTag.nombre.ilike(pattern),
+                unaccent_ilike(Producto.nombre, pattern),
+                unaccent_ilike(Producto.sku, pattern),
+                unaccent_ilike(ProductoTag.nombre, pattern),
             )
         ).distinct()
     rows = query.order_by(Producto.nombre).all()

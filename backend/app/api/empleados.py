@@ -5,6 +5,7 @@ from app.api.deps import require_permission
 from app.models.empleado import Empleado
 from app.models.user import User
 from app.schemas.empleado import EmpleadoCreate, EmpleadoOut, EmpleadoUpdate
+from app.utils.search import unaccent_ilike
 
 router = APIRouter()
 
@@ -17,7 +18,7 @@ def listar_empleados(
     _, db = perms
     query = db.query(Empleado)
     if q:
-        query = query.filter(Empleado.nombre.ilike(f"%{q}%") | Empleado.cargo.ilike(f"%{q}%"))
+        query = query.filter(unaccent_ilike(Empleado.nombre, f"%{q}%") | unaccent_ilike(Empleado.cargo, f"%{q}%"))
     return query.order_by(Empleado.nombre).all()
 
 

@@ -862,7 +862,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "Búsquedas insensibles a tildes (normalización unicode)",
       "labels": [
         "Core"
@@ -899,7 +899,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "Búsquedas insensibles a tildes (normalización unicode)",
       "labels": [
         "Core"

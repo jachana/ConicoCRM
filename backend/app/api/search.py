@@ -15,6 +15,7 @@ from app.models.orden_compra import OrdenCompra
 from app.models.producto import Producto
 from app.models.proveedor import Proveedor
 from app.models.user import User
+from app.utils.search import unaccent_ilike
 
 router = APIRouter()
 
@@ -23,7 +24,7 @@ def _search_productos(db: Session, q: str, limit: int) -> list[dict]:
     pattern = f"%{q}%"
     rows = (
         db.query(Producto)
-        .filter(or_(Producto.nombre.ilike(pattern), Producto.sku.ilike(pattern)))
+        .filter(or_(unaccent_ilike(Producto.nombre, pattern), unaccent_ilike(Producto.sku, pattern)))
         .order_by(Producto.nombre)
         .limit(limit)
         .all()
@@ -35,7 +36,7 @@ def _search_clientes(db: Session, q: str, limit: int) -> list[dict]:
     pattern = f"%{q}%"
     rows = (
         db.query(Cliente)
-        .filter(or_(Cliente.nombre.ilike(pattern), Cliente.rut.ilike(pattern)))
+        .filter(or_(unaccent_ilike(Cliente.nombre, pattern), Cliente.rut.ilike(pattern)))
         .order_by(Cliente.nombre)
         .limit(limit)
         .all()
@@ -55,7 +56,7 @@ def _search_empresas(db: Session, q: str, limit: int) -> list[dict]:
     pattern = f"%{q}%"
     rows = (
         db.query(Empresa)
-        .filter(or_(Empresa.nombre.ilike(pattern), Empresa.rut.ilike(pattern)))
+        .filter(or_(unaccent_ilike(Empresa.nombre, pattern), Empresa.rut.ilike(pattern)))
         .order_by(Empresa.nombre)
         .limit(limit)
         .all()
@@ -151,7 +152,7 @@ def _search_empleados(db: Session, q: str, limit: int) -> list[dict]:
     pattern = f"%{q}%"
     rows = (
         db.query(Empleado)
-        .filter(Empleado.nombre.ilike(pattern))
+        .filter(unaccent_ilike(Empleado.nombre, pattern))
         .order_by(Empleado.nombre)
         .limit(limit)
         .all()

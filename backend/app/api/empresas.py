@@ -22,6 +22,7 @@ from app.schemas.empresa import (
     FacturaResumen, EmpresaDeudaBulkItem, EmpresaListItem,
     EmpresaFacturaDetailItem, EmpresaProductoLineOut,
 )
+from app.utils.search import unaccent_ilike
 
 
 def _export_xlsx(headers: list[str], rows: list[list]) -> "StreamingResponse":
@@ -133,7 +134,7 @@ def listar_empresas(
 
     if q:
         like = f"%{q}%"
-        query = query.filter(Empresa.nombre.ilike(like) | Empresa.rut.ilike(like))
+        query = query.filter(unaccent_ilike(Empresa.nombre, like) | Empresa.rut.ilike(like))
     if sector:
         query = query.filter(Empresa.sector == sector)
     if producto_ids:
@@ -402,7 +403,7 @@ def productos_empresa(
     if q:
         like = f"%{q}%"
         query = query.filter(
-            FacturaLinea.descripcion.ilike(like) | FacturaLinea.sku.ilike(like)
+            unaccent_ilike(FacturaLinea.descripcion, like) | unaccent_ilike(FacturaLinea.sku, like)
         )
     if fecha_desde:
         query = query.filter(Factura.fecha >= fecha_desde)
@@ -523,7 +524,7 @@ def exportar_productos_empresa(
     )
     if q:
         like = f"%{q}%"
-        query = query.filter(FacturaLinea.descripcion.ilike(like) | FacturaLinea.sku.ilike(like))
+        query = query.filter(unaccent_ilike(FacturaLinea.descripcion, like) | unaccent_ilike(FacturaLinea.sku, like))
     if fecha_desde:
         query = query.filter(Factura.fecha >= fecha_desde)
     if fecha_hasta:
