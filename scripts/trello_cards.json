@@ -108,6 +108,19 @@
       ]
     },
     {
+      "list": "Bugs",
+      "name": "Settings siempre visible en sidebar (no removible)",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "El ítem de Settings en el sidebar puede ocultarse o quitarse. Debe estar fijo y no ser removible por ningún usuario ni rol.",
+      "checklist": [
+        "Identificar lógica que controla visibilidad del sidebar",
+        "Marcar Settings como ítem fijo (no sujeto a personalización ni permisos de ocultado)",
+        "Verificar que aplica para todos los roles (vendedor, admin, gerente)"
+      ]
+    },
+    {
       "list": "Feature requests",
       "name": "[Seguridad] Vendedor no puede modificar plazo de crédito",
       "labels": [
@@ -151,16 +164,20 @@
       ]
     },
     {
-      "list": "In review",
+      "list": "Bugs",
       "name": "PDF cotización no muestra validez/vigencia",
       "labels": [
         "Bug"
       ],
-      "desc": "El PDF generado para cotizaciones no incluye la fecha de validez (vigencia). El cliente no sabe hasta cuándo es válida la oferta.",
+      "desc": "REABIERTO 2026-04-28: el commit 051fddd (fix(cotizacion): mostrar validez/vigencia en PDF) no se ve reflejado en el PDF generado — verificar despliegue, template path y caché. La fecha de validez sigue sin aparecer.\n\nOriginal: el PDF generado para cotizaciones no incluye la fecha de validez (vigencia). El cliente no sabe hasta cuándo es válida la oferta.",
       "checklist": [
         "Identificar campo de vigencia en modelo Cotización",
         "Agregar campo 'Válido hasta' en template PDF de cotización",
-        "Manejar caso donde vigencia es null/no definida"
+        "Manejar caso donde vigencia es null/no definida",
+        "REGRESIÓN: reproducir en producción/staging — confirmar que el deploy 051fddd está vivo (Coolify last_online_at + commit)",
+        "Verificar template renderiza el campo (no else silencioso por null)",
+        "Forzar regeneración (no servir PDF cacheado)",
+        "Test E2E: crear cotización con vigencia → descargar PDF → assert texto 'Válido hasta' presente"
       ]
     },
     {
@@ -396,6 +413,44 @@
         "Verificar que el frontend no sobreescriba el orden al recibir la respuesta",
         "Columna de fecha en cada listado: soportar click para invertir orden (asc/desc)",
         "Asegurar que el orden se mantiene con paginación (no romper en página 2+)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Cotizaciones] Descuento requiere aprobación — vendedor no puede aplicarlo directo",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El vendedor no debe poder aplicar descuentos libremente en una cotización. En su lugar debe solicitar el descuento al admin/supervisor, quien lo aprueba o rechaza.\n\nFlujo esperado:\n- Vendedor propone descuento (% o monto) → cotización queda en estado 'descuento pendiente'.\n- Admin recibe notificación/alerta y puede aprobar o rechazar con comentario.\n- Si aprobado: descuento se aplica y cotización vuelve a estado normal.\n- Si rechazado: cotización sigue sin descuento, vendedor ve el motivo.\n- Config: umbral configurable (ej: descuentos > 5% requieren aprobación; menores, libres).",
+      "checklist": [
+        "Definir umbral configurable: % máximo de descuento libre por vendedor (config por empresa)",
+        "Modelo SolicitudDescuento (cotizacion_id, vendedor_id, descuento_solicitado, estado, revisor_id, comentario)",
+        "Migración Alembic",
+        "Endpoint POST /cotizaciones/{id}/solicitar-descuento",
+        "Endpoint PATCH /solicitudes-descuento/{id} (aprobar/rechazar — solo admin/supervisor)",
+        "Cotización con descuento pendiente: bloquear emisión hasta resolución",
+        "UI vendedor: input descuento muestra 'solicitar' si supera umbral, aplica directo si está dentro",
+        "UI admin: lista de solicitudes pendientes con aprobar/rechazar + campo comentario",
+        "Notificación in-app al admin al crear solicitud; al vendedor al resolver",
+        "Cotización detalle: mostrar estado de aprobación y quién aprobó/rechazó"
+      ]
+    },
+    {
+      "list": "Bugs",
+      "name": "[UI] EmpresaModal dark mode + nota cobranza overflow",
+      "labels": [
+        "Bug",
+        "Design System"
+      ],
+      "desc": "Dos bugs visuales en EmpresaModal:\n\n1. **Dark mode**: algunos textos dentro del modal de editar empresa usan colores hardcodeados (text-gray-X, text-black, etc.) en vez de tokens semánticos, quedando ilegibles en dark mode.\n\n2. **Nota cobranza overflow**: el campo/texto de nota de cobranza desborda el contenedor del modal y queda fuera del área scrollable, impidiendo seleccionarlo o editarlo.",
+      "checklist": [
+        "Reproducir ambos bugs en dark mode con EmpresaModal abierto en modo edición",
+        "Dark mode: grep EmpresaModal por clases hardcodeadas (text-gray-, text-black, bg-white, border-gray-) y reemplazar con tokens semánticos (text-foreground, bg-background, etc.)",
+        "Revisar también inputs, labels y placeholders dentro del modal",
+        "Nota cobranza: identificar el elemento que desborda (textarea o div)",
+        "Fijar overflow: asegurar que el contenido del modal tenga overflow-y-auto con max-h apropiado, o que el campo textarea tenga min-h y resize-y correctos",
+        "Verificar que el modal completo sea scrollable si el contenido supera la altura de pantalla",
+        "QA: probar en light y dark mode, pantallas pequeñas (1280px) y grandes"
       ]
     },
     {
@@ -1930,6 +1985,48 @@
         "Conservar query en URL (?q=...) para compartir/refresh",
         "Performance: índice en campos buscables; LIMIT 100 resultados",
         "Tests: búsqueda por nº NV, RUT cliente, SKU, OC referenciada — todos retornan correcto"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] RUTs adicionales (multi-RUT) + validación dígito verificador",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Reemplazar el checkbox 'RUT no oficial' por un modelo de **RUTs adicionales** asociados a la Empresa. Una empresa tiene 1 RUT oficial (el actual, único, inmutable) y N RUTs adicionales (informativos, para consolidación interna — facturación cruzada, holdings, RUT provisional, ficticios).\n\nAdemás, validar TODOS los RUTs (oficial y adicionales) con la ecuación del dígito verificador (módulo 11) en backend y frontend — hoy se acepta cualquier string.\n\nReemplaza el campo booleano `rut_no_oficial` (deprecar / migrar a la nueva tabla).",
+      "checklist": [
+        "Modelo: nueva tabla EmpresaRutAdicional (id, empresa_id FK, rut, dv, etiqueta opcional, created_at) + migración Alembic",
+        "Migración data: por cada Empresa con rut_no_oficial=true, mover su rut a EmpresaRutAdicional + dropar columna rut_no_oficial",
+        "Schema EmpresaRead incluye `ruts_adicionales: list[{rut, etiqueta}]`",
+        "API: POST/DELETE /api/empresas/{id}/ruts-adicionales (no editable in-place — agregar/borrar)",
+        "Util compartido `validar_rut(rut)` con módulo 11 (dv calculado, K para 10, normalizar puntos/guión)",
+        "Backend: aplicar validar_rut en EmpresaCreate, RutAdicionalCreate y todos los endpoints que reciben RUT (clientes, contactos)",
+        "Frontend: helper validateRut() en utils + usar en EmpresaModal, ClienteModal, autocompletes",
+        "EmpresaModal: sección 'RUTs adicionales' con lista + botón 'Agregar RUT' (input con validación inline + label opcional)",
+        "EmpresaDetail: mostrar RUTs adicionales como chips bajo el RUT oficial",
+        "Buscador global de empresas/clientes: matchear también contra ruts_adicionales",
+        "Tests backend: validar_rut acepta válidos, rechaza inválidos, normaliza formato; CRUD ruts adicionales; búsqueda por rut adicional",
+        "Tests frontend: input rechaza RUT inválido con mensaje 'Dígito verificador no coincide'",
+        "Deprecación limpia: borrar referencias a `rut_no_oficial` en código y UI"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[PDF] Validez/vigencia visible en todos los documentos",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El plazo de validez/vigencia debe aparecer en el PDF de TODOS los documentos donde aplica, no solo cotización. Hoy falta o es inconsistente.\n\nDocs afectados:\n- Cotización: campo `vigencia_hasta` (ya existe modelo, falta render real — ver bug reabierto separado).\n- Nota de Venta: vigencia de la oferta / fecha de entrega comprometida.\n- Factura / Boleta: si aplica plazo de pago, mostrar 'Vence el DD/MM/AAAA' (fecha_emision + plazo_credito).\n- Guía de despacho: vigencia del traslado SII (si normativa lo exige).\n- OC del cliente: vigencia capturada al subir.\n- NC/ND: heredan referencia, no aplica vigencia propia.\n\nBloque visual unificado en footer/header del template (mismo patrón en todos los PDFs).",
+      "checklist": [
+        "Auditar templates PDF actuales: cotización, NV, factura, boleta, guía despacho, OC — listar cuál muestra vigencia hoy",
+        "Definir bloque común 'Validez / Vencimiento' reutilizable (partial Jinja o componente compartido)",
+        "Cotización: render `vigencia_hasta` con label 'Válido hasta DD/MM/AAAA' (resolver bug reabierto)",
+        "NV: agregar `vigencia_hasta` al template; si null, ocultar bloque",
+        "Factura/Boleta: calcular `vence_el = fecha_emision + plazo_credito` y mostrar 'Vence: DD/MM/AAAA' cuando plazo > 0",
+        "Guía de despacho: revisar si SII requiere fecha de vigencia del traslado y agregarla",
+        "OC: mostrar `vigencia_hasta` capturada en upload",
+        "Tests por cada PDF: con vigencia → texto presente; sin vigencia → bloque oculto (no 'None' ni '-')",
+        "QA visual: descargar PDFs reales en staging y verificar legibilidad (no se corta, contraste OK)"
       ]
     }
   ]
