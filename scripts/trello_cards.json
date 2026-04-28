@@ -109,6 +109,19 @@
     },
     {
       "list": "Feature requests",
+      "name": "[Seguridad] Vendedor no puede modificar plazo de crédito",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El rol vendedor no debe poder cambiar el plazo de crédito del cliente ni en la NV/cotización. Solo admin y gerente pueden modificarlo.",
+      "checklist": [
+        "Backend: bloquear campo plazo_credito en NV/cotización para rol vendedor",
+        "UI: campo plazo de crédito read-only cuando el usuario es vendedor",
+        "Validar también en endpoint de cliente (PATCH) — vendedor no puede editar plazo"
+      ]
+    },
+    {
+      "list": "Feature requests",
       "name": "[NV] Bloquear edición al emitir factura",
       "labels": [
         "Core"
