@@ -316,28 +316,83 @@ def test_timeline_vendedor_solo_ve_propios(client, admin_token, vendedor_token, 
 
 
 # ---------------------------------------------------------------------------
-# 9. Vendedor no ve pagos, NC, ND
+# 9. Vendedor: scope realista NC/ND/Pago
 # ---------------------------------------------------------------------------
+#
+# Estructura del modelo:
+#   - Pago.factura_id → Factura.vendedor_id     (scopeable)
+#   - NC.cliente_id (+ boleta_id/guia_despacho_id opcionales)  (scope parcial)
+#   - ND.cliente_id solamente                   (estructuralmente no scopeable)
 
 
-def test_timeline_vendedor_no_ve_pagos_nc_nd(client, admin_token, vendedor_token):
-    c = _create_cliente(client, admin_token, nombre="ClienteNcNdPago")
+def test_timeline_vendedor_no_ve_nd(client, admin_token, vendedor_token):
+    """ND solo tiene cliente_id en el modelo → vendedor nunca la ve."""
+    c = _create_cliente(client, admin_token, nombre="ClienteNoND")
     cid = c["id"]
-
-    # admin creates NC, ND, and Pago
-    _create_nota_credito(client, admin_token, cid)
     _create_nota_debito(client, admin_token, cid)
+
+    r = client.get(
+        f"/api/clientes/{cid}/timeline?tipos=nota_debito",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert r.status_code == 200
+    assert r.json()["total"] == 0
+
+
+def test_timeline_vendedor_no_ve_nc_solo_cliente(client, admin_token, vendedor_token):
+    """NC sin boleta/guía link no tiene señal de vendedor → excluida del scope."""
+    c = _create_cliente(client, admin_token, nombre="ClienteNcSinSrc")
+    cid = c["id"]
+    _create_nota_credito(client, admin_token, cid)
+
+    r = client.get(
+        f"/api/clientes/{cid}/timeline?tipos=nota_credito",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert r.status_code == 200
+    assert r.json()["total"] == 0
+
+
+def test_timeline_vendedor_ve_pago_de_factura_propia(
+    client, admin_token, vendedor_token, vendedor_user, db
+):
+    """Vendedor sí ve pagos de facturas que él emitió."""
+    from app.models.factura import Factura
+
+    c = _create_cliente(client, admin_token, nombre="ClientePagoPropio")
+    cid = c["id"]
     factura = _create_factura(client, admin_token, cid)
+
+    # Reasignar la factura al vendedor (admin la creó originalmente)
+    f = db.get(Factura, factura["id"])
+    f.vendedor_id = vendedor_user.id
+    db.commit()
+
     _create_pago(client, admin_token, factura["id"])
 
     r = client.get(
-        f"/api/clientes/{cid}/timeline?tipos=nota_credito,nota_debito,pago",
+        f"/api/clientes/{cid}/timeline?tipos=pago",
         headers={"Authorization": f"Bearer {vendedor_token}"},
     )
     assert r.status_code == 200
     data = r.json()
-    assert data["total"] == 0
-    assert len(data["items"]) == 0
+    assert data["total"] == 1
+    assert data["items"][0]["tipo"] == "pago"
+
+
+def test_timeline_vendedor_no_ve_pago_de_factura_ajena(client, admin_token, vendedor_token):
+    """Vendedor no ve pagos de facturas que no le pertenecen."""
+    c = _create_cliente(client, admin_token, nombre="ClientePagoAjeno")
+    cid = c["id"]
+    factura = _create_factura(client, admin_token, cid)  # vendedor_id queda null/admin
+    _create_pago(client, admin_token, factura["id"])
+
+    r = client.get(
+        f"/api/clientes/{cid}/timeline?tipos=pago",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert r.status_code == 200
+    assert r.json()["total"] == 0
 
 
 # ---------------------------------------------------------------------------

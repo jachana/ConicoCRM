@@ -209,9 +209,40 @@ def _query_cliente(
         return q.all()
 
     if tipo == "nota_credito":
-        # Vendedor scope para NC/ND/Pago se evaluará en W2-02-followup; por ahora oculto a vendedores
+        # NC no tiene vendedor_id ni factura_id en el modelo. Para vendedor, derivamos
+        # el vendedor a partir de boleta_id (Boleta.vendedor_id) o guia_despacho_id
+        # (GuiaDespacho.vendedor_id). NCs cuyo único vínculo es cliente_id quedan
+        # excluidas del timeline del vendedor (sin señal de pertenencia).
         if is_vendedor:
-            return []
+            nc_boleta = (
+                db.query(NotaCredito)
+                .join(Boleta, NotaCredito.boleta_id == Boleta.id)
+                .filter(
+                    or_(
+                        NotaCredito.cliente_id == cliente_id,
+                        # NC anulación de boleta (tipo 61) puede tener cliente_id NULL
+                        Boleta.cliente_id == cliente_id,
+                    ),
+                    Boleta.vendedor_id == current_user.id,
+                )
+                .all()
+            )
+            nc_guia = (
+                db.query(NotaCredito)
+                .join(GuiaDespacho, NotaCredito.guia_despacho_id == GuiaDespacho.id)
+                .filter(
+                    NotaCredito.cliente_id == cliente_id,
+                    GuiaDespacho.vendedor_id == current_user.id,
+                )
+                .all()
+            )
+            seen: set[int] = set()
+            out: list[Any] = []
+            for nc in nc_boleta + nc_guia:
+                if nc.id not in seen:
+                    seen.add(nc.id)
+                    out.append(nc)
+            return out
         return (
             db.query(NotaCredito)
             .filter(NotaCredito.cliente_id == cliente_id)
@@ -219,7 +250,10 @@ def _query_cliente(
         )
 
     if tipo == "nota_debito":
-        # Vendedor scope para NC/ND/Pago se evaluará en W2-02-followup; por ahora oculto a vendedores
+        # ND solo tiene cliente_id en el modelo (sin vendedor_id, sin factura_id, sin
+        # boleta_id). No existe forma estructural de scopearla por vendedor, por lo que
+        # permanece oculta para ese rol. Si en el futuro se agrega factura_id o
+        # vendedor_id al modelo, replicar el patrón de Pago/NC.
         if is_vendedor:
             return []
         return (
@@ -229,15 +263,14 @@ def _query_cliente(
         )
 
     if tipo == "pago":
-        # Vendedor scope para NC/ND/Pago se evaluará en W2-02-followup; por ahora oculto a vendedores
-        if is_vendedor:
-            return []
-        return (
+        q = (
             db.query(Pago)
             .join(Factura, Pago.factura_id == Factura.id)
             .filter(Factura.cliente_id == cliente_id)
-            .all()
         )
+        if is_vendedor:
+            q = q.filter(Factura.vendedor_id == current_user.id)
+        return q.all()
 
     if tipo == "tarea":
         q = db.query(Tarea).filter(Tarea.cliente_id == cliente_id)
@@ -288,13 +321,44 @@ def _query_empresa(
         return q.all()
 
     if tipo == "nota_credito":
-        # Vendedor scope para NC/ND/Pago se evaluará en W2-02-followup; por ahora oculto a vendedores
-        if is_vendedor:
-            return []
         # NC.cliente_id is nullable: two paths must be unioned to avoid silently
         # dropping boleta-anulación NCs (tipo 61) where cliente_id IS NULL.
         # Path A: cliente_id IS NOT NULL → resolve via Cliente.empresa_id
         # Path B: cliente_id IS NULL AND boleta_id IS NOT NULL → resolve via Boleta.empresa_id
+        # Para vendedor, además se exige que el doc fuente (boleta o guía) sea suyo.
+        # NCs cuyo único vínculo es cliente_id (sin boleta/guía) → excluidas del scope vendedor.
+        if is_vendedor:
+            nc_boleta = (
+                db.query(NotaCredito)
+                .join(Boleta, NotaCredito.boleta_id == Boleta.id)
+                .outerjoin(Cliente, NotaCredito.cliente_id == Cliente.id)
+                .filter(
+                    or_(
+                        Cliente.empresa_id == empresa_id,
+                        Boleta.empresa_id == empresa_id,
+                    ),
+                    Boleta.vendedor_id == current_user.id,
+                )
+                .all()
+            )
+            nc_guia = (
+                db.query(NotaCredito)
+                .join(GuiaDespacho, NotaCredito.guia_despacho_id == GuiaDespacho.id)
+                .join(Cliente, NotaCredito.cliente_id == Cliente.id)
+                .filter(
+                    Cliente.empresa_id == empresa_id,
+                    GuiaDespacho.vendedor_id == current_user.id,
+                )
+                .all()
+            )
+            seen: set[int] = set()
+            out: list[Any] = []
+            for nc in nc_boleta + nc_guia:
+                if nc.id not in seen:
+                    seen.add(nc.id)
+                    out.append(nc)
+            return out
+
         path_a = (
             db.query(NotaCredito)
             .join(Cliente, NotaCredito.cliente_id == Cliente.id)
@@ -315,16 +379,17 @@ def _query_empresa(
             .all()
         )
         # Merge; deduplicate by id in case an NC somehow matches both paths
-        seen: set[int] = set()
+        seen_admin: set[int] = set()
         result: list[Any] = []
         for nc in path_a + path_b:
-            if nc.id not in seen:
-                seen.add(nc.id)
+            if nc.id not in seen_admin:
+                seen_admin.add(nc.id)
                 result.append(nc)
         return result
 
     if tipo == "nota_debito":
-        # Vendedor scope para NC/ND/Pago se evaluará en W2-02-followup; por ahora oculto a vendedores
+        # ND solo tiene cliente_id (sin vendedor_id, sin factura_id, sin boleta_id):
+        # imposible scopear por vendedor estructuralmente. Permanece oculta para ese rol.
         if is_vendedor:
             return []
         # ND.cliente_id is NON-NULLABLE (FK without nullable=True in NotaDebito model),
@@ -337,15 +402,14 @@ def _query_empresa(
         )
 
     if tipo == "pago":
-        # Vendedor scope para NC/ND/Pago se evaluará en W2-02-followup; por ahora oculto a vendedores
-        if is_vendedor:
-            return []
-        return (
+        q = (
             db.query(Pago)
             .join(Factura, Pago.factura_id == Factura.id)
             .filter(Factura.empresa_id == empresa_id)
-            .all()
         )
+        if is_vendedor:
+            q = q.filter(Factura.vendedor_id == current_user.id)
+        return q.all()
 
     if tipo == "tarea":
         q = db.query(Tarea).filter(Tarea.empresa_id == empresa_id)
