@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../stores/auth'
+import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
 import { Eye, ChevronDown, X, Inbox } from 'lucide-react'
 import { api } from '../lib/api'
 import type { FacturaList, FlatLine } from '../types'
@@ -102,6 +104,9 @@ interface ProductoMin { id: number; nombre: string; sku: string | null }
 
 export default function Facturas() {
   const navigate = useNavigate()
+  const user = useAuthStore(s => s.user)
+  const { role: effectiveRole } = useEffectivePermissions()
+  const isVendedor = (effectiveRole ?? user?.role) === 'vendedor'
 
   // Filter state
   const [estados, setEstados] = useState<string[]>([])
@@ -418,7 +423,7 @@ export default function Facturas() {
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500 dark:text-gray-400 font-num">{fmtDate(f.fecha)}</span>
                         <div className="flex items-center gap-3">
-                          <MargenBadge value={f.margen_total} />
+                          {!isVendedor && <MargenBadge value={f.margen_total} />}
                           <span className="font-semibold text-gray-900 dark:text-white text-sm font-num">{fmtMoney(f.total)}</span>
                         </div>
                       </div>
@@ -442,7 +447,7 @@ export default function Facturas() {
                         <TH>Fecha</TH>
                         <TH>Cliente / Empresa</TH>
                         <TH className="text-right">Total</TH>
-                        <TH className="text-right">Margen</TH>
+                        {!isVendedor && <TH className="text-right">Margen</TH>}
                         <TH>Estado</TH>
                         <TH className="text-right">Acciones</TH>
                       </TR>
@@ -459,7 +464,7 @@ export default function Facturas() {
                             {f.empresa?.nombre && <div className="text-xs text-gray-400 leading-tight">{f.empresa.nombre}</div>}
                           </TD>
                           <TD className="font-medium text-gray-900 dark:text-white whitespace-nowrap text-right font-num">{fmtMoney(f.total)}</TD>
-                          <TD className="text-right"><MargenBadge value={f.margen_total} /></TD>
+                          {!isVendedor && <TD className="text-right"><MargenBadge value={f.margen_total} /></TD>}
                           <TD>
                             <Badge variant={ESTADO_VARIANT[f.estado] ?? 'neutral'} showDot>
                               {ESTADO_LABELS[f.estado] ?? f.estado}

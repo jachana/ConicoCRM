@@ -2,6 +2,8 @@ import { openPdf } from '../lib/pdf'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../stores/auth'
+import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
 import { toast } from 'sonner'
 import { Plus, FileText, Mail, Trash2, Eye, ChevronDown, X, Download, Inbox } from 'lucide-react'
 import { api } from '../lib/api'
@@ -119,6 +121,9 @@ function buildListParams(
 export default function Cotizaciones() {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const user = useAuthStore(s => s.user)
+  const { role: effectiveRole } = useEffectivePermissions()
+  const isVendedor = (effectiveRole ?? user?.role) === 'vendedor'
 
   const [estados, setEstados] = useState<string[]>([])
   const [emisorId, setEmisorId] = useState<number | null>(null)
@@ -441,7 +446,7 @@ export default function Cotizaciones() {
                       {c.vendedor?.name && <span>· {c.vendedor.name}</span>}
                     </div>
                     <div className="flex items-center gap-3">
-                      <MargenBadge value={c.margen_total} />
+                      {!isVendedor && <MargenBadge value={c.margen_total} />}
                       <span className="font-semibold text-gray-900 dark:text-white text-sm font-num">{fmtMoney(c.total)}</span>
                     </div>
                   </div>
@@ -473,7 +478,7 @@ export default function Cotizaciones() {
                     <TH>Fecha</TH>
                     <TH>Cliente / Empresa</TH>
                     <TH className="text-right">Total</TH>
-                    <TH className="text-right">Margen</TH>
+                    {!isVendedor && <TH className="text-right">Margen</TH>}
                     <TH>Estado</TH>
                     <TH>Encargado</TH>
                     <TH className="text-right">Acciones</TH>
@@ -491,7 +496,7 @@ export default function Cotizaciones() {
                         {c.empresa?.nombre && <div className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</div>}
                       </TD>
                       <TD className="font-medium text-gray-900 dark:text-white whitespace-nowrap text-right font-num">{fmtMoney(c.total)}</TD>
-                      <TD className="text-right"><MargenBadge value={c.margen_total} /></TD>
+                      {!isVendedor && <TD className="text-right"><MargenBadge value={c.margen_total} /></TD>}
                       <TD>
                         <Badge variant={ESTADO_VARIANT[c.estado] ?? 'neutral'} showDot>
                           {ESTADO_LABELS[c.estado] ?? c.estado}
