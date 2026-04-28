@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 import Empresas from './Empresas'
 
 vi.mock('../lib/api', () => ({
@@ -16,7 +17,7 @@ const { api } = await import('../lib/api')
 
 function wrap(ui: React.ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>)
+  return render(<QueryClientProvider client={qc}><MemoryRouter>{ui}</MemoryRouter></QueryClientProvider>)
 }
 
 beforeEach(() => {
@@ -45,7 +46,7 @@ describe('Empresas', () => {
   it('abre modal al hacer clic en Agregar', async () => {
     wrap(<Empresas />)
     await screen.findByText('Empresas')
-    fireEvent.click(screen.getByText(/agregar empresa/i))
+    fireEvent.click(screen.getByText(/^Agregar$/i))
     expect(screen.getByText(/nueva empresa/i)).toBeTruthy()
   })
 })

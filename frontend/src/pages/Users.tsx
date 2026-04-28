@@ -172,7 +172,7 @@ export default function Users() {
                       </Tooltip>
                       {u.role !== 'admin' && (
                         <Tooltip label="Permisos">
-                          <Button size="icon-sm" variant="ghost" onClick={() => openPermissions(u)}>
+                          <Button size="icon-sm" variant="ghost" aria-label="Permisos" onClick={() => openPermissions(u)}>
                             <Shield size={14} />
                           </Button>
                         </Tooltip>
