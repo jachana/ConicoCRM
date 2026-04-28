@@ -65,6 +65,9 @@
   <div class="header-right">
     <div class="cot-numero">COT-{{ '%05d' % cotizacion.numero }}</div>
     <div class="cot-fecha">Fecha: {{ cotizacion.fecha.strftime('%d/%m/%Y') if cotizacion.fecha else '' }}</div>
+    {% if fecha_expiracion %}
+    <div class="cot-fecha">Válido hasta: {{ fecha_expiracion.strftime('%d/%m/%Y') }} ({{ cotizacion.validez_dias }} días)</div>
+    {% endif %}
   </div>
 </div>
 
