@@ -61,6 +61,7 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
       qc.invalidateQueries({ queryKey: ['empresa', empresa.id] })
       qc.invalidateQueries({ queryKey: ['empresas'] })
     },
+    onError: (e: any) => alert(e?.response?.data?.detail ?? 'Error al quitar logo'),
   })
 
   return (
@@ -83,6 +84,7 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
               ref={fileRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
+              aria-label="Subir logo de empresa"
               className="hidden"
               onChange={e => {
                 const file = e.target.files?.[0]
@@ -95,7 +97,7 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
               variant="outline"
               leftIcon={<Upload className="w-3.5 h-3.5" />}
               onClick={() => fileRef.current?.click()}
-              disabled={subirLogo.isPending}
+              disabled={subirLogo.isPending || eliminarLogo.isPending}
             >
               {subirLogo.isPending ? 'Subiendo...' : empresa.has_logo ? 'Cambiar logo' : 'Subir logo'}
             </Button>
@@ -104,7 +106,7 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
                 size="sm"
                 variant="ghost"
                 onClick={() => eliminarLogo.mutate()}
-                disabled={eliminarLogo.isPending}
+                disabled={subirLogo.isPending || eliminarLogo.isPending}
                 className="text-red-500 hover:text-red-700 dark:text-red-400"
               >
                 Quitar logo
