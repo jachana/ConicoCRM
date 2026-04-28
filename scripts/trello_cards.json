@@ -4,11 +4,11 @@
     "Bugs",
     "Client feedback",
     "Feature requests",
+    "In progress",
+    "In review",
     "Friendly Beta 0.1",
     "Live Beta 0.2",
-    "Live 1.0",
-    "In progress",
-    "In review"
+    "Live 1.0"
   ],
   "labels": {
     "Wave 1": "red",
@@ -252,6 +252,180 @@
       ]
     },
     {
+      "list": "Feature requests",
+      "name": "[Empresa] Puntos de contacto visibles en ficha empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "La pantalla de detalle de empresa debe mostrar los puntos de contacto (personas de contacto: nombre, cargo, email, teléfono). Si ya existe modelo ContactoEmpresa, agregar tab o sección en EmpresaDetailModal. Si no existe, crear modelo y CRUD básico.",
+      "checklist": [
+        "Verificar si existe modelo ContactoEmpresa o similar",
+        "Si no existe: modelo ContactoEmpresa (empresa_id FK, nombre, cargo, email, telefono) + migración",
+        "API CRUD /api/empresas/{id}/contactos (GET, POST, PATCH, DELETE)",
+        "EmpresaDetailModal: tab 'Contactos' o sección inline con lista + agregar/editar/eliminar",
+        "Permisos: vendedor puede ver, solo admin puede crear/editar/eliminar"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] Filtros rápidos en Timeline, Facturas y Productos",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los tabs Timeline, Facturas y Productos en EmpresaDetailModal necesitan filtros rápidos preconfigurados para mejorar usabilidad. Chips/pills de acceso rápido: 'Este mes', 'Este año', 'Facturas y pagos' (solo docs oficiales). Complementa los filtros existentes.",
+      "checklist": [
+        "Diseñar chips de filtro rápido: 'Este mes', 'Este año', 'Facturas y pagos'",
+        "Timeline: 'Este mes' = fecha >= inicio_mes, 'Facturas y pagos' = tipos [factura, pago, nc, nd]",
+        "Facturas tab: 'Este mes' y 'Este año' filtran por fecha_emision",
+        "Productos tab: 'Este mes' y 'Este año' filtran por última compra/factura del producto",
+        "Estado activo del chip resaltado (aria-pressed); reset limpia a sin filtro",
+        "Chips no reemplazan filtros existentes — se combinan"
+      ]
+    },
+    {
+      "list": "In progress",
+      "name": "[W1-05 checkpoint] Validar payload tipo 52 contra Lioren sandbox",
+      "labels": [
+        "Wave 1",
+        "DTE/SII",
+        "Blocked"
+      ],
+      "desc": "Bloquea producción de guías 52. Field names ind_traslado y destino.{direccion,comuna} son hipótesis LOW confidence (TODO W1-05-sandbox en dte_service.py). Requiere credenciales Lioren reales.",
+      "checklist": [
+        "Conseguir credenciales Lioren sandbox",
+        "Ejecutar pipeline DTE 52 contra sandbox con guía real",
+        "Confirmar field names ind_traslado + destino.direccion + destino.comuna",
+        "Quitar TODO(W1-05-sandbox) en dte_service.py",
+        "Documentar resultado en .planning/phases/01-gu-a-de-despacho-52-backend/01-03-SUMMARY.md"
+      ]
+    },
+    {
+      "list": "In progress",
+      "name": "[Phase E] Visual QA route-by-route + Storybook opcional",
+      "labels": [
+        "Design System"
+      ],
+      "desc": "Phase E cerrada parcial (sweep + a11y aplicados). Falta visual QA manual light+dark / mobile+desktop por ruta y Storybook opcional para ui/* primitives.",
+      "checklist": [
+        "Visual QA route-by-route en light + dark",
+        "Visual QA mobile + desktop",
+        "Storybook setup opcional para components/ui/*",
+        "Documentar gaps que aparezcan"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:HTTPS] Mixed content por redirect de FastAPI sin proxy-headers",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "En producción (HTTPS detrás de reverse proxy), FastAPI emite redirects 307 con Location http:// porque uvicorn corría sin --proxy-headers. El navegador bloquea el request por mixed content. Reproducido en /configuracion -> /api/bancos-receptores (sin trailing slash) -> 307 -> http://...//bancos-receptores/. Fix root cause: añadir --proxy-headers --forwarded-allow-ips=* al CMD de backend/Dockerfile (uvicorn ahora respeta X-Forwarded-Proto). Adicional: trailing slash en llamadas /api/bancos-receptores en Configuracion.tsx y FacturaDetalle.tsx para evitar el redirect en sí. Pendiente: re-deploy backend en Coolify para aplicar Dockerfile.",
+      "checklist": [
+        "Backend: uvicorn --proxy-headers --forwarded-allow-ips=*",
+        "Frontend: trailing slash en /api/bancos-receptores",
+        "Re-deploy backend en Coolify",
+        "Verificar /configuracion sin error de consola",
+        "Auditar otros endpoints que dependen de redirect 307"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Tests] Baseline failures Empresas + Facturas (12 fails)",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "12 vitest failures pre-existentes en Empresas/Facturas; carryover desde antes de Phase E. Investigar y arreglar para CI verde.",
+      "checklist": [
+        "Reproducir localmente (npm test -- Empresas Facturas)",
+        "Listar failures uno a uno",
+        "Triage: tests obsoletos vs bugs reales",
+        "Fix o skip con motivo documentado",
+        "Validar en CI cuando esté"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:Tareas] Vendedor puede ver Tareas de Admins y subadmins",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Brecha de seguridad: vendedores acceden a Tareas privadas de admin/subadmin. Solo deben ver tareas propias y asignadas. Fix urgente: validar permisos en queries + frontend.",
+      "checklist": [
+        "Auditar query: filtrar tareas por rol + ownership",
+        "Backend: validar permisos antes de retornar lista",
+        "Frontend: ocultar tabs/vistas no autorizadas",
+        "Reproducir: login vendedor → verificar no ve admin tasks",
+        "Audit logs: registrar acceso anterior"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "Settings de admin debe poder ordenar y quitar items del sidebar",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Administrador necesita personalizar navegación: ocultar módulos no usados y reordenar sidebar según flujo de negocio. Mejora usabilidad para roles específicos.",
+      "checklist": [
+        "UI settings: drag-drop o checkboxes para visibilidad",
+        "Persistir preferencias por rol (no por usuario)",
+        "Validar que no se oculten módulos críticos (ej: Clientes)",
+        "Default sensato: todos visibles on first load",
+        "Test con admin + vendedor"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:Vendedor] Vendedor puede ver OC y proveedores y precios de costo y margen",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Fuga de información financiera: vendedores ven órdenes de compra, proveedores, costos y márgenes (datos confidenciales). Restringir a admin/gerencia solo.",
+      "checklist": [
+        "Backend: filtrar OC, proveedores, campos de costo por rol",
+        "Frontend: ocultar tabs OC y Proveedores para vendedor",
+        "Validar permisos en cada endpoint (costo, margen)",
+        "Test: vendedor no accede /api/suppliers, /api/purchase-orders",
+        "Audit: revisar logs de acceso vendedor a datos financieros"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[BUG:Vendedor] Vendedor puede ver reportes Y cobranza, Notas de credito y debito",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Vendedor accede a reportes financieros, cobranza y notas de crédito/débito (solo admin/contador). Controlador de acceso fallido. Fix: validar rol antes de renderizar vistas.",
+      "checklist": [
+        "Backend: ACL por endpoint (reportes, cobranza, notas fiscal)",
+        "Frontend: menu condicional (ocultar para vendedor)",
+        "Validar permisos en /api/reports, /api/collections, /api/credit-notes",
+        "Test: vendedor intenta nav directo a URLs → 403",
+        "Logging: auditar intentos fallidos desde vendedor"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[DevX] Seed data — Pagos, NC, ND, GD, Boletas, Proveedores, OC",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Seed actual cubre Cotizaciones/NV/Facturas/Clientes pero deja vacíos los módulos posteriores. Demos y entornos nuevos no muestran cobranza, DTE, ni proveedores. Extender scripts/seed_demo.py (o equivalente) con datos coherentes y vinculados al grafo existente.",
+      "checklist": [
+        "Pagos múltiples por Factura (estados parcial/pagada)",
+        "NC vinculadas a facturas existentes (D-16 anulación + ajuste)",
+        "ND vinculadas a facturas existentes",
+        "Guías de despacho desde NV existentes",
+        "Boletas standalone tipo 39 + algunas anuladas vía NC 61",
+        "Proveedores con OC en distintos estados",
+        "OC con líneas y al menos una recibida",
+        "Idempotencia (--reset borra y re-siembra) y respeta secuencias correlativas"
+      ]
+    },
+    {
       "list": "In review",
       "name": "[Empresa] Quitar forma de pago del modelo Empresa",
       "labels": [
@@ -264,6 +438,21 @@
         "Quitar forma_pago de EmpresaModal (input)",
         "Quitar forma_pago de EmpresaRead schema y export Excel",
         "Validar que cotización/NV/factura sigan teniendo su propio forma_pago"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Empresas] Quitar campo \"Prioridad\"",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El campo Prioridad en Empresa no se usa en filtros, reportes ni reglas de negocio. Genera ruido en formularios y export. Eliminar del modelo, UI, filtros y export Excel; migración Alembic drop column.",
+      "checklist": [
+        "Migración Alembic drop column empresas.prioridad",
+        "Quitar campo de EmpresaCreate/EmpresaUpdate/EmpresaRead",
+        "Quitar input de EmpresaModal + columna de EmpresaList + filtro",
+        "Quitar de export Excel y de cualquier reporte",
+        "Audit log: confirmar que listener no falla por columna ausente"
       ]
     },
     {
@@ -310,34 +499,60 @@
       ]
     },
     {
-      "list": "Feature requests",
-      "name": "[Empresa] Puntos de contacto visibles en ficha empresa",
+      "list": "In review",
+      "name": "[Bug:Datos] \"Límite de crédito\" duplica \"Línea de crédito\"",
       "labels": [
-        "Core"
+        "Core",
+        "Bug"
       ],
-      "desc": "La pantalla de detalle de empresa debe mostrar los puntos de contacto (personas de contacto: nombre, cargo, email, teléfono). Si ya existe modelo ContactoEmpresa, agregar tab o sección en EmpresaDetailModal. Si no existe, crear modelo y CRUD básico.",
+      "desc": "DECISIÓN: Conservar solo 'linea_credito'. Dropar 'limite_credito' del modelo Empresa. Migración Alembic + actualizar API/schemas/UI.",
       "checklist": [
-        "Verificar si existe modelo ContactoEmpresa o similar",
-        "Si no existe: modelo ContactoEmpresa (empresa_id FK, nombre, cargo, email, telefono) + migración",
-        "API CRUD /api/empresas/{id}/contactos (GET, POST, PATCH, DELETE)",
-        "EmpresaDetailModal: tab 'Contactos' o sección inline con lista + agregar/editar/eliminar",
-        "Permisos: vendedor puede ver, solo admin puede crear/editar/eliminar"
+        "Mapear todos los usos de cada campo (modelo, API, UI, reportes, lógica crédito)",
+        "Decidir: merge en uno solo vs renombrar con semántica distinta",
+        "Migración Alembic (drop o rename + backfill)",
+        "Ajustar AprobacionCredito + GET /empresas/{id}/credito",
+        "Actualizar UI EmpresaModal + filtros + export",
+        "Migración Alembic: drop columna limite_credito",
+        "Remover limite_credito de schemas Pydantic y serializers",
+        "Ajustar AprobacionCredito + GET /empresas/{id}/credito → usar linea_credito",
+        "Actualizar UI EmpresaModal: quitar campo Límite, renombrar Línea si hace falta",
+        "Grep frontend/backend por 'limite_credito' y limpiar referencias"
       ]
     },
     {
-      "list": "Feature requests",
-      "name": "[Empresa] Filtros rápidos en Timeline, Facturas y Productos",
+      "list": "In review",
+      "name": "[Bug:Datos] \"Forma de pago\" duplica \"Plazo de Crédito\"",
       "labels": [
-        "Core"
+        "Core",
+        "Bug"
       ],
-      "desc": "Los tabs Timeline, Facturas y Productos en EmpresaDetailModal necesitan filtros rápidos preconfigurados para mejorar usabilidad. Chips/pills de acceso rápido: 'Este mes', 'Este año', 'Facturas y pagos' (solo docs oficiales). Complementa los filtros existentes.",
+      "desc": "DECISIÓN: Son distintos — forma_pago=método (efectivo/transferencia/cheque/crédito), plazo_credito=días. Convertir forma_pago de texto libre a select con opciones fijas. Cuando forma=efectivo/transferencia/cheque → plazo se fuerza a 0.",
       "checklist": [
-        "Diseñar chips de filtro rápido: 'Este mes', 'Este año', 'Facturas y pagos'",
-        "Timeline: 'Este mes' = fecha >= inicio_mes, 'Facturas y pagos' = tipos [factura, pago, nc, nd]",
-        "Facturas tab: 'Este mes' y 'Este año' filtran por fecha_emision",
-        "Productos tab: 'Este mes' y 'Este año' filtran por última compra/factura del producto",
-        "Estado activo del chip resaltado (aria-pressed); reset limpia a sin filtro",
-        "Chips no reemplazan filtros existentes — se combinan"
+        "Mapear usos de forma_pago vs plazo_credito en backend + UI",
+        "Decidir semántica: método vs plazo (o merge)",
+        "Migración Alembic + backfill desde valores existentes",
+        "Ajustar enforce al_contado (Sprint A) y FacturaDetalle banco/método",
+        "Actualizar formularios Empresa/Cliente/Cotización/NV/Factura",
+        "Definir enum FormaPago: efectivo, transferencia, cheque, credito",
+        "Migración Alembic: cambiar columna a String con CHECK constraint o enum",
+        "Backend: validar forma_pago en schemas Pydantic con Literal/Enum",
+        "Frontend: reemplazar Input por Select en Empresa/Cliente/Cotización/NV/Factura",
+        "Lógica: forma≠credito → forzar plazo_credito=0 en formularios"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:Sidebar] Click en \"Listas de precios\" resalta también \"Inventario\"",
+      "labels": [
+        "Bug",
+        "Design System"
+      ],
+      "desc": "Al navegar a /listas-precios el sidebar marca como activo tanto el item Listas de precios como Inventario. Probable: active-state hace match por prefijo (/inventario incluye route hermana) o ambos viven en el mismo grupo colapsable.",
+      "checklist": [
+        "Revisar Sidebar.tsx isActive matching (exact vs startsWith)",
+        "Separar grupos o usar match exacto por path",
+        "Validar también en otras rutas hermanas (productos, marcas, etc.)",
+        "Vitest snapshot del active state"
       ]
     },
     {
@@ -362,6 +577,21 @@
     },
     {
       "list": "In review",
+      "name": "[Bug:DarkMode] Títulos Auditoría y Cobranza invisibles en dark mode",
+      "labels": [
+        "Bug",
+        "Design System"
+      ],
+      "desc": "Headers de /admin/auditoria y /cobranza usan color hardcoded (text-gray-900 o similar) sin variante dark, quedando invisibles. Reemplazar por token semántico (text-foreground) y barrer otras páginas con el mismo patrón.",
+      "checklist": [
+        "Fix header /admin/auditoria → token semántico",
+        "Fix header /cobranza → token semántico",
+        "Grep frontend por text-gray-900|text-black sin dark: en headers de página",
+        "Validar contraste WCAG AA en light + dark"
+      ]
+    },
+    {
+      "list": "In review",
       "name": "[NV] Botón Re-cotizar desde Nota de Venta",
       "labels": [
         "Core"
@@ -380,6 +610,21 @@
     },
     {
       "list": "In review",
+      "name": "[Bug:i18n] Reglas de tarea muestran \"owner\" en inglés",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Aplicación es es-CL pero la UI de Reglas de Tarea (/admin/tareas/config) muestra el término inglés \"owner\" en lugar de \"responsable\" o \"asignado\". Probable leak desde seed o desde nombres de columna sin traducir.",
+      "checklist": [
+        "Reemplazar owner → responsable/asignado en /admin/tareas/config UI",
+        "Revisar seed ReglaTarea (descripcion/labels)",
+        "Grep en frontend de strings EN restantes en módulo tareas (\"owner\", \"created\", \"due\", etc.)",
+        "Confirmar consistencia con resto de módulos"
+      ]
+    },
+    {
+      "list": "In review",
       "name": "[Factura] Botón Re-cotizar desde Factura",
       "labels": [
         "Core"
@@ -394,6 +639,22 @@
         "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
         "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
         "Test: productos descontinuados → cantidad=0 + warning presente"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:Cobranza] Facturas y Cobranza muestran data duplicada sin diferenciación",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "DECISIÓN: Mantener separadas con scope diferenciado. /facturas = todas las facturas. /cobranza = solo pendientes (emitida/parcial), con aging y recordatorios. Backend ya filtra por _PENDIENTES; ajustar frontend Cobranza.tsx para no listar facturas pagadas/anuladas.",
+      "checklist": [
+        "Decidir alcance /cobranza vs /facturas",
+        "Si (a): /cobranza default a vencidas + próximas a vencer + antigüedad",
+        "Si (b): mover bandejas como tab dentro de /facturas y eliminar ruta",
+        "Documentar decisión en CLAUDE.md o PROGRESS.md",
+        "Ajustar sidebar y permisos resultantes"
       ]
     },
     {
@@ -924,251 +1185,6 @@
         "Phase C6 — Users",
         "Phase D — Login + AppLayout QA",
         "Phase E — Semantic-token sweep + a11y pass (grep gate clean)"
-      ]
-    },
-    {
-      "list": "In progress",
-      "name": "[W1-05 checkpoint] Validar payload tipo 52 contra Lioren sandbox",
-      "labels": [
-        "Wave 1",
-        "DTE/SII",
-        "Blocked"
-      ],
-      "desc": "Bloquea producción de guías 52. Field names ind_traslado y destino.{direccion,comuna} son hipótesis LOW confidence (TODO W1-05-sandbox en dte_service.py). Requiere credenciales Lioren reales.",
-      "checklist": [
-        "Conseguir credenciales Lioren sandbox",
-        "Ejecutar pipeline DTE 52 contra sandbox con guía real",
-        "Confirmar field names ind_traslado + destino.direccion + destino.comuna",
-        "Quitar TODO(W1-05-sandbox) en dte_service.py",
-        "Documentar resultado en .planning/phases/01-gu-a-de-despacho-52-backend/01-03-SUMMARY.md"
-      ]
-    },
-    {
-      "list": "In progress",
-      "name": "[Phase E] Visual QA route-by-route + Storybook opcional",
-      "labels": [
-        "Design System"
-      ],
-      "desc": "Phase E cerrada parcial (sweep + a11y aplicados). Falta visual QA manual light+dark / mobile+desktop por ruta y Storybook opcional para ui/* primitives.",
-      "checklist": [
-        "Visual QA route-by-route en light + dark",
-        "Visual QA mobile + desktop",
-        "Storybook setup opcional para components/ui/*",
-        "Documentar gaps que aparezcan"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Tests] Baseline failures Empresas + Facturas (12 fails)",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "12 vitest failures pre-existentes en Empresas/Facturas; carryover desde antes de Phase E. Investigar y arreglar para CI verde.",
-      "checklist": [
-        "Reproducir localmente (npm test -- Empresas Facturas)",
-        "Listar failures uno a uno",
-        "Triage: tests obsoletos vs bugs reales",
-        "Fix o skip con motivo documentado",
-        "Validar en CI cuando esté"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Tareas] Vendedor puede ver Tareas de Admins y subadmins",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "Brecha de seguridad: vendedores acceden a Tareas privadas de admin/subadmin. Solo deben ver tareas propias y asignadas. Fix urgente: validar permisos en queries + frontend.",
-      "checklist": [
-        "Auditar query: filtrar tareas por rol + ownership",
-        "Backend: validar permisos antes de retornar lista",
-        "Frontend: ocultar tabs/vistas no autorizadas",
-        "Reproducir: login vendedor → verificar no ve admin tasks",
-        "Audit logs: registrar acceso anterior"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "Settings de admin debe poder ordenar y quitar items del sidebar",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Administrador necesita personalizar navegación: ocultar módulos no usados y reordenar sidebar según flujo de negocio. Mejora usabilidad para roles específicos.",
-      "checklist": [
-        "UI settings: drag-drop o checkboxes para visibilidad",
-        "Persistir preferencias por rol (no por usuario)",
-        "Validar que no se oculten módulos críticos (ej: Clientes)",
-        "Default sensato: todos visibles on first load",
-        "Test con admin + vendedor"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Vendedor] Vendedor puede ver OC y proveedores y precios de costo y margen",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "Fuga de información financiera: vendedores ven órdenes de compra, proveedores, costos y márgenes (datos confidenciales). Restringir a admin/gerencia solo.",
-      "checklist": [
-        "Backend: filtrar OC, proveedores, campos de costo por rol",
-        "Frontend: ocultar tabs OC y Proveedores para vendedor",
-        "Validar permisos en cada endpoint (costo, margen)",
-        "Test: vendedor no accede /api/suppliers, /api/purchase-orders",
-        "Audit: revisar logs de acceso vendedor a datos financieros"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[BUG:Vendedor] Vendedor puede ver reportes Y cobranza, Notas de credito y debito",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "Vendedor accede a reportes financieros, cobranza y notas de crédito/débito (solo admin/contador). Controlador de acceso fallido. Fix: validar rol antes de renderizar vistas.",
-      "checklist": [
-        "Backend: ACL por endpoint (reportes, cobranza, notas fiscal)",
-        "Frontend: menu condicional (ocultar para vendedor)",
-        "Validar permisos en /api/reports, /api/collections, /api/credit-notes",
-        "Test: vendedor intenta nav directo a URLs → 403",
-        "Logging: auditar intentos fallidos desde vendedor"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[DevX] Seed data — Pagos, NC, ND, GD, Boletas, Proveedores, OC",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Seed actual cubre Cotizaciones/NV/Facturas/Clientes pero deja vacíos los módulos posteriores. Demos y entornos nuevos no muestran cobranza, DTE, ni proveedores. Extender scripts/seed_demo.py (o equivalente) con datos coherentes y vinculados al grafo existente.",
-      "checklist": [
-        "Pagos múltiples por Factura (estados parcial/pagada)",
-        "NC vinculadas a facturas existentes (D-16 anulación + ajuste)",
-        "ND vinculadas a facturas existentes",
-        "Guías de despacho desde NV existentes",
-        "Boletas standalone tipo 39 + algunas anuladas vía NC 61",
-        "Proveedores con OC en distintos estados",
-        "OC con líneas y al menos una recibida",
-        "Idempotencia (--reset borra y re-siembra) y respeta secuencias correlativas"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Empresas] Quitar campo \"Prioridad\"",
-      "labels": [
-        "Core"
-      ],
-      "desc": "El campo Prioridad en Empresa no se usa en filtros, reportes ni reglas de negocio. Genera ruido en formularios y export. Eliminar del modelo, UI, filtros y export Excel; migración Alembic drop column.",
-      "checklist": [
-        "Migración Alembic drop column empresas.prioridad",
-        "Quitar campo de EmpresaCreate/EmpresaUpdate/EmpresaRead",
-        "Quitar input de EmpresaModal + columna de EmpresaList + filtro",
-        "Quitar de export Excel y de cualquier reporte",
-        "Audit log: confirmar que listener no falla por columna ausente"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Datos] \"Límite de crédito\" duplica \"Línea de crédito\"",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "DECISIÓN: Conservar solo 'linea_credito'. Dropar 'limite_credito' del modelo Empresa. Migración Alembic + actualizar API/schemas/UI.",
-      "checklist": [
-        "Mapear todos los usos de cada campo (modelo, API, UI, reportes, lógica crédito)",
-        "Decidir: merge en uno solo vs renombrar con semántica distinta",
-        "Migración Alembic (drop o rename + backfill)",
-        "Ajustar AprobacionCredito + GET /empresas/{id}/credito",
-        "Actualizar UI EmpresaModal + filtros + export",
-        "Migración Alembic: drop columna limite_credito",
-        "Remover limite_credito de schemas Pydantic y serializers",
-        "Ajustar AprobacionCredito + GET /empresas/{id}/credito → usar linea_credito",
-        "Actualizar UI EmpresaModal: quitar campo Límite, renombrar Línea si hace falta",
-        "Grep frontend/backend por 'limite_credito' y limpiar referencias"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Datos] \"Forma de pago\" duplica \"Plazo de Crédito\"",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "DECISIÓN: Son distintos — forma_pago=método (efectivo/transferencia/cheque/crédito), plazo_credito=días. Convertir forma_pago de texto libre a select con opciones fijas. Cuando forma=efectivo/transferencia/cheque → plazo se fuerza a 0.",
-      "checklist": [
-        "Mapear usos de forma_pago vs plazo_credito en backend + UI",
-        "Decidir semántica: método vs plazo (o merge)",
-        "Migración Alembic + backfill desde valores existentes",
-        "Ajustar enforce al_contado (Sprint A) y FacturaDetalle banco/método",
-        "Actualizar formularios Empresa/Cliente/Cotización/NV/Factura",
-        "Definir enum FormaPago: efectivo, transferencia, cheque, credito",
-        "Migración Alembic: cambiar columna a String con CHECK constraint o enum",
-        "Backend: validar forma_pago en schemas Pydantic con Literal/Enum",
-        "Frontend: reemplazar Input por Select en Empresa/Cliente/Cotización/NV/Factura",
-        "Lógica: forma≠credito → forzar plazo_credito=0 en formularios"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Sidebar] Click en \"Listas de precios\" resalta también \"Inventario\"",
-      "labels": [
-        "Bug",
-        "Design System"
-      ],
-      "desc": "Al navegar a /listas-precios el sidebar marca como activo tanto el item Listas de precios como Inventario. Probable: active-state hace match por prefijo (/inventario incluye route hermana) o ambos viven en el mismo grupo colapsable.",
-      "checklist": [
-        "Revisar Sidebar.tsx isActive matching (exact vs startsWith)",
-        "Separar grupos o usar match exacto por path",
-        "Validar también en otras rutas hermanas (productos, marcas, etc.)",
-        "Vitest snapshot del active state"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:DarkMode] Títulos Auditoría y Cobranza invisibles en dark mode",
-      "labels": [
-        "Bug",
-        "Design System"
-      ],
-      "desc": "Headers de /admin/auditoria y /cobranza usan color hardcoded (text-gray-900 o similar) sin variante dark, quedando invisibles. Reemplazar por token semántico (text-foreground) y barrer otras páginas con el mismo patrón.",
-      "checklist": [
-        "Fix header /admin/auditoria → token semántico",
-        "Fix header /cobranza → token semántico",
-        "Grep frontend por text-gray-900|text-black sin dark: en headers de página",
-        "Validar contraste WCAG AA en light + dark"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:i18n] Reglas de tarea muestran \"owner\" en inglés",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "Aplicación es es-CL pero la UI de Reglas de Tarea (/admin/tareas/config) muestra el término inglés \"owner\" en lugar de \"responsable\" o \"asignado\". Probable leak desde seed o desde nombres de columna sin traducir.",
-      "checklist": [
-        "Reemplazar owner → responsable/asignado en /admin/tareas/config UI",
-        "Revisar seed ReglaTarea (descripcion/labels)",
-        "Grep en frontend de strings EN restantes en módulo tareas (\"owner\", \"created\", \"due\", etc.)",
-        "Confirmar consistencia con resto de módulos"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Cobranza] Facturas y Cobranza muestran data duplicada sin diferenciación",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "DECISIÓN: Mantener separadas con scope diferenciado. /facturas = todas las facturas. /cobranza = solo pendientes (emitida/parcial), con aging y recordatorios. Backend ya filtra por _PENDIENTES; ajustar frontend Cobranza.tsx para no listar facturas pagadas/anuladas.",
-      "checklist": [
-        "Decidir alcance /cobranza vs /facturas",
-        "Si (a): /cobranza default a vencidas + próximas a vencer + antigüedad",
-        "Si (b): mover bandejas como tab dentro de /facturas y eliminar ruta",
-        "Documentar decisión en CLAUDE.md o PROGRESS.md",
-        "Ajustar sidebar y permisos resultantes"
       ]
     }
   ]

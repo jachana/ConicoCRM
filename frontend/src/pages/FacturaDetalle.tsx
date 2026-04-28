@@ -141,7 +141,7 @@ export default function FacturaDetalle() {
 
   const { data: bancos = [] } = useQuery<BancoReceptor[]>({
     queryKey: ['bancos-receptores'],
-    queryFn: () => api.get('/api/bancos-receptores').then(r => r.data),
+    queryFn: () => api.get('/api/bancos-receptores/').then(r => r.data),
     enabled: editing,
   })
 

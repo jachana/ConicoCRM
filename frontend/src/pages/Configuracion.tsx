@@ -43,11 +43,11 @@ export default function Configuracion() {
 
   const { data: bancos = [] } = useQuery<BancoReceptor[]>({
     queryKey: ['bancos-receptores'],
-    queryFn: () => api.get('/api/bancos-receptores').then(r => r.data),
+    queryFn: () => api.get('/api/bancos-receptores/').then(r => r.data),
   })
 
   const addBanco = useMutation({
-    mutationFn: (nombre: string) => api.post('/api/bancos-receptores', { nombre }),
+    mutationFn: (nombre: string) => api.post('/api/bancos-receptores/', { nombre }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['bancos-receptores'] }); setNuevoBanco('') },
     onError: () => toast.error('Error al agregar banco'),
   })
