@@ -16,5 +16,8 @@ def empresa_logo_data_uri(logo_path: str | None) -> str | None:
         ".png": "image/png",
         ".webp": "image/webp",
     }.get(suffix, "image/png")
-    data = base64.b64encode(path.read_bytes()).decode()
+    try:
+        data = base64.b64encode(path.read_bytes()).decode()
+    except OSError:
+        return None
     return f"data:{mime};base64,{data}"
