@@ -577,7 +577,7 @@ def actualizar_empresa(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
     datos = body.model_dump(exclude_unset=True)
     if "rut" in datos and datos["rut"] != e.rut:
-        raise HTTPException(status_code=422, detail="El RUT no puede modificarse después de creada la empresa")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="El RUT no puede modificarse después de creada la empresa")
     for field, value in datos.items():
         setattr(e, field, value)
     try:
