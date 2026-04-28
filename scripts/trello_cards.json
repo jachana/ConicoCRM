@@ -109,6 +109,21 @@
     },
     {
       "list": "Feature requests",
+      "name": "[NV] Bloquear edición al emitir factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Cuando se emite una factura desde una NV, la NV debe quedar bloqueada (read-only). No se puede editar líneas, precios ni cantidades una vez facturada.",
+      "checklist": [
+        "Estado NV: agregar estado 'facturada' al emitir factura",
+        "Backend: rechazar PUT/PATCH sobre NV con estado 'facturada'",
+        "UI: deshabilitar todos los campos editables y botones de acción cuando NV está facturada",
+        "Mostrar banner/badge 'Facturada' con link a la factura emitida",
+        "Solo admin puede desbloquear (opcional, con log de auditoría)"
+      ]
+    },
+    {
+      "list": "Feature requests",
       "name": "[NV] Adjuntar documentos (OC u otros) y propagarlos a factura",
       "labels": [
         "Core"
@@ -353,6 +368,21 @@
         "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
         "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
         "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Listados] Orden cronológico por defecto — más reciente primero",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los listados de documentos (Cotizaciones, NV, Facturas, Boletas, NC, ND, Guías de Despacho) deben ordenarse por defecto con el más reciente primero (ORDER BY fecha_emision DESC o created_at DESC). Hoy el orden varía o es inconsistente entre módulos.\n\nNo requiere cambio en UI de columnas — solo fijar el default en el backend y mantener la columna de fecha ordenable asc/desc.",
+      "checklist": [
+        "Auditar orden actual de cada endpoint: GET /cotizaciones, /notas-venta, /facturas, /boletas, /notas-credito, /notas-debito, /guias-despacho",
+        "Estandarizar: ORDER BY fecha_emision DESC (o created_at DESC si no existe fecha_emision)",
+        "Verificar que el frontend no sobreescriba el orden al recibir la respuesta",
+        "Columna de fecha en cada listado: soportar click para invertir orden (asc/desc)",
+        "Asegurar que el orden se mantiene con paginación (no romper en página 2+)"
       ]
     },
     {
