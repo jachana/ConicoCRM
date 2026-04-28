@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useAuthStore } from '../stores/auth'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { Plus, FileSpreadsheet, Eye, Pencil, Trash2, Inbox } from 'lucide-react'
@@ -45,6 +46,7 @@ function fmt(n: number) {
 
 export default function Empresas() {
   const qc = useQueryClient()
+  const user = useAuthStore(s => s.user)
   const [busqueda, setBusqueda] = useState('')
   const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
 
@@ -470,6 +472,7 @@ export default function Empresas() {
                     step="0.01"
                     value={form.linea_credito}
                     onChange={e => setForm(f => ({ ...f, linea_credito: e.target.value }))}
+                    disabled={user?.role === 'vendedor'}
                   />
                 </FormField>
 

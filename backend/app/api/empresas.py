@@ -571,13 +571,15 @@ def actualizar_empresa(
     body: EmpresaUpdate,
     perms: tuple[User, Session] = require_permission("empresas", "edit"),
 ):
-    _, db = perms
+    user, db = perms
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
     datos = body.model_dump(exclude_unset=True)
     if "rut" in datos and datos["rut"] != e.rut:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="El RUT no puede modificarse después de creada la empresa")
+    if "linea_credito" in datos and user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores pueden modificar la línea de crédito")
     for field, value in datos.items():
         setattr(e, field, value)
     try:
