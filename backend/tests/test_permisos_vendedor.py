@@ -207,3 +207,167 @@ def test_admin_cotizacion_list_sees_margen(client, admin_user, admin_token, vend
     # At least one cotizacion should have a non-null margen_total
     has_margen = any(cot["margen_total"] is not None for cot in data)
     assert has_margen, "Admin should see margen_total on cotizaciones with margin data"
+
+
+# ---------------------------------------------------------------------------
+# Helpers for NV and Factura detail tests
+# ---------------------------------------------------------------------------
+
+def _make_nv_with_margen(vendedor_user):
+    """Insert a NotaVenta with one linea that has a non-null margen value."""
+    from tests.conftest import TestingSession
+    from app.models.cliente import Cliente
+    from app.models.producto import Producto
+    from app.models.nota_venta import NotaVenta, NotaVentaLinea
+
+    db = TestingSession()
+    try:
+        cliente = Cliente(nombre="Test Cliente NV Margen")
+        db.add(cliente)
+        db.flush()
+
+        producto = Producto(
+            nombre="Prod NV Margen",
+            precio_costo=Decimal("500"),
+            precio_venta=Decimal("1000"),
+            stock_actual=10,
+        )
+        db.add(producto)
+        db.flush()
+
+        total_neto = Decimal("1000")
+        iva = total_neto * Decimal("0.19")
+        total = total_neto + iva
+        margen = (Decimal("1000") - Decimal("500")) / Decimal("1000")  # 0.5
+
+        nv = NotaVenta(
+            numero=99002,
+            cliente_id=cliente.id,
+            vendedor_id=vendedor_user.id,
+            fecha=date(2026, 4, 28),
+            estado="pendiente",
+            total_neto=total_neto,
+            total_iva=iva,
+            total=total,
+        )
+        db.add(nv)
+        db.flush()
+
+        linea = NotaVentaLinea(
+            nv_id=nv.id,
+            orden=1,
+            producto_id=producto.id,
+            sku="SKU-NV-TEST",
+            descripcion="Producto NV test",
+            cantidad=1,
+            valor_neto=Decimal("1000"),
+            total_neto=total_neto,
+            iva=iva,
+            total=total,
+            margen=margen,
+        )
+        db.add(linea)
+        db.commit()
+        return nv.id
+    finally:
+        db.close()
+
+
+def _make_factura_with_margen(vendedor_user):
+    """Insert a Factura with one linea that has a non-null margen value."""
+    from tests.conftest import TestingSession
+    from app.models.cliente import Cliente
+    from app.models.producto import Producto
+    from app.models.factura import Factura, FacturaLinea
+
+    db = TestingSession()
+    try:
+        cliente = Cliente(nombre="Test Cliente Factura Margen")
+        db.add(cliente)
+        db.flush()
+
+        producto = Producto(
+            nombre="Prod Factura Margen",
+            precio_costo=Decimal("500"),
+            precio_venta=Decimal("1000"),
+            stock_actual=10,
+        )
+        db.add(producto)
+        db.flush()
+
+        total_neto = Decimal("1000")
+        iva = total_neto * Decimal("0.19")
+        total = total_neto + iva
+        margen = (Decimal("1000") - Decimal("500")) / Decimal("1000")  # 0.5
+
+        factura = Factura(
+            numero=99003,
+            cliente_id=cliente.id,
+            vendedor_id=vendedor_user.id,
+            fecha=date(2026, 4, 28),
+            estado="emitida",
+            total_neto=total_neto,
+            total_iva=iva,
+            total=total,
+        )
+        db.add(factura)
+        db.flush()
+
+        linea = FacturaLinea(
+            factura_id=factura.id,
+            orden=1,
+            producto_id=producto.id,
+            sku="SKU-FAC-TEST",
+            descripcion="Producto factura test",
+            cantidad=1,
+            valor_neto=Decimal("1000"),
+            total_neto=total_neto,
+            iva=iva,
+            total=total,
+            margen=margen,
+        )
+        db.add(linea)
+        db.commit()
+        return factura.id
+    finally:
+        db.close()
+
+
+# ---------------------------------------------------------------------------
+# Detail endpoint margen-hiding tests
+# ---------------------------------------------------------------------------
+
+def test_vendedor_cotizacion_detail_hides_margen(client, vendedor_user, vendedor_token):
+    cot_id = _make_cotizacion_with_margen(vendedor_user)
+    resp = client.get(
+        f"/api/cotizaciones/{cot_id}",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    for linea in data.get("lineas", []):
+        assert linea["margen"] is None
+
+
+def test_vendedor_factura_detail_hides_margen(client, vendedor_user, vendedor_token):
+    fac_id = _make_factura_with_margen(vendedor_user)
+    resp = client.get(
+        f"/api/facturas/{fac_id}",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    for linea in data.get("lineas", []):
+        assert linea["margen"] is None
+
+
+def test_vendedor_nv_detail_hides_margen(client, vendedor_user, vendedor_token):
+    nv_id = _make_nv_with_margen(vendedor_user)
+    resp = client.get(
+        f"/api/nota_ventas/{nv_id}",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    for linea in data.get("lineas", []):
+        assert linea["margen"] is None
