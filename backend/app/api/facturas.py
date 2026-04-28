@@ -37,7 +37,6 @@ from app.services.xml_dte import parse_dte_xml
 router = APIRouter()
 
 _TRANSITIONS: dict[tuple[str, str], str] = {
-    ("emitida",  "pagada"):  "admin",
     ("emitida",  "anulada"): "admin",
     ("pagada",   "anulada"): "admin_only",
     ("parcial",  "anulada"): "admin_only",
@@ -532,6 +531,12 @@ def cambiar_estado(
     if not factura:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Factura no encontrada")
 
+    if body.estado == "pagada":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="El estado 'pagada' se deriva automáticamente de los pagos registrados. Use el módulo de pagos.",
+        )
+
     transition = (factura.estado, body.estado)
     allowed = _TRANSITIONS.get(transition)
     if allowed is None:
@@ -541,21 +546,6 @@ def cambiar_estado(
         )
     if allowed == "admin_only" and current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin puede hacer esta transición")
-
-    if body.estado == "pagada":
-        if not body.fecha_pago or body.monto_pagado is None or not body.metodo_pago:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Para marcar como pagada se requiere fecha_pago, monto_pagado y metodo_pago",
-            )
-        if body.metodo_pago not in METODOS_PAGO:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"metodo_pago inválido. Valores: {', '.join(sorted(METODOS_PAGO))}",
-            )
-        factura.fecha_pago = body.fecha_pago
-        factura.monto_pagado = body.monto_pagado
-        factura.metodo_pago = body.metodo_pago
 
     factura.estado = body.estado
     db.commit()

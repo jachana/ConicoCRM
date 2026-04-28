@@ -63,16 +63,6 @@ class FacturaUpdate(BaseModel):
 
 class FacturaEstadoCambio(BaseModel):
     estado: str
-    fecha_pago: date | None = None
-    monto_pagado: Decimal | None = None
-    metodo_pago: str | None = None
-
-    @field_validator("metodo_pago")
-    @classmethod
-    def validar_metodo_pago(cls, v: str | None) -> str | None:
-        if v is not None and v not in METODOS_PAGO:
-            raise ValueError(f"metodo_pago debe ser uno de: {sorted(METODOS_PAGO)}")
-        return v
 
 
 class ClienteMinOut(BaseModel):
