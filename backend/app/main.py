@@ -31,6 +31,7 @@ from app.api import reportes
 from app.api import tags
 from app.api import bancos_receptores
 from app.api import sedes_despacho
+from app.api import empresa_logo
 from app.api import marcas
 from app.api import aprobaciones_costo
 from app.api import productos_documentos
@@ -101,6 +102,7 @@ app.include_router(reportes.router, prefix="/api/reportes", tags=["reportes"])
 app.include_router(tags.router, prefix="/api/tags", tags=["tags"])
 app.include_router(bancos_receptores.router, prefix="/api/bancos-receptores", tags=["config"])
 app.include_router(sedes_despacho.router, prefix="/api/sedes-despacho", tags=["empresas"])
+app.include_router(empresa_logo.router, prefix="/api/empresas", tags=["empresas"])
 app.include_router(marcas.router, prefix="/api/marcas", tags=["catálogo"])
 app.include_router(aprobaciones_costo.router, prefix="/api/aprobaciones-costo", tags=["aprobaciones"])
 app.include_router(productos_documentos.router, prefix="/api/productos", tags=["catálogo"])

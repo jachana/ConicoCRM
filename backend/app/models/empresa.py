@@ -19,6 +19,7 @@ class Empresa(Base):
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     nota_cobranza: Mapped[str | None] = mapped_column(Text, nullable=True)
     ubicacion: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    logo_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

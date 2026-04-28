@@ -14,6 +14,7 @@ class EmpresaBase(BaseModel):
     email: str | None = None
     nota_cobranza: str | None = None
     ubicacion: str | None = None
+    logo_path: str | None = None
 
 
 class EmpresaCreate(EmpresaBase):
