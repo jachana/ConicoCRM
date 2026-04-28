@@ -342,6 +342,24 @@
     },
     {
       "list": "Feature requests",
+      "name": "[Productos] Tags de tipo: hidráulico, motor, transmisión (multi-valor)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los productos necesitan un campo 'Tipo' que funcione como tags (multi-selección), no como categoría exclusiva. Un producto puede ser simultáneamente 'hidráulico' y 'de motor'.\n\nTipos iniciales: hidráulico, motor, transmisión. El listado debe ser configurable (admin agrega/quita tipos).\n\nComportamiento esperado:\n- ProductoModal: selector multi-tag para tipo (chips seleccionables + opción de crear nuevo tipo).\n- Listado de productos: columna de tipos como chips, filtrable por uno o varios tipos.\n- PDF/documentos: mostrar tipos del producto si aplica.",
+      "checklist": [
+        "Modelo TipoProducto (id, nombre) + tabla M2M ProductoTipo (producto_id, tipo_id) + migraciones",
+        "Seed inicial: hidráulico, motor, transmisión",
+        "CRUD /api/tipos-producto (GET lista, POST, DELETE — solo admin)",
+        "ProductoCreate/Update schema: campo tipos: list[int] (ids)",
+        "ProductoRead schema: exponer tipos como lista de strings/objetos",
+        "ProductoModal UI: multi-select chips para tipos (con opción crear nuevo)",
+        "Listado productos: columna 'Tipos' con chips + filtro multi-selección por tipo",
+        "Búsqueda/filtro: GET /api/productos?tipo=hidraulico soporta múltiples valores"
+      ]
+    },
+    {
+      "list": "Feature requests",
       "name": "[Cotizaciones] Link a NV generada en cotización cerrada",
       "labels": [
         "Core"
@@ -1726,6 +1744,30 @@
         "Migración: si hay facturas en BD con estado_pago='pagado' y sum(pagos)=0, dejarlas pendientes y reportar (no auto-pagar)",
         "Tests: factura con 0 pagos → pendiente; pagos parciales → parcial; pagos = total → pagado; anular pago → vuelve atrás",
         "Tests: PATCH a estado_pago retorna 422 / es ignorado"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Factura] Adjuntar archivo de Orden de Compra (PDF/imagen) y reutilizar al facturar",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Hoy el cliente envía la OC por email/WhatsApp como PDF o foto, y al momento de facturar hay que ir a buscarla — se pierde, se traspapela, o el vendedor no la tiene a mano. Permitir subir el archivo de la OC al sistema y dejarlo accesible desde la ficha de empresa/cliente y desde la factura que la referencia.\n\nFlujo:\n1. Subir archivo OC (PDF / JPG / PNG) en sección 'Órdenes de compra del cliente' (ficha empresa o vista global). Capturar metadata: número OC, fecha, monto, vigencia, archivo.\n2. Al emitir factura → selector 'Adjuntar OC del cliente' lista las OC subidas para esa empresa, sin facturar (o parcialmente facturadas). Al elegir, se auto-llena el bloque de Documentos referenciados (tipo 801, folio, fecha).\n3. La factura queda con link al archivo + en la referencia SII.\n\nRelación con cards existentes:\n- Complementa '[Factura] Documentos referenciados (OC, HES, contrato, guía, NV)' — esta card aporta el storage/upload, la otra el modelo de referencias.\n- Distinto de '[Onboarding] Import OC históricas' (eso es batch xlsx legacy).",
+      "checklist": [
+        "Modelo: OrdenCompraCliente (empresa_id, numero, fecha, monto, vigencia_hasta, archivo_url, estado)",
+        "Estados: vigente / facturada_parcial / facturada_total / vencida / anulada",
+        "Storage: subir archivo (PDF/JPG/PNG, max 10MB) — usar mismo bucket/disk que adjuntos existentes",
+        "UI: sección 'Órdenes de compra' en ficha de Empresa con upload + tabla + preview",
+        "Vista global '/ordenes-compra-clientes' filtrable por empresa, estado, vigencia",
+        "Modal upload: drag&drop archivo + form con número OC, fecha, monto (opcional), vigencia",
+        "Validación: número OC único por empresa (warning si duplicado, no bloqueo)",
+        "Emisión factura: nuevo selector 'Adjuntar OC del cliente' que lista OC vigentes/parciales de esa empresa",
+        "Al seleccionar OC → auto-llenar Documento Referenciado (tipo=801, folio=numero, fecha=fecha)",
+        "Auto-llenar también link al archivo (queda visible en la ficha de la factura)",
+        "Tracking: cuando una factura referencia una OC, marcar OC como facturada_parcial/total según monto",
+        "Permitir despegar OC de factura (revertir estado)",
+        "Permisos: vendedor sube OC de su cliente; admin ve todas",
+        "Tests: subir, listar, asociar a factura, estado se actualiza, archivo accesible vía URL firmada"
       ]
     }
   ]
