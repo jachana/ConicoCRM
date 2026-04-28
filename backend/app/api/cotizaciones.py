@@ -25,6 +25,7 @@ from app.schemas.cotizacion import (
     CotizacionOut,
     CotizacionUpdate,
     CotizacionLineaCreate,
+    RecotizarOut,
 )
 from app.services.email import EmailNotConfiguredError, enviar_cotizacion
 from app.services.pdf import generar_pdf_cotizacion
@@ -534,6 +535,106 @@ def generar_pdf(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
+
+
+def _build_recotizar(
+    db: Session,
+    current_user: User,
+    source_lineas,
+    cliente_id,
+    empresa_id,
+    vendedor_id,
+    contacto,
+    nota,
+    correo,
+) -> RecotizarOut:
+    warnings: list[str] = []
+    lineas_data: list[CotizacionLineaCreate] = []
+    for i, l in enumerate(source_lineas):
+        if l.producto_id is not None:
+            prod = db.get(Producto, l.producto_id)
+            if prod is None:
+                warnings.append(l.sku or l.descripcion)
+                lineas_data.append(CotizacionLineaCreate(
+                    orden=i + 1,
+                    producto_id=None,
+                    sku=l.sku,
+                    descripcion=l.descripcion,
+                    formato=l.formato,
+                    cantidad=0,
+                    valor_neto=l.valor_neto,
+                    descuento=Decimal("0"),
+                ))
+                continue
+            lineas_data.append(CotizacionLineaCreate(
+                orden=i + 1,
+                producto_id=l.producto_id,
+                sku=l.sku,
+                descripcion=l.descripcion,
+                formato=l.formato,
+                cantidad=l.cantidad,
+                valor_neto=prod.precio_venta,
+                descuento=Decimal("0"),
+            ))
+        else:
+            lineas_data.append(CotizacionLineaCreate(
+                orden=i + 1,
+                producto_id=None,
+                sku=l.sku,
+                descripcion=l.descripcion,
+                formato=l.formato,
+                cantidad=l.cantidad,
+                valor_neto=l.valor_neto,
+                descuento=Decimal("0"),
+            ))
+
+    numero = _asignar_numero(db)
+    nueva = Cotizacion(
+        numero=numero,
+        cliente_id=cliente_id,
+        empresa_id=empresa_id,
+        vendedor_id=vendedor_id,
+        contacto=contacto,
+        fecha=date.today(),
+        nota=nota,
+        correo=correo,
+        estado="no_definido",
+        validez_dias=5,
+    )
+    if not nueva.terminos_pago and nueva.empresa_id:
+        empresa = db.get(Empresa, nueva.empresa_id)
+        if empresa and empresa.plazo_credito:
+            nueva.terminos_pago = empresa.plazo_credito
+    nueva.terminos_pago_estado = "aprobado"
+
+    db.add(nueva)
+    db.flush()
+    nueva.lineas = _calcular_lineas(db, lineas_data)
+    _recalcular_totales(nueva)
+    db.commit()
+    db.refresh(nueva)
+    return RecotizarOut(id=nueva.id, warnings=warnings)
+
+
+@router.post("/{cotizacion_id}/recotizar", response_model=RecotizarOut, status_code=status.HTTP_201_CREATED)
+def recotizar_cotizacion(
+    cotizacion_id: int,
+    perms: tuple[User, Session] = require_permission("cotizaciones", "create"),
+):
+    current_user, db = perms
+    cot = (
+        db.query(Cotizacion)
+        .options(joinedload(Cotizacion.lineas))
+        .filter(Cotizacion.id == cotizacion_id)
+        .first()
+    )
+    if not cot:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cotización no encontrada")
+    return _build_recotizar(
+        db, current_user,
+        cot.lineas, cot.cliente_id, cot.empresa_id, cot.vendedor_id,
+        cot.contacto, cot.nota, cot.correo,
     )
 
 
