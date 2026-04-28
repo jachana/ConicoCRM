@@ -1,7 +1,7 @@
 """add_referencias_docs_to_facturas
 
 Revision ID: aa1bb2cc3dd4
-Revises: z5a6b7c8d9e0
+Revises: q7r8s9t0u1v2
 Create Date: 2026-04-28 00:00:00.000000
 
 Adds referencias_docs JSON column to facturas table.
@@ -15,7 +15,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "aa1bb2cc3dd4"
-down_revision: Union[str, None] = "z5a6b7c8d9e0"
+down_revision: Union[str, None] = "q7r8s9t0u1v2"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
