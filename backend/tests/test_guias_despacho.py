@@ -414,10 +414,9 @@ def test_delete_guia_emitida_409(mock_emit, client, admin_token, db):
 
 
 @patch("app.api.guias_despacho.emit_dte")
-def test_audit_log_diff(mock_emit, client, admin_token, audit_enabled):
+def test_audit_log_diff(mock_emit, client, admin_token, audit_enabled, db):
     """Crear + editar guía → AuditLog tiene ≥ 2 entries con model_name='GuiaDespacho' (DTE-07)."""
     from app.models.audit_log import AuditLog
-    from app.database import SessionLocal
 
     r = client.post(
         "/api/guias-despacho/",
@@ -437,14 +436,10 @@ def test_audit_log_diff(mock_emit, client, admin_token, audit_enabled):
     )
     assert re_.status_code == 200, re_.text
 
-    db2 = SessionLocal()
-    try:
-        logs = db2.query(AuditLog).filter_by(entity_type="GuiaDespacho").all()
-        assert len(logs) >= 2, (
-            f"Esperaba ≥ 2 audit entries para GuiaDespacho, hay {len(logs)}"
-        )
-    finally:
-        db2.close()
+    logs = db.query(AuditLog).filter_by(entity_type="GuiaDespacho").all()
+    assert len(logs) >= 2, (
+        f"Esperaba ≥ 2 audit entries para GuiaDespacho, hay {len(logs)}"
+    )
 
 
 # ── 11. Concurrencia Postgres-only (D-28) ─────────────────────────────────────

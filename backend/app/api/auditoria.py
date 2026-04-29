@@ -9,7 +9,7 @@ from __future__ import annotations
 import csv
 import io
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -33,9 +33,12 @@ def _parse_iso(s: str | None, field: str) -> datetime | None:
         # `to_date=2026-04-24` incluya logs de ese día.
         if len(s) == 10:
             if field == "to_date":
-                return datetime.fromisoformat(s + "T23:59:59.999999")
-            return datetime.fromisoformat(s + "T00:00:00")
-        return datetime.fromisoformat(s)
+                return datetime(int(s[:4]), int(s[5:7]), int(s[8:10]), 23, 59, 59, 999999, tzinfo=timezone.utc)
+            return datetime(int(s[:4]), int(s[5:7]), int(s[8:10]), 0, 0, 0, tzinfo=timezone.utc)
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
     except ValueError:
         raise HTTPException(422, detail=f"Formato inválido en `{field}`: {s!r}")
 

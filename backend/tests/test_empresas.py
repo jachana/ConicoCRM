@@ -128,7 +128,7 @@ def test_actualizar_rut_duplicado(client, admin_token):
     r2 = client.post("/api/empresas/", json={"nombre": "Emp 2", "rut": "76.222.222-2"}, headers={"Authorization": f"Bearer {admin_token}"})
     eid = r2.json()["id"]
     r3 = client.patch(f"/api/empresas/{eid}", json={"rut": "76.111.111-1"}, headers={"Authorization": f"Bearer {admin_token}"})
-    assert r3.status_code == 409
+    assert r3.status_code == 422  # RUT is immutable after creation
 
 
 def test_exportar_excel(client, admin_token):

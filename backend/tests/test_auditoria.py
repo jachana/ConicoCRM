@@ -273,7 +273,7 @@ def test_to_date_same_day_is_inclusive(client, admin_token):
     """Regresión spec review #3: `to_date=YYYY-MM-DD` parseaba a T00:00:00,
     excluyendo logs creados el mismo día. Debe interpretarse como fin-de-día.
     """
-    from datetime import date
+    from datetime import datetime, timezone
 
     # Genera al menos un log hoy.
     r = client.post(
@@ -283,7 +283,7 @@ def test_to_date_same_day_is_inclusive(client, admin_token):
     )
     assert r.status_code in (200, 201)
 
-    today = date.today().isoformat()
+    today = datetime.now(timezone.utc).date().isoformat()
     data = _list_logs(client, admin_token, entity_type="Empresa", action="create", to_date=today)
     # Si to_date fuera exclusivo at-midnight, este match sería 0.
     assert data["total"] >= 1

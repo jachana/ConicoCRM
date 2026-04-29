@@ -11,13 +11,32 @@ _weasyprint_mock = MagicMock()
 _weasyprint_mock.HTML.return_value.write_pdf.return_value = b"%PDF-1.4 mock"
 sys.modules.setdefault("weasyprint", _weasyprint_mock)
 
+import sqlite3
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-TEST_DATABASE_URL = "sqlite:///./test.db"
-test_engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
+TEST_DATABASE_URL = "sqlite://"
+test_engine = create_engine(
+    TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 TestingSession = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+# Point the app's SessionLocal at TestingSession so the audit middleware
+# (`_resolve_user_id` does `from app.database import SessionLocal`) sees the
+# in-memory test DB instead of the real production engine.
+import app.database as _app_db
+_app_db.SessionLocal = TestingSession
+_app_db.engine = test_engine
+
+
+@event.listens_for(test_engine, "connect")
+def _register_sqlite_unaccent(dbapi_connection, connection_record):
+    if isinstance(dbapi_connection, sqlite3.Connection):
+        dbapi_connection.create_function("unaccent", 1, lambda s: s or "")
 
 
 @pytest.fixture(autouse=True)
@@ -149,7 +168,7 @@ def admin_token(client, admin_user):
 
 
 @pytest.fixture
-def subadmin_user():
+def subadmin_user(setup_test_db):
     from app.models.user import User
     from app.core.security import get_password_hash
 
@@ -174,7 +193,7 @@ def subadmin_token(client, subadmin_user):
 
 
 @pytest.fixture
-def vendedor_user():
+def vendedor_user(setup_test_db):
     from app.models.user import User
     from app.core.security import get_password_hash
 
@@ -199,7 +218,7 @@ def vendedor_token(client, vendedor_user):
 
 
 @pytest.fixture
-def cliente_demo():
+def cliente_demo(setup_test_db):
     from app.models.cliente import Cliente
     session = TestingSession()
     c = Cliente(nombre="Cliente Demo")
@@ -211,7 +230,7 @@ def cliente_demo():
 
 
 @pytest.fixture
-def empresa_demo():
+def empresa_demo(setup_test_db):
     from app.models.empresa import Empresa
     session = TestingSession()
     e = Empresa(nombre="Empresa Demo")

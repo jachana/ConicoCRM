@@ -48,6 +48,8 @@ _TRANSITIONS: dict[tuple[str, str], str] = {
     ("entregada",  "cancelada"):  "admin",
     ("pagada",     "cancelada"):  "admin",
     ("pendiente_aprobacion_costo", "cancelada"): "admin",
+    ("facturada",  "despachada"): "any",
+    ("facturada",  "cancelada"):  "admin",
 }
 
 

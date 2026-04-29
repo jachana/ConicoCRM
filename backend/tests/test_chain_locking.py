@@ -194,8 +194,7 @@ def test_factura_estado_change_still_works(client, admin_token):
     factura = _make_factura_from_nv(client, admin_token, nv["id"])
 
     r = client.patch(f"/api/facturas/{factura['id']}/estado",
-                     json={"estado": "pagada", "fecha_pago": "2026-04-22",
-                           "monto_pagado": factura["total"], "metodo_pago": "Transferencia"},
+                     json={"estado": "anulada"},
                      headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
 
