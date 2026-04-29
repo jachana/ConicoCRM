@@ -101,11 +101,17 @@
       "checklist": []
     },
     {
-      "list": "Bugs",
+      "list": "In review",
       "name": "numeros en pdf e internos para NV y otros no cuadran (NV42 es la 0008)",
-      "labels": [],
-      "desc": "",
-      "checklist": []
+      "labels": ["Bug"],
+      "desc": "FIX (NV only): nv.numero ahora == nv.id en creación + migración backfill alinea históricos. URL/list/detalle/PDF muestran el mismo número. Otros docs (cotización, OC, guía) quedan pendientes — ver card separada.",
+      "checklist": [
+        "NV: numero == id going forward (crear_nv, from_cotizacion, aprobaciones)",
+        "NV: migración b9b8e073d777 backfill numero=id en históricos",
+        "Cotización: alinear numero con id",
+        "OC: alinear numero con id",
+        "Guía despacho: alinear numero con id"
+      ]
     },
     {
       "list": "Client feedback",
@@ -864,19 +870,6 @@
       "checklist": []
     },
     {
-      "list": "In review",
-      "name": "en las cotizaciones NV facturas... una vez escogido un sku o producto, no se puede cambiar el detalle del producto, nombre formato o sku son fijos, solo se puede cambiar eliminando la fila",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Una vez seleccionado un producto del catálogo en la línea de NV/Cotización/Factura, los campos SKU, descripción y formato quedan readonly. Solo se pueden cambiar eliminando la fila y volviendo a buscar el producto. Evita desincronización con la ficha maestra del producto.",
-      "checklist": [
-        "NotaVentaDetalle: SKU/descripción/formato disabled cuando producto_id está set",
-        "CotizacionDetalle: descripción disabled cuando producto_id está set (SKU/formato ya readonly)",
-        "FacturaDetalle: SKU/descripción/formato render como span cuando producto_id está set"
-      ]
-    },
-    {
       "list": "Feature requests",
       "name": "El logo de la empresa debe ser una imagen subible en settings para las facturas y cotizaciones",
       "labels": [],
@@ -937,6 +930,19 @@
         "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
         "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
         "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "en las cotizaciones NV facturas... una vez escogido un sku o producto, no se puede cambiar el detalle del producto, nombre formato o sku son fijos, solo se puede cambiar eliminando la fila",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Una vez seleccionado un producto del catálogo en la línea de NV/Cotización/Factura, los campos SKU, descripción y formato quedan readonly. Solo se pueden cambiar eliminando la fila y volviendo a buscar el producto. Evita desincronización con la ficha maestra del producto.",
+      "checklist": [
+        "NotaVentaDetalle: SKU/descripción/formato disabled cuando producto_id está set",
+        "CotizacionDetalle: descripción disabled cuando producto_id está set (SKU/formato ya readonly)",
+        "FacturaDetalle: SKU/descripción/formato render como span cuando producto_id está set"
       ]
     },
     {
