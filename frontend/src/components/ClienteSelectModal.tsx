@@ -3,6 +3,7 @@ import { ArrowLeft, UserPlus, X, Search } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { api } from '../lib/api'
+import { matchesNormalized } from '../lib/normalize'
 import type { Cliente } from '../types'
 
 type View = 'list' | 'create'
@@ -74,10 +75,8 @@ export default function ClienteSelectModal({ open, empresaId, empresaNombre, onS
     onError: (e: any) => setFormError(e?.response?.data?.detail ?? 'Error al guardar'),
   })
 
-  const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   const filtered = clientes.filter(c =>
-    norm(c.nombre).includes(norm(search)) ||
-    norm(c.email ?? '').includes(norm(search))
+    matchesNormalized(c.nombre, search) || matchesNormalized(c.email, search)
   )
 
   if (!open) return null
