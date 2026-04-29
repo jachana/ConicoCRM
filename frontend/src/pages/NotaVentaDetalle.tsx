@@ -16,6 +16,7 @@ import {
   Button, Input, Textarea, FormField, Badge, Card, CardContent,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Popover, PopoverTrigger, PopoverContent,
+  Modal, ModalContent, ModalHeader, ModalTitle, ModalBody, ModalFooter,
   Table, THead, TBody, TR, TH, TD,
 } from '../components/ui'
 
@@ -147,6 +148,8 @@ export default function NotaVentaDetalle() {
 
   const [unsavedModal, setUnsavedModal] = useState(false)
   const [pendingAction, setPendingAction] = useState<'pdf' | 'email' | null>(null)
+  const [genFacturaOpen, setGenFacturaOpen] = useState(false)
+  const [tipoDteFactura, setTipoDteFactura] = useState<'033' | '034'>('033')
   const [modalSaving, setModalSaving] = useState(false)
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
 
@@ -483,8 +486,8 @@ export default function NotaVentaDetalle() {
   })
 
   const genFacturaMut = useMutation({
-    mutationFn: () => api.post(`/api/facturas/from_nv/${id}`),
-    onSuccess: (res: any) => navigate(`/facturas/${res.data.id}`),
+    mutationFn: (tipo: string) => api.post(`/api/facturas/from_nv/${id}?tipo_dte=${tipo}`),
+    onSuccess: (res: any) => { setGenFacturaOpen(false); navigate(`/facturas/${res.data.id}`) },
   })
 
   const recotizarMut = useMutation({
@@ -583,8 +586,7 @@ export default function NotaVentaDetalle() {
                 <Button
                   size="sm"
                   leftIcon={<Receipt />}
-                  onClick={() => genFacturaMut.mutate()}
-                  loading={genFacturaMut.isPending}
+                  onClick={() => setGenFacturaOpen(true)}
                 >
                   Generar Factura
                 </Button>
@@ -1009,6 +1011,38 @@ export default function NotaVentaDetalle() {
         onCancel={() => { setUnsavedModal(false); setPendingAction(null) }}
         docType="nv"
       />
+
+      <Modal open={genFacturaOpen} onOpenChange={setGenFacturaOpen}>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Generar Factura</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Selecciona el tipo de factura a emitir.</p>
+              <Select value={tipoDteFactura} onValueChange={(v) => setTipoDteFactura(v as '033' | '034')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="033">Factura afecta (tipo 33)</SelectItem>
+                  <SelectItem value="034">Factura exenta (tipo 34)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="outline" size="sm" onClick={() => setGenFacturaOpen(false)}>Cancelar</Button>
+            <Button
+              size="sm"
+              loading={genFacturaMut.isPending}
+              onClick={() => genFacturaMut.mutate(tipoDteFactura)}
+            >
+              Generar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   )
 }

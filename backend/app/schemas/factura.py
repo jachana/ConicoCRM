@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field, model_validator
-from typing import Self
+from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Literal, Self
 from app.schemas.empresa import EmpresaRef
 from app.schemas.banco_receptor import BancoReceptorOut
 from app.schemas.metodo_pago import METODOS_PAGO, validate_metodo_plazo
@@ -39,6 +39,7 @@ class FacturaCreate(BaseModel):
     nv_id: int | None = None
     metodo_pago: str | None = None
     plazo_dias: int = 0
+    tipo_dte: Literal["033", "034"] = "033"
     lineas: list[FacturaLineaCreate] = []
 
     @model_validator(mode="after")
@@ -115,6 +116,8 @@ class FacturaOut(BaseModel):
     fecha: date
     fecha_vencimiento: date | None = None
     estado: str
+    tipo_dte: str = "033"
+    dte_estado: str = "no_emitida"
     nota: str | None = None
     correo: str | None = None
     total_neto: Decimal

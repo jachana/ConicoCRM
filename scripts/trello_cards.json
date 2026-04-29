@@ -174,7 +174,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[DTE] Factura exenta tipo 34",
       "labels": [
         "DTE/SII"
@@ -676,7 +676,7 @@
       ]
     },
     {
-      "list": "In review",
+      "list": "Feature requests",
       "name": "Búsquedas insensibles a tildes (normalización unicode)",
       "labels": [
         "Core"
@@ -874,13 +874,6 @@
       "checklist": []
     },
     {
-      "list": "In review",
-      "name": "El logo de la empresa debe ser una imagen subible en settings para las facturas y cotizaciones",
-      "labels": [],
-      "desc": "",
-      "checklist": []
-    },
-    {
       "list": "Feature requests",
       "name": "[Empresa] RUT no oficial — flag informativo para consolidación",
       "labels": [
@@ -976,6 +969,13 @@
         "Validación en backend: rechazar PUT/DELETE sobre documentos emitidos",
         "Mensaje de error claro al intentar modificar desde API o UI"
       ]
+    },
+    {
+      "list": "In review",
+      "name": "El logo de la empresa debe ser una imagen subible en settings para las facturas y cotizaciones",
+      "labels": [],
+      "desc": "",
+      "checklist": []
     },
     {
       "list": "Friendly Beta 0.1",

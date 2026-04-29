@@ -357,6 +357,7 @@ export interface Factura {
   fecha: string;
   fecha_vencimiento: string | null;
   estado: string;
+  tipo_dte: string;
   dte_estado: string;
   origen: string;
   xml_raw: string | null;
@@ -395,6 +396,7 @@ export interface FacturaList {
   fecha: string
   fecha_vencimiento: string | null
   estado: string
+  tipo_dte: string
   dte_estado: string
   correo: string | null
   total_neto: number

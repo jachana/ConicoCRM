@@ -91,7 +91,7 @@ def emitir_factura(
     if existing:
         raise HTTPException(status_code=409, detail="Ya existe una emisión para esta factura")
     emision = DteEmision(
-        tipo="033",
+        tipo=factura.tipo_dte or "033",
         factura_id=factura.id,
         monto_neto=int(factura.total_neto),
         monto_iva=int(factura.total_iva),

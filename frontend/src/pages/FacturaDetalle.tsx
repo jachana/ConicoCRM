@@ -376,6 +376,9 @@ export default function FacturaDetalle() {
               {ESTADO_LABELS[factura.estado] ?? factura.estado}
             </Badge>
           )}
+          {factura.tipo_dte === '034' && (
+            <Badge variant="neutral" size="sm">Exenta</Badge>
+          )}
           <DteBadge estado={factura.dte_estado ?? 'no_emitida'} />
           {(factura.dte_estado === 'no_emitida' || !factura.dte_estado) && (
             <Button size="xs" onClick={() => setEmitirOpen(true)}>

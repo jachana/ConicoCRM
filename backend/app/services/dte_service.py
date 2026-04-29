@@ -56,18 +56,26 @@ class DteService:
             }
             for l in factura.lineas
         ]
-        payload = {
-            "tipo_dte": 33,
-            "fecha_emision": (factura.fecha or date.today()).isoformat(),
-            "emisor": self._emisor(cfg),
-            "receptor": receptor,
-            "detalle": detalle,
-            "totales": {
+        tipo_int = int(factura.tipo_dte or "033")
+        if tipo_int == 34:
+            totales: dict = {
+                "monto_exento": int(factura.total_neto),
+                "monto_total": int(factura.total),
+            }
+        else:
+            totales = {
                 "monto_neto": int(factura.total_neto),
                 "tasa_iva": 19,
                 "iva": int(factura.total_iva),
                 "monto_total": int(factura.total),
-            },
+            }
+        payload = {
+            "tipo_dte": tipo_int,
+            "fecha_emision": (factura.fecha or date.today()).isoformat(),
+            "emisor": self._emisor(cfg),
+            "receptor": receptor,
+            "detalle": detalle,
+            "totales": totales,
         }
 
         if factura.referencias_docs:

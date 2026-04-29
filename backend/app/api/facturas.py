@@ -94,11 +94,11 @@ def _asignar_numero_factura(db: Session) -> int:
     return numero
 
 
-def _calcular_lineas(db: Session, lineas_data: list[FacturaLineaCreate]) -> list[FacturaLinea]:
+def _calcular_lineas(db: Session, lineas_data: list[FacturaLineaCreate], es_exenta: bool = False) -> list[FacturaLinea]:
     lineas = []
     for data in lineas_data:
         total_neto = data.cantidad * data.valor_neto
-        iva = total_neto * Decimal("0.19")
+        iva = Decimal("0") if es_exenta else total_neto * Decimal("0.19")
         total = total_neto + iva
         margen = None
         if data.producto_id:
@@ -348,10 +348,11 @@ def crear_factura(
         banco_receptor_id=body.banco_receptor_id,
         metodo_pago=body.metodo_pago,
         plazo_dias=body.plazo_dias,
+        tipo_dte=body.tipo_dte,
     )
     db.add(factura)
     db.flush()
-    factura.lineas = _calcular_lineas(db, body.lineas)
+    factura.lineas = _calcular_lineas(db, body.lineas, es_exenta=body.tipo_dte == "034")
     for linea in factura.lineas:
         linea.factura_id = factura.id
     _recalcular_totales(factura)
@@ -366,6 +367,7 @@ def crear_factura(
 @router.post("/from_nv/{nv_id}", response_model=FacturaOut, status_code=status.HTTP_201_CREATED)
 def crear_factura_desde_nv(
     nv_id: int,
+    tipo_dte: str = Query("033", pattern="^0(33|34)$"),
     perms: tuple[User, Session] = require_permission("facturas", "create"),
 ):
     current_user, db = perms
@@ -401,12 +403,17 @@ def crear_factura_desde_nv(
         correo=nv.correo,
         metodo_pago=nv.metodo_pago,
         plazo_dias=nv.plazo_dias,
+        tipo_dte=tipo_dte,
     )
     db.add(factura)
     db.flush()
 
+    es_exenta = tipo_dte == "034"
     lineas = []
     for nl in nv.lineas:
+        total_neto = nl.total_neto
+        iva = Decimal("0") if es_exenta else nl.iva
+        total = total_neto + iva
         lineas.append(FacturaLinea(
             factura_id=factura.id,
             orden=nl.orden,
@@ -416,9 +423,9 @@ def crear_factura_desde_nv(
             formato=nl.formato,
             cantidad=nl.cantidad,
             valor_neto=nl.valor_neto,
-            total_neto=nl.total_neto,
-            iva=nl.iva,
-            total=nl.total,
+            total_neto=total_neto,
+            iva=iva,
+            total=total,
             margen=nl.margen,
         ))
     factura.lineas = lineas
