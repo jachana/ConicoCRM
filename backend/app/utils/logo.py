@@ -21,3 +21,17 @@ def empresa_logo_data_uri(logo_path: str | None) -> str | None:
     except OSError:
         return None
     return f"data:{mime};base64,{data}"
+
+
+def apply_config_logo(config: dict, empresa=None) -> None:
+    """Set empresa_logo_url in config. Uploaded config logo takes priority over empresa logo."""
+    logo_path = config.get("empresa_logo_path")
+    if logo_path:
+        uri = empresa_logo_data_uri(logo_path)
+        if uri:
+            config["empresa_logo_url"] = uri
+            return
+    if empresa and getattr(empresa, "logo_path", None):
+        uri = empresa_logo_data_uri(empresa.logo_path)
+        if uri:
+            config["empresa_logo_url"] = uri

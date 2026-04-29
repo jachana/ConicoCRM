@@ -32,6 +32,7 @@ from app.api import tags
 from app.api import bancos_receptores
 from app.api import sedes_despacho
 from app.api import empresa_logo
+from app.api import config_logo
 from app.api import marcas
 from app.api import aprobaciones_costo
 from app.api import productos_documentos
@@ -108,6 +109,7 @@ app.include_router(productos.router, prefix="/api/productos", tags=["catálogo"]
 app.include_router(clientes.router, prefix="/api/clientes", tags=["clientes"])
 app.include_router(empresas.router, prefix="/api/empresas", tags=["empresas"])
 app.include_router(config.router, prefix="/api/config", tags=["config"])
+app.include_router(config_logo.router, prefix="/api/config", tags=["config"])
 app.include_router(cotizaciones.router, prefix="/api/cotizaciones", tags=["cotizaciones"])
 app.include_router(nota_ventas.router, prefix="/api/nota_ventas", tags=["nota_ventas"])
 app.include_router(facturas.router, prefix="/api/facturas", tags=["facturas"])

@@ -20,7 +20,7 @@ from app.schemas.guia_despacho import (
 )
 from app.services.email import EmailNotConfiguredError, enviar_guia_despacho as _enviar_guia_email
 from app.services.pdf import generar_pdf_guia_despacho
-from app.utils.logo import empresa_logo_data_uri
+from app.utils.logo import apply_config_logo
 from app.tasks.dte import emit_dte
 
 router = APIRouter()
@@ -293,12 +293,7 @@ def descargar_pdf_guia(
     _, db = perms
     guia = _load_guia(db, guia_id)
     config = _config_dict(db)
-    if guia.empresa_id:
-        empresa = db.get(Empresa, guia.empresa_id)
-        if empresa:
-            uri = empresa_logo_data_uri(empresa.logo_path)
-            if uri:
-                config["empresa_logo_url"] = uri
+    apply_config_logo(config, db.get(Empresa, guia.empresa_id) if guia.empresa_id else None)
     pdf_bytes = generar_pdf_guia_despacho(guia, config)
     return Response(
         content=pdf_bytes,
@@ -322,12 +317,7 @@ def enviar_email_guia(
     if not destino:
         raise HTTPException(status_code=422, detail="No hay email destino")
     config = _config_dict(db)
-    if guia.empresa_id:
-        empresa = db.get(Empresa, guia.empresa_id)
-        if empresa:
-            uri = empresa_logo_data_uri(empresa.logo_path)
-            if uri:
-                config["empresa_logo_url"] = uri
+    apply_config_logo(config, db.get(Empresa, guia.empresa_id) if guia.empresa_id else None)
     pdf_bytes = generar_pdf_guia_despacho(guia, config)
     try:
         _enviar_guia_email(guia, pdf_bytes, destino)

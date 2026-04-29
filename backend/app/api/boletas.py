@@ -20,7 +20,7 @@ from app.schemas.boleta import BoletaCreate, BoletaListOut, BoletaOut, BoletaUpd
 from app.services.boleta_stock import descontar_stock_boleta, revertir_stock_boleta
 from app.services.email import EmailNotConfiguredError, enviar_boleta as _enviar_boleta_email
 from app.services.pdf import generar_pdf_boleta
-from app.utils.logo import empresa_logo_data_uri
+from app.utils.logo import apply_config_logo
 from app.tasks.dte import emit_dte
 
 router = APIRouter()
@@ -347,12 +347,7 @@ def descargar_pdf(
     _, db = perms
     boleta = _load_boleta(db, boleta_id)
     config = _config_dict(db)
-    if boleta.empresa_id:
-        empresa = db.get(Empresa, boleta.empresa_id)
-        if empresa:
-            uri = empresa_logo_data_uri(empresa.logo_path)
-            if uri:
-                config["empresa_logo_url"] = uri
+    apply_config_logo(config, db.get(Empresa, boleta.empresa_id) if boleta.empresa_id else None)
     pdf_bytes = generar_pdf_boleta(boleta, config)
     return Response(
         content=pdf_bytes,
@@ -377,12 +372,7 @@ def enviar_email_boleta(
     if not destino:
         raise HTTPException(status_code=422, detail="No hay email destino")
     config = _config_dict(db)
-    if boleta.empresa_id:
-        empresa = db.get(Empresa, boleta.empresa_id)
-        if empresa:
-            uri = empresa_logo_data_uri(empresa.logo_path)
-            if uri:
-                config["empresa_logo_url"] = uri
+    apply_config_logo(config, db.get(Empresa, boleta.empresa_id) if boleta.empresa_id else None)
     pdf_bytes = generar_pdf_boleta(boleta, config)
     try:
         _enviar_boleta_email(boleta, pdf_bytes, destino)

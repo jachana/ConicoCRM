@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus } from 'lucide-react'
+import { Plus, Upload, Trash2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import { useViewAsStore } from '../stores/viewAs'
@@ -19,7 +19,6 @@ const COMPANY_FIELDS = [
   { key: 'empresa_nombre', label: 'Nombre empresa' },
   { key: 'empresa_rut', label: 'RUT empresa' },
   { key: 'empresa_direccion', label: 'Dirección' },
-  { key: 'empresa_logo_url', label: 'URL del logo' },
 ]
 
 const BANKING_FIELDS = [
@@ -66,7 +65,6 @@ export default function Configuracion() {
       empresa_nombre: map.empresa_nombre ?? '',
       empresa_rut: map.empresa_rut ?? '',
       empresa_direccion: map.empresa_direccion ?? '',
-      empresa_logo_url: map.empresa_logo_url ?? '',
       empresa_banco: map.empresa_banco ?? '',
       empresa_tipo_cuenta: map.empresa_tipo_cuenta ?? '',
       empresa_numero_cuenta: map.empresa_numero_cuenta ?? '',
@@ -129,6 +127,7 @@ export default function Configuracion() {
                   />
                 </FormField>
               ))}
+              <LogoSection config={config} />
             </div>
           </Card>
 
@@ -211,6 +210,73 @@ export default function Configuracion() {
           </Card>
         </>
       ) : null}
+    </div>
+  )
+}
+
+function LogoSection({ config }: { config: SystemConfig[] }) {
+  const qc = useQueryClient()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const hasLogo = config.some(c => c.key === 'empresa_logo_path' && c.value)
+
+  const uploadMut = useMutation({
+    mutationFn: async (file: File) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      await api.post('/api/config/logo', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['config'] }); toast.success('Logo actualizado') },
+    onError: () => toast.error('Error al subir logo'),
+  })
+
+  const deleteMut = useMutation({
+    mutationFn: () => api.delete('/api/config/logo'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['config'] }); toast.success('Logo eliminado') },
+    onError: () => toast.error('Error al eliminar logo'),
+  })
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) uploadMut.mutate(file)
+    e.target.value = ''
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Logo de la empresa</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Aparece en facturas, cotizaciones, notas de venta y guías de despacho. JPG, PNG o WebP, máx. 2 MB.</p>
+      {hasLogo && (
+        <div className="mb-3">
+          <img
+            src={`/api/config/logo?t=${Date.now()}`}
+            alt="Logo empresa"
+            className="max-h-16 max-w-48 object-contain border border-gray-200 dark:border-gray-700 rounded p-1"
+          />
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />
+        <Button
+          size="sm"
+          variant="outline"
+          leftIcon={<Upload className="w-3.5 h-3.5" />}
+          onClick={() => fileRef.current?.click()}
+          disabled={uploadMut.isPending}
+        >
+          {uploadMut.isPending ? 'Subiendo...' : hasLogo ? 'Reemplazar' : 'Subir logo'}
+        </Button>
+        {hasLogo && (
+          <Button
+            size="sm"
+            variant="ghost"
+            leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+            onClick={() => deleteMut.mutate()}
+            disabled={deleteMut.isPending}
+          >
+            Quitar
+          </Button>
+        )}
+      </div>
     </div>
   )
 }
