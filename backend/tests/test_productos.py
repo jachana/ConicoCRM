@@ -229,3 +229,17 @@ def test_costo_desactualizado_uses_fallback_when_config_invalid(client, admin_to
     resp = client.get(f"/api/productos/{p.id}", headers={"Authorization": f"Bearer {admin_token}"})
     assert resp.status_code == 200
     assert resp.json()["costo_desactualizado"] is False
+
+
+def test_buscar_producto_insensible_tildes(client, admin_token):
+    client.post("/api/productos/", json={"nombre": "Válvula hidráulica", "precio_venta": "50.00"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get("/api/productos/buscar?q=valvula", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert any(p["nombre"] == "Válvula hidráulica" for p in r.json())
+
+
+def test_buscar_producto_acento_en_query(client, admin_token):
+    client.post("/api/productos/", json={"nombre": "Filtro aceite motor", "precio_venta": "25.00"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get("/api/productos/buscar?q=aceité", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert any(p["nombre"] == "Filtro aceite motor" for p in r.json())

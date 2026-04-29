@@ -91,3 +91,17 @@ def test_eliminar_empleado(client, admin_token):
 def test_eliminar_empleado_inexistente(client, admin_token):
     r = client.delete("/api/empleados/99999", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 404
+
+
+def test_buscar_empleado_insensible_tildes(client, admin_token):
+    client.post("/api/empleados/", json={"nombre": "José Pérez", "cargo": "Técnico"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get("/api/empleados/?q=jose", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert any(e["nombre"] == "José Pérez" for e in r.json())
+
+
+def test_buscar_empleado_cargo_insensible_tildes(client, admin_token):
+    client.post("/api/empleados/", json={"nombre": "Ana Ruiz", "cargo": "Administración"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get("/api/empleados/?q=administracion", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert any(e["nombre"] == "Ana Ruiz" for e in r.json())

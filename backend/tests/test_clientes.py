@@ -107,6 +107,20 @@ def test_listar_clientes_con_filtro_q(client, admin_token):
     assert data[0]["nombre"] == "Ferretería Norte"
 
 
+def test_listar_clientes_insensible_tildes(client, admin_token):
+    client.post("/api/clientes/", json={"nombre": "Áridos Martínez"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get("/api/clientes/?q=aridos", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert any(c["nombre"] == "Áridos Martínez" for c in r.json())
+
+
+def test_listar_clientes_acento_en_query(client, admin_token):
+    client.post("/api/clientes/", json={"nombre": "Aceros del Norte"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get("/api/clientes/?q=Acéros", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert any(c["nombre"] == "Aceros del Norte" for c in r.json())
+
+
 def test_crear_cliente_con_empresa(client, admin_token):
     emp = client.post(
         "/api/empresas/",

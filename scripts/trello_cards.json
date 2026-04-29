@@ -693,19 +693,6 @@
     },
     {
       "list": "Feature requests",
-      "name": "Búsquedas insensibles a tildes (normalización unicode)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
-      "checklist": [
-        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
-        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
-        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
-      ]
-    },
-    {
-      "list": "Feature requests",
       "name": "[Onboarding] Import Tareas / actividades CRM pendientes",
       "labels": [
         "Core"
@@ -725,48 +712,6 @@
         "Asignado inexistente → asignar a admin con flag",
         "Tipos: llamada, email, reunion, visita, cobranza, otro",
         "Solo importar tareas en estado abierto (pendiente/en_curso)"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Cotizaciones] Link a NV generada en cotización cerrada",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Cuando una cotización se cierra (estado 'cerrada' / convertida), debe mostrar un link directo a la Nota de Venta generada. Hoy no hay trazabilidad visual entre cotización y NV.\n\nComportamiento esperado:\n- En el detalle de cotización cerrada: badge o sección 'NV generada' con link a /notas-venta/{id}.\n- Si la NV fue eliminada posterior al cierre, mostrar referencia con aviso 'NV eliminada'.\n- En el listado de cotizaciones: columna/icono que indique si tiene NV asociada.",
-      "checklist": [
-        "Verificar si Cotizacion ya tiene FK nota_venta_id o campo equivalente",
-        "Si no existe: agregar Cotizacion.nota_venta_id (nullable FK) + migración Alembic",
-        "Al convertir cotización → NV: guardar nota_venta_id en la cotización",
-        "CotizacionRead schema: exponer nota_venta_id y opcionalmente nota_venta_folio",
-        "CotizacionDetalle UI: mostrar link 'Ver NV #folio' cuando nota_venta_id existe",
-        "Manejar caso NV eliminada: mostrar referencia inerte con aviso",
-        "Listado de cotizaciones: indicador visual (icono/chip) si tiene NV asociada"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Factura] Documentos referenciados (OC, HES, contrato, guía, NV)",
-      "labels": [
-        "Core",
-        "DTE/SII"
-      ],
-      "desc": "Las facturas frecuentemente referencian otros documentos — la más común es la Orden de Compra del cliente, pero también HES, contrato, resolución, guía de despacho previa, o nota de venta interna. Hoy ese dato no se captura ni se persiste, lo que rompe el match contable del cliente y obliga a re-emitir.\n\nModelo: lista de referencias por factura (N:1). Cada referencia tiene tipo, folio, fecha y razón. Se mapea al bloque <Referencia> del XML SII al emitir DTE.\n\nTipos de documento referenciado SII (TpoDocRef):\n- 33/34/39/41/52/56/61 → DTEs (NC referencia a factura, factura referencia a guía, etc.)\n- 801 Orden de Compra (caso más común)\n- 802 Nota de Pedido\n- 803 Contrato\n- 804 Resolución\n- 805 Proceso ChileCompra\n- 806 Ficha ChileCompra\n- 807 DUS\n- 808 B/L\n- 809 AWB\n- 810 MIC/DTA\n- 811 Carta de Porte\n- HES, NV interna, etc. (tipo libre con código de texto)",
-      "checklist": [
-        "Modelo: ReferenciaFactura (factura_id, tipo_doc, folio, fecha, razon, codigo_tipo_sii)",
-        "Soportar 1..N referencias por factura (lista, no campo único)",
-        "Tipo de doc desde catálogo SII (33,34,39,41,52,56,61,801..811) + tipo libre 'OTROS' con texto",
-        "UI emisión: sección 'Documentos referenciados' en formulario de factura, agregar/quitar filas",
-        "Caso rápido: botón 'Referenciar OC' con input de número + fecha (autocompleta tipo=801)",
-        "Validación: si tipo es DTE (33,34,...), folio debe ser numérico; si es 801/HES/contrato, libre",
-        "Persistencia: tabla referencias_factura con FK a factura (cascade delete)",
-        "Render en ficha de factura: bloque visible con todas las referencias",
-        "PDF/preview: incluir referencias bajo el detalle (igual que el SII las imprime)",
-        "DTE XML emisión (Lioren): mapear referencias al bloque <Referencia> del XML",
-        "Filtro/búsqueda en lista de facturas: 'Buscar por OC referenciada' (input → match en folio referencia tipo 801)",
-        "Ficha de Empresa/Cliente: columna 'OC' en historial de facturas (primera referencia tipo 801)",
-        "Migración legacy: campo opcional en import facturas históricas (tipo + folio + fecha)",
-        "Tests: emitir factura con 0/1/N referencias, validar XML SII, búsqueda por OC retorna factura"
       ]
     },
     {
@@ -843,23 +788,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "[NV] Cerrar NV automáticamente al generar factura",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Al emitir una factura desde una Nota de Venta, la NV debe quedar en estado 'cerrada' automáticamente. Hoy la NV permanece abierta aunque ya tenga factura generada, lo que genera confusión en el listado.\n\nComportamiento esperado:\n- Al crear la factura asociada a una NV: transición automática NV → estado 'cerrada'.\n- NV cerrada no es editable ni permite generar una segunda factura.\n- En el listado de NV: chip de estado 'Facturada' con link a la factura generada.",
-      "checklist": [
-        "Identificar el endpoint/flujo donde se crea la factura desde una NV",
-        "Al commit exitoso de la factura: actualizar NotaVenta.estado → 'cerrada' en la misma transacción",
-        "Guardar referencia factura_id en NotaVenta (si no existe FK)",
-        "NotaVentaRead schema: exponer estado y factura_id/folio",
-        "Bloquear edición y re-facturación de NV cerrada (backend 409 + UI botón deshabilitado)",
-        "Listado NV: chip 'Facturada' en estado cerrada con link a /facturas/{id}",
-        "NV detalle: sección 'Factura generada' con link, similar a cotización → NV"
-      ]
-    },
-    {
       "list": "Feature requests",
       "name": "[NV] Adjuntar documentos (OC u otros) y propagarlos a factura",
       "labels": [
@@ -887,33 +815,6 @@
         "UI: deshabilitar todos los campos editables y botones de acción cuando NV está facturada",
         "Mostrar banner/badge 'Facturada' con link a la factura emitida",
         "Solo admin puede desbloquear (opcional, con log de auditoría)"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[NV] Buscador en lista de Notas de Venta",
-      "labels": [
-        "Core"
-      ],
-      "desc": "La lista de Notas de Venta no tiene buscador — para encontrar una NV específica hay que paginar a mano. Agregar barra de búsqueda con match contra los campos más usados.\n\nMismo patrón que el buscador global de productos: un input arriba de la tabla, debounce 300ms, match parcial case-insensitive, normalizado a tildes.",
-      "checklist": [
-        "Input de búsqueda arriba de la tabla NV con placeholder 'Buscar NV (nº, cliente, vendedor, producto, OC...)'",
-        "Backend: GET /api/notas-venta?q=<texto> con búsqueda OR en:",
-        "  - número de NV",
-        "  - nombre/razón social cliente o empresa",
-        "  - RUT cliente/empresa",
-        "  - nombre vendedor",
-        "  - SKU o nombre de producto en el detalle",
-        "  - número de OC referenciada (si existe)",
-        "  - observaciones",
-        "Match parcial, case-insensitive, normalizado (sin tildes)",
-        "Debounce 300ms en frontend (no spammear backend mientras tipea)",
-        "Combinable con filtros existentes (estado, fecha, vendedor) — query AND filtros",
-        "Highlight del match en la fila (opcional, nice-to-have)",
-        "Indicador 'Buscando...' mientras carga; 'Sin resultados' si vacío",
-        "Conservar query en URL (?q=...) para compartir/refresh",
-        "Performance: índice en campos buscables; LIMIT 100 resultados",
-        "Tests: búsqueda por nº NV, RUT cliente, SKU, OC referenciada — todos retornan correcto"
       ]
     },
     {
@@ -1449,6 +1350,61 @@
     },
     {
       "list": "In review",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
+      "checklist": [
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Cotizaciones] Link a NV generada en cotización cerrada",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Cuando una cotización se cierra (estado 'cerrada' / convertida), debe mostrar un link directo a la Nota de Venta generada. Hoy no hay trazabilidad visual entre cotización y NV.\n\nComportamiento esperado:\n- En el detalle de cotización cerrada: badge o sección 'NV generada' con link a /notas-venta/{id}.\n- Si la NV fue eliminada posterior al cierre, mostrar referencia con aviso 'NV eliminada'.\n- En el listado de cotizaciones: columna/icono que indique si tiene NV asociada.",
+      "checklist": [
+        "Verificar si Cotizacion ya tiene FK nota_venta_id o campo equivalente",
+        "Si no existe: agregar Cotizacion.nota_venta_id (nullable FK) + migración Alembic",
+        "Al convertir cotización → NV: guardar nota_venta_id en la cotización",
+        "CotizacionRead schema: exponer nota_venta_id y opcionalmente nota_venta_folio",
+        "CotizacionDetalle UI: mostrar link 'Ver NV #folio' cuando nota_venta_id existe",
+        "Manejar caso NV eliminada: mostrar referencia inerte con aviso",
+        "Listado de cotizaciones: indicador visual (icono/chip) si tiene NV asociada"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Factura] Documentos referenciados (OC, HES, contrato, guía, NV)",
+      "labels": [
+        "Core",
+        "DTE/SII"
+      ],
+      "desc": "Las facturas frecuentemente referencian otros documentos — la más común es la Orden de Compra del cliente, pero también HES, contrato, resolución, guía de despacho previa, o nota de venta interna. Hoy ese dato no se captura ni se persiste, lo que rompe el match contable del cliente y obliga a re-emitir.\n\nModelo: lista de referencias por factura (N:1). Cada referencia tiene tipo, folio, fecha y razón. Se mapea al bloque <Referencia> del XML SII al emitir DTE.\n\nTipos de documento referenciado SII (TpoDocRef):\n- 33/34/39/41/52/56/61 → DTEs (NC referencia a factura, factura referencia a guía, etc.)\n- 801 Orden de Compra (caso más común)\n- 802 Nota de Pedido\n- 803 Contrato\n- 804 Resolución\n- 805 Proceso ChileCompra\n- 806 Ficha ChileCompra\n- 807 DUS\n- 808 B/L\n- 809 AWB\n- 810 MIC/DTA\n- 811 Carta de Porte\n- HES, NV interna, etc. (tipo libre con código de texto)",
+      "checklist": [
+        "Modelo: ReferenciaFactura (factura_id, tipo_doc, folio, fecha, razon, codigo_tipo_sii)",
+        "Soportar 1..N referencias por factura (lista, no campo único)",
+        "Tipo de doc desde catálogo SII (33,34,39,41,52,56,61,801..811) + tipo libre 'OTROS' con texto",
+        "UI emisión: sección 'Documentos referenciados' en formulario de factura, agregar/quitar filas",
+        "Caso rápido: botón 'Referenciar OC' con input de número + fecha (autocompleta tipo=801)",
+        "Validación: si tipo es DTE (33,34,...), folio debe ser numérico; si es 801/HES/contrato, libre",
+        "Persistencia: tabla referencias_factura con FK a factura (cascade delete)",
+        "Render en ficha de factura: bloque visible con todas las referencias",
+        "PDF/preview: incluir referencias bajo el detalle (igual que el SII las imprime)",
+        "DTE XML emisión (Lioren): mapear referencias al bloque <Referencia> del XML",
+        "Filtro/búsqueda en lista de facturas: 'Buscar por OC referenciada' (input → match en folio referencia tipo 801)",
+        "Ficha de Empresa/Cliente: columna 'OC' en historial de facturas (primera referencia tipo 801)",
+        "Migración legacy: campo opcional en import facturas históricas (tipo + folio + fecha)",
+        "Tests: emitir factura con 0/1/N referencias, validar XML SII, búsqueda por OC retorna factura"
+      ]
+    },
+    {
+      "list": "In review",
       "name": "[Factura] Estado 'pagado' derivado de pagos — no editable manualmente",
       "labels": [
         "Core",
@@ -1468,6 +1424,23 @@
         "Migración: si hay facturas en BD con estado_pago='pagado' y sum(pagos)=0, dejarlas pendientes y reportar (no auto-pagar)",
         "Tests: factura con 0 pagos → pendiente; pagos parciales → parcial; pagos = total → pagado; anular pago → vuelve atrás",
         "Tests: PATCH a estado_pago retorna 422 / es ignorado"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[NV] Cerrar NV automáticamente al generar factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Al emitir una factura desde una Nota de Venta, la NV debe quedar en estado 'cerrada' automáticamente. Hoy la NV permanece abierta aunque ya tenga factura generada, lo que genera confusión en el listado.\n\nComportamiento esperado:\n- Al crear la factura asociada a una NV: transición automática NV → estado 'cerrada'.\n- NV cerrada no es editable ni permite generar una segunda factura.\n- En el listado de NV: chip de estado 'Facturada' con link a la factura generada.",
+      "checklist": [
+        "Identificar el endpoint/flujo donde se crea la factura desde una NV",
+        "Al commit exitoso de la factura: actualizar NotaVenta.estado → 'cerrada' en la misma transacción",
+        "Guardar referencia factura_id en NotaVenta (si no existe FK)",
+        "NotaVentaRead schema: exponer estado y factura_id/folio",
+        "Bloquear edición y re-facturación de NV cerrada (backend 409 + UI botón deshabilitado)",
+        "Listado NV: chip 'Facturada' en estado cerrada con link a /facturas/{id}",
+        "NV detalle: sección 'Factura generada' con link, similar a cotización → NV"
       ]
     },
     {
@@ -1527,6 +1500,33 @@
         "Quitar forma_pago de EmpresaModal (input)",
         "Quitar forma_pago de EmpresaRead schema y export Excel",
         "Validar que cotización/NV/factura sigan teniendo su propio forma_pago"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[NV] Buscador en lista de Notas de Venta",
+      "labels": [
+        "Core"
+      ],
+      "desc": "La lista de Notas de Venta no tiene buscador — para encontrar una NV específica hay que paginar a mano. Agregar barra de búsqueda con match contra los campos más usados.\n\nMismo patrón que el buscador global de productos: un input arriba de la tabla, debounce 300ms, match parcial case-insensitive, normalizado a tildes.",
+      "checklist": [
+        "Input de búsqueda arriba de la tabla NV con placeholder 'Buscar NV (nº, cliente, vendedor, producto, OC...)'",
+        "Backend: GET /api/notas-venta?q=<texto> con búsqueda OR en:",
+        "  - número de NV",
+        "  - nombre/razón social cliente o empresa",
+        "  - RUT cliente/empresa",
+        "  - nombre vendedor",
+        "  - SKU o nombre de producto en el detalle",
+        "  - número de OC referenciada (si existe)",
+        "  - observaciones",
+        "Match parcial, case-insensitive, normalizado (sin tildes)",
+        "Debounce 300ms en frontend (no spammear backend mientras tipea)",
+        "Combinable con filtros existentes (estado, fecha, vendedor) — query AND filtros",
+        "Highlight del match en la fila (opcional, nice-to-have)",
+        "Indicador 'Buscando...' mientras carga; 'Sin resultados' si vacío",
+        "Conservar query en URL (?q=...) para compartir/refresh",
+        "Performance: índice en campos buscables; LIMIT 100 resultados",
+        "Tests: búsqueda por nº NV, RUT cliente, SKU, OC referenciada — todos retornan correcto"
       ]
     },
     {

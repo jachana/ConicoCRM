@@ -12,6 +12,7 @@ _weasyprint_mock.HTML.return_value.write_pdf.return_value = b"%PDF-1.4 mock"
 sys.modules.setdefault("weasyprint", _weasyprint_mock)
 
 import sqlite3
+import unicodedata
 import pytest
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
@@ -36,7 +37,11 @@ _app_db.engine = test_engine
 @event.listens_for(test_engine, "connect")
 def _register_sqlite_unaccent(dbapi_connection, connection_record):
     if isinstance(dbapi_connection, sqlite3.Connection):
-        dbapi_connection.create_function("unaccent", 1, lambda s: s or "")
+        def _unaccent(s):
+            if not s:
+                return ""
+            return unicodedata.normalize("NFD", s).encode("ascii", "ignore").decode("ascii")
+        dbapi_connection.create_function("unaccent", 1, _unaccent)
 
 
 @pytest.fixture(autouse=True)

@@ -383,3 +383,17 @@ def test_export_productos_501_send_to(client, admin_token):
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 501
+
+
+def test_buscar_empresa_insensible_tildes(client, admin_token):
+    client.post("/api/empresas/", json={"nombre": "Manufacturas Ñoño"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get("/api/empresas/?q=Nono", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert any(e["nombre"] == "Manufacturas Ñoño" for e in r.json())
+
+
+def test_buscar_empresa_acento_en_query(client, admin_token):
+    client.post("/api/empresas/", json={"nombre": "Construcciones Rapidas"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get("/api/empresas/?q=Rápidas", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert any(e["nombre"] == "Construcciones Rapidas" for e in r.json())
