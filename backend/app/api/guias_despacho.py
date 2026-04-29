@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import require_permission
 from app.api.dte import _next_numero
-from app.models.dte_emision import DteEmision
 from app.models.empresa import Empresa
 from app.models.guia_despacho import GuiaDespacho, GuiaDespachoLinea
 from app.models.system_config import SystemConfig
@@ -21,7 +20,6 @@ from app.schemas.guia_despacho import (
 from app.services.email import EmailNotConfiguredError, enviar_guia_despacho as _enviar_guia_email
 from app.services.pdf import generar_pdf_guia_despacho
 from app.utils.logo import apply_config_logo
-from app.tasks.dte import emit_dte
 
 router = APIRouter()
 
@@ -118,27 +116,12 @@ def crear_guia_despacho(
         db.refresh(guia)
         _calcular_lineas_y_totales_guia(guia)
 
-        # Guía DTE 52 NO descuenta stock — el documento tributario asociado lo hace
-        # (ver INV-04 / docs/architecture.md). Invariante intencional hasta Phase 3 (D-13).
-
-        emision = DteEmision(
-            tipo="052",  # 3 chars con cero líder (Pitfall 8)
-            guia_despacho_id=guia.id,
-            monto_neto=int(guia.total_neto),
-            monto_iva=int(guia.total_iva),
-            monto_total=int(guia.total),
-        )
-        db.add(emision)
-        db.flush()
-
-        guia.dte_estado = "pendiente"
         db.commit()
         db.refresh(guia)
     except Exception:
         db.rollback()
         raise
 
-    emit_dte.delay(emision.id)
     return guia
 
 

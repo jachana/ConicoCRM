@@ -1,10 +1,9 @@
 import { useEffect, useState, FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Trash2, Plus, Save, Send } from 'lucide-react'
+import { Trash2, Plus, Save } from 'lucide-react'
 import {
   crearGuiaDespacho,
-  emitirGuiaDespachoDte,
   MOTIVOS_TRASLADO,
   type GuiaCreatePayload,
   type GuiaLineaInput,
@@ -144,7 +143,7 @@ export default function GuiaDespachoNueva() {
   const iva = Math.round(subtotal * 0.19)
   const total = Math.round(subtotal + iva + exentas)
 
-  async function handleSubmit(emitir: boolean, e?: FormEvent) {
+  async function handleSubmit(e?: FormEvent) {
     if (e) e.preventDefault()
     if (!formValido || saving) return
     setSaving(true)
@@ -170,9 +169,6 @@ export default function GuiaDespachoNueva() {
         ),
       }
       const guia = await crearGuiaDespacho(payload)
-      if (emitir) {
-        await emitirGuiaDespachoDte(guia.id)
-      }
       navigate(`/guias-despacho/${guia.id}`)
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } }
@@ -186,7 +182,7 @@ export default function GuiaDespachoNueva() {
     function onKey(ev: KeyboardEvent) {
       if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
         ev.preventDefault()
-        handleSubmit(true)
+        handleSubmit()
       } else if (ev.key === 'Escape') {
         navigate('/guias-despacho')
       }
@@ -208,7 +204,7 @@ export default function GuiaDespachoNueva() {
         </div>
       )}
 
-      <form onSubmit={e => handleSubmit(true, e)} className="space-y-6">
+      <form onSubmit={e => handleSubmit(e)} className="space-y-6">
         <Card>
           <CardContent className="p-4">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
@@ -403,22 +399,12 @@ export default function GuiaDespachoNueva() {
             Cancelar
           </Button>
           <Button
-            type="button"
-            variant="outline"
-            leftIcon={<Save />}
-            onClick={() => handleSubmit(false)}
-            disabled={!formValido || saving}
-            loading={saving}
-          >
-            Guardar borrador
-          </Button>
-          <Button
             type="submit"
-            leftIcon={<Send />}
+            leftIcon={<Save />}
             disabled={!formValido || saving}
             loading={saving}
           >
-            Guardar y emitir DTE
+            Guardar guía
           </Button>
         </div>
       </form>

@@ -94,14 +94,14 @@
       ]
     },
     {
-      "list": "Bugs",
+      "list": "In review",
       "name": "Failed to load resource: the server responded with a status of 500 () al tratar de generar una guia de despacho",
       "labels": [],
       "desc": "",
       "checklist": []
     },
     {
-      "list": "Bugs",
+      "list": "In review",
       "name": "[Guía despacho] Errores al guardar + botón \"Emitir DTE\" incorrecto",
       "labels": [
         "Bug"
@@ -226,21 +226,6 @@
         "Fase 6 — OC enhancements (no iniciada)",
         "Fase 4a — Empresa + Cliente actualización (no iniciada)",
         "Decidir alcance específico"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Empresa] Puntos de contacto visibles en ficha empresa",
-      "labels": [
-        "Core"
-      ],
-      "desc": "La pantalla de detalle de empresa debe mostrar los puntos de contacto (personas de contacto: nombre, cargo, email, teléfono). Si ya existe modelo ContactoEmpresa, agregar tab o sección en EmpresaDetailModal. Si no existe, crear modelo y CRUD básico.",
-      "checklist": [
-        "Verificar si existe modelo ContactoEmpresa o similar",
-        "Si no existe: modelo ContactoEmpresa (empresa_id FK, nombre, cargo, email, telefono) + migración",
-        "API CRUD /api/empresas/{id}/contactos (GET, POST, PATCH, DELETE)",
-        "EmpresaDetailModal: tab 'Contactos' o sección inline con lista + agregar/editar/eliminar",
-        "Permisos: vendedor puede ver, solo admin puede crear/editar/eliminar"
       ]
     },
     {
@@ -939,6 +924,21 @@
         "Soporte tipo 34 en DteService.build_payload",
         "Validación: todas las líneas exentas",
         "UI: toggle factura exenta en FacturaNueva"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Empresa] Puntos de contacto visibles en ficha empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "La pantalla de detalle de empresa debe mostrar los puntos de contacto (personas de contacto: nombre, cargo, email, teléfono). Si ya existe modelo ContactoEmpresa, agregar tab o sección en EmpresaDetailModal. Si no existe, crear modelo y CRUD básico.",
+      "checklist": [
+        "Verificar si existe modelo ContactoEmpresa o similar",
+        "Si no existe: modelo ContactoEmpresa (empresa_id FK, nombre, cargo, email, telefono) + migración",
+        "API CRUD /api/empresas/{id}/contactos (GET, POST, PATCH, DELETE)",
+        "EmpresaDetailModal: tab 'Contactos' o sección inline con lista + agregar/editar/eliminar",
+        "Permisos: vendedor puede ver, solo admin puede crear/editar/eliminar"
       ]
     },
     {
