@@ -109,6 +109,19 @@
     },
     {
       "list": "Feature requests",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
+      "checklist": [
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
+      ]
+    },
+    {
+      "list": "In progress",
       "name": "[Clientes] Búsqueda por nombre de empresa",
       "labels": [
         "Core"
@@ -224,22 +237,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "[Empresa] Filtros rápidos en Timeline, Facturas y Productos",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los tabs Timeline, Facturas y Productos en EmpresaDetailModal necesitan filtros rápidos preconfigurados para mejorar usabilidad. Chips/pills de acceso rápido: 'Este mes', 'Este año', 'Facturas y pagos' (solo docs oficiales). Complementa los filtros existentes.",
-      "checklist": [
-        "Diseñar chips de filtro rápido: 'Este mes', 'Este año', 'Facturas y pagos'",
-        "Timeline: 'Este mes' = fecha >= inicio_mes, 'Facturas y pagos' = tipos [factura, pago, nc, nd]",
-        "Facturas tab: 'Este mes' y 'Este año' filtran por fecha_emision",
-        "Productos tab: 'Este mes' y 'Este año' filtran por última compra/factura del producto",
-        "Estado activo del chip resaltado (aria-pressed); reset limpia a sin filtro",
-        "Chips no reemplazan filtros existentes — se combinan"
-      ]
-    },
-    {
       "list": "Feature requests",
       "name": "[Onboarding] Pestaña Migración inicial — import Clientes + Empresas (Excel)",
       "labels": [
@@ -266,6 +263,22 @@
         "Import de Productos desde Excel",
         "Import de Lista de precios / descuentos por cliente",
         "Import de OC / Facturas históricas (solo registro, sin emisión SII)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Clientes] Búsqueda por nombre de empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Al buscar clientes (autocomplete / listado), incluir el nombre de la empresa vinculada como campo de búsqueda adicional. Hoy solo se busca por nombre/RUT del cliente; si el usuario escribe el nombre de la empresa, no aparece ningún resultado aunque el cliente esté asociado.\n\nComportamiento esperado:\n- El input de búsqueda de clientes filtra por: nombre cliente, RUT cliente, **nombre empresa**.\n- Los resultados muestran el nombre del cliente y, en subtexto, el nombre de la empresa.\n- No cambiar el modelo de datos; solo ampliar el query de búsqueda (JOIN con Empresa).",
+      "checklist": [
+        "Identificar todos los endpoints/queries de búsqueda de clientes (autocomplete + listado)",
+        "Ampliar filtro SQL: OR empresa.nombre ILIKE :q (JOIN Empresa donde existe vínculo)",
+        "Verificar que el schema de respuesta ya devuelve nombre_empresa o agregar el campo",
+        "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
+        "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
+        "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
       ]
     },
     {
@@ -612,19 +625,6 @@
     },
     {
       "list": "Feature requests",
-      "name": "Búsquedas insensibles a tildes (normalización unicode)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
-      "checklist": [
-        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
-        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
-        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
-      ]
-    },
-    {
-      "list": "Feature requests",
       "name": "[Onboarding] Carga de CAFs SII (folios)",
       "labels": [
         "DTE/SII"
@@ -856,6 +856,35 @@
       ]
     },
     {
+      "list": "In progress",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
+      "checklist": [
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Empresa] Filtros rápidos en Timeline, Facturas y Productos",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los tabs Timeline, Facturas y Productos en EmpresaDetailModal necesitan filtros rápidos preconfigurados para mejorar usabilidad. Chips/pills de acceso rápido: 'Este mes', 'Este año', 'Facturas y pagos' (solo docs oficiales). Complementa los filtros existentes.",
+      "checklist": [
+        "Diseñar chips de filtro rápido: 'Este mes', 'Este año', 'Facturas y pagos'",
+        "Timeline: 'Este mes' = fecha >= inicio_mes, 'Facturas y pagos' = tipos [factura, pago, nc, nd]",
+        "Facturas tab: 'Este mes' y 'Este año' filtran por fecha_emision",
+        "Productos tab: 'Este mes' y 'Este año' filtran por última compra/factura del producto",
+        "Estado activo del chip resaltado (aria-pressed); reset limpia a sin filtro",
+        "Chips no reemplazan filtros existentes — se combinan"
+      ]
+    },
+    {
       "list": "Friendly Beta 0.1",
       "name": "[Fase 3] Cotizaciones",
       "labels": [
@@ -870,19 +899,6 @@
         "Estados no_definido → abierta → cerrada_fv → rechazada",
         "Export Excel",
         "SystemConfig key/value para config global"
-      ]
-    },
-    {
-      "list": "Friendly Beta 0.1",
-      "name": "Búsquedas insensibles a tildes (normalización unicode)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
-      "checklist": [
-        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
-        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
-        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
       ]
     },
     {
@@ -1362,22 +1378,6 @@
         "Identificar lógica que controla visibilidad del sidebar",
         "Marcar Settings como ítem fijo (no sujeto a personalización ni permisos de ocultado)",
         "Verificar que aplica para todos los roles (vendedor, admin, gerente)"
-      ]
-    },
-    {
-      "list": "Friendly Beta 0.1",
-      "name": "[Clientes] Búsqueda por nombre de empresa",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Al buscar clientes (autocomplete / listado), incluir el nombre de la empresa vinculada como campo de búsqueda adicional. Hoy solo se busca por nombre/RUT del cliente; si el usuario escribe el nombre de la empresa, no aparece ningún resultado aunque el cliente esté asociado.\n\nComportamiento esperado:\n- El input de búsqueda de clientes filtra por: nombre cliente, RUT cliente, **nombre empresa**.\n- Los resultados muestran el nombre del cliente y, en subtexto, el nombre de la empresa.\n- No cambiar el modelo de datos; solo ampliar el query de búsqueda (JOIN con Empresa).",
-      "checklist": [
-        "Identificar todos los endpoints/queries de búsqueda de clientes (autocomplete + listado)",
-        "Ampliar filtro SQL: OR empresa.nombre ILIKE :q (JOIN Empresa donde existe vínculo)",
-        "Verificar que el schema de respuesta ya devuelve nombre_empresa o agregar el campo",
-        "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
-        "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
-        "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
       ]
     },
     {
