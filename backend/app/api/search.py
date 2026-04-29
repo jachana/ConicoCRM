@@ -36,7 +36,13 @@ def _search_clientes(db: Session, q: str, limit: int) -> list[dict]:
     pattern = f"%{q}%"
     rows = (
         db.query(Cliente)
-        .filter(or_(unaccent_ilike(Cliente.nombre, pattern), Cliente.rut.ilike(pattern)))
+        .outerjoin(Cliente.empresa)
+        .filter(or_(
+            unaccent_ilike(Cliente.nombre, pattern),
+            Cliente.rut.ilike(pattern),
+            unaccent_ilike(Empresa.nombre, pattern),
+            unaccent_ilike(Empresa.razon_social, pattern),
+        ))
         .order_by(Cliente.nombre)
         .limit(limit)
         .all()
