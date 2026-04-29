@@ -253,7 +253,7 @@
       ]
     },
     {
-      "list": "In review",
+      "list": "Feature requests",
       "name": "[Clientes] Búsqueda por nombre de empresa",
       "labels": [
         "Core"
@@ -611,7 +611,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "Búsquedas insensibles a tildes (normalización unicode)",
       "labels": [
         "Core"
@@ -645,19 +645,6 @@
         "Detectar solapamiento con CAF ya cargado → rechazar",
         "Mostrar consumo actual + folios restantes por tipo",
         "Alerta de folios bajos (umbral configurable)"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "Búsquedas insensibles a tildes (normalización unicode)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
-      "checklist": [
-        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
-        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
-        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
       ]
     },
     {
@@ -831,6 +818,13 @@
       "checklist": []
     },
     {
+      "list": "Feature requests",
+      "name": "Dashboard widget of sales should be able to set a goal",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
       "list": "In progress",
       "name": "[W1-05 checkpoint] Validar payload tipo 52 contra Lioren sandbox",
       "labels": [
@@ -878,13 +872,6 @@
     },
     {
       "list": "In review",
-      "name": "Failed to load resource: the server responded with a status of 500 () al tratar de generar una guia de despacho",
-      "labels": [],
-      "desc": "",
-      "checklist": []
-    },
-    {
-      "list": "In review",
       "name": "[Guía despacho] Errores al guardar + botón \"Emitir DTE\" incorrecto",
       "labels": [
         "Bug"
@@ -911,22 +898,47 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "[Empresa] Puntos de contacto visibles en ficha empresa",
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 3] Cotizaciones",
       "labels": [
         "Core"
       ],
-      "desc": "La pantalla de detalle de empresa debe mostrar los puntos de contacto (personas de contacto: nombre, cargo, email, teléfono). Si ya existe modelo ContactoEmpresa, agregar tab o sección en EmpresaDetailModal. Si no existe, crear modelo y CRUD básico.",
+      "desc": "Cotización con numeración correlativa, líneas con autocomplete, IVA/margen, PDF, email, estados, export Excel.",
       "checklist": [
-        "Verificar si existe modelo ContactoEmpresa o similar",
-        "Si no existe: modelo ContactoEmpresa (empresa_id FK, nombre, cargo, email, telefono) + migración",
-        "API CRUD /api/empresas/{id}/contactos (GET, POST, PATCH, DELETE)",
-        "EmpresaDetailModal: tab 'Contactos' o sección inline con lista + agregar/editar/eliminar",
-        "Permisos: vendedor puede ver, solo admin puede crear/editar/eliminar"
+        "Numeración correlativa desde 12250 (SELECT FOR UPDATE)",
+        "Líneas con autocomplete + IVA 19% + margen interno",
+        "PDF WeasyPrint + template HTML",
+        "Email SMTP con PDF (degradación elegante)",
+        "Estados no_definido → abierta → cerrada_fv → rechazada",
+        "Export Excel",
+        "SystemConfig key/value para config global"
       ]
     },
     {
-      "list": "In review",
+      "list": "Friendly Beta 0.1",
+      "name": "[Clientes] Búsqueda por nombre de empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Al buscar clientes (autocomplete / listado), incluir el nombre de la empresa vinculada como campo de búsqueda adicional. Hoy solo se busca por nombre/RUT del cliente; si el usuario escribe el nombre de la empresa, no aparece ningún resultado aunque el cliente esté asociado.\n\nComportamiento esperado:\n- El input de búsqueda de clientes filtra por: nombre cliente, RUT cliente, **nombre empresa**.\n- Los resultados muestran el nombre del cliente y, en subtexto, el nombre de la empresa.\n- No cambiar el modelo de datos; solo ampliar el query de búsqueda (JOIN con Empresa).",
+      "checklist": [
+        "Identificar todos los endpoints/queries de búsqueda de clientes (autocomplete + listado)",
+        "Ampliar filtro SQL: OR empresa.nombre ILIKE :q (JOIN Empresa donde existe vínculo)",
+        "Verificar que el schema de respuesta ya devuelve nombre_empresa o agregar el campo",
+        "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
+        "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
+        "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "Failed to load resource: the server responded with a status of 500 () al tratar de generar una guia de despacho",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
       "name": "en las cotizaciones NV facturas... una vez escogido un sku o producto, no se puede cambiar el detalle del producto, nombre formato o sku son fijos, solo se puede cambiar eliminando la fila",
       "labels": [
         "Core"
@@ -939,7 +951,14 @@
       ]
     },
     {
-      "list": "In review",
+      "list": "Friendly Beta 0.1",
+      "name": "El logo de la empresa debe ser una imagen subible en settings para las facturas y cotizaciones",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
       "name": "[Core] Bloquear edición/anulación de facturas emitidas",
       "labels": [
         "Core",
@@ -955,27 +974,18 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "El logo de la empresa debe ser una imagen subible en settings para las facturas y cotizaciones",
-      "labels": [],
-      "desc": "",
-      "checklist": []
-    },
-    {
       "list": "Friendly Beta 0.1",
-      "name": "[Fase 3] Cotizaciones",
+      "name": "[Empresa] Puntos de contacto visibles en ficha empresa",
       "labels": [
         "Core"
       ],
-      "desc": "Cotización con numeración correlativa, líneas con autocomplete, IVA/margen, PDF, email, estados, export Excel.",
+      "desc": "La pantalla de detalle de empresa debe mostrar los puntos de contacto (personas de contacto: nombre, cargo, email, teléfono). Si ya existe modelo ContactoEmpresa, agregar tab o sección en EmpresaDetailModal. Si no existe, crear modelo y CRUD básico.",
       "checklist": [
-        "Numeración correlativa desde 12250 (SELECT FOR UPDATE)",
-        "Líneas con autocomplete + IVA 19% + margen interno",
-        "PDF WeasyPrint + template HTML",
-        "Email SMTP con PDF (degradación elegante)",
-        "Estados no_definido → abierta → cerrada_fv → rechazada",
-        "Export Excel",
-        "SystemConfig key/value para config global"
+        "Verificar si existe modelo ContactoEmpresa o similar",
+        "Si no existe: modelo ContactoEmpresa (empresa_id FK, nombre, cargo, email, telefono) + migración",
+        "API CRUD /api/empresas/{id}/contactos (GET, POST, PATCH, DELETE)",
+        "EmpresaDetailModal: tab 'Contactos' o sección inline con lista + agregar/editar/eliminar",
+        "Permisos: vendedor puede ver, solo admin puede crear/editar/eliminar"
       ]
     },
     {
