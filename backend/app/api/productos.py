@@ -20,6 +20,8 @@ from app.models.user import User
 from app.models.movimiento_inventario import MovimientoInventario
 from app.schemas.lista_precios import HistorialCostoItem
 from app.schemas.producto import (
+    BulkPreciosRequest,
+    BulkPreciosResponse,
     ProductoBusquedaOutAdmin,
     ProductoBusquedaOutPublic,
     ProductoCreate,
@@ -173,6 +175,30 @@ def sugerencias_productos(
 
     schema = ProductoBusquedaOutAdmin if user.role == "admin" else ProductoBusquedaOutPublic
     return [schema.model_validate(p).model_dump(mode="json") for p in productos]
+
+
+@router.patch("/bulk-precios", response_model=BulkPreciosResponse)
+def actualizar_precios_bulk(
+    body: BulkPreciosRequest,
+    perms: tuple[User, Session] = require_permission("catalogo", "edit"),
+):
+    """Actualiza el precio_venta de múltiples productos en una sola transacción.
+
+    Atómico: si algún ID no existe, se aborta sin tocar nada.
+    """
+    _, db = perms
+    ids = [it.id for it in body.items]
+    productos = {p.id: p for p in db.query(Producto).filter(Producto.id.in_(ids)).all()}
+    faltantes = [i for i in ids if i not in productos]
+    if faltantes:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Producto(s) no encontrado(s): {faltantes}",
+        )
+    for item in body.items:
+        productos[item.id].precio_venta = item.precio_venta
+    db.commit()
+    return BulkPreciosResponse(actualizados=len(ids), ids=ids)
 
 
 @router.get("/")

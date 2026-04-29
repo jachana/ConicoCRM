@@ -87,3 +87,34 @@ class ProductoBusquedaOutPublic(BaseModel):
 
 class ProductoBusquedaOutAdmin(ProductoBusquedaOutPublic):
     precio_costo: Decimal
+
+
+class BulkPrecioItem(BaseModel):
+    id: int
+    precio_venta: Decimal
+
+    @field_validator("precio_venta")
+    @classmethod
+    def precio_positivo(cls, v: Decimal) -> Decimal:
+        if v <= 0:
+            raise ValueError("precio_venta debe ser mayor a 0")
+        return v
+
+
+class BulkPreciosRequest(BaseModel):
+    items: list[BulkPrecioItem]
+
+    @field_validator("items")
+    @classmethod
+    def no_vacio(cls, v: list[BulkPrecioItem]) -> list[BulkPrecioItem]:
+        if not v:
+            raise ValueError("items no puede estar vacío")
+        ids = [it.id for it in v]
+        if len(ids) != len(set(ids)):
+            raise ValueError("items contiene IDs duplicados")
+        return v
+
+
+class BulkPreciosResponse(BaseModel):
+    actualizados: int
+    ids: list[int]

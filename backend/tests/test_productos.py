@@ -243,3 +243,93 @@ def test_buscar_producto_acento_en_query(client, admin_token):
     r = client.get("/api/productos/buscar?q=aceité", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
     assert any(p["nombre"] == "Filtro aceite motor" for p in r.json())
+
+
+# Bulk price update endpoint -------------------------------------------------
+
+
+def _crear_producto(client, admin_token, nombre, precio):
+    r = client.post(
+        "/api/productos/",
+        json={"nombre": nombre, "precio_venta": precio},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201
+    return r.json()["id"]
+
+
+def test_bulk_precios_actualiza_multiples(client, admin_token):
+    a = _crear_producto(client, admin_token, "BulkA", "100.00")
+    b = _crear_producto(client, admin_token, "BulkB", "200.00")
+    r = client.patch(
+        "/api/productos/bulk-precios",
+        json={"items": [{"id": a, "precio_venta": "150.00"}, {"id": b, "precio_venta": "250.00"}]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["actualizados"] == 2
+    assert set(body["ids"]) == {a, b}
+
+    ra = client.get(f"/api/productos/{a}", headers={"Authorization": f"Bearer {admin_token}"})
+    rb = client.get(f"/api/productos/{b}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert float(ra.json()["precio_venta"]) == 150.0
+    assert float(rb.json()["precio_venta"]) == 250.0
+
+
+def test_bulk_precios_atomico_falla_si_id_no_existe(client, admin_token):
+    a = _crear_producto(client, admin_token, "BulkAtomico", "100.00")
+    r = client.patch(
+        "/api/productos/bulk-precios",
+        json={"items": [{"id": a, "precio_venta": "999.00"}, {"id": 99999, "precio_venta": "10.00"}]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 404
+    ra = client.get(f"/api/productos/{a}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert float(ra.json()["precio_venta"]) == 100.0
+
+
+def test_bulk_precios_rechaza_precio_no_positivo(client, admin_token):
+    a = _crear_producto(client, admin_token, "BulkNeg", "50.00")
+    r = client.patch(
+        "/api/productos/bulk-precios",
+        json={"items": [{"id": a, "precio_venta": "0"}]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 422
+
+    r2 = client.patch(
+        "/api/productos/bulk-precios",
+        json={"items": [{"id": a, "precio_venta": "-10"}]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r2.status_code == 422
+
+
+def test_bulk_precios_rechaza_lista_vacia(client, admin_token):
+    r = client.patch(
+        "/api/productos/bulk-precios",
+        json={"items": []},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 422
+
+
+def test_bulk_precios_rechaza_ids_duplicados(client, admin_token):
+    a = _crear_producto(client, admin_token, "BulkDup", "100.00")
+    r = client.patch(
+        "/api/productos/bulk-precios",
+        json={"items": [{"id": a, "precio_venta": "150.00"}, {"id": a, "precio_venta": "200.00"}]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 422
+
+
+def test_bulk_precios_vendedor_no_puede(client, vendedor_token, admin_token):
+    a = _crear_producto(client, admin_token, "BulkVend", "100.00")
+    r = client.patch(
+        "/api/productos/bulk-precios",
+        json={"items": [{"id": a, "precio_venta": "150.00"}]},
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert r.status_code == 403
