@@ -175,7 +175,7 @@ export default function Proveedores() {
           <ModalHeader>
             <ModalTitle>{editando ? 'Editar proveedor' : 'Nuevo proveedor'}</ModalTitle>
           </ModalHeader>
-          <form onSubmit={e => { e.preventDefault(); guardar.mutate(form) }}>
+          <form onSubmit={e => { e.preventDefault(); guardar.mutate(form) }} className="flex flex-col flex-1 min-h-0">
             <ModalBody>
               <div className="grid grid-cols-2 gap-4">
                 {CAMPOS.map(campo => (

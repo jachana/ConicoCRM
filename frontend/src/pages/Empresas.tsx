@@ -435,7 +435,7 @@ export default function Empresas() {
           <ModalHeader>
             <ModalTitle>{editando ? 'Editar empresa' : 'Nueva empresa'}</ModalTitle>
           </ModalHeader>
-          <form onSubmit={ev => { ev.preventDefault(); guardar.mutate(form) }}>
+          <form onSubmit={ev => { ev.preventDefault(); guardar.mutate(form) }} className="flex flex-col flex-1 min-h-0">
             <ModalBody>
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Nombre" required className="col-span-2">

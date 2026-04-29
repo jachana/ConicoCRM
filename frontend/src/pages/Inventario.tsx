@@ -298,7 +298,7 @@ export default function Inventario() {
           <ModalHeader>
             <ModalTitle>Ajuste manual de stock</ModalTitle>
           </ModalHeader>
-          <form onSubmit={submitAjuste}>
+          <form onSubmit={submitAjuste} className="flex flex-col flex-1 min-h-0">
             <ModalBody className="space-y-4">
               <FormField label="Producto" required>
                 <Select value={ajusteProductoId || 'none'} onValueChange={v => setAjusteProductoId(v === 'none' ? '' : v)}>

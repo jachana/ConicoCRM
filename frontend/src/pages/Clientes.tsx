@@ -254,7 +254,7 @@ export default function Clientes() {
           <ModalHeader>
             <ModalTitle>{editando ? 'Editar cliente' : 'Nuevo cliente'}</ModalTitle>
           </ModalHeader>
-          <form onSubmit={ev => { ev.preventDefault(); guardar.mutate(form) }}>
+          <form onSubmit={ev => { ev.preventDefault(); guardar.mutate(form) }} className="flex flex-col flex-1 min-h-0">
             <ModalBody>
               <div className="grid grid-cols-2 gap-4">
                 <FormField label="Empresa" className="col-span-2">

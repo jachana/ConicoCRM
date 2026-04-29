@@ -281,23 +281,7 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "[Clientes] Búsqueda por nombre de empresa",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Al buscar clientes (autocomplete / listado), incluir el nombre de la empresa vinculada como campo de búsqueda adicional. Hoy solo se busca por nombre/RUT del cliente; si el usuario escribe el nombre de la empresa, no aparece ningún resultado aunque el cliente esté asociado.\n\nComportamiento esperado:\n- El input de búsqueda de clientes filtra por: nombre cliente, RUT cliente, **nombre empresa**.\n- Los resultados muestran el nombre del cliente y, en subtexto, el nombre de la empresa.\n- No cambiar el modelo de datos; solo ampliar el query de búsqueda (JOIN con Empresa).",
-      "checklist": [
-        "Identificar todos los endpoints/queries de búsqueda de clientes (autocomplete + listado)",
-        "Ampliar filtro SQL: OR empresa.nombre ILIKE :q (JOIN Empresa donde existe vínculo)",
-        "Verificar que el schema de respuesta ya devuelve nombre_empresa o agregar el campo",
-        "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
-        "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
-        "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
-      ]
-    },
-    {
-      "list": "In review",
+      "list": "Feature requests",
       "name": "[Clientes] Búsqueda por nombre de empresa",
       "labels": [
         "Core"
@@ -878,6 +862,13 @@
       ]
     },
     {
+      "list": "In review",
+      "name": "Revamp UI modal de edicion de empresas, campos y botones quedan fuera de pamntalla",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
       "list": "In progress",
       "name": "[W1-05 checkpoint] Validar payload tipo 52 contra Lioren sandbox",
       "labels": [
@@ -1312,6 +1303,22 @@
         "Si (b): mover bandejas como tab dentro de /facturas y eliminar ruta",
         "Documentar decisión en CLAUDE.md o PROGRESS.md",
         "Ajustar sidebar y permisos resultantes"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Clientes] Búsqueda por nombre de empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Al buscar clientes (autocomplete / listado), incluir el nombre de la empresa vinculada como campo de búsqueda adicional. Hoy solo se busca por nombre/RUT del cliente; si el usuario escribe el nombre de la empresa, no aparece ningún resultado aunque el cliente esté asociado.\n\nComportamiento esperado:\n- El input de búsqueda de clientes filtra por: nombre cliente, RUT cliente, **nombre empresa**.\n- Los resultados muestran el nombre del cliente y, en subtexto, el nombre de la empresa.\n- No cambiar el modelo de datos; solo ampliar el query de búsqueda (JOIN con Empresa).",
+      "checklist": [
+        "Identificar todos los endpoints/queries de búsqueda de clientes (autocomplete + listado)",
+        "Ampliar filtro SQL: OR empresa.nombre ILIKE :q (JOIN Empresa donde existe vínculo)",
+        "Verificar que el schema de respuesta ya devuelve nombre_empresa o agregar el campo",
+        "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
+        "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
+        "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
       ]
     },
     {

@@ -258,7 +258,7 @@ export default function RRHH() {
           <ModalHeader>
             <ModalTitle>{editando ? 'Editar empleado' : 'Nuevo empleado'}</ModalTitle>
           </ModalHeader>
-          <form onSubmit={ev => { ev.preventDefault(); guardarEmpleado.mutate(form) }}>
+          <form onSubmit={ev => { ev.preventDefault(); guardarEmpleado.mutate(form) }} className="flex flex-col flex-1 min-h-0">
             <ModalBody>
               <div className="space-y-4">
                 <FormField label="Nombre" required>
@@ -476,7 +476,7 @@ export default function RRHH() {
           <ModalHeader>
             <ModalTitle>Agregar período de vacaciones</ModalTitle>
           </ModalHeader>
-          <form onSubmit={ev => { ev.preventDefault(); guardarVac.mutate(vacForm) }}>
+          <form onSubmit={ev => { ev.preventDefault(); guardarVac.mutate(vacForm) }} className="flex flex-col flex-1 min-h-0">
             <ModalBody>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
