@@ -655,7 +655,7 @@
       ]
     },
     {
-      "list": "In review",
+      "list": "Feature requests",
       "name": "Búsquedas insensibles a tildes (normalización unicode)",
       "labels": [
         "Core"
@@ -803,7 +803,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[NV] Bloquear edición al emitir factura",
       "labels": [
         "Core"
@@ -818,7 +818,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Seguridad] Vendedor no puede modificar plazo de crédito",
       "labels": [
         "Core"

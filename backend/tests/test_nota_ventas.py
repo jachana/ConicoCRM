@@ -204,6 +204,29 @@ def test_vendedor_puede_editar_nv_propia(client, admin_token, vendedor_token, ve
     assert r.status_code == 200
 
 
+def test_vendedor_no_puede_modificar_plazo_credito(client, vendedor_token):
+    cid = _make_cliente(client, vendedor_token)
+    nv_id = _create_nv(client, vendedor_token, cid).json()["id"]
+    r = client.patch(f"/api/nota_ventas/{nv_id}",
+                     json={"plazo_dias": 60},
+                     headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert r.status_code == 403
+    r2 = client.patch(f"/api/nota_ventas/{nv_id}",
+                      json={"metodo_pago": "transferencia"},
+                      headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert r2.status_code == 403
+
+
+def test_admin_puede_modificar_plazo_credito(client, admin_token):
+    cid = _make_cliente(client, admin_token)
+    nv_id = _create_nv(client, admin_token, cid).json()["id"]
+    r = client.patch(f"/api/nota_ventas/{nv_id}",
+                     json={"plazo_dias": 30},
+                     headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert r.json()["plazo_dias"] == 30
+
+
 # ── reemplazar líneas ─────────────────────────────────────────────────────────
 
 def test_reemplazar_lineas_recalcula_totales(client, admin_token):

@@ -708,7 +708,7 @@ export default function NotaVentaDetalle() {
                   setMetodoPago(m)
                   if (m && isPlazoForzadoCero(m)) setPlazoDias(0)
                 }}
-                disabled={isLocked}
+                disabled={isLocked || isVendedor}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sin especificar" />
@@ -726,7 +726,7 @@ export default function NotaVentaDetalle() {
               <Select
                 value={String(plazoDias)}
                 onValueChange={v => setPlazoDias(Number(v))}
-                disabled={isLocked || (!!metodoPago && isPlazoForzadoCero(metodoPago))}
+                disabled={isLocked || isVendedor || (!!metodoPago && isPlazoForzadoCero(metodoPago))}
               >
                 <SelectTrigger>
                   <SelectValue />
