@@ -506,7 +506,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In progress",
       "name": "[Productos] Edición masiva de precios",
       "labels": [
         "Core"
@@ -589,6 +589,19 @@
         "Soporta jerarquía (parent_codigo apunta a otra fila del mismo Excel)",
         "Validar ciclos en el árbol",
         "Re-import actualiza nombre/parent (no borra hijos)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
+      "checklist": [
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
       ]
     },
     {
@@ -786,13 +799,6 @@
       "checklist": []
     },
     {
-      "list": "Feature requests",
-      "name": "Dashboard widget of sales should be able to set a goal",
-      "labels": [],
-      "desc": "",
-      "checklist": []
-    },
-    {
       "list": "In progress",
       "name": "[W1-05 checkpoint] Validar payload tipo 52 contra Lioren sandbox",
       "labels": [
@@ -825,16 +831,10 @@
     },
     {
       "list": "In progress",
-      "name": "Búsquedas insensibles a tildes (normalización unicode)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
-      "checklist": [
-        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
-        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
-        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
-      ]
+      "name": "Dashboard widget of sales should be able to set a goal",
+      "labels": [],
+      "desc": "",
+      "checklist": []
     },
     {
       "list": "In review",
