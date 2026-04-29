@@ -936,7 +936,7 @@ export default function FacturaDetalle() {
               <TR key={linea._key}>
                 <TD className="text-center text-gray-500 dark:text-gray-400 font-num">{idx + 1}</TD>
                 <TD>
-                  {editingLineas ? (
+                  {editingLineas && !linea.producto_id ? (
                     <Input
                       size="sm"
                       type="text"
@@ -949,7 +949,7 @@ export default function FacturaDetalle() {
                   )}
                 </TD>
                 <TD>
-                  {editingLineas ? (
+                  {editingLineas && !linea.producto_id ? (
                     <Input
                       size="sm"
                       type="text"
@@ -962,7 +962,7 @@ export default function FacturaDetalle() {
                   )}
                 </TD>
                 <TD>
-                  {editingLineas ? (
+                  {editingLineas && !linea.producto_id ? (
                     <Input
                       size="sm"
                       type="text"

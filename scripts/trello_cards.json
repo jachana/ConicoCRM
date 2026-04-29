@@ -864,11 +864,17 @@
       "checklist": []
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "en las cotizaciones NV facturas... una vez escogido un sku o producto, no se puede cambiar el detalle del producto, nombre formato o sku son fijos, solo se puede cambiar eliminando la fila",
-      "labels": [],
-      "desc": "",
-      "checklist": []
+      "labels": [
+        "Core"
+      ],
+      "desc": "Una vez seleccionado un producto del catálogo en la línea de NV/Cotización/Factura, los campos SKU, descripción y formato quedan readonly. Solo se pueden cambiar eliminando la fila y volviendo a buscar el producto. Evita desincronización con la ficha maestra del producto.",
+      "checklist": [
+        "NotaVentaDetalle: SKU/descripción/formato disabled cuando producto_id está set",
+        "CotizacionDetalle: descripción disabled cuando producto_id está set (SKU/formato ya readonly)",
+        "FacturaDetalle: SKU/descripción/formato render como span cuando producto_id está set"
+      ]
     },
     {
       "list": "Feature requests",

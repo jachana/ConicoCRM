@@ -1224,7 +1224,7 @@ export default function CotizacionDetalle() {
                     onChange={e => handleDescripcionChange(idx, e.target.value, e)}
                     onFocus={e => handleDescripcionFocus(idx, linea.descripcion, e)}
                     onBlur={() => setTimeout(() => { setAutocompleteIdx(null); setAutocompleteResults([]) }, 150)}
-                    disabled={isLocked}
+                    disabled={isLocked || !!linea.producto_id}
                     placeholder="Buscar en catálogo..."
                   />
                   {linea.producto_id && (

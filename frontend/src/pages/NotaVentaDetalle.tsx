@@ -869,7 +869,7 @@ export default function NotaVentaDetalle() {
                     size="sm"
                     value={linea.sku ?? ''}
                     onChange={e => updateLinea(idx, { sku: e.target.value || null })}
-                    disabled={isLocked}
+                    disabled={isLocked || !!linea.producto_id}
                     placeholder="SKU"
                   />
                 </TD>
@@ -879,7 +879,7 @@ export default function NotaVentaDetalle() {
                     value={linea.descripcion}
                     onChange={e => handleDescripcionChange(idx, e.target.value)}
                     onBlur={() => setTimeout(() => { setAutocompleteIdx(null); setAutocompleteResults([]) }, 200)}
-                    disabled={isLocked}
+                    disabled={isLocked || !!linea.producto_id}
                     placeholder="Descripción..."
                   />
                   {autocompleteIdx === idx && autocompleteResults.length > 0 && (
@@ -905,7 +905,7 @@ export default function NotaVentaDetalle() {
                     size="sm"
                     value={linea.formato ?? ''}
                     onChange={e => updateLinea(idx, { formato: e.target.value || null })}
-                    disabled={isLocked}
+                    disabled={isLocked || !!linea.producto_id}
                     placeholder="Formato"
                   />
                 </TD>
