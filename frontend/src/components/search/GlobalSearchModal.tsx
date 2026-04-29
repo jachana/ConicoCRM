@@ -48,6 +48,7 @@ export default function GlobalSearchModal({ open, onOpenChange }: Props) {
       open={open}
       onOpenChange={onOpenChange}
       label="Búsqueda global"
+      shouldFilter={false}
       className="fixed inset-0 z-[60] flex items-start justify-center pt-[15vh] bg-black/40 backdrop-blur-sm"
     >
       <div

@@ -52,6 +52,32 @@ def test_match_cliente_by_nombre_and_rut(client, admin_token, db):
     assert any(it["rut"] == "12.345.678-9" for it in by_rut.json()["clientes"])
 
 
+def test_match_cliente_by_empresa_nombre(client, admin_token, db):
+    from app.models.cliente import Cliente
+    from app.models.empresa import Empresa
+    e = Empresa(nombre="Constructora Andes", rut="76.999.888-1")
+    db.add(e); db.commit(); db.refresh(e)
+    c = Cliente(nombre="Pedro Soto", rut="9.876.543-2", empresa_id=e.id)
+    db.add(c); db.commit()
+    resp = client.get("/api/search?q=Andes", headers={"Authorization": f"Bearer {admin_token}"})
+    assert resp.status_code == 200
+    items = resp.json()["clientes"]
+    assert any(it["rut"] == "9.876.543-2" and it["empresa"] == "Constructora Andes" for it in items)
+
+
+def test_listar_clientes_filters_by_empresa_nombre(client, admin_token, db):
+    from app.models.cliente import Cliente
+    from app.models.empresa import Empresa
+    e = Empresa(nombre="Mineria Norte SpA", rut="76.555.444-3")
+    db.add(e); db.commit(); db.refresh(e)
+    c = Cliente(nombre="Ana Riquelme", rut="8.111.222-3", empresa_id=e.id)
+    db.add(c); db.commit()
+    resp = client.get("/api/clientes/?q=Norte", headers={"Authorization": f"Bearer {admin_token}"})
+    assert resp.status_code == 200
+    items = resp.json()
+    assert any(it["rut"] == "8.111.222-3" for it in items)
+
+
 def test_match_empresa_by_nombre_and_rut(client, admin_token, db):
     from app.models.empresa import Empresa
     e = Empresa(nombre="ACME Corp", rut="76.123.456-7")
