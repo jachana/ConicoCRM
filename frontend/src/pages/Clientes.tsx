@@ -30,6 +30,7 @@ export default function Clientes() {
   const qc = useQueryClient()
   const [busqueda, setBusqueda] = useState('')
   const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
+  const [empresaFiltroId, setEmpresaFiltroId] = useState<number | null>(null)
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
@@ -45,8 +46,14 @@ export default function Clientes() {
   const [verCliente, setVerCliente] = useState<Cliente | null>(null)
 
   const { data: clientes = [], isLoading } = useQuery<Cliente[]>({
-    queryKey: ['clientes', debouncedBusqueda],
-    queryFn: () => api.get(`/api/clientes/?q=${encodeURIComponent(debouncedBusqueda)}`).then(r => r.data),
+    queryKey: ['clientes', debouncedBusqueda, empresaFiltroId],
+    queryFn: () => {
+      const params = new URLSearchParams()
+      if (debouncedBusqueda) params.set('q', debouncedBusqueda)
+      if (empresaFiltroId !== null) params.set('empresa_id', String(empresaFiltroId))
+      const qs = params.toString()
+      return api.get(`/api/clientes/${qs ? `?${qs}` : ''}`).then(r => r.data)
+    },
     placeholderData: keepPreviousData,
   })
 
@@ -112,14 +119,30 @@ export default function Clientes() {
         </div>
       </div>
 
-      <Input
-        type="text"
-        placeholder="Buscar por nombre, RUT o empresa..."
-        value={busqueda}
-        onChange={e => setBusqueda(e.target.value)}
-        leftAddon={<Search />}
-        className="mb-4 max-w-sm"
-      />
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <Input
+          type="text"
+          placeholder="Buscar por nombre, RUT o empresa..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          leftAddon={<Search />}
+          className="max-w-sm"
+        />
+        <Select
+          value={empresaFiltroId === null ? 'all' : String(empresaFiltroId)}
+          onValueChange={(v) => setEmpresaFiltroId(v === 'all' ? null : Number(v))}
+        >
+          <SelectTrigger className="sm:w-64" aria-label="Filtrar por empresa">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas las empresas</SelectItem>
+            {empresas.map(e => (
+              <SelectItem key={e.id} value={String(e.id)}>{e.nombre}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {isLoading ? (
         <div className="space-y-2">
@@ -129,9 +152,9 @@ export default function Clientes() {
         <Card className="p-0">
           <EmptyState
             icon={<Inbox />}
-            title={busqueda ? 'Sin resultados' : 'Sin clientes registrados'}
-            description={busqueda ? 'No hay clientes que coincidan con la búsqueda.' : 'Comienza agregando tu primer cliente.'}
-            action={!busqueda ? <Button leftIcon={<Plus />} onClick={abrirCrear}>Agregar cliente</Button> : null}
+            title={busqueda || empresaFiltroId !== null ? 'Sin resultados' : 'Sin clientes registrados'}
+            description={busqueda || empresaFiltroId !== null ? 'No hay clientes que coincidan con los filtros.' : 'Comienza agregando tu primer cliente.'}
+            action={!busqueda && empresaFiltroId === null ? <Button leftIcon={<Plus />} onClick={abrirCrear}>Agregar cliente</Button> : null}
           />
         </Card>
       ) : (

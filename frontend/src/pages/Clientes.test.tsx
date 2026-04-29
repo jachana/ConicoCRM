@@ -60,4 +60,20 @@ describe('Clientes', () => {
     const matches = await screen.findAllByText(/empresa/i)
     expect(matches.length).toBeGreaterThan(0)
   })
+
+  it('filtro por empresa pasa empresa_id al endpoint', async () => {
+    const calls: string[] = []
+    vi.mocked(api.get).mockImplementation((url: string) => {
+      calls.push(url)
+      if (url.includes('/api/empresas/')) return Promise.resolve({ data: [{ id: 7, nombre: 'Acme SA', razon_social: null, rut: null }] })
+      return Promise.resolve({ data: [] })
+    })
+    wrap(<Clientes />)
+    await screen.findByText('Clientes')
+    fireEvent.click(screen.getByLabelText('Filtrar por empresa'))
+    fireEvent.click(await screen.findByText('Acme SA'))
+    await waitFor(() => {
+      expect(calls.some(u => u.includes('/api/clientes/?empresa_id=7'))).toBe(true)
+    })
+  })
 })
