@@ -174,19 +174,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "[DTE] Factura exenta tipo 34",
-      "labels": [
-        "DTE/SII"
-      ],
-      "desc": "Pendiente del módulo DTE.",
-      "checklist": [
-        "Soporte tipo 34 en DteService.build_payload",
-        "Validación: todas las líneas exentas",
-        "UI: toggle factura exenta en FacturaNueva"
-      ]
-    },
-    {
       "list": "Feature requests",
       "name": "[DTE] Factura de compra tipo 46",
       "labels": [
@@ -242,7 +229,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Empresa] Puntos de contacto visibles en ficha empresa",
       "labels": [
         "Core"
@@ -714,6 +701,19 @@
     },
     {
       "list": "Feature requests",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
+      "checklist": [
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
+      ]
+    },
+    {
+      "list": "Feature requests",
       "name": "[Onboarding] Import Tareas / actividades CRM pendientes",
       "labels": [
         "Core"
@@ -930,15 +930,15 @@
     },
     {
       "list": "In review",
-      "name": "Búsquedas insensibles a tildes (normalización unicode)",
+      "name": "[DTE] Factura exenta tipo 34",
       "labels": [
-        "Core"
+        "DTE/SII"
       ],
-      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
+      "desc": "Pendiente del módulo DTE.",
       "checklist": [
-        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
-        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
-        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
+        "Soporte tipo 34 en DteService.build_payload",
+        "Validación: todas las líneas exentas",
+        "UI: toggle factura exenta en FacturaNueva"
       ]
     },
     {

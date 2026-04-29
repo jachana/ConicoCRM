@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import require_permission
 from app.models.cliente import Cliente as ClienteModel
+from app.models.contacto_empresa import ContactoEmpresa
 from app.models.empresa import Empresa
 from app.models.factura import Factura, FacturaLinea
 from app.models.user import User
@@ -21,6 +22,7 @@ from app.schemas.empresa import (
     EmpresaCreate, EmpresaDeudaOut, EmpresaCreditoOut, EmpresaOut, EmpresaUpdate,
     FacturaResumen, EmpresaDeudaBulkItem, EmpresaListItem,
     EmpresaFacturaDetailItem, EmpresaProductoLineOut,
+    ContactoEmpresaCreate, ContactoEmpresaUpdate, ContactoEmpresaOut,
 )
 from app.utils.search import unaccent_ilike
 
@@ -608,4 +610,75 @@ def eliminar_empresa(
             detail="No se puede eliminar: tiene clientes asociados",
         )
     db.delete(e)
+    db.commit()
+
+
+# --- Contactos de empresa ---
+
+@router.get("/{empresa_id}/contactos", response_model=list[ContactoEmpresaOut])
+def listar_contactos(
+    empresa_id: int,
+    perms: tuple[User, Session] = require_permission("empresas", "view"),
+):
+    _, db = perms
+    if not db.get(Empresa, empresa_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    return db.query(ContactoEmpresa).filter(ContactoEmpresa.empresa_id == empresa_id).order_by(ContactoEmpresa.id).all()
+
+
+@router.post("/{empresa_id}/contactos", response_model=ContactoEmpresaOut, status_code=status.HTTP_201_CREATED)
+def crear_contacto(
+    empresa_id: int,
+    body: ContactoEmpresaCreate,
+    perms: tuple[User, Session] = require_permission("empresas", "edit"),
+):
+    user, db = perms
+    if user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores pueden crear contactos")
+    if not db.get(Empresa, empresa_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    contacto = ContactoEmpresa(empresa_id=empresa_id, **body.model_dump())
+    db.add(contacto)
+    db.commit()
+    db.refresh(contacto)
+    return contacto
+
+
+@router.patch("/{empresa_id}/contactos/{contacto_id}", response_model=ContactoEmpresaOut)
+def actualizar_contacto(
+    empresa_id: int,
+    contacto_id: int,
+    body: ContactoEmpresaUpdate,
+    perms: tuple[User, Session] = require_permission("empresas", "edit"),
+):
+    user, db = perms
+    if user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores pueden editar contactos")
+    contacto = db.query(ContactoEmpresa).filter(
+        ContactoEmpresa.id == contacto_id, ContactoEmpresa.empresa_id == empresa_id
+    ).first()
+    if not contacto:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contacto no encontrado")
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(contacto, field, value)
+    db.commit()
+    db.refresh(contacto)
+    return contacto
+
+
+@router.delete("/{empresa_id}/contactos/{contacto_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_contacto(
+    empresa_id: int,
+    contacto_id: int,
+    perms: tuple[User, Session] = require_permission("empresas", "edit"),
+):
+    user, db = perms
+    if user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores pueden eliminar contactos")
+    contacto = db.query(ContactoEmpresa).filter(
+        ContactoEmpresa.id == contacto_id, ContactoEmpresa.empresa_id == empresa_id
+    ).first()
+    if not contacto:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contacto no encontrado")
+    db.delete(contacto)
     db.commit()

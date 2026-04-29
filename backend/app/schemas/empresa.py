@@ -3,6 +3,31 @@ from decimal import Decimal
 from pydantic import BaseModel, Field, computed_field
 
 
+class ContactoEmpresaCreate(BaseModel):
+    nombre: str
+    cargo: str | None = None
+    email: str | None = None
+    telefono: str | None = None
+
+
+class ContactoEmpresaUpdate(BaseModel):
+    nombre: str | None = None
+    cargo: str | None = None
+    email: str | None = None
+    telefono: str | None = None
+
+
+class ContactoEmpresaOut(BaseModel):
+    id: int
+    empresa_id: int
+    nombre: str
+    cargo: str | None = None
+    email: str | None = None
+    telefono: str | None = None
+    created_at: datetime
+    model_config = {"from_attributes": True}
+
+
 class EmpresaBase(BaseModel):
     nombre: str
     razon_social: str | None = None

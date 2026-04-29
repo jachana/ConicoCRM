@@ -3,6 +3,7 @@ import EmpresaTabResumen from './EmpresaTabResumen'
 import EmpresaTabFacturas from './EmpresaTabFacturas'
 import EmpresaTabProductos from './EmpresaTabProductos'
 import EmpresaTabCredito from './EmpresaTabCredito'
+import EmpresaTabContactos from './EmpresaTabContactos'
 import Timeline from './Timeline'
 import {
   Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription,
@@ -35,6 +36,7 @@ export default function EmpresaDetailModal({ empresa, onClose, onEdit }: Props) 
             <TabsTrigger value="facturas">Facturas</TabsTrigger>
             <TabsTrigger value="productos">Productos</TabsTrigger>
             <TabsTrigger value="credito">Crédito</TabsTrigger>
+            <TabsTrigger value="contactos">Contactos</TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-y-auto px-6 py-5">
@@ -52,6 +54,9 @@ export default function EmpresaDetailModal({ empresa, onClose, onEdit }: Props) 
             </TabsContent>
             <TabsContent value="credito">
               <EmpresaTabCredito empresaId={empresa.id} />
+            </TabsContent>
+            <TabsContent value="contactos">
+              <EmpresaTabContactos empresaId={empresa.id} />
             </TabsContent>
           </div>
         </Tabs>

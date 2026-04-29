@@ -30,3 +30,6 @@ class Empresa(Base):
     sedes_despacho: Mapped[list["SedeDespacho"]] = relationship(
         "SedeDespacho", back_populates="empresa", cascade="all, delete-orphan"
     )
+    contactos: Mapped[list["ContactoEmpresa"]] = relationship(
+        "ContactoEmpresa", back_populates="empresa", cascade="all, delete-orphan"
+    )
