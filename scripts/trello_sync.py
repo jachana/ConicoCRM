@@ -28,6 +28,7 @@ Usage:
   python scripts/trello_sync.py --enrich      # LLM triage of bare cards (pull first, then run)
   python scripts/trello_sync.py --enrich --model sonnet  # use Sonnet instead of Haiku
   python scripts/trello_sync.py --apply --only-cards "[W1-05]"   # filter by name substring
+  python scripts/trello_sync.py --apply --only-list "In review"  # filter by column name
   python scripts/trello_sync.py --link-commit HEAD --card "[Bug:HTTPS]"  # tag commit -> card
 
 Card schema gains optional `"commits": ["<sha>", ...]` (full or short hashes).
@@ -567,12 +568,17 @@ def call_llm(bare_cards: list[dict], spec: dict, model_alias: str,
 
 
 def apply_spec(spec: dict, board_id: str, dry_run: bool,
-               only_cards: str | None = None) -> int:
+               only_cards: str | None = None,
+               only_list: str | None = None) -> int:
     cards = spec["cards"]
     if only_cards:
         needle = only_cards.lower()
         cards = [c for c in cards if needle in c["name"].lower()]
         print(f"filter --only-cards={only_cards!r}: {len(cards)} card(s) match")
+    if only_list:
+        needle = only_list.lower()
+        cards = [c for c in cards if needle in c["list"].lower()]
+        print(f"filter --only-list={only_list!r}: {len(cards)} card(s) match")
 
     print(f"\n== Syncing to board {board_id} ({'DRY RUN' if dry_run else 'APPLY'}) ==\n")
 
@@ -740,6 +746,8 @@ def main() -> int:
                              "(default: auto)")
     parser.add_argument("--only-cards", default=None,
                         help="filter cards by name substring (case-insensitive); push only")
+    parser.add_argument("--only-list", default=None,
+                        help="filter cards by list/column name substring (case-insensitive); push only")
     parser.add_argument("--link-commit", default=None, metavar="HASH",
                         help="link a commit (sha, ref, or HEAD) to one card; "
                              "use with --card. Updates JSON + auto-applies "
@@ -789,7 +797,8 @@ def main() -> int:
                       provider=args.provider)
 
     spec = json.loads(cards_path.read_text(encoding="utf-8"))
-    return apply_spec(spec, board_id, dry_run=args.dry_run, only_cards=args.only_cards)
+    return apply_spec(spec, board_id, dry_run=args.dry_run,
+                      only_cards=args.only_cards, only_list=args.only_list)
 
 
 if __name__ == "__main__":
