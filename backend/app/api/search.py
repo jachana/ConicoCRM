@@ -72,7 +72,10 @@ def _search_cotizaciones(db: Session, user: User, q: str, limit: int) -> list[di
     query = (
         db.query(Cotizacion)
         .outerjoin(Cliente, Cotizacion.cliente_id == Cliente.id)
-        .filter(cast(Cotizacion.numero, String).ilike(f"{q}%"))
+        .filter(or_(
+            cast(Cotizacion.numero, String).ilike(f"{q}%"),
+            unaccent_ilike(Cliente.nombre, f"%{q}%"),
+        ))
     )
     if _vendedor_scope(user.role):
         query = query.filter(Cotizacion.vendedor_id == user.id)
@@ -92,7 +95,10 @@ def _search_notas_venta(db: Session, user: User, q: str, limit: int) -> list[dic
     query = (
         db.query(NotaVenta)
         .outerjoin(Cliente, NotaVenta.cliente_id == Cliente.id)
-        .filter(cast(NotaVenta.numero, String).ilike(f"{q}%"))
+        .filter(or_(
+            cast(NotaVenta.numero, String).ilike(f"{q}%"),
+            unaccent_ilike(Cliente.nombre, f"%{q}%"),
+        ))
     )
     if _vendedor_scope(user.role):
         query = query.filter(NotaVenta.vendedor_id == user.id)
@@ -112,7 +118,10 @@ def _search_facturas(db: Session, user: User, q: str, limit: int) -> list[dict]:
     query = (
         db.query(Factura)
         .outerjoin(Cliente, Factura.cliente_id == Cliente.id)
-        .filter(cast(Factura.numero, String).ilike(f"{q}%"))
+        .filter(or_(
+            cast(Factura.numero, String).ilike(f"{q}%"),
+            unaccent_ilike(Cliente.nombre, f"%{q}%"),
+        ))
     )
     if _vendedor_scope(user.role):
         query = query.filter(Factura.vendedor_id == user.id)
@@ -132,7 +141,10 @@ def _search_ordenes_compra(db: Session, q: str, limit: int) -> list[dict]:
     rows = (
         db.query(OrdenCompra)
         .outerjoin(Proveedor, OrdenCompra.proveedor_id == Proveedor.id)
-        .filter(cast(OrdenCompra.numero, String).ilike(f"{q}%"))
+        .filter(or_(
+            cast(OrdenCompra.numero, String).ilike(f"{q}%"),
+            unaccent_ilike(Proveedor.nombre, f"%{q}%"),
+        ))
         .order_by(OrdenCompra.numero.desc())
         .limit(limit)
         .all()

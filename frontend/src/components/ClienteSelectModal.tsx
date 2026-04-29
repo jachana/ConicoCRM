@@ -74,9 +74,10 @@ export default function ClienteSelectModal({ open, empresaId, empresaNombre, onS
     onError: (e: any) => setFormError(e?.response?.data?.detail ?? 'Error al guardar'),
   })
 
+  const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   const filtered = clientes.filter(c =>
-    c.nombre.toLowerCase().includes(search.toLowerCase()) ||
-    (c.email ?? '').toLowerCase().includes(search.toLowerCase())
+    norm(c.nombre).includes(norm(search)) ||
+    norm(c.email ?? '').includes(norm(search))
   )
 
   if (!open) return null

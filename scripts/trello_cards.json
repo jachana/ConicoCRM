@@ -103,26 +103,15 @@
     {
       "list": "Bugs",
       "name": "[Guía despacho] Errores al guardar + botón \"Emitir DTE\" incorrecto",
-      "labels": ["Bug"],
+      "labels": [
+        "Bug"
+      ],
       "desc": "Dos problemas en el formulario /guias-despacho/nueva:\n1. Error al guardar — posiblemente conflicto de número/folio duplicado o constraint de BD. Revisar respuesta 400/500 del backend al hacer POST.\n2. El botón principal dice \"Emitir DTE\" pero la guía de despacho es logística interna — no emite DTE al SII. Cambiar texto a \"Guardar\" o \"Crear guía\".",
       "checklist": [
         "Reproducir error al guardar — capturar response exacto (status + body)",
         "Revisar endpoint POST /api/guias-despacho: validación de número único, constraints FK",
         "Corregir texto del botón: 'Emitir DTE' → 'Guardar guía' (o 'Crear guía')",
         "Verificar que no haya lógica DTE disparándose para guías de despacho internas"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "numeros en pdf e internos para NV y otros no cuadran (NV42 es la 0008)",
-      "labels": ["Bug"],
-      "desc": "FIX (NV only): nv.numero ahora == nv.id en creación + migración backfill alinea históricos. URL/list/detalle/PDF muestran el mismo número. Otros docs (cotización, OC, guía) quedan pendientes — ver card separada.",
-      "checklist": [
-        "NV: numero == id going forward (crear_nv, from_cotizacion, aprobaciones)",
-        "NV: migración b9b8e073d777 backfill numero=id en históricos",
-        "Cotización: alinear numero con id",
-        "OC: alinear numero con id",
-        "Guía despacho: alinear numero con id"
       ]
     },
     {
@@ -671,7 +660,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "Búsquedas insensibles a tildes (normalización unicode)",
       "labels": [
         "Core"
@@ -708,7 +697,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "Búsquedas insensibles a tildes (normalización unicode)",
       "labels": [
         "Core"
@@ -926,6 +915,21 @@
         "Visual QA mobile + desktop",
         "Storybook setup opcional para components/ui/*",
         "Documentar gaps que aparezcan"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "numeros en pdf e internos para NV y otros no cuadran (NV42 es la 0008)",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "FIX (NV only): nv.numero ahora == nv.id en creación + migración backfill alinea históricos. URL/list/detalle/PDF muestran el mismo número. Otros docs (cotización, OC, guía) quedan pendientes — ver card separada.",
+      "checklist": [
+        "NV: numero == id going forward (crear_nv, from_cotizacion, aprobaciones)",
+        "NV: migración b9b8e073d777 backfill numero=id en históricos",
+        "Cotización: alinear numero con id",
+        "OC: alinear numero con id",
+        "Guía despacho: alinear numero con id"
       ]
     },
     {
