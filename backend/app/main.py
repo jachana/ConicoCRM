@@ -43,6 +43,7 @@ from app.api import auditoria as auditoria_api
 from app.api import timeline as timeline_api
 from app.middleware.audit_context import AuditContextMiddleware
 from app.services.auditoria import register_listeners as register_audit_listeners
+from app.utils.search import set_unaccent_available
 
 # W1-06 — observability bootstrap. Order matters:
 #   1. Logging configured first so subsequent init steps log structurally.
@@ -53,6 +54,31 @@ configure_logging()
 init_sentry()
 
 app = FastAPI(title="Conico PMS")
+
+
+@app.on_event("startup")
+def _ensure_unaccent() -> None:
+    """Install the unaccent PostgreSQL extension if not already present.
+
+    Safety net alongside the Alembic migration: if the migration hasn't run
+    yet or the DB user lacks CREATE EXTENSION rights, degrade gracefully to
+    plain ilike instead of returning 500 on every search.
+    Only runs on PostgreSQL — SQLite (tests) uses a conftest mock instead.
+    """
+    import logging
+    from sqlalchemy import text
+    from app.database import engine
+    logger = logging.getLogger(__name__)
+    if engine.dialect.name != "postgresql":
+        return
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS unaccent"))
+            conn.commit()
+        set_unaccent_available(True)
+    except Exception as exc:
+        logger.warning("unaccent extension unavailable — searches will be case-insensitive only: %s", exc)
+        set_unaccent_available(False)
 
 # Note on middleware order: Starlette/FastAPI runs middlewares LIFO relative
 # to add order, so the LAST add_middleware wraps the OUTERMOST. We add the
