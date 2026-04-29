@@ -57,20 +57,8 @@ def _get_config_dict(db: Session) -> dict:
     return {r.key: r.value for r in db.query(SystemConfig).all()}
 
 
-def _asignar_numero_nv(db: Session) -> int:
-    config = (
-        db.query(SystemConfig)
-        .filter_by(key="nv_last_id")
-        .with_for_update()
-        .first()
-    )
-    if not config:
-        config = SystemConfig(key="nv_last_id", value="0")
-        db.add(config)
-        db.flush()
-    numero = int(config.value) + 1
-    config.value = str(numero)
-    return numero
+# NV numero == NV id: numero is set after flush so the document number shown
+# to users (URL, list, detail, PDF) matches the internal record id.
 
 
 def _calcular_lineas(db: Session, lineas_data: list[NotaVentaLineaCreate]) -> list[NotaVentaLinea]:
@@ -292,14 +280,12 @@ def crear_nv(
 ):
     current_user, db = perms
     _validate_despacho(body.retiro_en_conico, body.sede_despacho_id)
-    numero = _asignar_numero_nv(db)
     vendedor_id = (
         body.vendedor_id
         if body.vendedor_id and current_user.role in ("admin", "subadmin")
         else current_user.id
     )
     nv = NotaVenta(
-        numero=numero,
         cliente_id=body.cliente_id,
         vendedor_id=vendedor_id,
         contacto=body.contacto,
@@ -315,6 +301,7 @@ def crear_nv(
     )
     db.add(nv)
     db.flush()
+    nv.numero = nv.id
     nv.terminos_pago = enforce_al_contado(body.empresa_id, body.terminos_pago, db)
     nv.lineas = _calcular_lineas(db, body.lineas)
     _check_lineas_invalidas(nv.lineas)
@@ -359,9 +346,7 @@ def crear_nv_desde_cotizacion(
             detail="Cotización expirada. Cambie la fecha de emisión para generar una NV.",
         )
 
-    numero = _asignar_numero_nv(db)
     nv = NotaVenta(
-        numero=numero,
         cotizacion_id=cot.id,
         cliente_id=cot.cliente_id,
         empresa_id=cot.empresa_id,
@@ -376,6 +361,7 @@ def crear_nv_desde_cotizacion(
     )
     db.add(nv)
     db.flush()
+    nv.numero = nv.id
     nv.terminos_pago = enforce_al_contado(nv.empresa_id, nv.terminos_pago, db)
 
     lineas = []

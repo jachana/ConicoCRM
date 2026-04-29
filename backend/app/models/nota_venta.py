@@ -9,7 +9,7 @@ class NotaVenta(Base):
     __tablename__ = "nota_ventas"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    numero: Mapped[int] = mapped_column(Integer, unique=True, index=True)
+    numero: Mapped[int | None] = mapped_column(Integer, unique=True, index=True, nullable=True)
     cotizacion_id: Mapped[int | None] = mapped_column(
         ForeignKey("cotizaciones.id", ondelete="SET NULL"), nullable=True
     )

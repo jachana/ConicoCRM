@@ -102,7 +102,6 @@ def accionar_aprobacion(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Acción inválida")
 
     from app.api.nota_ventas import (
-        _asignar_numero_nv,
         _calcular_lineas,
         _recalcular_totales,
         _registrar_movimientos_salida,
@@ -120,9 +119,7 @@ def accionar_aprobacion(
 
     try:
         if a.origen == "cotizacion":
-            numero = _asignar_numero_nv(db)
             nv = NotaVenta(
-                numero=numero,
                 cotizacion_id=cot.id,
                 cliente_id=cot.cliente_id,
                 empresa_id=cot.empresa_id,
@@ -134,6 +131,7 @@ def accionar_aprobacion(
             )
             db.add(nv)
             db.flush()
+            nv.numero = nv.id
             lineas = []
             for cl in cot.lineas:
                 lineas.append(NotaVentaLinea(
@@ -160,9 +158,7 @@ def accionar_aprobacion(
                 raise HTTPException(status_code=400, detail="nv_payload no disponible en esta solicitud")
             payload_dict = json.loads(a.nv_payload)
             body_nv = NotaVentaCreate.model_validate(payload_dict)
-            numero = _asignar_numero_nv(db)
             nv = NotaVenta(
-                numero=numero,
                 cliente_id=body_nv.cliente_id,
                 vendedor_id=body_nv.vendedor_id or a.vendedor_id,
                 contacto=body_nv.contacto,
@@ -173,6 +169,7 @@ def accionar_aprobacion(
             )
             db.add(nv)
             db.flush()
+            nv.numero = nv.id
             nv.lineas = _calcular_lineas(db, body_nv.lineas)
             for linea in nv.lineas:
                 linea.nv_id = nv.id
