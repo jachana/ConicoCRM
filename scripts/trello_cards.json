@@ -94,20 +94,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "GET https://crm.conico.juliocode.com/api/nota_ventas/?q=and 500 (Internal Server Error) when trying to use the search bar in NV",
-      "labels": [],
-      "desc": "",
-      "checklist": []
-    },
-    {
-      "list": "In review",
-      "name": "Search bars in general not working",
-      "labels": [],
-      "desc": "",
-      "checklist": []
-    },
-    {
       "list": "Client feedback",
       "name": "[Cobranza] Envío automático de recordatorios",
       "labels": [
@@ -873,7 +859,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[PDF] Validez/vigencia visible en todos los documentos",
       "labels": [
         "Core"
@@ -936,6 +922,13 @@
         "Fix o skip con motivo documentado",
         "Validar en CI cuando esté"
       ]
+    },
+    {
+      "list": "In review",
+      "name": "GET https://crm.conico.juliocode.com/api/nota_ventas/?q=and 500 (Internal Server Error) when trying to use the search bar in NV",
+      "labels": [],
+      "desc": "",
+      "checklist": []
     },
     {
       "list": "In review",
@@ -1063,6 +1056,13 @@
         "Ocultar AprobacionCredito y GET /empresas/{id}/credito para vendedor si aplica",
         "Test: vendedor envía PATCH con linea_credito → 403"
       ]
+    },
+    {
+      "list": "In review",
+      "name": "Search bars in general not working",
+      "labels": [],
+      "desc": "",
+      "checklist": []
     },
     {
       "list": "In review",

@@ -57,6 +57,12 @@
     <div class="nv-numero">NV-{{ '%05d' % nota_venta.numero }}</div>
     <div class="nv-fecha">Fecha: {{ nota_venta.fecha.strftime('%d/%m/%Y') if nota_venta.fecha else '' }}</div>
     <div class="nv-fecha">Estado: {{ nota_venta.estado }}</div>
+    {% if nota_venta.terminos_pago %}
+    <div class="nv-fecha">Condición de pago: {{ nota_venta.terminos_pago }}</div>
+    {% endif %}
+    {% if nota_venta.metodo_pago %}
+    <div class="nv-fecha">Método de pago: {{ nota_venta.metodo_pago | replace('_', ' ') | title }}</div>
+    {% endif %}
   </div>
 </div>
 
