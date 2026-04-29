@@ -455,6 +455,7 @@ def _build_timeline(
     current_user: User,
     limit: int,
     offset: int,
+    fecha_desde: str | None = None,
 ) -> dict:
     # TODO(W2-02): replace per-tipo loop with single UNION ALL query when load justifies
     all_events: list[dict] = []
@@ -465,6 +466,9 @@ def _build_timeline(
 
     # Sort fecha DESC, id DESC
     all_events.sort(key=_sort_key, reverse=True)
+
+    if fecha_desde:
+        all_events = [e for e in all_events if (e.get("fecha") or "") >= fecha_desde]
 
     # NOTE: total = full cross-type count, computed before slice.
     # Bounded by limit=200 per tipo means worst case ~1800 rows in memory, acceptable for current scale.
@@ -507,6 +511,7 @@ def timeline_cliente(
     tipos: str | None = Query(None, description="Comma-separated tipos"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    fecha_desde: str | None = Query(None, description="ISO date lower bound (inclusive)"),
     perms: tuple[User, Session] = require_permission("clientes", "view"),
 ):
     current_user, db = perms
@@ -525,6 +530,7 @@ def timeline_cliente(
         current_user=current_user,
         limit=limit,
         offset=offset,
+        fecha_desde=fecha_desde,
     )
 
 
@@ -534,6 +540,7 @@ def timeline_empresa(
     tipos: str | None = Query(None, description="Comma-separated tipos"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    fecha_desde: str | None = Query(None, description="ISO date lower bound (inclusive)"),
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
     current_user, db = perms
@@ -552,4 +559,5 @@ def timeline_empresa(
         current_user=current_user,
         limit=limit,
         offset=offset,
+        fecha_desde=fecha_desde,
     )

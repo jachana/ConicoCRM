@@ -59,6 +59,15 @@ const ESTADO_VARIANT: Record<string, BadgeVariant> = {
   en_proceso: 'brand',
 }
 
+// ─── Quick filter chips ────────────────────────────────────────────────────────
+
+const FACTURAS_PAGOS_TIPOS: TimelineTipo[] = ['factura', 'pago', 'nota_credito', 'nota_debito']
+
+function currentMonthStart(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+}
+
 // ─── Filter pill definitions ───────────────────────────────────────────────────
 
 const FILTER_PILLS: { tipo: TimelineTipo; label: string }[] = [
@@ -178,9 +187,14 @@ export interface TimelineProps {
 
 export default function Timeline({ scope, entityId, pageSize = 25 }: TimelineProps) {
   const [activeTipos, setActiveTipos] = useState<TimelineTipo[]>([])
+  const [fechaDesde, setFechaDesde] = useState('')
 
   // tipos to send: empty = all
   const tiposParam = activeTipos.length > 0 ? activeTipos : undefined
+
+  const estesMesStart = currentMonthStart()
+  const estesMesActive = fechaDesde === estesMesStart
+  const facturasPagosActive = FACTURAS_PAGOS_TIPOS.every(t => activeTipos.includes(t))
 
   const {
     data,
@@ -190,10 +204,15 @@ export default function Timeline({ scope, entityId, pageSize = 25 }: TimelinePro
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['timeline', scope, entityId, tiposParam],
+    queryKey: ['timeline', scope, entityId, tiposParam, fechaDesde],
     queryFn: ({ pageParam = 0 }) => {
       const fetchFn = scope === 'cliente' ? getClienteTimeline : getEmpresaTimeline
-      return fetchFn(entityId, { tipos: tiposParam, limit: pageSize, offset: pageParam as number })
+      return fetchFn(entityId, {
+        tipos: tiposParam,
+        limit: pageSize,
+        offset: pageParam as number,
+        fecha_desde: fechaDesde || undefined,
+      })
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
@@ -212,12 +231,45 @@ export default function Timeline({ scope, entityId, pageSize = 25 }: TimelinePro
     )
   }
 
+  function toggleEstesMes() {
+    setFechaDesde(prev => prev === estesMesStart ? '' : estesMesStart)
+  }
+
+  function toggleFacturasPagos() {
+    if (facturasPagosActive) {
+      setActiveTipos(prev => prev.filter(t => !FACTURAS_PAGOS_TIPOS.includes(t)))
+    } else {
+      setActiveTipos(prev => [...new Set([...prev, ...FACTURAS_PAGOS_TIPOS])])
+    }
+  }
+
   function clearFilters() {
     setActiveTipos([])
+    setFechaDesde('')
   }
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Quick filter chips */}
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtros rápidos">
+        <Button
+          size="xs"
+          variant={estesMesActive ? 'primary' : 'outline'}
+          onClick={toggleEstesMes}
+          aria-pressed={estesMesActive}
+        >
+          Este mes
+        </Button>
+        <Button
+          size="xs"
+          variant={facturasPagosActive ? 'primary' : 'outline'}
+          onClick={toggleFacturasPagos}
+          aria-pressed={facturasPagosActive}
+        >
+          Facturas y pagos
+        </Button>
+      </div>
+
       {/* Filter pills */}
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por tipo">
         {FILTER_PILLS.map(({ tipo, label }) => {
@@ -234,7 +286,7 @@ export default function Timeline({ scope, entityId, pageSize = 25 }: TimelinePro
             </Button>
           )
         })}
-        {activeTipos.length > 0 && (
+        {(activeTipos.length > 0 || fechaDesde) && (
           <Button size="xs" variant="ghost" onClick={clearFilters}>
             Limpiar
           </Button>

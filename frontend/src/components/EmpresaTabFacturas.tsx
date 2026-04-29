@@ -11,6 +11,15 @@ import {
   Popover, PopoverTrigger, PopoverContent,
 } from './ui'
 
+function startOfMonth() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+}
+
+function startOfYear() {
+  return `${new Date().getFullYear()}-01-01`
+}
+
 const ESTADO_VARIANT: Record<string, 'info' | 'success' | 'warning' | 'danger' | 'neutral'> = {
   emitida: 'info',
   pagada:  'success',
@@ -84,8 +93,40 @@ export default function EmpresaTabFacturas({ empresaId, empresaNombre }: Props) 
     { field: 'pendiente',    label: 'Pendiente', align: 'right' },
   ]
 
+  function applyQuickDate(from: string) {
+    if (fechaDesde === from) {
+      setFechaDesde('')
+    } else {
+      setFechaDesde(from)
+      setFechaHasta('')
+    }
+  }
+
+  const mesStart = startOfMonth()
+  const yearStart = startOfYear()
+
   return (
     <div className="flex flex-col gap-3">
+      {/* Quick filter chips */}
+      <div className="flex gap-1.5 flex-wrap" role="group" aria-label="Filtros rápidos">
+        <Button
+          size="sm"
+          variant={fechaDesde === mesStart ? 'primary' : 'outline'}
+          onClick={() => applyQuickDate(mesStart)}
+          aria-pressed={fechaDesde === mesStart}
+        >
+          Este mes
+        </Button>
+        <Button
+          size="sm"
+          variant={fechaDesde === yearStart ? 'primary' : 'outline'}
+          onClick={() => applyQuickDate(yearStart)}
+          aria-pressed={fechaDesde === yearStart}
+        >
+          Este año
+        </Button>
+      </div>
+
       {/* Filters */}
       <div className="flex gap-2 flex-wrap items-center">
         <Popover>

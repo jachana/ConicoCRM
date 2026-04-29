@@ -109,6 +109,22 @@
     },
     {
       "list": "Feature requests",
+      "name": "[Clientes] Búsqueda por nombre de empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Al buscar clientes (autocomplete / listado), incluir el nombre de la empresa vinculada como campo de búsqueda adicional. Hoy solo se busca por nombre/RUT del cliente; si el usuario escribe el nombre de la empresa, no aparece ningún resultado aunque el cliente esté asociado.\n\nComportamiento esperado:\n- El input de búsqueda de clientes filtra por: nombre cliente, RUT cliente, **nombre empresa**.\n- Los resultados muestran el nombre del cliente y, en subtexto, el nombre de la empresa.\n- No cambiar el modelo de datos; solo ampliar el query de búsqueda (JOIN con Empresa).",
+      "checklist": [
+        "Identificar todos los endpoints/queries de búsqueda de clientes (autocomplete + listado)",
+        "Ampliar filtro SQL: OR empresa.nombre ILIKE :q (JOIN Empresa donde existe vínculo)",
+        "Verificar que el schema de respuesta ya devuelve nombre_empresa o agregar el campo",
+        "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
+        "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
+        "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
+      ]
+    },
+    {
+      "list": "Feature requests",
       "name": "[W1-07] 2FA TOTP + reset password",
       "labels": [
         "Wave 1"
@@ -208,7 +224,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Empresa] Filtros rápidos en Timeline, Facturas y Productos",
       "labels": [
         "Core"
@@ -250,22 +266,6 @@
         "Import de Productos desde Excel",
         "Import de Lista de precios / descuentos por cliente",
         "Import de OC / Facturas históricas (solo registro, sin emisión SII)"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Clientes] Búsqueda por nombre de empresa",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Al buscar clientes (autocomplete / listado), incluir el nombre de la empresa vinculada como campo de búsqueda adicional. Hoy solo se busca por nombre/RUT del cliente; si el usuario escribe el nombre de la empresa, no aparece ningún resultado aunque el cliente esté asociado.\n\nComportamiento esperado:\n- El input de búsqueda de clientes filtra por: nombre cliente, RUT cliente, **nombre empresa**.\n- Los resultados muestran el nombre del cliente y, en subtexto, el nombre de la empresa.\n- No cambiar el modelo de datos; solo ampliar el query de búsqueda (JOIN con Empresa).",
-      "checklist": [
-        "Identificar todos los endpoints/queries de búsqueda de clientes (autocomplete + listado)",
-        "Ampliar filtro SQL: OR empresa.nombre ILIKE :q (JOIN Empresa donde existe vínculo)",
-        "Verificar que el schema de respuesta ya devuelve nombre_empresa o agregar el campo",
-        "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
-        "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
-        "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
       ]
     },
     {
@@ -611,7 +611,7 @@
       ]
     },
     {
-      "list": "In review",
+      "list": "Feature requests",
       "name": "Búsquedas insensibles a tildes (normalización unicode)",
       "labels": [
         "Core"
@@ -856,48 +856,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "numeros en pdf e internos para NV y otros no cuadran (NV42 es la 0008)",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "FIX (NV only): nv.numero ahora == nv.id en creación + migración backfill alinea históricos. URL/list/detalle/PDF muestran el mismo número. Otros docs (cotización, OC, guía) quedan pendientes — ver card separada.",
-      "checklist": [
-        "NV: numero == id going forward (crear_nv, from_cotizacion, aprobaciones)",
-        "NV: migración b9b8e073d777 backfill numero=id en históricos",
-        "Cotización: alinear numero con id",
-        "OC: alinear numero con id",
-        "Guía despacho: alinear numero con id"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Guía despacho] Errores al guardar + botón \"Emitir DTE\" incorrecto",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "Dos problemas en el formulario /guias-despacho/nueva:\n1. Error al guardar — posiblemente conflicto de número/folio duplicado o constraint de BD. Revisar respuesta 400/500 del backend al hacer POST.\n2. El botón principal dice \"Emitir DTE\" pero la guía de despacho es logística interna — no emite DTE al SII. Cambiar texto a \"Guardar\" o \"Crear guía\".",
-      "checklist": [
-        "Reproducir error al guardar — capturar response exacto (status + body)",
-        "Revisar endpoint POST /api/guias-despacho: validación de número único, constraints FK",
-        "Corregir texto del botón: 'Emitir DTE' → 'Guardar guía' (o 'Crear guía')",
-        "Verificar que no haya lógica DTE disparándose para guías de despacho internas"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[DTE] Factura exenta tipo 34",
-      "labels": [
-        "DTE/SII"
-      ],
-      "desc": "Pendiente del módulo DTE.",
-      "checklist": [
-        "Soporte tipo 34 en DteService.build_payload",
-        "Validación: todas las líneas exentas",
-        "UI: toggle factura exenta en FacturaNueva"
-      ]
-    },
-    {
       "list": "Friendly Beta 0.1",
       "name": "[Fase 3] Cotizaciones",
       "labels": [
@@ -916,18 +874,42 @@
     },
     {
       "list": "Friendly Beta 0.1",
-      "name": "[Clientes] Búsqueda por nombre de empresa",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
       "labels": [
         "Core"
       ],
-      "desc": "Al buscar clientes (autocomplete / listado), incluir el nombre de la empresa vinculada como campo de búsqueda adicional. Hoy solo se busca por nombre/RUT del cliente; si el usuario escribe el nombre de la empresa, no aparece ningún resultado aunque el cliente esté asociado.\n\nComportamiento esperado:\n- El input de búsqueda de clientes filtra por: nombre cliente, RUT cliente, **nombre empresa**.\n- Los resultados muestran el nombre del cliente y, en subtexto, el nombre de la empresa.\n- No cambiar el modelo de datos; solo ampliar el query de búsqueda (JOIN con Empresa).",
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
       "checklist": [
-        "Identificar todos los endpoints/queries de búsqueda de clientes (autocomplete + listado)",
-        "Ampliar filtro SQL: OR empresa.nombre ILIKE :q (JOIN Empresa donde existe vínculo)",
-        "Verificar que el schema de respuesta ya devuelve nombre_empresa o agregar el campo",
-        "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
-        "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
-        "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[DTE] Factura exenta tipo 34",
+      "labels": [
+        "DTE/SII"
+      ],
+      "desc": "Pendiente del módulo DTE.",
+      "checklist": [
+        "Soporte tipo 34 en DteService.build_payload",
+        "Validación: todas las líneas exentas",
+        "UI: toggle factura exenta en FacturaNueva"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Guía despacho] Errores al guardar + botón \"Emitir DTE\" incorrecto",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "Dos problemas en el formulario /guias-despacho/nueva:\n1. Error al guardar — posiblemente conflicto de número/folio duplicado o constraint de BD. Revisar respuesta 400/500 del backend al hacer POST.\n2. El botón principal dice \"Emitir DTE\" pero la guía de despacho es logística interna — no emite DTE al SII. Cambiar texto a \"Guardar\" o \"Crear guía\".",
+      "checklist": [
+        "Reproducir error al guardar — capturar response exacto (status + body)",
+        "Revisar endpoint POST /api/guias-despacho: validación de número único, constraints FK",
+        "Corregir texto del botón: 'Emitir DTE' → 'Guardar guía' (o 'Crear guía')",
+        "Verificar que no haya lógica DTE disparándose para guías de despacho internas"
       ]
     },
     {
@@ -936,6 +918,21 @@
       "labels": [],
       "desc": "",
       "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "numeros en pdf e internos para NV y otros no cuadran (NV42 es la 0008)",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "FIX (NV only): nv.numero ahora == nv.id en creación + migración backfill alinea históricos. URL/list/detalle/PDF muestran el mismo número. Otros docs (cotización, OC, guía) quedan pendientes — ver card separada.",
+      "checklist": [
+        "NV: numero == id going forward (crear_nv, from_cotizacion, aprobaciones)",
+        "NV: migración b9b8e073d777 backfill numero=id en históricos",
+        "Cotización: alinear numero con id",
+        "OC: alinear numero con id",
+        "Guía despacho: alinear numero con id"
+      ]
     },
     {
       "list": "Friendly Beta 0.1",
@@ -1365,6 +1362,22 @@
         "Identificar lógica que controla visibilidad del sidebar",
         "Marcar Settings como ítem fijo (no sujeto a personalización ni permisos de ocultado)",
         "Verificar que aplica para todos los roles (vendedor, admin, gerente)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Clientes] Búsqueda por nombre de empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Al buscar clientes (autocomplete / listado), incluir el nombre de la empresa vinculada como campo de búsqueda adicional. Hoy solo se busca por nombre/RUT del cliente; si el usuario escribe el nombre de la empresa, no aparece ningún resultado aunque el cliente esté asociado.\n\nComportamiento esperado:\n- El input de búsqueda de clientes filtra por: nombre cliente, RUT cliente, **nombre empresa**.\n- Los resultados muestran el nombre del cliente y, en subtexto, el nombre de la empresa.\n- No cambiar el modelo de datos; solo ampliar el query de búsqueda (JOIN con Empresa).",
+      "checklist": [
+        "Identificar todos los endpoints/queries de búsqueda de clientes (autocomplete + listado)",
+        "Ampliar filtro SQL: OR empresa.nombre ILIKE :q (JOIN Empresa donde existe vínculo)",
+        "Verificar que el schema de respuesta ya devuelve nombre_empresa o agregar el campo",
+        "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
+        "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
+        "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
       ]
     },
     {

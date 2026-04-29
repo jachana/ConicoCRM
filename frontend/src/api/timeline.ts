@@ -33,6 +33,7 @@ export interface TimelineParams {
   tipos?: TimelineTipo[]
   limit?: number
   offset?: number
+  fecha_desde?: string
 }
 
 function buildParams(params: TimelineParams): Record<string, string | number> {
@@ -42,6 +43,7 @@ function buildParams(params: TimelineParams): Record<string, string | number> {
   }
   if (params.limit !== undefined) result.limit = params.limit
   if (params.offset !== undefined) result.offset = params.offset
+  if (params.fecha_desde) result.fecha_desde = params.fecha_desde
   return result
 }
 

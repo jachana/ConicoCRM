@@ -12,6 +12,15 @@ import {
 
 type SortField = 'fecha' | 'sku' | 'descripcion' | 'cantidad' | 'precio_unit' | 'total_neto'
 
+function startOfMonth() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+}
+
+function startOfYear() {
+  return `${new Date().getFullYear()}-01-01`
+}
+
 function fmtDate(s: string) {
   return new Date(s + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
@@ -74,8 +83,40 @@ export default function EmpresaTabProductos({ empresaId, empresaNombre }: Props)
     { field: 'total_neto',  label: 'Total',       align: 'right' },
   ]
 
+  function applyQuickDate(from: string) {
+    if (fechaDesde === from) {
+      setFechaDesde('')
+    } else {
+      setFechaDesde(from)
+      setFechaHasta('')
+    }
+  }
+
+  const mesStart = startOfMonth()
+  const yearStart = startOfYear()
+
   return (
     <div className="flex flex-col gap-3">
+      {/* Quick filter chips */}
+      <div className="flex gap-1.5 flex-wrap" role="group" aria-label="Filtros rápidos">
+        <Button
+          size="sm"
+          variant={fechaDesde === mesStart ? 'primary' : 'outline'}
+          onClick={() => applyQuickDate(mesStart)}
+          aria-pressed={fechaDesde === mesStart}
+        >
+          Este mes
+        </Button>
+        <Button
+          size="sm"
+          variant={fechaDesde === yearStart ? 'primary' : 'outline'}
+          onClick={() => applyQuickDate(yearStart)}
+          aria-pressed={fechaDesde === yearStart}
+        >
+          Este año
+        </Button>
+      </div>
+
       {/* Filters */}
       <div className="flex gap-2 flex-wrap items-center">
         <Input
