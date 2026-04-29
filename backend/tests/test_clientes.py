@@ -154,6 +154,23 @@ def test_filtrar_clientes_por_empresa(client, admin_token):
     assert data[0]["nombre"] == "Cliente 1"
 
 
+def test_buscar_clientes_por_nombre_empresa(client, admin_token):
+    emp = client.post(
+        "/api/empresas/",
+        json={"nombre": "Constructora Andina"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    ).json()
+    client.post("/api/clientes/", json={"nombre": "Pedro Soto", "empresa_id": emp["id"]},
+                headers={"Authorization": f"Bearer {admin_token}"})
+    client.post("/api/clientes/", json={"nombre": "Luis Torres"},
+                headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.get("/api/clientes/?q=Andina", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    nombres = [c["nombre"] for c in r.json()]
+    assert "Pedro Soto" in nombres
+    assert "Luis Torres" not in nombres
+
+
 def test_cliente_sin_empresa_retorna_empresa_none(client, admin_token):
     r = client.post("/api/clientes/", json={"nombre": "Sin Empresa"}, headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 201

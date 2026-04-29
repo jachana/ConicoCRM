@@ -114,7 +114,7 @@ export default function Clientes() {
 
       <Input
         type="text"
-        placeholder="Buscar por nombre o RUT..."
+        placeholder="Buscar por nombre, RUT o empresa..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
         leftAddon={<Search />}

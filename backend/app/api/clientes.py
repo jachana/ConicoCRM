@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_permission
 from app.models.cliente import Cliente
+from app.models.empresa import Empresa
 from app.utils.search import unaccent_ilike
 from app.models.factura import Factura
 from app.models.user import User
@@ -54,7 +55,12 @@ def listar_clientes(
     _, db = perms
     query = db.query(Cliente)
     if q:
-        query = query.filter(unaccent_ilike(Cliente.nombre, f"%{q}%") | Cliente.rut.ilike(f"%{q}%"))
+        query = query.outerjoin(Cliente.empresa).filter(
+            unaccent_ilike(Cliente.nombre, f"%{q}%")
+            | Cliente.rut.ilike(f"%{q}%")
+            | unaccent_ilike(Empresa.nombre, f"%{q}%")
+            | unaccent_ilike(Empresa.razon_social, f"%{q}%")
+        )
     if empresa_id is not None:
         query = query.filter(Cliente.empresa_id == empresa_id)
     return query.order_by(Cliente.nombre).all()

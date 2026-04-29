@@ -281,7 +281,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Clientes] Búsqueda por nombre de empresa",
       "labels": [
         "Core"
@@ -297,7 +297,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In review",
       "name": "[Clientes] Búsqueda por nombre de empresa",
       "labels": [
         "Core"
@@ -693,6 +693,19 @@
     },
     {
       "list": "Feature requests",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
+      "checklist": [
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
+      ]
+    },
+    {
+      "list": "Feature requests",
       "name": "[Onboarding] Import Tareas / actividades CRM pendientes",
       "labels": [
         "Core"
@@ -800,34 +813,6 @@
         "Al generar factura desde NV: copiar adjuntos a la factura",
         "PDF factura: listar adjuntos con nombre de archivo (y número de OC si aplica)",
         "Sección de OC: campo de texto libre para número de OC del cliente"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[NV] Bloquear edición al emitir factura",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Cuando se emite una factura desde una NV, la NV debe quedar bloqueada (read-only). No se puede editar líneas, precios ni cantidades una vez facturada.",
-      "checklist": [
-        "Estado NV: agregar estado 'facturada' al emitir factura",
-        "Backend: rechazar PUT/PATCH sobre NV con estado 'facturada'",
-        "UI: deshabilitar todos los campos editables y botones de acción cuando NV está facturada",
-        "Mostrar banner/badge 'Facturada' con link a la factura emitida",
-        "Solo admin puede desbloquear (opcional, con log de auditoría)"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Seguridad] Vendedor no puede modificar plazo de crédito",
-      "labels": [
-        "Core"
-      ],
-      "desc": "El rol vendedor no debe poder cambiar el plazo de crédito del cliente ni en la NV/cotización. Solo admin y gerente pueden modificarlo.",
-      "checklist": [
-        "Backend: bloquear campo plazo_credito en NV/cotización para rol vendedor",
-        "UI: campo plazo de crédito read-only cuando el usuario es vendedor",
-        "Validar también en endpoint de cliente (PATCH) — vendedor no puede editar plazo"
       ]
     },
     {
@@ -1350,19 +1335,6 @@
     },
     {
       "list": "In review",
-      "name": "Búsquedas insensibles a tildes (normalización unicode)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
-      "checklist": [
-        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
-        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
-        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
-      ]
-    },
-    {
-      "list": "In review",
       "name": "[Cotizaciones] Link a NV generada en cotización cerrada",
       "labels": [
         "Core"
@@ -1504,6 +1476,21 @@
     },
     {
       "list": "In review",
+      "name": "[NV] Bloquear edición al emitir factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Cuando se emite una factura desde una NV, la NV debe quedar bloqueada (read-only). No se puede editar líneas, precios ni cantidades una vez facturada.",
+      "checklist": [
+        "Estado NV: agregar estado 'facturada' al emitir factura",
+        "Backend: rechazar PUT/PATCH sobre NV con estado 'facturada'",
+        "UI: deshabilitar todos los campos editables y botones de acción cuando NV está facturada",
+        "Mostrar banner/badge 'Facturada' con link a la factura emitida",
+        "Solo admin puede desbloquear (opcional, con log de auditoría)"
+      ]
+    },
+    {
+      "list": "In review",
       "name": "[NV] Buscador en lista de Notas de Venta",
       "labels": [
         "Core"
@@ -1527,6 +1514,19 @@
         "Conservar query en URL (?q=...) para compartir/refresh",
         "Performance: índice en campos buscables; LIMIT 100 resultados",
         "Tests: búsqueda por nº NV, RUT cliente, SKU, OC referenciada — todos retornan correcto"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Seguridad] Vendedor no puede modificar plazo de crédito",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El rol vendedor no debe poder cambiar el plazo de crédito del cliente ni en la NV/cotización. Solo admin y gerente pueden modificarlo.",
+      "checklist": [
+        "Backend: bloquear campo plazo_credito en NV/cotización para rol vendedor",
+        "UI: campo plazo de crédito read-only cuando el usuario es vendedor",
+        "Validar también en endpoint de cliente (PATCH) — vendedor no puede editar plazo"
       ]
     },
     {
