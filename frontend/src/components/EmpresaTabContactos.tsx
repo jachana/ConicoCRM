@@ -7,6 +7,8 @@ import {
   Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter,
 } from './ui'
 import { Users, Plus, Pencil, Trash2 } from 'lucide-react'
+import ClienteDetailModal from './ClienteDetailModal'
+import type { Cliente } from '../types'
 
 interface Contacto {
   id: number
@@ -43,10 +45,16 @@ export default function EmpresaTabContactos({ empresaId }: Props) {
   const [editing, setEditing] = useState<Contacto | null>(null)
   const [form, setForm] = useState<ContactoForm>(EMPTY_FORM)
   const [deleteTarget, setDeleteTarget] = useState<Contacto | null>(null)
+  const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null)
 
   const { data, isLoading } = useQuery<Contacto[]>({
     queryKey: ['empresa-contactos', empresaId],
     queryFn: () => api.get(`/api/empresas/${empresaId}/contactos`).then(r => r.data),
+  })
+
+  const { data: clientes, isLoading: clientesLoading } = useQuery<Cliente[]>({
+    queryKey: ['clientes', { empresa_id: empresaId }],
+    queryFn: () => api.get(`/api/clientes/?empresa_id=${empresaId}`).then(r => r.data),
   })
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['empresa-contactos', empresaId] })
@@ -101,14 +109,19 @@ export default function EmpresaTabContactos({ empresaId }: Props) {
   }
 
   const isBusy = createMut.isPending || updateMut.isPending
+  const isLoadingAll = isLoading || clientesLoading
 
-  if (isLoading) {
+  if (isLoadingAll) {
     return (
       <div className="flex flex-col gap-3">
         {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16" />)}
       </div>
     )
   }
+
+  const hasContactos = !!data?.length
+  const hasClientes = !!clientes?.length
+  const isEmpty = !hasContactos && !hasClientes
 
   return (
     <div className="flex flex-col gap-4">
@@ -121,49 +134,85 @@ export default function EmpresaTabContactos({ empresaId }: Props) {
         </div>
       )}
 
-      {!data?.length ? (
+      {isEmpty ? (
         <EmptyState
           icon={<Users />}
           title="Sin contactos"
           description="Esta empresa no tiene puntos de contacto registrados."
         />
       ) : (
-        <div className="flex flex-col gap-2">
-          {data.map(c => (
-            <Card key={c.id} variant="subtle">
-              <CardContent className="py-3 flex items-start justify-between gap-4">
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{c.nombre}</span>
-                    {c.cargo && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                        {c.cargo}
-                      </span>
+        <div className="flex flex-col gap-5">
+          {hasContactos && (
+            <div className="flex flex-col gap-2">
+              {(hasContactos || hasClientes) && (
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 px-0.5">
+                  Contactos internos
+                </p>
+              )}
+              {data!.map(c => (
+                <Card key={c.id} variant="subtle">
+                  <CardContent className="py-3 flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{c.nombre}</span>
+                        {c.cargo && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                            {c.cargo}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        {c.email && <span>{c.email}</span>}
+                        {c.telefono && <span>{c.telefono}</span>}
+                      </div>
+                    </div>
+                    {canEdit && (
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Button variant="ghost" size="icon-sm" onClick={() => openEdit(c)}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="text-danger-600 hover:text-danger-700"
+                          onClick={() => setDeleteTarget(c)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     )}
-                  </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    {c.email && <span>{c.email}</span>}
-                    {c.telefono && <span>{c.telefono}</span>}
-                  </div>
-                </div>
-                {canEdit && (
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <Button variant="ghost" size="icon-sm" onClick={() => openEdit(c)}>
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-danger-600 hover:text-danger-700"
-                      onClick={() => setDeleteTarget(c)}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {hasClientes && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 px-0.5">
+                Clientes vinculados
+              </p>
+              {clientes!.map(c => (
+                <Card
+                  key={c.id}
+                  variant="subtle"
+                  className="cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                  onClick={() => setSelectedCliente(c)}
+                >
+                  <CardContent className="py-3">
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{c.nombre}</span>
+                      <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        {c.rut && <span>{c.rut}</span>}
+                        {c.email && <span>{c.email}</span>}
+                        {c.telefono && <span>{c.telefono}</span>}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -243,6 +292,15 @@ export default function EmpresaTabContactos({ empresaId }: Props) {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Cliente detail modal */}
+      {selectedCliente && (
+        <ClienteDetailModal
+          cliente={selectedCliente}
+          onClose={() => setSelectedCliente(null)}
+          onEdit={() => setSelectedCliente(null)}
+        />
+      )}
     </div>
   )
 }
