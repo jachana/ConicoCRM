@@ -312,6 +312,75 @@ def test_eliminar_pagada_409(client, admin_token):
     assert r.status_code == 409
 
 
+# --- DTE-locked: factura emitida al SII no se puede modificar/eliminar/anular directo ---
+
+def _force_dte_estado(client, admin_token, factura_id, dte_estado):
+    """Helper: set dte_estado directly via DB session for testing."""
+    from app.database import SessionLocal
+    from app.models.factura import Factura
+    db = SessionLocal()
+    try:
+        f = db.get(Factura, factura_id)
+        f.dte_estado = dte_estado
+        db.commit()
+    finally:
+        db.close()
+
+
+@pytest.mark.parametrize("dte_estado", ["pendiente", "procesando", "aceptada"])
+def test_dte_locked_no_eliminar(client, admin_token, dte_estado):
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+    _force_dte_estado(client, admin_token, f["id"], dte_estado)
+    r = client.delete(f"/api/facturas/{f['id']}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 409
+    assert "Nota de Cr" in r.json()["detail"]
+
+
+@pytest.mark.parametrize("dte_estado", ["pendiente", "procesando", "aceptada"])
+def test_dte_locked_no_patch(client, admin_token, dte_estado):
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+    _force_dte_estado(client, admin_token, f["id"], dte_estado)
+    r = client.patch(
+        f"/api/facturas/{f['id']}",
+        json={"nota": "intento modificar"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 409
+
+
+@pytest.mark.parametrize("dte_estado", ["pendiente", "procesando", "aceptada"])
+def test_dte_locked_no_anular(client, admin_token, dte_estado):
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+    _force_dte_estado(client, admin_token, f["id"], dte_estado)
+    r = client.patch(
+        f"/api/facturas/{f['id']}/estado",
+        json={"estado": "anulada"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 409
+    assert "Nota de Cr" in r.json()["detail"]
+
+
+def test_dte_rechazada_permite_eliminar(client, admin_token):
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+    _force_dte_estado(client, admin_token, f["id"], "rechazada")
+    r = client.delete(f"/api/facturas/{f['id']}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 204
+
+
+def test_factura_is_locked_dte_pendiente(client, admin_token):
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+    _force_dte_estado(client, admin_token, f["id"], "pendiente")
+    r = client.get(f"/api/facturas/{f['id']}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    assert r.json()["is_locked"] is True
+
+
 # --- PDF / Excel ---
 
 def test_pdf_200(client, admin_token):

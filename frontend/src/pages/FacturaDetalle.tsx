@@ -34,14 +34,24 @@ const ESTADO_VARIANT: Record<string, 'neutral' | 'info' | 'success' | 'warning' 
 
 import { METODOS_PAGO, METODO_PAGO_LABELS, PLAZO_OPTIONS, isPlazoForzadoCero, formatMetodoPlazo } from '../lib/metodo_pago'
 
-function getValidTransitions(estado: string): string[] {
+const DTE_LOCKED_STATES = ['pendiente', 'procesando', 'aceptada']
+
+function isDteLocked(dte_estado?: string | null): boolean {
+  return !!dte_estado && DTE_LOCKED_STATES.includes(dte_estado)
+}
+
+function getValidTransitions(estado: string, dte_estado?: string | null): string[] {
   const all: Record<string, string[]> = {
     emitida: ['anulada'],
     parcial: ['anulada'],
     pagada:  ['anulada'],
     anulada: [],
   }
-  return all[estado] ?? []
+  const transitions = all[estado] ?? []
+  if (isDteLocked(dte_estado)) {
+    return transitions.filter(t => t !== 'anulada')
+  }
+  return transitions
 }
 
 function fmtMoney(n: number | string | null | undefined) {
@@ -307,8 +317,8 @@ export default function FacturaDetalle() {
     onError: () => toast.error('Error al re-cotizar'),
   })
 
-  const validTransitions = factura ? getValidTransitions(factura.estado) : []
-  const canDelete = factura?.estado === 'emitida'
+  const validTransitions = factura ? getValidTransitions(factura.estado, factura.dte_estado) : []
+  const canDelete = factura?.estado === 'emitida' && !isDteLocked(factura?.dte_estado)
 
   async function handleEmitirDte() {
     setEmitiendo(true)
@@ -488,7 +498,9 @@ export default function FacturaDetalle() {
       {factura?.is_locked && (
         <div className="mb-4 rounded-lg border border-warning-300 bg-warning-50 dark:border-warning-700 dark:bg-warning-500/10 px-4 py-3 text-sm text-warning-800 dark:text-warning-300 flex items-center gap-2">
           <Lock size={15} />
-          Esta factura no es editable en su estado actual.
+          {isDteLocked(factura.dte_estado)
+            ? 'Factura enviada al SII; no se puede modificar ni eliminar. Use Nota de Crédito para corregir o anular.'
+            : 'Esta factura no es editable en su estado actual.'}
         </div>
       )}
 

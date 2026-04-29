@@ -41,6 +41,12 @@ _TRANSITIONS: dict[tuple[str, str], str] = {
     ("parcial",  "anulada"): "admin_only",
 }
 
+_DTE_LOCKED_STATES = ("pendiente", "procesando", "aceptada")
+
+
+def _dte_is_locked(dte_estado: str | None) -> bool:
+    return dte_estado in _DTE_LOCKED_STATES
+
 
 _FAC_EXPORT_COLUMNS: dict[str, tuple[str, Callable]] = {
     "numero":            ("Nº FAC",        lambda f, l: f.numero),
@@ -509,6 +515,11 @@ def actualizar_factura(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"No se puede modificar una factura en estado '{factura.estado}'"
         )
+    if _dte_is_locked(factura.dte_estado):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Factura ya enviada al SII; no se puede modificar. Use Nota de Crédito para corregir.",
+        )
     update_data = body.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(factura, field, value)
@@ -564,6 +575,12 @@ def cambiar_estado(
     if allowed == "admin_only" and current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin puede hacer esta transición")
 
+    if body.estado == "anulada" and _dte_is_locked(factura.dte_estado):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Factura ya enviada al SII; no se puede anular directamente. Use Nota de Crédito.",
+        )
+
     factura.estado = body.estado
     db.commit()
     return _load_factura(db, factura_id)
@@ -584,6 +601,11 @@ def eliminar_factura(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Solo se pueden eliminar facturas en estado 'emitida'",
+        )
+    if _dte_is_locked(factura.dte_estado):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Factura ya enviada al SII; no se puede eliminar. Use Nota de Crédito para anular.",
         )
     db.delete(factura)
     db.commit()

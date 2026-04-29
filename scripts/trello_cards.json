@@ -94,6 +94,20 @@
       ]
     },
     {
+      "list": "Bugs",
+      "name": "Failed to load resource: the server responded with a status of 500 () al tratar de generar una guia de despacho",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Bugs",
+      "name": "numeros en pdf e internos para NV y otros no cuadran (NV42 es la 0008)",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
       "list": "Client feedback",
       "name": "[Cobranza] Envío automático de recordatorios",
       "labels": [
@@ -859,13 +873,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "sales gets Failed to load resource: the server responded with a status of 403 (), but they should just not be able to edit fields, not be rejected on save",
-      "labels": [],
-      "desc": "",
-      "checklist": []
-    },
-    {
       "list": "Feature requests",
       "name": "buscador en NV Factura y Cotizacion debe poder buscar/filtrar por producto, tipo marca y tags",
       "labels": [],
@@ -877,6 +884,22 @@
       "name": "en las cotizaciones NV facturas... una vez escogido un sku o producto, no se puede cambiar el detalle del producto, nombre formato o sku son fijos, solo se puede cambiar eliminando la fila",
       "labels": [],
       "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Feature requests",
+      "name": "El logo de la empresa debe ser una imagen subible en settings para las facturas y cotizaciones",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Empresa] RUT no oficial — flag informativo para consolidación",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Algunas empresas tienen multiples RUT, necesitamos saberlos todos para contabilidad y consolidaciones",
       "checklist": []
     },
     {
@@ -912,445 +935,39 @@
     },
     {
       "list": "In review",
-      "name": "[Tests] Baseline failures Empresas + Facturas (12 fails)",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "12 vitest failures pre-existentes en Empresas/Facturas; carryover desde antes de Phase E. Investigar y arreglar para CI verde.",
-      "checklist": [
-        "Reproducir localmente (npm test -- Empresas Facturas)",
-        "Listar failures uno a uno",
-        "Triage: tests obsoletos vs bugs reales",
-        "Fix o skip con motivo documentado",
-        "Validar en CI cuando esté"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "GET https://crm.conico.juliocode.com/api/nota_ventas/?q=and 500 (Internal Server Error) when trying to use the search bar in NV",
-      "labels": [],
-      "desc": "",
-      "checklist": []
-    },
-    {
-      "list": "In review",
-      "name": "[UI] EmpresaModal dark mode + nota cobranza overflow",
-      "labels": [
-        "Bug",
-        "Design System"
-      ],
-      "desc": "Dos bugs visuales en EmpresaModal:\n\n1. **Dark mode**: algunos textos dentro del modal de editar empresa usan colores hardcodeados (text-gray-X, text-black, etc.) en vez de tokens semánticos, quedando ilegibles en dark mode.\n\n2. **Nota cobranza overflow**: el campo/texto de nota de cobranza desborda el contenedor del modal y queda fuera del área scrollable, impidiendo seleccionarlo o editarlo.",
-      "checklist": [
-        "Reproducir ambos bugs en dark mode con EmpresaModal abierto en modo edición",
-        "Dark mode: grep EmpresaModal por clases hardcodeadas (text-gray-, text-black, bg-white, border-gray-) y reemplazar con tokens semánticos (text-foreground, bg-background, etc.)",
-        "Revisar también inputs, labels y placeholders dentro del modal",
-        "Nota cobranza: identificar el elemento que desborda (textarea o div)",
-        "Fijar overflow: asegurar que el contenido del modal tenga overflow-y-auto con max-h apropiado, o que el campo textarea tenga min-h y resize-y correctos",
-        "Verificar que el modal completo sea scrollable si el contenido supera la altura de pantalla",
-        "QA: probar en light y dark mode, pantallas pequeñas (1280px) y grandes"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "Settings de admin debe poder ordenar y quitar items del sidebar",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Administrador necesita personalizar navegación: ocultar módulos no usados y reordenar sidebar según flujo de negocio. Mejora usabilidad para roles específicos.",
-      "checklist": [
-        "UI settings: drag-drop o checkboxes para visibilidad",
-        "Persistir preferencias por rol (no por usuario)",
-        "Validar que no se oculten módulos críticos (ej: Clientes)",
-        "Default sensato: todos visibles on first load",
-        "Test con admin + vendedor"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Factura] Botón Re-cotizar desde Factura",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Botón 'Re-cotizar' en FacturaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes. Mismo flujo que desde NV — facilita recompras facturadas.",
-      "checklist": [
-        "POST /api/facturas/{id}/recotizar: extrae líneas de la factura, aplica precio vigente",
-        "Redirigir a /cotizaciones/{nuevo_id}",
-        "Botón 'Re-cotizar' en FacturaDetalle (acción secundaria)",
-        "Toast con link a cotización creada",
-        "Test: factura con productos descontinuados mantiene precio original + warning",
-        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
-        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
-        "Test: productos descontinuados → cantidad=0 + warning presente"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[NV] Botón Re-cotizar desde Nota de Venta",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Botón 'Re-cotizar' en NotaVentaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes del catálogo. Mismo endpoint que duplicar cotización pero iniciando desde NV.",
-      "checklist": [
-        "POST /api/notas-venta/{id}/recotizar: extrae líneas de la NV, aplica misma lógica de precio vigente",
-        "Redirigir a /cotizaciones/{nuevo_id}",
-        "Botón 'Re-cotizar' en NotaVentaDetalle (acción secundaria)",
-        "Toast con link a cotización creada",
-        "Test: NV con productos eliminados del catálogo mantiene precio original + warning",
-        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
-        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
-        "Test: productos descontinuados → cantidad=0 + warning presente"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:i18n] Reglas de tarea muestran \"owner\" en inglés",
+      "name": "[Core] Bloquear edición/anulación de facturas emitidas",
       "labels": [
         "Core",
-        "Bug"
+        "DTE/SII"
       ],
-      "desc": "Aplicación es es-CL pero la UI de Reglas de Tarea (/admin/tareas/config) muestra el término inglés \"owner\" en lugar de \"responsable\" o \"asignado\". Probable leak desde seed o desde nombres de columna sin traducir.",
+      "desc": "Una vez emitida una factura (DTE enviado al SII), no debe ser posible eliminarla, modificarla ni anularla desde la app. El documento es legalmente vinculante; cualquier corrección debe hacerse mediante nota de crédito. Aplica a boletas, facturas y guías de despacho.",
       "checklist": [
-        "Reemplazar owner → responsable/asignado en /admin/tareas/config UI",
-        "Revisar seed ReglaTarea (descripcion/labels)",
-        "Grep en frontend de strings EN restantes en módulo tareas (\"owner\", \"created\", \"due\", etc.)",
-        "Confirmar consistencia con resto de módulos"
+        "Deshabilitar botón Eliminar en facturas con estado emitida/aceptada",
+        "Deshabilitar edición de campos en facturas emitidas",
+        "Ocultar/bloquear opción Anular (redirigir a flujo Nota de Crédito)",
+        "Validación en backend: rechazar PUT/DELETE sobre documentos emitidos",
+        "Mensaje de error claro al intentar modificar desde API o UI"
       ]
     },
     {
-      "list": "In review",
-      "name": "[Empresa] RUT como ID inmutable — no editable post-creación",
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 3] Cotizaciones",
       "labels": [
         "Core"
       ],
-      "desc": "El RUT es el identificador estable de la empresa. Una vez creada, no debe poder modificarse. Bloquear el campo rut en EmpresaModal en modo edición y rechazar cambios en el backend.",
+      "desc": "Cotización con numeración correlativa, líneas con autocomplete, IVA/margen, PDF, email, estados, export Excel.",
       "checklist": [
-        "Backend: ignorar/rechazar rut en PATCH /empresas/{id} (422 si se envía distinto)",
-        "Frontend: campo rut deshabilitado (readonly) en EmpresaModal al editar",
-        "Agregar tooltip explicativo: 'El RUT no puede modificarse después de creada la empresa'",
-        "Test: PATCH con rut distinto → 422 o silencio"
+        "Numeración correlativa desde 12250 (SELECT FOR UPDATE)",
+        "Líneas con autocomplete + IVA 19% + margen interno",
+        "PDF WeasyPrint + template HTML",
+        "Email SMTP con PDF (degradación elegante)",
+        "Estados no_definido → abierta → cerrada_fv → rechazada",
+        "Export Excel",
+        "SystemConfig key/value para config global"
       ]
     },
     {
-      "list": "In review",
-      "name": "[Empresas] Quitar campo \"Prioridad\"",
-      "labels": [
-        "Core"
-      ],
-      "desc": "El campo Prioridad en Empresa no se usa en filtros, reportes ni reglas de negocio. Genera ruido en formularios y export. Eliminar del modelo, UI, filtros y export Excel; migración Alembic drop column.",
-      "checklist": [
-        "Migración Alembic drop column empresas.prioridad",
-        "Quitar campo de EmpresaCreate/EmpresaUpdate/EmpresaRead",
-        "Quitar input de EmpresaModal + columna de EmpresaList + filtro",
-        "Quitar de export Excel y de cualquier reporte",
-        "Audit log: confirmar que listener no falla por columna ausente"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Empresa] Permisos: solo admins modifican línea de crédito",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Vendedores no deben poder modificar ni ver el campo línea de crédito de una empresa. Solo admins y subadmins pueden editarlo. Implica bloquear el campo en EmpresaModal para vendedor y restringir el endpoint PATCH /empresas/{id}.",
-      "checklist": [
-        "Backend: validar rol antes de actualizar linea_credito en PATCH /empresas/{id}",
-        "Frontend: ocultar / deshabilitar campo línea de crédito en EmpresaModal si rol=vendedor",
-        "Ocultar AprobacionCredito y GET /empresas/{id}/credito para vendedor si aplica",
-        "Test: vendedor envía PATCH con linea_credito → 403"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "Search bars in general not working",
-      "labels": [],
-      "desc": "",
-      "checklist": []
-    },
-    {
-      "list": "In review",
-      "name": "[Cotización] Duplicar cotización con precios y fecha actualizados",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Botón 'Re-cotizar' en CotizacionDetalle que crea una nueva cotización con los mismos productos/cantidades pero fecha_emision = hoy y precios tomados del catálogo actual (precio_venta vigente). Útil para compras repetidas. Lo mismo desde NV y Factura — ver cards hermanas.",
-      "checklist": [
-        "POST /api/cotizaciones/{id}/duplicar: copia líneas, reemplaza fecha_emision=hoy y precio_unitario desde Producto.precio_venta vigente",
-        "Responde {id} de la cotización nueva → redirigir a /cotizaciones/{nuevo_id}",
-        "Si algún producto fue eliminado del catálogo: incluirlo con precio original + warning en respuesta",
-        "Permiso: cualquier rol con cotizaciones:create puede duplicar",
-        "Botón 'Re-cotizar' en CotizacionDetalle (junto a Editar / Anular)",
-        "Toast con link a la cotización nueva",
-        "Test backend: precios actualizados, fecha hoy, productos descontinuados manejados",
-        "Si algún producto fue eliminado del catálogo: cantidad=0 + warning en respuesta (lista de SKUs afectados)",
-        "Frontend: mostrar banner de advertencia en CotizacionDetalle si hay líneas con cantidad=0 por producto descontinuado",
-        "Test backend: precios actualizados, fecha hoy, cantidad=0 para descontinuados, warning presente"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "PDF cotización no muestra validez/vigencia",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "REABIERTO 2026-04-28: el commit 051fddd (fix(cotizacion): mostrar validez/vigencia en PDF) no se ve reflejado en el PDF generado — verificar despliegue, template path y caché. La fecha de validez sigue sin aparecer.\n\nOriginal: el PDF generado para cotizaciones no incluye la fecha de validez (vigencia). El cliente no sabe hasta cuándo es válida la oferta.",
-      "checklist": [
-        "Identificar campo de vigencia en modelo Cotización",
-        "Agregar campo 'Válido hasta' en template PDF de cotización",
-        "Manejar caso donde vigencia es null/no definida",
-        "REGRESIÓN: reproducir en producción/staging — confirmar que el deploy 051fddd está vivo (Coolify last_online_at + commit)",
-        "Verificar template renderiza el campo (no else silencioso por null)",
-        "Forzar regeneración (no servir PDF cacheado)",
-        "Test E2E: crear cotización con vigencia → descargar PDF → assert texto 'Válido hasta' presente"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[W1-03] CI — lint + tests + build Docker",
-      "labels": [
-        "Wave 1"
-      ],
-      "desc": "Pipeline CI ausente. Marcado como skip en wave 1 status — reactivar cuando team crezca o pre-release a Live Beta.",
-      "checklist": [
-        "GitHub Actions workflow",
-        "Lint (ruff backend + eslint frontend)",
-        "Tests (pytest + vitest)",
-        "Build Docker images",
-        "Cache deps + parallelización"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "Settings siempre visible en sidebar (no removible)",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "El ítem de Settings en el sidebar puede ocultarse o quitarse. Debe estar fijo y no ser removible por ningún usuario ni rol.",
-      "checklist": [
-        "Identificar lógica que controla visibilidad del sidebar",
-        "Marcar Settings como ítem fijo (no sujeto a personalización ni permisos de ocultado)",
-        "Verificar que aplica para todos los roles (vendedor, admin, gerente)"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Tareas] Vendedor puede ver Tareas de Admins y subadmins",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "Brecha de seguridad: vendedores acceden a Tareas privadas de admin/subadmin. Solo deben ver tareas propias y asignadas. Fix urgente: validar permisos en queries + frontend.",
-      "checklist": [
-        "Auditar query: filtrar tareas por rol + ownership",
-        "Backend: validar permisos antes de retornar lista",
-        "Frontend: ocultar tabs/vistas no autorizadas",
-        "Reproducir: login vendedor → verificar no ve admin tasks",
-        "Audit logs: registrar acceso anterior"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Guía despacho] Números de NV y factura incorrectos",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "En el detalle y PDF de la guía de despacho, los números de NV y factura asociados se muestran incorrectos o no corresponden al documento real.",
-      "checklist": [
-        "Revisar query que obtiene NV y factura vinculadas a la guía de despacho",
-        "Verificar que el folio mostrado es el folio SII y no el ID interno",
-        "Corregir PDF: mostrar número NV y número factura correctos",
-        "Prueba: emitir guía desde NV facturada y verificar ambos números"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Vendedor] Vendedor puede ver OC y proveedores y precios de costo y margen",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "Fuga de información financiera: vendedores ven órdenes de compra, proveedores, costos y márgenes (datos confidenciales). Restringir a admin/gerencia solo.",
-      "checklist": [
-        "Backend: filtrar OC, proveedores, campos de costo por rol",
-        "Frontend: ocultar tabs OC y Proveedores para vendedor",
-        "Validar permisos en cada endpoint (costo, margen)",
-        "Test: vendedor no accede /api/suppliers, /api/purchase-orders",
-        "Audit: revisar logs de acceso vendedor a datos financieros"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[BUG:Vendedor] Vendedor puede ver reportes Y cobranza, Notas de credito y debito",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "Vendedor accede a reportes financieros, cobranza y notas de crédito/débito (solo admin/contador). Controlador de acceso fallido. Fix: validar rol antes de renderizar vistas.",
-      "checklist": [
-        "Backend: ACL por endpoint (reportes, cobranza, notas fiscal)",
-        "Frontend: menu condicional (ocultar para vendedor)",
-        "Validar permisos en /api/reports, /api/collections, /api/credit-notes",
-        "Test: vendedor intenta nav directo a URLs → 403",
-        "Logging: auditar intentos fallidos desde vendedor"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Empresas] Logo como imagen subible",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Hoy el logo de empresa se configura como texto/URL. Permitir upload de imagen (PNG/JPG/SVG) con preview en EmpresaModal y render en PDFs (cotización, factura, boleta, guía de despacho, NC/ND). Almacenar en volumen uploads_data con validación de tipo y tamaño.",
-      "checklist": [
-        "Campo Empresa.logo_path (o relación a archivo) + migración Alembic",
-        "Endpoint upload con validación MIME (PNG/JPG/SVG) + límite tamaño (~2MB)",
-        "Preview en EmpresaModal con botón eliminar/reemplazar",
-        "Render en templates WeasyPrint (cotizacion/factura/boleta/guia/nc/nd)",
-        "Fallback texto cuando no hay logo",
-        "Servir asset protegido (auth) desde backend"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[DevX] Seed data — Pagos, NC, ND, GD, Boletas, Proveedores, OC",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Seed actual cubre Cotizaciones/NV/Facturas/Clientes pero deja vacíos los módulos posteriores. Demos y entornos nuevos no muestran cobranza, DTE, ni proveedores. Extender scripts/seed_demo.py (o equivalente) con datos coherentes y vinculados al grafo existente.",
-      "checklist": [
-        "Pagos múltiples por Factura (estados parcial/pagada)",
-        "NC vinculadas a facturas existentes (D-16 anulación + ajuste)",
-        "ND vinculadas a facturas existentes",
-        "Guías de despacho desde NV existentes",
-        "Boletas standalone tipo 39 + algunas anuladas vía NC 61",
-        "Proveedores con OC en distintos estados",
-        "OC con líneas y al menos una recibida",
-        "Idempotencia (--reset borra y re-siembra) y respeta secuencias correlativas"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Empresa] RUT no oficial — flag informativo para consolidación",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Algunas empresas operan con RUT no oficiales (ficticios o provisionales). Agregar campo booleano rut_no_oficial (default false) visible solo como badge informativo en EmpresaDetail. Solo se usa para consolidación interna — no afecta DTE ni lógica de negocio.",
-      "checklist": [
-        "Modelo: campo Empresa.rut_no_oficial Boolean default False + migración Alembic",
-        "Schema EmpresaCreate/Update/Read incluye rut_no_oficial",
-        "EmpresaModal: checkbox 'RUT no oficial (informativo)' en sección datos",
-        "EmpresaDetail/EmpresaList: badge 'RUT no oficial' visible solo si true",
-        "No afecta validaciones DTE ni lógica de línea de crédito"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Datos] \"Límite de crédito\" duplica \"Línea de crédito\"",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "DECISIÓN: Conservar solo 'linea_credito'. Dropar 'limite_credito' del modelo Empresa. Migración Alembic + actualizar API/schemas/UI.",
-      "checklist": [
-        "Mapear todos los usos de cada campo (modelo, API, UI, reportes, lógica crédito)",
-        "Decidir: merge en uno solo vs renombrar con semántica distinta",
-        "Migración Alembic (drop o rename + backfill)",
-        "Ajustar AprobacionCredito + GET /empresas/{id}/credito",
-        "Actualizar UI EmpresaModal + filtros + export",
-        "Migración Alembic: drop columna limite_credito",
-        "Remover limite_credito de schemas Pydantic y serializers",
-        "Ajustar AprobacionCredito + GET /empresas/{id}/credito → usar linea_credito",
-        "Actualizar UI EmpresaModal: quitar campo Límite, renombrar Línea si hace falta",
-        "Grep frontend/backend por 'limite_credito' y limpiar referencias"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Datos] \"Forma de pago\" duplica \"Plazo de Crédito\"",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "DECISIÓN: Son distintos — forma_pago=método (efectivo/transferencia/cheque/crédito), plazo_credito=días. Convertir forma_pago de texto libre a select con opciones fijas. Cuando forma=efectivo/transferencia/cheque → plazo se fuerza a 0.",
-      "checklist": [
-        "Mapear usos de forma_pago vs plazo_credito en backend + UI",
-        "Decidir semántica: método vs plazo (o merge)",
-        "Migración Alembic + backfill desde valores existentes",
-        "Ajustar enforce al_contado (Sprint A) y FacturaDetalle banco/método",
-        "Actualizar formularios Empresa/Cliente/Cotización/NV/Factura",
-        "Definir enum FormaPago: efectivo, transferencia, cheque, credito",
-        "Migración Alembic: cambiar columna a String con CHECK constraint o enum",
-        "Backend: validar forma_pago en schemas Pydantic con Literal/Enum",
-        "Frontend: reemplazar Input por Select en Empresa/Cliente/Cotización/NV/Factura",
-        "Lógica: forma≠credito → forzar plazo_credito=0 en formularios"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Sidebar] Click en \"Listas de precios\" resalta también \"Inventario\"",
-      "labels": [
-        "Bug",
-        "Design System"
-      ],
-      "desc": "Al navegar a /listas-precios el sidebar marca como activo tanto el item Listas de precios como Inventario. Probable: active-state hace match por prefijo (/inventario incluye route hermana) o ambos viven en el mismo grupo colapsable.",
-      "checklist": [
-        "Revisar Sidebar.tsx isActive matching (exact vs startsWith)",
-        "Separar grupos o usar match exacto por path",
-        "Validar también en otras rutas hermanas (productos, marcas, etc.)",
-        "Vitest snapshot del active state"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:DarkMode] Títulos Auditoría y Cobranza invisibles en dark mode",
-      "labels": [
-        "Bug",
-        "Design System"
-      ],
-      "desc": "Headers de /admin/auditoria y /cobranza usan color hardcoded (text-gray-900 o similar) sin variante dark, quedando invisibles. Reemplazar por token semántico (text-foreground) y barrer otras páginas con el mismo patrón.",
-      "checklist": [
-        "Fix header /admin/auditoria → token semántico",
-        "Fix header /cobranza → token semántico",
-        "Grep frontend por text-gray-900|text-black sin dark: en headers de página",
-        "Validar contraste WCAG AA en light + dark"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:Cobranza] Facturas y Cobranza muestran data duplicada sin diferenciación",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "DECISIÓN: Mantener separadas con scope diferenciado. /facturas = todas las facturas. /cobranza = solo pendientes (emitida/parcial), con aging y recordatorios. Backend ya filtra por _PENDIENTES; ajustar frontend Cobranza.tsx para no listar facturas pagadas/anuladas.",
-      "checklist": [
-        "Decidir alcance /cobranza vs /facturas",
-        "Si (a): /cobranza default a vencidas + próximas a vencer + antigüedad",
-        "Si (b): mover bandejas como tab dentro de /facturas y eliminar ruta",
-        "Documentar decisión en CLAUDE.md o PROGRESS.md",
-        "Ajustar sidebar y permisos resultantes"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Bug:HTTPS] Mixed content por redirect de FastAPI sin proxy-headers",
-      "labels": [
-        "Core",
-        "Bug"
-      ],
-      "desc": "En producción (HTTPS detrás de reverse proxy), FastAPI emite redirects 307 con Location http:// porque uvicorn corría sin --proxy-headers. El navegador bloquea el request por mixed content. Reproducido en /configuracion -> /api/bancos-receptores (sin trailing slash) -> 307 -> http://...//bancos-receptores/. Fix root cause: añadir --proxy-headers --forwarded-allow-ips=* al CMD de backend/Dockerfile (uvicorn ahora respeta X-Forwarded-Proto). Adicional: trailing slash en llamadas /api/bancos-receptores en Configuracion.tsx y FacturaDetalle.tsx para evitar el redirect en sí. Pendiente: re-deploy backend en Coolify para aplicar Dockerfile.",
-      "checklist": [
-        "Backend: uvicorn --proxy-headers --forwarded-allow-ips=*",
-        "Frontend: trailing slash en /api/bancos-receptores",
-        "Re-deploy backend en Coolify",
-        "Verificar /configuracion sin error de consola",
-        "Auditar otros endpoints que dependen de redirect 307"
-      ],
-      "commits": [
-        "e3ea0038a46f138c2431da98b4900257d0e82a79"
-      ]
-    },
-    {
-      "list": "In review",
+      "list": "Friendly Beta 0.1",
       "name": "[Cotizaciones] Link a NV generada en cotización cerrada",
       "labels": [
         "Core"
@@ -1367,7 +984,93 @@
       ]
     },
     {
-      "list": "In review",
+      "list": "Friendly Beta 0.1",
+      "name": "[Tests] Baseline failures Empresas + Facturas (12 fails)",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "12 vitest failures pre-existentes en Empresas/Facturas; carryover desde antes de Phase E. Investigar y arreglar para CI verde.",
+      "checklist": [
+        "Reproducir localmente (npm test -- Empresas Facturas)",
+        "Listar failures uno a uno",
+        "Triage: tests obsoletos vs bugs reales",
+        "Fix o skip con motivo documentado",
+        "Validar en CI cuando esté"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[W1-03] CI — lint + tests + build Docker",
+      "labels": [
+        "Wave 1"
+      ],
+      "desc": "Pipeline CI ausente. Marcado como skip en wave 1 status — reactivar cuando team crezca o pre-release a Live Beta.",
+      "checklist": [
+        "GitHub Actions workflow",
+        "Lint (ruff backend + eslint frontend)",
+        "Tests (pytest + vitest)",
+        "Build Docker images",
+        "Cache deps + parallelización"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "Revamp UI modal de edicion de empresas, campos y botones quedan fuera de pamntalla",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "sales gets Failed to load resource: the server responded with a status of 403 (), but they should just not be able to edit fields, not be rejected on save",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Factura] Estado 'pagado' derivado de pagos — no editable manualmente",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "El estado de pago de una factura (pendiente / parcial / pagado / vencida) debe ser **derivado** de la suma de pagos aplicados, nunca editable a mano. Hoy es posible marcar 'pagado' sin registrar el pago, lo que rompe la cobranza, los reportes de cartola y la conciliación con el cliente.\n\nRegla: estado_pago = f(total_factura, sum(pagos.monto))\n- 0                       → pendiente (o vencida si fecha_venc < hoy)\n- 0 < pagado < total      → parcial\n- pagado >= total         → pagado\n\nPara 'marcar como pagado' rápido (sin querer registrar pago real), el flujo correcto es: registrar un pago por el saldo pendiente con medio='ajuste' o 'condonado' (queda trazable). No debe existir botón ni endpoint que cambie el estado directamente.",
+      "checklist": [
+        "Backend: estado_pago se computa desde pagos al leer (property/computed), no se persiste mutable",
+        "Eliminar endpoint/campo que permita PATCH directo a estado_pago",
+        "Eliminar botón 'Marcar como pagado' del frontend (Factura, Cobranza, lista)",
+        "Reemplazar por flujo: 'Registrar pago' (modal de pago con monto = saldo pendiente prellenado)",
+        "Soportar medio_pago='ajuste'/'condonado' para casos sin plata real (queda en cartola con motivo)",
+        "Permisos: registrar pago tipo 'ajuste'/'condonado' solo admin",
+        "Auditoría: cada pago queda con usuario + timestamp + motivo (ya debería estar)",
+        "Reverso: anular un pago revierte el estado automáticamente (no requiere acción extra)",
+        "Recalcular estado al crear/editar/anular pago — single source of truth",
+        "Migración: si hay facturas en BD con estado_pago='pagado' y sum(pagos)=0, dejarlas pendientes y reportar (no auto-pagar)",
+        "Tests: factura con 0 pagos → pendiente; pagos parciales → parcial; pagos = total → pagado; anular pago → vuelve atrás",
+        "Tests: PATCH a estado_pago retorna 422 / es ignorado"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[PDF] Validez/vigencia visible en todos los documentos",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El plazo de validez/vigencia debe aparecer en el PDF de TODOS los documentos donde aplica, no solo cotización. Hoy falta o es inconsistente.\n\nDocs afectados:\n- Cotización: campo `vigencia_hasta` (ya existe modelo, falta render real — ver bug reabierto separado).\n- Nota de Venta: vigencia de la oferta / fecha de entrega comprometida.\n- Factura / Boleta: si aplica plazo de pago, mostrar 'Vence el DD/MM/AAAA' (fecha_emision + plazo_credito).\n- Guía de despacho: vigencia del traslado SII (si normativa lo exige).\n- OC del cliente: vigencia capturada al subir.\n- NC/ND: heredan referencia, no aplica vigencia propia.\n\nBloque visual unificado en footer/header del template (mismo patrón en todos los PDFs).",
+      "checklist": [
+        "Auditar templates PDF actuales: cotización, NV, factura, boleta, guía despacho, OC — listar cuál muestra vigencia hoy",
+        "Definir bloque común 'Validez / Vencimiento' reutilizable (partial Jinja o componente compartido)",
+        "Cotización: render `vigencia_hasta` con label 'Válido hasta DD/MM/AAAA' (resolver bug reabierto)",
+        "NV: agregar `vigencia_hasta` al template; si null, ocultar bloque",
+        "Factura/Boleta: calcular `vence_el = fecha_emision + plazo_credito` y mostrar 'Vence: DD/MM/AAAA' cuando plazo > 0",
+        "Guía de despacho: revisar si SII requiere fecha de vigencia del traslado y agregarla",
+        "OC: mostrar `vigencia_hasta` capturada en upload",
+        "Tests por cada PDF: con vigencia → texto presente; sin vigencia → bloque oculto (no 'None' ni '-')",
+        "QA visual: descargar PDFs reales en staging y verificar legibilidad (no se corta, contraste OK)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
       "name": "[Factura] Documentos referenciados (OC, HES, contrato, guía, NV)",
       "labels": [
         "Core",
@@ -1392,30 +1095,394 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "[Factura] Estado 'pagado' derivado de pagos — no editable manualmente",
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:HTTPS] Mixed content por redirect de FastAPI sin proxy-headers",
       "labels": [
         "Core",
         "Bug"
       ],
-      "desc": "El estado de pago de una factura (pendiente / parcial / pagado / vencida) debe ser **derivado** de la suma de pagos aplicados, nunca editable a mano. Hoy es posible marcar 'pagado' sin registrar el pago, lo que rompe la cobranza, los reportes de cartola y la conciliación con el cliente.\n\nRegla: estado_pago = f(total_factura, sum(pagos.monto))\n- 0                       → pendiente (o vencida si fecha_venc < hoy)\n- 0 < pagado < total      → parcial\n- pagado >= total         → pagado\n\nPara 'marcar como pagado' rápido (sin querer registrar pago real), el flujo correcto es: registrar un pago por el saldo pendiente con medio='ajuste' o 'condonado' (queda trazable). No debe existir botón ni endpoint que cambie el estado directamente.",
+      "desc": "En producción (HTTPS detrás de reverse proxy), FastAPI emite redirects 307 con Location http:// porque uvicorn corría sin --proxy-headers. El navegador bloquea el request por mixed content. Reproducido en /configuracion -> /api/bancos-receptores (sin trailing slash) -> 307 -> http://...//bancos-receptores/. Fix root cause: añadir --proxy-headers --forwarded-allow-ips=* al CMD de backend/Dockerfile (uvicorn ahora respeta X-Forwarded-Proto). Adicional: trailing slash en llamadas /api/bancos-receptores en Configuracion.tsx y FacturaDetalle.tsx para evitar el redirect en sí. Pendiente: re-deploy backend en Coolify para aplicar Dockerfile.",
       "checklist": [
-        "Backend: estado_pago se computa desde pagos al leer (property/computed), no se persiste mutable",
-        "Eliminar endpoint/campo que permita PATCH directo a estado_pago",
-        "Eliminar botón 'Marcar como pagado' del frontend (Factura, Cobranza, lista)",
-        "Reemplazar por flujo: 'Registrar pago' (modal de pago con monto = saldo pendiente prellenado)",
-        "Soportar medio_pago='ajuste'/'condonado' para casos sin plata real (queda en cartola con motivo)",
-        "Permisos: registrar pago tipo 'ajuste'/'condonado' solo admin",
-        "Auditoría: cada pago queda con usuario + timestamp + motivo (ya debería estar)",
-        "Reverso: anular un pago revierte el estado automáticamente (no requiere acción extra)",
-        "Recalcular estado al crear/editar/anular pago — single source of truth",
-        "Migración: si hay facturas en BD con estado_pago='pagado' y sum(pagos)=0, dejarlas pendientes y reportar (no auto-pagar)",
-        "Tests: factura con 0 pagos → pendiente; pagos parciales → parcial; pagos = total → pagado; anular pago → vuelve atrás",
-        "Tests: PATCH a estado_pago retorna 422 / es ignorado"
+        "Backend: uvicorn --proxy-headers --forwarded-allow-ips=*",
+        "Frontend: trailing slash en /api/bancos-receptores",
+        "Re-deploy backend en Coolify",
+        "Verificar /configuracion sin error de consola",
+        "Auditar otros endpoints que dependen de redirect 307"
+      ],
+      "commits": [
+        "e3ea0038a46f138c2431da98b4900257d0e82a79"
       ]
     },
     {
-      "list": "In review",
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:Cobranza] Facturas y Cobranza muestran data duplicada sin diferenciación",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "DECISIÓN: Mantener separadas con scope diferenciado. /facturas = todas las facturas. /cobranza = solo pendientes (emitida/parcial), con aging y recordatorios. Backend ya filtra por _PENDIENTES; ajustar frontend Cobranza.tsx para no listar facturas pagadas/anuladas.",
+      "checklist": [
+        "Decidir alcance /cobranza vs /facturas",
+        "Si (a): /cobranza default a vencidas + próximas a vencer + antigüedad",
+        "Si (b): mover bandejas como tab dentro de /facturas y eliminar ruta",
+        "Documentar decisión en CLAUDE.md o PROGRESS.md",
+        "Ajustar sidebar y permisos resultantes"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:DarkMode] Títulos Auditoría y Cobranza invisibles en dark mode",
+      "labels": [
+        "Bug",
+        "Design System"
+      ],
+      "desc": "Headers de /admin/auditoria y /cobranza usan color hardcoded (text-gray-900 o similar) sin variante dark, quedando invisibles. Reemplazar por token semántico (text-foreground) y barrer otras páginas con el mismo patrón.",
+      "checklist": [
+        "Fix header /admin/auditoria → token semántico",
+        "Fix header /cobranza → token semántico",
+        "Grep frontend por text-gray-900|text-black sin dark: en headers de página",
+        "Validar contraste WCAG AA en light + dark"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:Sidebar] Click en \"Listas de precios\" resalta también \"Inventario\"",
+      "labels": [
+        "Bug",
+        "Design System"
+      ],
+      "desc": "Al navegar a /listas-precios el sidebar marca como activo tanto el item Listas de precios como Inventario. Probable: active-state hace match por prefijo (/inventario incluye route hermana) o ambos viven en el mismo grupo colapsable.",
+      "checklist": [
+        "Revisar Sidebar.tsx isActive matching (exact vs startsWith)",
+        "Separar grupos o usar match exacto por path",
+        "Validar también en otras rutas hermanas (productos, marcas, etc.)",
+        "Vitest snapshot del active state"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:Datos] \"Forma de pago\" duplica \"Plazo de Crédito\"",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "DECISIÓN: Son distintos — forma_pago=método (efectivo/transferencia/cheque/crédito), plazo_credito=días. Convertir forma_pago de texto libre a select con opciones fijas. Cuando forma=efectivo/transferencia/cheque → plazo se fuerza a 0.",
+      "checklist": [
+        "Mapear usos de forma_pago vs plazo_credito en backend + UI",
+        "Decidir semántica: método vs plazo (o merge)",
+        "Migración Alembic + backfill desde valores existentes",
+        "Ajustar enforce al_contado (Sprint A) y FacturaDetalle banco/método",
+        "Actualizar formularios Empresa/Cliente/Cotización/NV/Factura",
+        "Definir enum FormaPago: efectivo, transferencia, cheque, credito",
+        "Migración Alembic: cambiar columna a String con CHECK constraint o enum",
+        "Backend: validar forma_pago en schemas Pydantic con Literal/Enum",
+        "Frontend: reemplazar Input por Select en Empresa/Cliente/Cotización/NV/Factura",
+        "Lógica: forma≠credito → forzar plazo_credito=0 en formularios"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:Datos] \"Límite de crédito\" duplica \"Línea de crédito\"",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "DECISIÓN: Conservar solo 'linea_credito'. Dropar 'limite_credito' del modelo Empresa. Migración Alembic + actualizar API/schemas/UI.",
+      "checklist": [
+        "Mapear todos los usos de cada campo (modelo, API, UI, reportes, lógica crédito)",
+        "Decidir: merge en uno solo vs renombrar con semántica distinta",
+        "Migración Alembic (drop o rename + backfill)",
+        "Ajustar AprobacionCredito + GET /empresas/{id}/credito",
+        "Actualizar UI EmpresaModal + filtros + export",
+        "Migración Alembic: drop columna limite_credito",
+        "Remover limite_credito de schemas Pydantic y serializers",
+        "Ajustar AprobacionCredito + GET /empresas/{id}/credito → usar linea_credito",
+        "Actualizar UI EmpresaModal: quitar campo Límite, renombrar Línea si hace falta",
+        "Grep frontend/backend por 'limite_credito' y limpiar referencias"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[DevX] Seed data — Pagos, NC, ND, GD, Boletas, Proveedores, OC",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Seed actual cubre Cotizaciones/NV/Facturas/Clientes pero deja vacíos los módulos posteriores. Demos y entornos nuevos no muestran cobranza, DTE, ni proveedores. Extender scripts/seed_demo.py (o equivalente) con datos coherentes y vinculados al grafo existente.",
+      "checklist": [
+        "Pagos múltiples por Factura (estados parcial/pagada)",
+        "NC vinculadas a facturas existentes (D-16 anulación + ajuste)",
+        "ND vinculadas a facturas existentes",
+        "Guías de despacho desde NV existentes",
+        "Boletas standalone tipo 39 + algunas anuladas vía NC 61",
+        "Proveedores con OC en distintos estados",
+        "OC con líneas y al menos una recibida",
+        "Idempotencia (--reset borra y re-siembra) y respeta secuencias correlativas"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[UI] EmpresaModal dark mode + nota cobranza overflow",
+      "labels": [
+        "Bug",
+        "Design System"
+      ],
+      "desc": "Dos bugs visuales en EmpresaModal:\n\n1. **Dark mode**: algunos textos dentro del modal de editar empresa usan colores hardcodeados (text-gray-X, text-black, etc.) en vez de tokens semánticos, quedando ilegibles en dark mode.\n\n2. **Nota cobranza overflow**: el campo/texto de nota de cobranza desborda el contenedor del modal y queda fuera del área scrollable, impidiendo seleccionarlo o editarlo.",
+      "checklist": [
+        "Reproducir ambos bugs en dark mode con EmpresaModal abierto en modo edición",
+        "Dark mode: grep EmpresaModal por clases hardcodeadas (text-gray-, text-black, bg-white, border-gray-) y reemplazar con tokens semánticos (text-foreground, bg-background, etc.)",
+        "Revisar también inputs, labels y placeholders dentro del modal",
+        "Nota cobranza: identificar el elemento que desborda (textarea o div)",
+        "Fijar overflow: asegurar que el contenido del modal tenga overflow-y-auto con max-h apropiado, o que el campo textarea tenga min-h y resize-y correctos",
+        "Verificar que el modal completo sea scrollable si el contenido supera la altura de pantalla",
+        "QA: probar en light y dark mode, pantallas pequeñas (1280px) y grandes"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Guía despacho] Números de NV y factura incorrectos",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "En el detalle y PDF de la guía de despacho, los números de NV y factura asociados se muestran incorrectos o no corresponden al documento real.",
+      "checklist": [
+        "Revisar query que obtiene NV y factura vinculadas a la guía de despacho",
+        "Verificar que el folio mostrado es el folio SII y no el ID interno",
+        "Corregir PDF: mostrar número NV y número factura correctos",
+        "Prueba: emitir guía desde NV facturada y verificar ambos números"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Empresas] Logo como imagen subible",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Hoy el logo de empresa se configura como texto/URL. Permitir upload de imagen (PNG/JPG/SVG) con preview en EmpresaModal y render en PDFs (cotización, factura, boleta, guía de despacho, NC/ND). Almacenar en volumen uploads_data con validación de tipo y tamaño.",
+      "checklist": [
+        "Campo Empresa.logo_path (o relación a archivo) + migración Alembic",
+        "Endpoint upload con validación MIME (PNG/JPG/SVG) + límite tamaño (~2MB)",
+        "Preview en EmpresaModal con botón eliminar/reemplazar",
+        "Render en templates WeasyPrint (cotizacion/factura/boleta/guia/nc/nd)",
+        "Fallback texto cuando no hay logo",
+        "Servir asset protegido (auth) desde backend"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "PDF cotización no muestra validez/vigencia",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "REABIERTO 2026-04-28: el commit 051fddd (fix(cotizacion): mostrar validez/vigencia en PDF) no se ve reflejado en el PDF generado — verificar despliegue, template path y caché. La fecha de validez sigue sin aparecer.\n\nOriginal: el PDF generado para cotizaciones no incluye la fecha de validez (vigencia). El cliente no sabe hasta cuándo es válida la oferta.",
+      "checklist": [
+        "Identificar campo de vigencia en modelo Cotización",
+        "Agregar campo 'Válido hasta' en template PDF de cotización",
+        "Manejar caso donde vigencia es null/no definida",
+        "REGRESIÓN: reproducir en producción/staging — confirmar que el deploy 051fddd está vivo (Coolify last_online_at + commit)",
+        "Verificar template renderiza el campo (no else silencioso por null)",
+        "Forzar regeneración (no servir PDF cacheado)",
+        "Test E2E: crear cotización con vigencia → descargar PDF → assert texto 'Válido hasta' presente"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[BUG:Vendedor] Vendedor puede ver reportes Y cobranza, Notas de credito y debito",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Vendedor accede a reportes financieros, cobranza y notas de crédito/débito (solo admin/contador). Controlador de acceso fallido. Fix: validar rol antes de renderizar vistas.",
+      "checklist": [
+        "Backend: ACL por endpoint (reportes, cobranza, notas fiscal)",
+        "Frontend: menu condicional (ocultar para vendedor)",
+        "Validar permisos en /api/reports, /api/collections, /api/credit-notes",
+        "Test: vendedor intenta nav directo a URLs → 403",
+        "Logging: auditar intentos fallidos desde vendedor"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:Vendedor] Vendedor puede ver OC y proveedores y precios de costo y margen",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Fuga de información financiera: vendedores ven órdenes de compra, proveedores, costos y márgenes (datos confidenciales). Restringir a admin/gerencia solo.",
+      "checklist": [
+        "Backend: filtrar OC, proveedores, campos de costo por rol",
+        "Frontend: ocultar tabs OC y Proveedores para vendedor",
+        "Validar permisos en cada endpoint (costo, margen)",
+        "Test: vendedor no accede /api/suppliers, /api/purchase-orders",
+        "Audit: revisar logs de acceso vendedor a datos financieros"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:Tareas] Vendedor puede ver Tareas de Admins y subadmins",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Brecha de seguridad: vendedores acceden a Tareas privadas de admin/subadmin. Solo deben ver tareas propias y asignadas. Fix urgente: validar permisos en queries + frontend.",
+      "checklist": [
+        "Auditar query: filtrar tareas por rol + ownership",
+        "Backend: validar permisos antes de retornar lista",
+        "Frontend: ocultar tabs/vistas no autorizadas",
+        "Reproducir: login vendedor → verificar no ve admin tasks",
+        "Audit logs: registrar acceso anterior"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "Settings siempre visible en sidebar (no removible)",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "El ítem de Settings en el sidebar puede ocultarse o quitarse. Debe estar fijo y no ser removible por ningún usuario ni rol.",
+      "checklist": [
+        "Identificar lógica que controla visibilidad del sidebar",
+        "Marcar Settings como ítem fijo (no sujeto a personalización ni permisos de ocultado)",
+        "Verificar que aplica para todos los roles (vendedor, admin, gerente)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "Search bars in general not working",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Cotización] Duplicar cotización con precios y fecha actualizados",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en CotizacionDetalle que crea una nueva cotización con los mismos productos/cantidades pero fecha_emision = hoy y precios tomados del catálogo actual (precio_venta vigente). Útil para compras repetidas. Lo mismo desde NV y Factura — ver cards hermanas.",
+      "checklist": [
+        "POST /api/cotizaciones/{id}/duplicar: copia líneas, reemplaza fecha_emision=hoy y precio_unitario desde Producto.precio_venta vigente",
+        "Responde {id} de la cotización nueva → redirigir a /cotizaciones/{nuevo_id}",
+        "Si algún producto fue eliminado del catálogo: incluirlo con precio original + warning en respuesta",
+        "Permiso: cualquier rol con cotizaciones:create puede duplicar",
+        "Botón 'Re-cotizar' en CotizacionDetalle (junto a Editar / Anular)",
+        "Toast con link a la cotización nueva",
+        "Test backend: precios actualizados, fecha hoy, productos descontinuados manejados",
+        "Si algún producto fue eliminado del catálogo: cantidad=0 + warning en respuesta (lista de SKUs afectados)",
+        "Frontend: mostrar banner de advertencia en CotizacionDetalle si hay líneas con cantidad=0 por producto descontinuado",
+        "Test backend: precios actualizados, fecha hoy, cantidad=0 para descontinuados, warning presente"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Empresa] Permisos: solo admins modifican línea de crédito",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Vendedores no deben poder modificar ni ver el campo línea de crédito de una empresa. Solo admins y subadmins pueden editarlo. Implica bloquear el campo en EmpresaModal para vendedor y restringir el endpoint PATCH /empresas/{id}.",
+      "checklist": [
+        "Backend: validar rol antes de actualizar linea_credito en PATCH /empresas/{id}",
+        "Frontend: ocultar / deshabilitar campo línea de crédito en EmpresaModal si rol=vendedor",
+        "Ocultar AprobacionCredito y GET /empresas/{id}/credito para vendedor si aplica",
+        "Test: vendedor envía PATCH con linea_credito → 403"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Empresas] Quitar campo \"Prioridad\"",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El campo Prioridad en Empresa no se usa en filtros, reportes ni reglas de negocio. Genera ruido en formularios y export. Eliminar del modelo, UI, filtros y export Excel; migración Alembic drop column.",
+      "checklist": [
+        "Migración Alembic drop column empresas.prioridad",
+        "Quitar campo de EmpresaCreate/EmpresaUpdate/EmpresaRead",
+        "Quitar input de EmpresaModal + columna de EmpresaList + filtro",
+        "Quitar de export Excel y de cualquier reporte",
+        "Audit log: confirmar que listener no falla por columna ausente"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Empresa] RUT como ID inmutable — no editable post-creación",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El RUT es el identificador estable de la empresa. Una vez creada, no debe poder modificarse. Bloquear el campo rut en EmpresaModal en modo edición y rechazar cambios en el backend.",
+      "checklist": [
+        "Backend: ignorar/rechazar rut en PATCH /empresas/{id} (422 si se envía distinto)",
+        "Frontend: campo rut deshabilitado (readonly) en EmpresaModal al editar",
+        "Agregar tooltip explicativo: 'El RUT no puede modificarse después de creada la empresa'",
+        "Test: PATCH con rut distinto → 422 o silencio"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:i18n] Reglas de tarea muestran \"owner\" en inglés",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Aplicación es es-CL pero la UI de Reglas de Tarea (/admin/tareas/config) muestra el término inglés \"owner\" en lugar de \"responsable\" o \"asignado\". Probable leak desde seed o desde nombres de columna sin traducir.",
+      "checklist": [
+        "Reemplazar owner → responsable/asignado en /admin/tareas/config UI",
+        "Revisar seed ReglaTarea (descripcion/labels)",
+        "Grep en frontend de strings EN restantes en módulo tareas (\"owner\", \"created\", \"due\", etc.)",
+        "Confirmar consistencia con resto de módulos"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[NV] Botón Re-cotizar desde Nota de Venta",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en NotaVentaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes del catálogo. Mismo endpoint que duplicar cotización pero iniciando desde NV.",
+      "checklist": [
+        "POST /api/notas-venta/{id}/recotizar: extrae líneas de la NV, aplica misma lógica de precio vigente",
+        "Redirigir a /cotizaciones/{nuevo_id}",
+        "Botón 'Re-cotizar' en NotaVentaDetalle (acción secundaria)",
+        "Toast con link a cotización creada",
+        "Test: NV con productos eliminados del catálogo mantiene precio original + warning",
+        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
+        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
+        "Test: productos descontinuados → cantidad=0 + warning presente"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Factura] Botón Re-cotizar desde Factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en FacturaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes. Mismo flujo que desde NV — facilita recompras facturadas.",
+      "checklist": [
+        "POST /api/facturas/{id}/recotizar: extrae líneas de la factura, aplica precio vigente",
+        "Redirigir a /cotizaciones/{nuevo_id}",
+        "Botón 'Re-cotizar' en FacturaDetalle (acción secundaria)",
+        "Toast con link a cotización creada",
+        "Test: factura con productos descontinuados mantiene precio original + warning",
+        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
+        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
+        "Test: productos descontinuados → cantidad=0 + warning presente"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "Settings de admin debe poder ordenar y quitar items del sidebar",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Administrador necesita personalizar navegación: ocultar módulos no usados y reordenar sidebar según flujo de negocio. Mejora usabilidad para roles específicos.",
+      "checklist": [
+        "UI settings: drag-drop o checkboxes para visibilidad",
+        "Persistir preferencias por rol (no por usuario)",
+        "Validar que no se oculten módulos críticos (ej: Clientes)",
+        "Default sensato: todos visibles on first load",
+        "Test con admin + vendedor"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
       "name": "[NV] Cerrar NV automáticamente al generar factura",
       "labels": [
         "Core"
@@ -1432,7 +1499,22 @@
       ]
     },
     {
-      "list": "In review",
+      "list": "Friendly Beta 0.1",
+      "name": "[NV] Bloquear edición al emitir factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Cuando se emite una factura desde una NV, la NV debe quedar bloqueada (read-only). No se puede editar líneas, precios ni cantidades una vez facturada.",
+      "checklist": [
+        "Estado NV: agregar estado 'facturada' al emitir factura",
+        "Backend: rechazar PUT/PATCH sobre NV con estado 'facturada'",
+        "UI: deshabilitar todos los campos editables y botones de acción cuando NV está facturada",
+        "Mostrar banner/badge 'Facturada' con link a la factura emitida",
+        "Solo admin puede desbloquear (opcional, con log de auditoría)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
       "name": "[Pagos] Recuperar método de pago — combinable con plazo (cheque a 30 días, transferencia a 30, etc.)",
       "labels": [
         "Core"
@@ -1461,62 +1543,11 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "[NV] Bloquear edición al emitir factura",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Cuando se emite una factura desde una NV, la NV debe quedar bloqueada (read-only). No se puede editar líneas, precios ni cantidades una vez facturada.",
-      "checklist": [
-        "Estado NV: agregar estado 'facturada' al emitir factura",
-        "Backend: rechazar PUT/PATCH sobre NV con estado 'facturada'",
-        "UI: deshabilitar todos los campos editables y botones de acción cuando NV está facturada",
-        "Mostrar banner/badge 'Facturada' con link a la factura emitida",
-        "Solo admin puede desbloquear (opcional, con log de auditoría)"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[PDF] Validez/vigencia visible en todos los documentos",
-      "labels": [
-        "Core"
-      ],
-      "desc": "El plazo de validez/vigencia debe aparecer en el PDF de TODOS los documentos donde aplica, no solo cotización. Hoy falta o es inconsistente.\n\nDocs afectados:\n- Cotización: campo `vigencia_hasta` (ya existe modelo, falta render real — ver bug reabierto separado).\n- Nota de Venta: vigencia de la oferta / fecha de entrega comprometida.\n- Factura / Boleta: si aplica plazo de pago, mostrar 'Vence el DD/MM/AAAA' (fecha_emision + plazo_credito).\n- Guía de despacho: vigencia del traslado SII (si normativa lo exige).\n- OC del cliente: vigencia capturada al subir.\n- NC/ND: heredan referencia, no aplica vigencia propia.\n\nBloque visual unificado en footer/header del template (mismo patrón en todos los PDFs).",
-      "checklist": [
-        "Auditar templates PDF actuales: cotización, NV, factura, boleta, guía despacho, OC — listar cuál muestra vigencia hoy",
-        "Definir bloque común 'Validez / Vencimiento' reutilizable (partial Jinja o componente compartido)",
-        "Cotización: render `vigencia_hasta` con label 'Válido hasta DD/MM/AAAA' (resolver bug reabierto)",
-        "NV: agregar `vigencia_hasta` al template; si null, ocultar bloque",
-        "Factura/Boleta: calcular `vence_el = fecha_emision + plazo_credito` y mostrar 'Vence: DD/MM/AAAA' cuando plazo > 0",
-        "Guía de despacho: revisar si SII requiere fecha de vigencia del traslado y agregarla",
-        "OC: mostrar `vigencia_hasta` capturada en upload",
-        "Tests por cada PDF: con vigencia → texto presente; sin vigencia → bloque oculto (no 'None' ni '-')",
-        "QA visual: descargar PDFs reales en staging y verificar legibilidad (no se corta, contraste OK)"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "Revamp UI modal de edicion de empresas, campos y botones quedan fuera de pamntalla",
+      "list": "Friendly Beta 0.1",
+      "name": "GET https://crm.conico.juliocode.com/api/nota_ventas/?q=and 500 (Internal Server Error) when trying to use the search bar in NV",
       "labels": [],
       "desc": "",
       "checklist": []
-    },
-    {
-      "list": "Friendly Beta 0.1",
-      "name": "[Fase 3] Cotizaciones",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Cotización con numeración correlativa, líneas con autocomplete, IVA/margen, PDF, email, estados, export Excel.",
-      "checklist": [
-        "Numeración correlativa desde 12250 (SELECT FOR UPDATE)",
-        "Líneas con autocomplete + IVA 19% + margen interno",
-        "PDF WeasyPrint + template HTML",
-        "Email SMTP con PDF (degradación elegante)",
-        "Estados no_definido → abierta → cerrada_fv → rechazada",
-        "Export Excel",
-        "SystemConfig key/value para config global"
-      ]
     },
     {
       "list": "Friendly Beta 0.1",

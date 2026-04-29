@@ -86,7 +86,9 @@ class Factura(Base):
 
     @property
     def is_locked(self) -> bool:
-        return self.estado not in ("emitida", "parcial")
+        if self.estado not in ("emitida", "parcial"):
+            return True
+        return self.dte_estado in ("pendiente", "procesando", "aceptada")
 
 
 class FacturaLinea(Base):
