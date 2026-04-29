@@ -7,6 +7,7 @@ import { Eye, ChevronDown, X, Inbox, FileSpreadsheet } from 'lucide-react'
 import { api } from '../lib/api'
 import type { FacturaList, FlatLine } from '../types'
 import ExportPreviewPanel from '../components/ExportPreviewPanel'
+import DteBadge from '../components/DteBadge'
 import { FACTURA_COLUMN_DEFS } from '../lib/columnDefs'
 import {
   Button, Input, Badge, EmptyState, Skeleton, Card, CardContent,
@@ -425,9 +426,14 @@ export default function Facturas() {
                           <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">{f.cliente?.nombre ?? '—'}</p>
                           {f.empresa?.nombre && <p className="text-xs text-gray-400 leading-tight">{f.empresa.nombre}</p>}
                         </div>
-                        <Badge variant={ESTADO_VARIANT[f.estado] ?? 'neutral'} size="sm">
-                          {ESTADO_LABELS[f.estado] ?? f.estado}
-                        </Badge>
+                        <div className="flex items-center gap-1 flex-wrap justify-end">
+                          <DteBadge estado={f.dte_estado ?? 'no_emitida'} />
+                          {f.estado !== 'emitida' && (
+                            <Badge variant={ESTADO_VARIANT[f.estado] ?? 'neutral'} size="sm">
+                              {ESTADO_LABELS[f.estado] ?? f.estado}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500 dark:text-gray-400 font-num">{fmtDate(f.fecha)}</span>
@@ -475,9 +481,14 @@ export default function Facturas() {
                           <TD className="font-medium text-gray-900 dark:text-white whitespace-nowrap text-right font-num">{fmtMoney(f.total)}</TD>
                           {!isVendedor && <TD className="text-right"><MargenBadge value={f.margen_total} /></TD>}
                           <TD>
-                            <Badge variant={ESTADO_VARIANT[f.estado] ?? 'neutral'} showDot>
-                              {ESTADO_LABELS[f.estado] ?? f.estado}
-                            </Badge>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <DteBadge estado={f.dte_estado ?? 'no_emitida'} />
+                              {f.estado !== 'emitida' && (
+                                <Badge variant={ESTADO_VARIANT[f.estado] ?? 'neutral'} showDot>
+                                  {ESTADO_LABELS[f.estado] ?? f.estado}
+                                </Badge>
+                              )}
+                            </div>
                           </TD>
                           <TD onClick={e => e.stopPropagation()}>
                             <div className="flex items-center justify-end gap-0.5">

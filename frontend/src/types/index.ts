@@ -395,6 +395,7 @@ export interface FacturaList {
   fecha: string
   fecha_vencimiento: string | null
   estado: string
+  dte_estado: string
   correo: string | null
   total_neto: number
   total_iva: number

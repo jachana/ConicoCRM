@@ -371,9 +371,11 @@ export default function FacturaDetalle() {
           <h1 className="text-xl font-semibold text-gray-900 dark:text-white font-num">
             FAC-{String(factura.numero).padStart(5, '0')}
           </h1>
-          <Badge variant={ESTADO_VARIANT[factura.estado] ?? 'neutral'} size="sm">
-            {ESTADO_LABELS[factura.estado] ?? factura.estado}
-          </Badge>
+          {factura.estado !== 'emitida' && (
+            <Badge variant={ESTADO_VARIANT[factura.estado] ?? 'neutral'} size="sm">
+              {ESTADO_LABELS[factura.estado] ?? factura.estado}
+            </Badge>
+          )}
           <DteBadge estado={factura.dte_estado ?? 'no_emitida'} />
           {(factura.dte_estado === 'no_emitida' || !factura.dte_estado) && (
             <Button size="xs" onClick={() => setEmitirOpen(true)}>

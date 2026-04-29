@@ -152,6 +152,7 @@ class FacturaListOut(BaseModel):
     fecha: date
     fecha_vencimiento: date | None = None
     estado: str
+    dte_estado: str
     correo: str | None = None
     total_neto: Decimal
     total_iva: Decimal
