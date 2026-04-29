@@ -455,10 +455,10 @@ def actualizar_nv(
     if "vendedor_id" in updates and current_user.role not in ("admin", "subadmin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin/subadmin puede reasignar el encargado")
     if current_user.role not in ("admin", "subadmin"):
-        credit_fields = {"plazo_dias", "metodo_pago"}
-        if credit_fields & set(updates):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                                detail="Vendedores no pueden modificar las condiciones de pago")
+        for field in ("plazo_dias", "metodo_pago"):
+            if field in updates and updates[field] != getattr(nv, field):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                    detail="Vendedores no pueden modificar las condiciones de pago")
     for field, value in updates.items():
         setattr(nv, field, value)
     nv.terminos_pago = enforce_al_contado(nv.empresa_id, nv.terminos_pago, db)

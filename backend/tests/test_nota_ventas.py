@@ -207,14 +207,23 @@ def test_vendedor_puede_editar_nv_propia(client, admin_token, vendedor_token, ve
 def test_vendedor_no_puede_modificar_plazo_credito(client, vendedor_token):
     cid = _make_cliente(client, vendedor_token)
     nv_id = _create_nv(client, vendedor_token, cid).json()["id"]
+    # Changing plazo_dias to a new value → 403
     r = client.patch(f"/api/nota_ventas/{nv_id}",
                      json={"plazo_dias": 60},
                      headers={"Authorization": f"Bearer {vendedor_token}"})
     assert r.status_code == 403
+    # Changing metodo_pago to a new value → 403
     r2 = client.patch(f"/api/nota_ventas/{nv_id}",
                       json={"metodo_pago": "transferencia"},
                       headers={"Authorization": f"Bearer {vendedor_token}"})
     assert r2.status_code == 403
+    # Re-sending same values (full form save) → 200, not blocked
+    nv = client.get(f"/api/nota_ventas/{nv_id}",
+                    headers={"Authorization": f"Bearer {vendedor_token}"}).json()
+    r3 = client.patch(f"/api/nota_ventas/{nv_id}",
+                      json={"plazo_dias": nv["plazo_dias"], "metodo_pago": nv["metodo_pago"], "contacto": "Test"},
+                      headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert r3.status_code == 200
 
 
 def test_admin_puede_modificar_plazo_credito(client, admin_token):

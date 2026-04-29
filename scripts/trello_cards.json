@@ -860,22 +860,24 @@
     },
     {
       "list": "In review",
-      "name": "[PDF] Validez/vigencia visible en todos los documentos",
-      "labels": [
-        "Core"
-      ],
-      "desc": "El plazo de validez/vigencia debe aparecer en el PDF de TODOS los documentos donde aplica, no solo cotización. Hoy falta o es inconsistente.\n\nDocs afectados:\n- Cotización: campo `vigencia_hasta` (ya existe modelo, falta render real — ver bug reabierto separado).\n- Nota de Venta: vigencia de la oferta / fecha de entrega comprometida.\n- Factura / Boleta: si aplica plazo de pago, mostrar 'Vence el DD/MM/AAAA' (fecha_emision + plazo_credito).\n- Guía de despacho: vigencia del traslado SII (si normativa lo exige).\n- OC del cliente: vigencia capturada al subir.\n- NC/ND: heredan referencia, no aplica vigencia propia.\n\nBloque visual unificado en footer/header del template (mismo patrón en todos los PDFs).",
-      "checklist": [
-        "Auditar templates PDF actuales: cotización, NV, factura, boleta, guía despacho, OC — listar cuál muestra vigencia hoy",
-        "Definir bloque común 'Validez / Vencimiento' reutilizable (partial Jinja o componente compartido)",
-        "Cotización: render `vigencia_hasta` con label 'Válido hasta DD/MM/AAAA' (resolver bug reabierto)",
-        "NV: agregar `vigencia_hasta` al template; si null, ocultar bloque",
-        "Factura/Boleta: calcular `vence_el = fecha_emision + plazo_credito` y mostrar 'Vence: DD/MM/AAAA' cuando plazo > 0",
-        "Guía de despacho: revisar si SII requiere fecha de vigencia del traslado y agregarla",
-        "OC: mostrar `vigencia_hasta` capturada en upload",
-        "Tests por cada PDF: con vigencia → texto presente; sin vigencia → bloque oculto (no 'None' ni '-')",
-        "QA visual: descargar PDFs reales en staging y verificar legibilidad (no se corta, contraste OK)"
-      ]
+      "name": "sales gets Failed to load resource: the server responded with a status of 403 (), but they should just not be able to edit fields, not be rejected on save",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Feature requests",
+      "name": "buscador en NV Factura y Cotizacion debe poder buscar/filtrar por producto, tipo marca y tags",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Feature requests",
+      "name": "en las cotizaciones NV facturas... una vez escogido un sku o producto, no se puede cambiar el detalle del producto, nombre formato o sku son fijos, solo se puede cambiar eliminando la fila",
+      "labels": [],
+      "desc": "",
+      "checklist": []
     },
     {
       "list": "In progress",
@@ -1460,36 +1462,6 @@
     },
     {
       "list": "In review",
-      "name": "[Listados] Orden cronológico por defecto — más reciente primero",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los listados de documentos (Cotizaciones, NV, Facturas, Boletas, NC, ND, Guías de Despacho) deben ordenarse por defecto con el más reciente primero (ORDER BY fecha_emision DESC o created_at DESC). Hoy el orden varía o es inconsistente entre módulos.\n\nNo requiere cambio en UI de columnas — solo fijar el default en el backend y mantener la columna de fecha ordenable asc/desc.",
-      "checklist": [
-        "Auditar orden actual de cada endpoint: GET /cotizaciones, /notas-venta, /facturas, /boletas, /notas-credito, /notas-debito, /guias-despacho",
-        "Estandarizar: ORDER BY fecha_emision DESC (o created_at DESC si no existe fecha_emision)",
-        "Verificar que el frontend no sobreescriba el orden al recibir la respuesta",
-        "Columna de fecha en cada listado: soportar click para invertir orden (asc/desc)",
-        "Asegurar que el orden se mantiene con paginación (no romper en página 2+)"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Empresa] Quitar forma de pago del modelo Empresa",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Decisión de negocio: la Empresa no tiene forma de pago propia. Cada transacción (cotización, NV, factura) define su propia forma de pago. Eliminar forma_pago de EmpresaCreate/Update/Read, modal y export si existe; la lógica de forma_pago vive en cada documento.",
-      "checklist": [
-        "Confirmar si Empresa.forma_pago existe en modelo (grep)",
-        "Si existe: migración Alembic drop column + backfill",
-        "Quitar forma_pago de EmpresaModal (input)",
-        "Quitar forma_pago de EmpresaRead schema y export Excel",
-        "Validar que cotización/NV/factura sigan teniendo su propio forma_pago"
-      ]
-    },
-    {
-      "list": "In review",
       "name": "[NV] Bloquear edición al emitir factura",
       "labels": [
         "Core"
@@ -1505,42 +1477,21 @@
     },
     {
       "list": "In review",
-      "name": "[NV] Buscador en lista de Notas de Venta",
+      "name": "[PDF] Validez/vigencia visible en todos los documentos",
       "labels": [
         "Core"
       ],
-      "desc": "La lista de Notas de Venta no tiene buscador — para encontrar una NV específica hay que paginar a mano. Agregar barra de búsqueda con match contra los campos más usados.\n\nMismo patrón que el buscador global de productos: un input arriba de la tabla, debounce 300ms, match parcial case-insensitive, normalizado a tildes.",
+      "desc": "El plazo de validez/vigencia debe aparecer en el PDF de TODOS los documentos donde aplica, no solo cotización. Hoy falta o es inconsistente.\n\nDocs afectados:\n- Cotización: campo `vigencia_hasta` (ya existe modelo, falta render real — ver bug reabierto separado).\n- Nota de Venta: vigencia de la oferta / fecha de entrega comprometida.\n- Factura / Boleta: si aplica plazo de pago, mostrar 'Vence el DD/MM/AAAA' (fecha_emision + plazo_credito).\n- Guía de despacho: vigencia del traslado SII (si normativa lo exige).\n- OC del cliente: vigencia capturada al subir.\n- NC/ND: heredan referencia, no aplica vigencia propia.\n\nBloque visual unificado en footer/header del template (mismo patrón en todos los PDFs).",
       "checklist": [
-        "Input de búsqueda arriba de la tabla NV con placeholder 'Buscar NV (nº, cliente, vendedor, producto, OC...)'",
-        "Backend: GET /api/notas-venta?q=<texto> con búsqueda OR en:",
-        "  - número de NV",
-        "  - nombre/razón social cliente o empresa",
-        "  - RUT cliente/empresa",
-        "  - nombre vendedor",
-        "  - SKU o nombre de producto en el detalle",
-        "  - número de OC referenciada (si existe)",
-        "  - observaciones",
-        "Match parcial, case-insensitive, normalizado (sin tildes)",
-        "Debounce 300ms en frontend (no spammear backend mientras tipea)",
-        "Combinable con filtros existentes (estado, fecha, vendedor) — query AND filtros",
-        "Highlight del match en la fila (opcional, nice-to-have)",
-        "Indicador 'Buscando...' mientras carga; 'Sin resultados' si vacío",
-        "Conservar query en URL (?q=...) para compartir/refresh",
-        "Performance: índice en campos buscables; LIMIT 100 resultados",
-        "Tests: búsqueda por nº NV, RUT cliente, SKU, OC referenciada — todos retornan correcto"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Seguridad] Vendedor no puede modificar plazo de crédito",
-      "labels": [
-        "Core"
-      ],
-      "desc": "El rol vendedor no debe poder cambiar el plazo de crédito del cliente ni en la NV/cotización. Solo admin y gerente pueden modificarlo.",
-      "checklist": [
-        "Backend: bloquear campo plazo_credito en NV/cotización para rol vendedor",
-        "UI: campo plazo de crédito read-only cuando el usuario es vendedor",
-        "Validar también en endpoint de cliente (PATCH) — vendedor no puede editar plazo"
+        "Auditar templates PDF actuales: cotización, NV, factura, boleta, guía despacho, OC — listar cuál muestra vigencia hoy",
+        "Definir bloque común 'Validez / Vencimiento' reutilizable (partial Jinja o componente compartido)",
+        "Cotización: render `vigencia_hasta` con label 'Válido hasta DD/MM/AAAA' (resolver bug reabierto)",
+        "NV: agregar `vigencia_hasta` al template; si null, ocultar bloque",
+        "Factura/Boleta: calcular `vence_el = fecha_emision + plazo_credito` y mostrar 'Vence: DD/MM/AAAA' cuando plazo > 0",
+        "Guía de despacho: revisar si SII requiere fecha de vigencia del traslado y agregarla",
+        "OC: mostrar `vigencia_hasta` capturada en upload",
+        "Tests por cada PDF: con vigencia → texto presente; sin vigencia → bloque oculto (no 'None' ni '-')",
+        "QA visual: descargar PDFs reales en staging y verificar legibilidad (no se corta, contraste OK)"
       ]
     },
     {
@@ -1569,6 +1520,36 @@
     },
     {
       "list": "Friendly Beta 0.1",
+      "name": "[Empresa] Quitar forma de pago del modelo Empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Decisión de negocio: la Empresa no tiene forma de pago propia. Cada transacción (cotización, NV, factura) define su propia forma de pago. Eliminar forma_pago de EmpresaCreate/Update/Read, modal y export si existe; la lógica de forma_pago vive en cada documento.",
+      "checklist": [
+        "Confirmar si Empresa.forma_pago existe en modelo (grep)",
+        "Si existe: migración Alembic drop column + backfill",
+        "Quitar forma_pago de EmpresaModal (input)",
+        "Quitar forma_pago de EmpresaRead schema y export Excel",
+        "Validar que cotización/NV/factura sigan teniendo su propio forma_pago"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Listados] Orden cronológico por defecto — más reciente primero",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los listados de documentos (Cotizaciones, NV, Facturas, Boletas, NC, ND, Guías de Despacho) deben ordenarse por defecto con el más reciente primero (ORDER BY fecha_emision DESC o created_at DESC). Hoy el orden varía o es inconsistente entre módulos.\n\nNo requiere cambio en UI de columnas — solo fijar el default en el backend y mantener la columna de fecha ordenable asc/desc.",
+      "checklist": [
+        "Auditar orden actual de cada endpoint: GET /cotizaciones, /notas-venta, /facturas, /boletas, /notas-credito, /notas-debito, /guias-despacho",
+        "Estandarizar: ORDER BY fecha_emision DESC (o created_at DESC si no existe fecha_emision)",
+        "Verificar que el frontend no sobreescriba el orden al recibir la respuesta",
+        "Columna de fecha en cada listado: soportar click para invertir orden (asc/desc)",
+        "Asegurar que el orden se mantiene con paginación (no romper en página 2+)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
       "name": "[Vista como] Admin preview de roles",
       "labels": [
         "Core"
@@ -1583,6 +1564,46 @@
         "Migrados: Dashboard, Productos, TareaDrawer/Tareas, Aprobaciones, AdminAuditoria, TareasConfig, Configuracion",
         "Logout purga conico-view-as",
         "Backend untouched (banner lo explicita)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[NV] Buscador en lista de Notas de Venta",
+      "labels": [
+        "Core"
+      ],
+      "desc": "La lista de Notas de Venta no tiene buscador — para encontrar una NV específica hay que paginar a mano. Agregar barra de búsqueda con match contra los campos más usados.\n\nMismo patrón que el buscador global de productos: un input arriba de la tabla, debounce 300ms, match parcial case-insensitive, normalizado a tildes.",
+      "checklist": [
+        "Input de búsqueda arriba de la tabla NV con placeholder 'Buscar NV (nº, cliente, vendedor, producto, OC...)'",
+        "Backend: GET /api/notas-venta?q=<texto> con búsqueda OR en:",
+        "  - número de NV",
+        "  - nombre/razón social cliente o empresa",
+        "  - RUT cliente/empresa",
+        "  - nombre vendedor",
+        "  - SKU o nombre de producto en el detalle",
+        "  - número de OC referenciada (si existe)",
+        "  - observaciones",
+        "Match parcial, case-insensitive, normalizado (sin tildes)",
+        "Debounce 300ms en frontend (no spammear backend mientras tipea)",
+        "Combinable con filtros existentes (estado, fecha, vendedor) — query AND filtros",
+        "Highlight del match en la fila (opcional, nice-to-have)",
+        "Indicador 'Buscando...' mientras carga; 'Sin resultados' si vacío",
+        "Conservar query en URL (?q=...) para compartir/refresh",
+        "Performance: índice en campos buscables; LIMIT 100 resultados",
+        "Tests: búsqueda por nº NV, RUT cliente, SKU, OC referenciada — todos retornan correcto"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Seguridad] Vendedor no puede modificar plazo de crédito",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El rol vendedor no debe poder cambiar el plazo de crédito del cliente ni en la NV/cotización. Solo admin y gerente pueden modificarlo.",
+      "checklist": [
+        "Backend: bloquear campo plazo_credito en NV/cotización para rol vendedor",
+        "UI: campo plazo de crédito read-only cuando el usuario es vendedor",
+        "Validar también en endpoint de cliente (PATCH) — vendedor no puede editar plazo"
       ]
     },
     {
