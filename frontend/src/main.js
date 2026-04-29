@@ -7,6 +7,10 @@ import './index.css';
 import 'react-grid-layout/css/styles.css';
 import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { initSentry } from './sentry';
+// W1-06 — initialize Sentry as early as possible so subsequent module load
+// errors are captured. No-op when DSN is empty (local dev, CI).
+initSentry();
 function extractMessage(error) {
     if (error && typeof error === 'object' && 'response' in error) {
         const res = error.response;
