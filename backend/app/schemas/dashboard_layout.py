@@ -103,3 +103,16 @@ class VendedorMetricaItem(BaseModel):
     nombre: str
     total: float
     count: int
+
+
+class DashboardSummaryOut(BaseModel):
+    ventas_hoy: float
+    ventas_hoy_count: int
+    ventas_ayer: float
+    ventas_mes: float
+    ventas_mes_count: int
+    ventas_mes_anterior: float
+    nv_pendientes_count: int
+    nv_pendientes_monto: float
+    cotizaciones_abiertas_count: int
+    stock_critico_count: int

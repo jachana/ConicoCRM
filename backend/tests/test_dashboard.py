@@ -293,3 +293,43 @@ class TestDataEndpoints:
         r = client.get("/api/dashboard/data/no_existe",
                        headers={"Authorization": f"Bearer {tok}"})
         assert r.status_code == 404
+
+
+class TestSummary:
+    def test_summary_returns_all_keys(self, client, setup_test_db):
+        _make_user("admin", "a@test.cl")
+        v = _make_user("vendedor", "v@test.cl")
+        _seed_data(v.id)
+        tok = _token(client, "a@test.cl")
+        r = client.get("/api/dashboard/summary", headers={"Authorization": f"Bearer {tok}"})
+        assert r.status_code == 200
+        body = r.json()
+        for key in (
+            "ventas_hoy", "ventas_hoy_count", "ventas_ayer",
+            "ventas_mes", "ventas_mes_count", "ventas_mes_anterior",
+            "nv_pendientes_count", "nv_pendientes_monto",
+            "cotizaciones_abiertas_count", "stock_critico_count",
+        ):
+            assert key in body, f"missing key: {key}"
+        # Seed inserts one pagada (today) and one pendiente
+        assert body["ventas_hoy_count"] == 1
+        assert body["ventas_mes_count"] == 1
+        assert body["nv_pendientes_count"] == 1
+        assert body["nv_pendientes_monto"] >= 1190
+
+    def test_summary_vendedor_scoped(self, client, setup_test_db):
+        _make_user("admin", "a@test.cl")
+        v1 = _make_user("vendedor", "v1@test.cl")
+        v2 = _make_user("vendedor", "v2@test.cl")
+        _seed_data(v1.id)
+        # v2 has no NVs → counts should be 0 for them
+        tok = _token(client, "v2@test.cl")
+        r = client.get("/api/dashboard/summary", headers={"Authorization": f"Bearer {tok}"})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["ventas_hoy_count"] == 0
+        assert body["nv_pendientes_count"] == 0
+
+    def test_summary_requires_auth(self, client, setup_test_db):
+        r = client.get("/api/dashboard/summary")
+        assert r.status_code == 401

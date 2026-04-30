@@ -7,6 +7,7 @@ import { useDashboardPresets } from '../hooks/useDashboardPresets'
 import WidgetGrid from '../components/dashboard/WidgetGrid'
 import WidgetPicker from '../components/dashboard/WidgetPicker'
 import WidgetConfigModal from '../components/dashboard/WidgetConfig'
+import DashboardHero from '../components/dashboard/DashboardHero'
 import { TEMPLATES, applyTemplate } from '../components/dashboard/widgetCatalog'
 import type { WidgetConfig } from '../types/dashboard'
 import Widget from '../components/dashboard/Widget'
@@ -123,58 +124,71 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 gap-2 bg-white dark:bg-gray-900">
-        <h1 className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0">Dashboard</h1>
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          {isAdmin && !editMode && !isMobile && (
-            <Button
-              size="sm"
-              variant="primary"
-              leftIcon={<Pencil />}
-              onClick={enterEdit}
-              disabled={!currentPreset}
-            >
-              Editar
-            </Button>
-          )}
-          {editMode && (
-            <>
-              <Popover open={showTemplates} onOpenChange={setShowTemplates}>
-                <PopoverTrigger asChild>
-                  <Button size="sm" variant="outline" rightIcon={<ChevronDown />}>Templates</Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-48 p-1">
-                  {TEMPLATES.map(t => (
-                    <button
-                      key={t.name}
-                      onClick={() => applyTempl(t.name)}
-                      className="block w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
-                    >
-                      {t.name}
-                    </button>
-                  ))}
-                </PopoverContent>
-              </Popover>
-              <Button size="sm" variant="outline" leftIcon={<X />} onClick={cancelEdit}>
-                Cancelar
-              </Button>
+      {/* Hero: greeting + KPI strip (hidden during edit to keep focus on grid) */}
+      {!editMode && (
+        <div className="relative flex-shrink-0">
+          <DashboardHero
+            userName={user?.name ?? user?.email ?? ''}
+            presetName={currentPreset?.name}
+          />
+          {isAdmin && !isMobile && (
+            <div className="absolute top-3 right-4 md:right-6">
               <Button
                 size="sm"
-                variant="success"
-                leftIcon={<Save />}
-                loading={save.isPending}
-                onClick={saveEdit}
+                variant="primary"
+                leftIcon={<Pencil />}
+                onClick={enterEdit}
+                disabled={!currentPreset}
               >
-                {save.isPending ? 'Guardando…' : 'Guardar'}
+                Editar
               </Button>
-            </>
+            </div>
           )}
         </div>
-      </div>
+      )}
+
+      {/* Edit mode header */}
+      {editMode && (
+        <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 gap-2 bg-brand-500/5 dark:bg-brand-500/10">
+          <h1 className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2 flex-shrink-0">
+            <Pencil size={16} className="text-brand-500" />
+            Editando dashboard
+          </h1>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <Popover open={showTemplates} onOpenChange={setShowTemplates}>
+              <PopoverTrigger asChild>
+                <Button size="sm" variant="outline" rightIcon={<ChevronDown />}>Templates</Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-48 p-1">
+                {TEMPLATES.map(t => (
+                  <button
+                    key={t.name}
+                    onClick={() => applyTempl(t.name)}
+                    className="block w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
+            <Button size="sm" variant="outline" leftIcon={<X />} onClick={cancelEdit}>
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              variant="success"
+              leftIcon={<Save />}
+              loading={save.isPending}
+              onClick={saveEdit}
+            >
+              {save.isPending ? 'Guardando…' : 'Guardar'}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Tab bar */}
-      <div className="flex items-center gap-1 px-4 md:px-6 py-2 border-b border-gray-200 dark:border-gray-800 overflow-x-auto flex-shrink-0 bg-gray-50/40 dark:bg-gray-900/40">
+      <div className="flex items-center gap-1 px-4 md:px-6 py-2 border-b border-gray-200 dark:border-gray-800 overflow-x-auto flex-shrink-0 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm">
         {presets.map(p => {
           const isActive = p.slot === currentPreset?.slot
           const isEditingThis = editMode && isActive
@@ -183,10 +197,10 @@ export default function Dashboard() {
               key={p.slot}
               onClick={() => { if (!editMode) setActiveSlot(p.slot) }}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0',
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 border',
                 isActive
-                  ? 'bg-brand-500/10 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800',
+                  ? 'bg-brand-500 text-white border-brand-500 shadow-sm shadow-brand-500/20'
+                  : 'text-gray-600 dark:text-gray-400 border-transparent hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-700',
                 editMode && !isActive && 'opacity-40 cursor-not-allowed'
               )}
             >
@@ -196,7 +210,7 @@ export default function Dashboard() {
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
                   onClick={e => e.stopPropagation()}
-                  className="bg-transparent border-b border-brand-400 focus:outline-none w-28 min-w-0"
+                  className="bg-transparent border-b border-white/60 placeholder-white/60 focus:outline-none focus:border-white w-28 min-w-0"
                   maxLength={50}
                   placeholder="Nombre…"
                 />
@@ -237,22 +251,26 @@ export default function Dashboard() {
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-auto p-3 md:p-4">
           {activeWidgets.length === 0 ? (
-            <EmptyState
-              icon={<LayoutDashboard />}
-              title={isAdmin ? (editMode ? 'Agrega tu primer widget' : 'Dashboard vacío') : 'Sin widgets configurados'}
-              description={
-                isAdmin
-                  ? editMode
-                    ? 'Selecciona widgets desde el panel derecho para empezar a construir tu vista.'
-                    : 'Hacé clic en "Editar" para configurar tu dashboard.'
-                  : 'El dashboard aún no tiene widgets configurados.'
-              }
-              action={
-                isAdmin && !editMode && currentPreset ? (
-                  <Button leftIcon={<Pencil />} onClick={enterEdit}>Editar dashboard</Button>
-                ) : null
-              }
-            />
+            <div className="relative mt-2 mx-auto max-w-2xl rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 bg-gradient-to-br from-brand-500/5 via-transparent to-emerald-500/5 dark:from-brand-500/10 dark:to-emerald-500/10 overflow-hidden">
+              <div className="absolute inset-0 opacity-40 pointer-events-none [background-image:radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.06)_1px,transparent_0)] dark:[background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.06)_1px,transparent_0)] [background-size:18px_18px]" />
+              <EmptyState
+                icon={<LayoutDashboard />}
+                title={isAdmin ? (editMode ? 'Agrega tu primer widget' : 'Dashboard vacío') : 'Sin widgets configurados'}
+                description={
+                  isAdmin
+                    ? editMode
+                      ? 'Selecciona widgets desde el panel derecho para empezar a construir tu vista. O usa un template para empezar rápido.'
+                      : 'Personaliza esta vista con KPIs, gráficos y rankings que importen para tu equipo.'
+                    : 'El dashboard aún no tiene widgets configurados.'
+                }
+                action={
+                  isAdmin && !editMode && currentPreset ? (
+                    <Button leftIcon={<Pencil />} onClick={enterEdit}>Editar dashboard</Button>
+                  ) : null
+                }
+                className="relative py-16"
+              />
+            </div>
           ) : isMobile ? (
             <div className="flex flex-col gap-3">
               {sortedMobile.map(w => (

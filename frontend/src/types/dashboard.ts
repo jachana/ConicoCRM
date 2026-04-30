@@ -112,3 +112,16 @@ export interface VendedorMetricaItem {
   total: number
   count: number
 }
+
+export interface DashboardSummaryOut {
+  ventas_hoy: number
+  ventas_hoy_count: number
+  ventas_ayer: number
+  ventas_mes: number
+  ventas_mes_count: number
+  ventas_mes_anterior: number
+  nv_pendientes_count: number
+  nv_pendientes_monto: number
+  cotizaciones_abiertas_count: number
+  stock_critico_count: number
+}

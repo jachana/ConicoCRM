@@ -19,6 +19,7 @@ from app.models.user import User as UserModel
 from app.schemas.dashboard_layout import (
     CotizacionesAbiertasOut,
     CreatePresetPayload,
+    DashboardSummaryOut,
     EstadoCount,
     LayoutPayload,
     NVPorCobrarItem,
@@ -295,6 +296,72 @@ _DATA_HANDLERS = {
     "cotizaciones_por_vendedor": _data_cotizaciones_por_vendedor,
     "ventas_por_vendedor": _data_ventas_por_vendedor,
 }
+
+
+@router.get("/summary", response_model=DashboardSummaryOut)
+def get_summary(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Quick KPIs for dashboard hero strip — today/yesterday/this-month vs last-month."""
+    today = date.today()
+    yesterday = date.fromordinal(today.toordinal() - 1)
+    month_start = today.replace(day=1)
+    if month_start.month == 1:
+        prev_month_start = month_start.replace(year=month_start.year - 1, month=12)
+    else:
+        prev_month_start = month_start.replace(month=month_start.month - 1)
+    prev_month_end = date.fromordinal(month_start.toordinal() - 1)
+
+    sold_states = ["pagada", "entregada", "despachada"]
+
+    def _sum_count(start: date, end: date) -> tuple[float, int]:
+        q = db.query(NotaVenta).filter(
+            NotaVenta.estado.in_(sold_states),
+            NotaVenta.fecha >= start,
+            NotaVenta.fecha <= end,
+        )
+        q = _vendor_filter(q, NotaVenta, current_user)
+        rows = q.all()
+        return sum(float(nv.total) for nv in rows), len(rows)
+
+    ventas_hoy, hoy_count = _sum_count(today, today)
+    ventas_ayer, _ = _sum_count(yesterday, yesterday)
+    ventas_mes, mes_count = _sum_count(month_start, today)
+    ventas_mes_anterior, _ = _sum_count(prev_month_start, prev_month_end)
+
+    pend_q = db.query(NotaVenta).filter(NotaVenta.estado.in_(["pendiente", "despachada"]))
+    pend_q = _vendor_filter(pend_q, NotaVenta, current_user)
+    pend_rows = pend_q.all()
+    nv_pendientes_count = len(pend_rows)
+    nv_pendientes_monto = sum(float(nv.total) for nv in pend_rows)
+
+    cot_q = db.query(func.count(Cotizacion.id)).filter(
+        Cotizacion.estado.in_(["abierta", "no_definido"])
+    )
+    if current_user.role == "vendedor":
+        cot_q = cot_q.filter(Cotizacion.vendedor_id == current_user.id)
+    cotizaciones_abiertas_count = cot_q.scalar() or 0
+
+    stock_critico_count = (
+        db.query(func.count(Producto.id))
+        .filter(Producto.stock_actual < Producto.stock_minimo)
+        .scalar()
+        or 0
+    )
+
+    return DashboardSummaryOut(
+        ventas_hoy=ventas_hoy,
+        ventas_hoy_count=hoy_count,
+        ventas_ayer=ventas_ayer,
+        ventas_mes=ventas_mes,
+        ventas_mes_count=mes_count,
+        ventas_mes_anterior=ventas_mes_anterior,
+        nv_pendientes_count=nv_pendientes_count,
+        nv_pendientes_monto=nv_pendientes_monto,
+        cotizaciones_abiertas_count=cotizaciones_abiertas_count,
+        stock_critico_count=stock_critico_count,
+    )
 
 
 @router.get("/data/{widget_type}")
