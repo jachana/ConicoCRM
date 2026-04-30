@@ -218,7 +218,12 @@ def http(method: str, path: str, params: dict[str, Any] | None = None,
         except urllib.error.HTTPError as e:
             if e.code == 429 or e.code >= 500:
                 last_err = e
-                time.sleep(2 ** attempt)
+                retry_after = e.headers.get("Retry-After") if e.headers else None
+                try:
+                    delay = float(retry_after) if retry_after else 2 ** attempt
+                except (TypeError, ValueError):
+                    delay = 2 ** attempt
+                time.sleep(min(delay, 30))
                 continue
             detail = e.read().decode("utf-8", errors="replace")
             raise RuntimeError(f"{method} {path} -> {e.code}: {detail}") from e
@@ -228,12 +233,43 @@ def http(method: str, path: str, params: dict[str, Any] | None = None,
     raise RuntimeError(f"{method} {path} failed after {retries} retries: {last_err}")
 
 
+# --- per-process cache for slow-changing board metadata (lists, labels) --- #
+# Cards are NOT cached: they mutate during a loop iteration.
+_BOARD_CACHE: dict[str, dict[str, tuple[Any, float]]] = {}
+_CACHE_TTL_SEC = 90
+
+
+def _cached(board_id: str, key: str, fetcher):
+    bucket = _BOARD_CACHE.setdefault(board_id, {})
+    cached = bucket.get(key)
+    now = time.time()
+    if cached and (now - cached[1]) < _CACHE_TTL_SEC:
+        return cached[0]
+    val = fetcher()
+    bucket[key] = (val, now)
+    return val
+
+
+def invalidate_cache(board_id: str | None = None, key: str | None = None) -> None:
+    if board_id is None:
+        _BOARD_CACHE.clear()
+        return
+    if key is None:
+        _BOARD_CACHE.pop(board_id, None)
+        return
+    _BOARD_CACHE.get(board_id, {}).pop(key, None)
+
+
 def fetch_lists(board_id: str) -> list[dict]:
-    return http("GET", f"/boards/{board_id}/lists", params={"filter": "open"})
+    return _cached(board_id, "lists",
+                   lambda: http("GET", f"/boards/{board_id}/lists",
+                                params={"filter": "open"}))
 
 
 def fetch_labels(board_id: str) -> list[dict]:
-    return http("GET", f"/boards/{board_id}/labels", params={"limit": 1000})
+    return _cached(board_id, "labels",
+                   lambda: http("GET", f"/boards/{board_id}/labels",
+                                params={"limit": 1000}))
 
 
 def fetch_cards(board_id: str) -> list[dict]:
@@ -243,6 +279,19 @@ def fetch_cards(board_id: str) -> list[dict]:
 
 def fetch_card_checklists(card_id: str) -> list[dict]:
     return http("GET", f"/cards/{card_id}/checklists")
+
+
+def update_card(card_id: str, **fields: Any) -> dict:
+    """Single PUT to /cards/{id}. Pass list/label/desc/idList as fields."""
+    params = {k: v for k, v in fields.items() if v is not None}
+    return http("PUT", f"/cards/{card_id}", params=params)
+
+
+def find_card_id(board_id: str, name: str) -> str | None:
+    for c in fetch_cards(board_id):
+        if c["name"] == name:
+            return c["id"]
+    return None
 
 
 def ensure_lists(board_id: str, wanted: list[str], dry_run: bool) -> dict[str, str]:
@@ -258,6 +307,7 @@ def ensure_lists(board_id: str, wanted: list[str], dry_run: bool) -> dict[str, s
             continue
         created = http("POST", "/lists", params={"name": name, "idBoard": board_id, "pos": "bottom"})
         out[name] = created["id"]
+        invalidate_cache(board_id, "lists")
         print(f"  + list: {name}")
     return out
 
@@ -276,6 +326,7 @@ def ensure_labels(board_id: str, wanted: dict[str, str], dry_run: bool) -> dict[
         created = http("POST", "/labels",
                        params={"name": name, "color": color, "idBoard": board_id})
         out[name] = created["id"]
+        invalidate_cache(board_id, "labels")
         print(f"  + label: {name} ({color})")
     return out
 
@@ -329,6 +380,49 @@ def fetch_board_cards_full(board_id: str) -> list[dict]:
     return http("GET", f"/boards/{board_id}/cards",
                 params={"filter": "open", "checklists": "all",
                         "fields": "name,desc,idList,idLabels,pos"})
+
+
+DUPLICATES_LIST = "Duplicates - review"
+
+
+def dedupe_cards(board_id: str, exclude_lists: set[str] | None = None) -> list[str]:
+    """Move every copy of any duplicate-named card into DUPLICATES_LIST.
+
+    Cards already in DUPLICATES_LIST or in exclude_lists are skipped.
+    Returns the list of duplicate names that were moved.
+    """
+    exclude = (exclude_lists or set()) | {DUPLICATES_LIST}
+    cards = http("GET", f"/boards/{board_id}/cards",
+                 params={"filter": "open", "fields": "name,idList"})
+    lists = fetch_lists(board_id)
+    list_name = {l["id"]: l["name"] for l in lists}
+
+    by_name: dict[str, list[dict]] = {}
+    for c in cards:
+        ln = list_name.get(c["idList"])
+        if ln in exclude:
+            continue
+        by_name.setdefault(c["name"], []).append(c)
+
+    dups = {n: cs for n, cs in by_name.items() if len(cs) > 1}
+    if not dups:
+        return []
+
+    dup_list_id = next((l["id"] for l in lists if l["name"] == DUPLICATES_LIST), None)
+    if dup_list_id is None:
+        created = http("POST", "/lists",
+                       params={"name": DUPLICATES_LIST, "idBoard": board_id, "pos": "bottom"})
+        dup_list_id = created["id"]
+        invalidate_cache(board_id, "lists")
+        print(f"  + list: {DUPLICATES_LIST}")
+
+    moved: list[str] = []
+    for name, copies in dups.items():
+        for c in copies:
+            update_card(c["id"], idList=dup_list_id)
+        moved.append(name)
+        print(f"  ~ duplicate ({len(copies)}× copies) -> {DUPLICATES_LIST}: {name[:80]}")
+    return moved
 
 
 def pull(board_id: str, cards_path: Path) -> int:
@@ -431,9 +525,23 @@ def is_bare(card: dict) -> bool:
 def _build_prompt(bare_cards: list[dict], spec: dict) -> tuple[str, str]:
     target_lists = [l for l in spec["lists"] if l not in DONE_LISTS]
     label_names = list(spec.get("labels", {}).keys())
+
+    def _slim(card: dict) -> dict:
+        # Drop empty fields, truncate desc, to keep input tokens low.
+        out: dict[str, Any] = {"name": card["name"], "list": card["list"]}
+        labels = card.get("labels") or []
+        if labels:
+            out["labels"] = labels
+        desc = (card.get("desc") or "").strip()
+        if desc:
+            out["desc"] = desc[:500] + ("…" if len(desc) > 500 else "")
+        checklist = card.get("checklist") or []
+        if checklist:
+            out["checklist"] = checklist
+        return out
+
     examples = [
-        {"name": c["name"], "list": c["list"], "labels": c.get("labels", []),
-         "desc": c.get("desc", ""), "checklist": c.get("checklist", [])}
+        _slim(c)
         for c in spec["cards"]
         if (c.get("desc") or "").strip() and c.get("checklist")
         and c["list"] not in DONE_LISTS
@@ -480,39 +588,20 @@ def _parse_llm_json(text: str) -> list[dict]:
     raise RuntimeError(f"unexpected LLM response shape: {type(parsed).__name__}")
 
 
-def _call_straico(bare_cards: list[dict], spec: dict, model_alias: str) -> list[dict]:
-    api_key = os.environ.get("STRAICO_API_KEY")
-    if not api_key:
-        raise RuntimeError("missing STRAICO_API_KEY")
-    model_id = PROVIDER_MODELS["straico"].get(model_alias, model_alias)
-    system, user = _build_prompt(bare_cards, spec)
-    body = {"models": [model_id], "message": f"{system}\n\n---\n\n{user}"}
-    req = urllib.request.Request(
-        STRAICO_API,
-        data=json.dumps(body).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=180) as resp:
-        result = json.loads(resp.read())
+def _straico_body(model_id: str, system: str, user: str) -> dict:
+    return {"models": [model_id], "message": f"{system}\n\n---\n\n{user}"}
+
+
+def _straico_parse(result: dict) -> str:
     completions = (result.get("data") or {}).get("completions") or {}
     if not completions:
         raise RuntimeError(f"straico: empty completions in response: {result}")
     first = next(iter(completions.values()))
-    text = first["completion"]["choices"][0]["message"]["content"]
-    return _parse_llm_json(text)
+    return first["completion"]["choices"][0]["message"]["content"]
 
 
-def _call_openrouter(bare_cards: list[dict], spec: dict, model_alias: str) -> list[dict]:
-    api_key = os.environ.get("OPENROUTER_API_KEY")
-    if not api_key:
-        raise RuntimeError("missing OPENROUTER_API_KEY")
-    model_id = PROVIDER_MODELS["openrouter"].get(model_alias, model_alias)
-    system, user = _build_prompt(bare_cards, spec)
-    body = {
+def _openrouter_body(model_id: str, system: str, user: str) -> dict:
+    return {
         "model": model_id,
         "max_tokens": 8192,
         "messages": [
@@ -521,38 +610,69 @@ def _call_openrouter(bare_cards: list[dict], spec: dict, model_alias: str) -> li
         ],
         "response_format": {"type": "json_object"},
     }
+
+
+def _openrouter_parse(result: dict) -> str:
+    return result["choices"][0]["message"]["content"]
+
+
+def _openrouter_headers() -> dict:
+    h: dict[str, str] = {}
+    if os.environ.get("OPENROUTER_REFERER"):
+        h["HTTP-Referer"] = os.environ["OPENROUTER_REFERER"]
+    if os.environ.get("OPENROUTER_TITLE"):
+        h["X-Title"] = os.environ["OPENROUTER_TITLE"]
+    return h
+
+
+PROVIDERS = {
+    "straico": {
+        "url": STRAICO_API,
+        "key_env": "STRAICO_API_KEY",
+        "build_body": _straico_body,
+        "parse": _straico_parse,
+        "extra_headers": lambda: {},
+    },
+    "openrouter": {
+        "url": OPENROUTER_API,
+        "key_env": "OPENROUTER_API_KEY",
+        "build_body": _openrouter_body,
+        "parse": _openrouter_parse,
+        "extra_headers": _openrouter_headers,
+    },
+}
+
+
+def _call_provider(provider: str, bare_cards: list[dict], spec: dict,
+                   model_alias: str) -> list[dict]:
+    cfg = PROVIDERS[provider]
+    api_key = os.environ.get(cfg["key_env"])
+    if not api_key:
+        raise RuntimeError(f"missing {cfg['key_env']}")
+    model_id = PROVIDER_MODELS[provider].get(model_alias, model_alias)
+    system, user = _build_prompt(bare_cards, spec)
+    body = cfg["build_body"](model_id, system, user)
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
+        **cfg["extra_headers"](),
     }
-    if os.environ.get("OPENROUTER_REFERER"):
-        headers["HTTP-Referer"] = os.environ["OPENROUTER_REFERER"]
-    if os.environ.get("OPENROUTER_TITLE"):
-        headers["X-Title"] = os.environ["OPENROUTER_TITLE"]
     req = urllib.request.Request(
-        OPENROUTER_API,
+        cfg["url"],
         data=json.dumps(body).encode("utf-8"),
         headers=headers,
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=180) as resp:
         result = json.loads(resp.read())
-    text = result["choices"][0]["message"]["content"]
-    return _parse_llm_json(text)
-
-
-PROVIDER_FUNCS = {
-    "straico": _call_straico,
-    "openrouter": _call_openrouter,
-}
+    return _parse_llm_json(cfg["parse"](result))
 
 
 def call_llm(bare_cards: list[dict], spec: dict, model_alias: str,
              provider: str = "auto") -> list[dict]:
     if provider == "auto":
         candidates = [p for p in PROVIDER_ORDER
-                      if os.environ.get({"straico": "STRAICO_API_KEY",
-                                         "openrouter": "OPENROUTER_API_KEY"}[p])]
+                      if os.environ.get(PROVIDERS[p]["key_env"])]
         if not candidates:
             raise RuntimeError(
                 "no provider key set (STRAICO_API_KEY or OPENROUTER_API_KEY)"
@@ -564,7 +684,7 @@ def call_llm(bare_cards: list[dict], spec: dict, model_alias: str,
     for p in candidates:
         try:
             print(f"  llm: trying {p} ({PROVIDER_MODELS[p].get(model_alias, model_alias)})")
-            return PROVIDER_FUNCS[p](bare_cards, spec, model_alias)
+            return _call_provider(p, bare_cards, spec, model_alias)
         except Exception as e:
             print(f"  llm: {p} failed: {e}", file=sys.stderr)
             last_err = e
