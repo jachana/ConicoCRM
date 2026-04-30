@@ -36,6 +36,8 @@ import GuiaDespachoDetalle from './pages/GuiaDespachoDetalle';
 import NotasDebito from './pages/NotasDebito';
 import NotaDebitoDetalle from './pages/NotaDebitoDetalle';
 import NotaDebitoNueva from './pages/NotaDebitoNueva';
+import FacturasCompraList from './pages/FacturasCompraList';
+import FacturaCompraDetalle from './pages/FacturaCompraDetalle';
 import TareasPage from './pages/Tareas';
 import TareasConfigPage from './pages/TareasConfig';
 import AdminAuditoria from './pages/AdminAuditoria';
@@ -81,6 +83,9 @@ export const router = createBrowserRouter([
             { path: 'ordenes-compra', element: _jsx(RequireNotVendedor, { children: _jsx(OrdenesCompra, {}) }) },
             { path: 'ordenes-compra/nueva', element: _jsx(RequireNotVendedor, { children: _jsx(OrdenCompraDetalle, {}) }) },
             { path: 'ordenes-compra/:id', element: _jsx(RequireNotVendedor, { children: _jsx(OrdenCompraDetalle, {}) }) },
+            { path: 'facturas-compra', element: _jsx(RequireNotVendedor, { children: _jsx(FacturasCompraList, {}) }) },
+            { path: 'facturas-compra/nueva', element: _jsx(RequireNotVendedor, { children: _jsx(FacturaCompraDetalle, {}) }) },
+            { path: 'facturas-compra/:id', element: _jsx(RequireNotVendedor, { children: _jsx(FacturaCompraDetalle, {}) }) },
             { path: 'notas-venta', element: _jsx(NotaVentas, {}) },
             { path: 'notas-venta/nueva', element: _jsx(NotaVentaDetalle, {}) },
             { path: 'notas-venta/:id', element: _jsx(NotaVentaDetalle, {}) },
