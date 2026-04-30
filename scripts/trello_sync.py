@@ -78,6 +78,8 @@ PROVIDER_MODELS = {
         "opus": "anthropic/claude-opus-4.1",
         "gemini-flash": "google/gemini-2.5-flash",
         "gpt-mini": "openai/gpt-4.1-mini",
+        "qwen-coder": "qwen/qwen3-coder",
+        "qwen-72b": "qwen/qwen-2.5-72b-instruct",
     },
     "openrouter": {
         "haiku": "anthropic/claude-haiku-4.5",
@@ -85,6 +87,8 @@ PROVIDER_MODELS = {
         "opus": "anthropic/claude-opus-4.1",
         "gemini-flash": "google/gemini-2.5-flash",
         "gpt-mini": "openai/gpt-4.1-mini",
+        "qwen-coder": "qwen/qwen3-coder",
+        "qwen-72b": "qwen/qwen-2.5-72b-instruct",
     },
 }
 DONE_LISTS = {"Friendly Beta 0.1", "Live Beta 0.2", "Live 1.0", "In review"}
