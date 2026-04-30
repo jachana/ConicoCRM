@@ -72,6 +72,33 @@ class TestPresetCRUD:
         assert r2.json()["name"] == "Renombrado"
         assert r2.json()["layout"]["widgets"][0]["id"] == "w1"
 
+    def test_widget_goal_field_persists(self, client, setup_test_db):
+        _make_user("admin", "a@test.cl")
+        tok = _token(client, "a@test.cl")
+        r = client.post("/api/dashboard/layout/admin", json={"name": "P"}, headers={"Authorization": f"Bearer {tok}"})
+        slot = r.json()["slot"]
+        layout_with_goal = {
+            "widgets": [
+                {
+                    "id": "wg",
+                    "type": "ventas_periodo",
+                    "chart": "kpi",
+                    "date_range": "month",
+                    "limit": 10,
+                    "goal": 5_000_000,
+                    "grid": {"x": 0, "y": 0, "w": 3, "h": 3},
+                }
+            ]
+        }
+        r2 = client.put(
+            f"/api/dashboard/layout/admin/{slot}",
+            json={"name": "Con meta", "layout": layout_with_goal},
+            headers={"Authorization": f"Bearer {tok}"},
+        )
+        assert r2.status_code == 200
+        widget = r2.json()["layout"]["widgets"][0]
+        assert widget["goal"] == 5_000_000
+
     def test_create_forbidden_for_vendedor(self, client, setup_test_db):
         _make_user("vendedor", "v@test.cl")
         tok = _token(client, "v@test.cl")

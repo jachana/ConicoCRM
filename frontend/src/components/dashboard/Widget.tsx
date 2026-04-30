@@ -76,8 +76,37 @@ function SimpleLineChart({ data, xKey, yKey }: { data: object[]; xKey: string; y
 
 // ── Per-widget render ──────────────────────────────────────────────────────────
 
-function RenderVentas({ data, chart }: { data: VentasPeriodoOut; chart: string }) {
-  if (chart === 'kpi') return <KpiCard value={formatMoney(data.total)} label="Ventas del período" />
+function VentasGoalKpi({ total, goal }: { total: number; goal: number }) {
+  const pct = goal > 0 ? Math.min(100, (total / goal) * 100) : 0
+  const reached = total >= goal && goal > 0
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-1.5 px-3 w-full">
+      <span className={`text-2xl font-bold w-full text-center break-all leading-tight ${reached ? 'text-success-500 dark:text-success-400' : 'text-info-500 dark:text-info-400'}`}>
+        {formatMoney(total)}
+      </span>
+      <span className="text-[10px] text-gray-500 dark:text-gray-400 text-center">
+        Meta: {formatMoney(goal)} · {pct.toFixed(0)}%
+      </span>
+      <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div
+          role="progressbar"
+          aria-valuenow={Math.round(pct)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Progreso meta de ventas"
+          className={`h-full rounded-full transition-all ${reached ? 'bg-success-500' : 'bg-info-500'}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function RenderVentas({ data, chart, goal }: { data: VentasPeriodoOut; chart: string; goal?: number | null }) {
+  if (chart === 'kpi') {
+    if (goal && goal > 0) return <VentasGoalKpi total={data.total} goal={goal} />
+    return <KpiCard value={formatMoney(data.total)} label="Ventas del período" />
+  }
   if (chart === 'line') return <SimpleLineChart data={data.series} xKey="periodo" yKey="monto" />
   return <SimpleBarChart data={data.series} xKey="periodo" yKey="monto" />
 }
@@ -201,7 +230,7 @@ function RenderVendedorMetrica({ data, chart }: { data: VendedorMetricaItem[]; c
 
 function WidgetContent({ widget, data }: { widget: WidgetConfig; data: unknown }) {
   switch (widget.type) {
-    case 'ventas_periodo': return <RenderVentas data={data as VentasPeriodoOut} chart={widget.chart} />
+    case 'ventas_periodo': return <RenderVentas data={data as VentasPeriodoOut} chart={widget.chart} goal={widget.goal} />
     case 'cotizaciones_abiertas': return <RenderCotizaciones data={data as CotizacionesAbiertasOut} chart={widget.chart} />
     case 'top_clientes': return <RenderTopClientes data={data as TopClienteItem[]} chart={widget.chart} />
     case 'top_productos': return <RenderTopProductos data={data as TopProductoItem[]} chart={widget.chart} />

@@ -77,6 +77,19 @@ export default function WidgetConfigModal({ widget, onSave, onClose }: WidgetCon
               onChange={e => set('limit', Number(e.target.value))}
             />
           </FormField>
+
+          {draft.type === 'ventas_periodo' && draft.chart === 'kpi' && (
+            <FormField label="Meta del período (CLP, opcional)">
+              <Input
+                type="number"
+                min={0}
+                step={1000}
+                placeholder="Ej: 5000000"
+                value={draft.goal ?? ''}
+                onChange={e => set('goal', e.target.value === '' ? null : Number(e.target.value))}
+              />
+            </FormField>
+          )}
         </ModalBody>
         <ModalFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>

@@ -29,6 +29,7 @@ export interface WidgetConfig {
   date_from?: string
   date_to?: string
   limit: number
+  goal?: number | null
   grid: WidgetGridPos
 }
 

@@ -18,6 +18,7 @@ class WidgetConfig(BaseModel):
     date_from: str | None = None
     date_to: str | None = None
     limit: int = 10
+    goal: float | None = None
     grid: WidgetGridPos
 
 
