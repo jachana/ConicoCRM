@@ -23,19 +23,13 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[NV] Adjuntar documentos (OC u otros) y propagarlos a factura",
+      "list": "In progress",
+      "name": "[Empresa] RUT no oficial — flag informativo para consolidación",
       "labels": [
         "Core"
       ],
-      "desc": "La Nota de Venta debe permitir adjuntar archivos (ej. Orden de Compra del cliente). Los adjuntos deben heredarse al generar la factura desde la NV, y aparecer referenciados en el PDF de factura.",
-      "checklist": [
-        "Modelo: tabla adjuntos vinculada a NV (nombre, archivo, tipo)",
-        "UI NV: sección para subir/ver/eliminar adjuntos (multi-archivo)",
-        "Al generar factura desde NV: copiar adjuntos a la factura",
-        "PDF factura: listar adjuntos con nombre de archivo (y número de OC si aplica)",
-        "Sección de OC: campo de texto libre para número de OC del cliente"
-      ]
+      "desc": "Algunas empresas tienen multiples RUT, necesitamos saberlos todos para contabilidad y consolidaciones",
+      "checklist": []
     }
   ]
 }
