@@ -23,7 +23,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "when selecting somethign from inventario using ctrl+k Error: Invalid frameId for foreground frameId: 0\n    at le (background-redux-new.js:2:9576358)\n    at p (background-redux-new.js:2:9643653)\n    at background-redux-new.js:2:9644653\nle @ background-redux-new.js:2Understand this error\nchrome-extension://h…ound-redux-new.js:1 Uncaught (in promise) Error: No tab with id: 1218547717.Understand this error\nchrome-extension://h…ound-redux-new.js:1 Uncaught (in promise) Error: No tab with id: 1218547726.Understand this error\nchrome-extension://h…ound-redux-new.js:1 Uncaught (in promise) Error: No tab with id: 1218547729.Understand this error\nchrome-extension://h…ound-redux-new.js:1 Uncaught (in promise) Error: No tab with id: 1218547646.Understand this error\nchrome-extension://h…ound-redux-new.js:1 Uncaught (in promise) Error: No tab with id: 1218547720.",
       "labels": [],
       "desc": "",
