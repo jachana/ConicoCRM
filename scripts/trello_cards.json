@@ -165,6 +165,7 @@
         "Definir KPIs visuales por rol (vendedor vs admin)",
         "Implementar new design con charts/cards interactivas",
         "Test A/B con subset de usuarios",
+        "[auto-attempt failed] backend pytest failed (exit 1):\n<3>WSL (9 - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n",
         "[auto-attempt failed] backend pytest failed (exit 1):\n<3>WSL (9 - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
       ]
     },
