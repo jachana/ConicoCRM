@@ -23,12 +23,12 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "when selecting a Empresa using ctrl+k I get 404",
+      "list": "In progress",
+      "name": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.  If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.  For more information, see https://radix-ui.com/primitives/docs/components/dialog",
       "labels": [
         "Bug"
       ],
-      "desc": "\n\nFixed in commit 01cb4fe: cmdk URL → /empresas?detalle=<id>; Empresas page opens detail modal from param.",
+      "desc": "",
       "checklist": []
     }
   ]
