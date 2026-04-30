@@ -1,7 +1,7 @@
 """add tipos_producto + producto_tipo_link
 
-Revision ID: a6b7c8d9e0f1
-Revises: z5a6b7c8d9e0
+Revision ID: u1v2w3x4y5z6
+Revises: t0u1v2w3x4y5
 Create Date: 2026-04-29 12:00:00.000000
 """
 from typing import Sequence, Union
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = "a6b7c8d9e0f1"
-down_revision: Union[str, Sequence[str], None] = "z5a6b7c8d9e0"
+revision: str = "u1v2w3x4y5z6"
+down_revision: Union[str, Sequence[str], None] = "t0u1v2w3x4y5"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
