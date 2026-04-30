@@ -185,7 +185,7 @@ def _significant_tokens(name: str) -> set[str]:
             if t not in ALREADY_DONE_STOPWORDS}
 
 
-def _recent_commits(n: int = 500) -> list[tuple[str, str, str]]:
+def _recent_commits(n: int = 200) -> list[tuple[str, str, str]]:
     """Return [(sha, subject, ascii_subject_lower)] for last n commits across all refs."""
     r = subprocess.run(["git", "log", "--all", f"-n{n}", "--pretty=%H%x09%s"],
                        cwd=str(REPO_ROOT), capture_output=True, check=True)
@@ -224,18 +224,128 @@ def looks_implemented(card: dict,
     return matches
 
 
-def reconcile_already_done(spec: dict, board_id: str) -> list[str]:
-    """Move cards that look already-implemented directly to 'In review' with commit links.
+def is_test_file(path: str) -> bool:
+    p = Path(path)
+    if path.startswith("backend/") and path.endswith(".py"):
+        return "test_" in p.name or p.name.endswith("_test.py")
+    if path.startswith("frontend/") and (".test." in path or ".spec." in path):
+        return path.rsplit(".", 1)[-1] in {"ts", "tsx", "js", "jsx"}
+    return False
 
-    Goes around apply_spec() (which keys by card name and collapses duplicates)
-    by hitting the Trello API per-card-id. Every duplicate copy gets moved.
+
+def _files_in_commits(shas: list[str]) -> list[str]:
+    out: set[str] = set()
+    for sha in shas:
+        r = subprocess.run(["git", "show", "--name-only", "--pretty=", sha],
+                           cwd=str(REPO_ROOT), capture_output=True, text=True, check=False)
+        for line in r.stdout.splitlines():
+            line = line.strip()
+            if line:
+                out.add(line)
+    return sorted(out)
+
+
+def _split_test_files(files: list[str]) -> tuple[list[str], list[str]]:
+    backend = [f for f in files
+               if f.startswith("backend/") and f.endswith(".py")
+               and ("test_" in Path(f).name or Path(f).name.endswith("_test.py"))]
+    frontend = [f for f in files
+                if f.startswith("frontend/")
+                and (".test." in f or ".spec." in f)
+                and f.rsplit(".", 1)[-1] in {"ts", "tsx", "js", "jsx"}]
+    return backend, frontend
+
+
+def run_scoped_tests(test_files: list[str]) -> tuple[bool, str]:
+    backend, frontend = _split_test_files(test_files)
+    if backend:
+        rel = [f[len("backend/"):] for f in backend]
+        r = subprocess.run([sys.executable, "-m", "pytest", *rel, "-q", "--no-header"],
+                           cwd=str(REPO_ROOT / "backend"), capture_output=True, text=True)
+        if r.returncode != 0:
+            return False, f"backend pytest failed:\n{(r.stdout + r.stderr)[-1500:]}"
+    if frontend:
+        rel = [f[len("frontend/"):] for f in frontend]
+        r = subprocess.run([NPM, "test", "--", "--run", *rel],
+                           cwd=str(REPO_ROOT / "frontend"), capture_output=True, text=True)
+        if r.returncode != 0:
+            return False, f"frontend vitest failed:\n{(r.stdout + r.stderr)[-1500:]}"
+    return True, "ok"
+
+
+def _llm_call_with_prompt(system: str, user: str) -> dict | None:
+    """Invoke ts.call_llm with a one-off prompt by monkey-patching ts._build_prompt."""
+    spec_stub = {"cards": [], "lists": [], "labels": {}}
+    orig = ts._build_prompt
+    ts._build_prompt = lambda _b, _s: (system, user)
+    try:
+        result = ts.call_llm([], spec_stub, "haiku", provider="auto")
+    except Exception as e:
+        print(f"  llm error: {e}", file=sys.stderr)
+        return None
+    finally:
+        ts._build_prompt = orig
+    if isinstance(result, list) and result:
+        return result[0]
+    if isinstance(result, dict):
+        return result
+    return None
+
+
+def _generate_test_via_llm(card: dict, matches: list[tuple[str, str]]) -> dict | None:
+    diff_text = ""
+    for sha, _ in matches[:3]:
+        r = subprocess.run(["git", "show", sha, "--stat", "--no-color"],
+                           cwd=str(REPO_ROOT), capture_output=True, text=True, check=False)
+        diff_text += f"\n## {sha[:7]}\n{r.stdout[:3000]}\n"
+
+    user_prompt = (
+        f"Card: {json.dumps(card, ensure_ascii=False)}\n\n"
+        f"Likely implementing commits:\n{diff_text}\n\n"
+        "Write ONE test file that exercises this feature.\n"
+        "Conventions:\n"
+        "- Backend: backend/tests/test_<feature>.py - pytest, FastAPI TestClient via conftest.\n"
+        "- Frontend: frontend/src/__tests__/<feature>.test.tsx - vitest + RTL.\n"
+        "Test must FAIL if the feature is removed (assert real behavior, no tautology).\n\n"
+        "Return strict JSON wrapped in {\"cards\": [{...}]} with one entry: "
+        "{\"path\": \"...\", \"code\": \"...\"}.\n"
+    )
+    return _llm_call_with_prompt(
+        "You are a test author for the Conico CRM repo. Output strict JSON only.",
+        user_prompt,
+    )
+
+
+def _grade_test_via_llm(card: dict, code: str) -> bool:
+    user_prompt = (
+        f"Card: {json.dumps(card, ensure_ascii=False)}\n\n"
+        f"Test code:\n```\n{code[:4000]}\n```\n\n"
+        "Does this test meaningfully exercise the feature? Reject if assertions "
+        "are trivially true, the test mocks the SUT, or it only checks types/length "
+        "without behavior.\n\n"
+        "Return strict JSON {\"cards\": [{\"verdict\": \"pass\"|\"fail\", \"reason\": \"...\"}]}.\n"
+    )
+    out = _llm_call_with_prompt(
+        "You are a strict test reviewer. Output strict JSON only.",
+        user_prompt,
+    )
+    return bool(out and out.get("verdict") == "pass")
+
+
+def reconcile_already_done(spec: dict, board_id: str,
+                           commit_window: int = 200) -> list[str]:
+    """Move cards that look already-implemented directly to 'In review'.
+
+    Now gated: token-match is the *candidate* signal. Auto-ship only if either
+      (a) the matching commits touched test files AND those tests pass, OR
+      (b) we can generate a non-tautological test that passes.
     """
-    commits = _recent_commits()
-    eligible_names = {c["name"] for c in spec["cards"]
-                      if c["list"] in ELIGIBLE_FOR_AUTOSHIP_LISTS}
+    commits = _recent_commits(commit_window)
 
     todo: list[tuple[dict, list[tuple[str, str]]]] = []
     for c in spec["cards"]:
+        if c["list"] == ts.DUPLICATES_LIST:
+            continue
         if c["list"] not in ELIGIBLE_FOR_AUTOSHIP_LISTS:
             continue
         matches = looks_implemented(c, commits)
@@ -276,6 +386,41 @@ def reconcile_already_done(spec: dict, board_id: str) -> list[str]:
         if not copies_to_move:
             continue
 
+        shas = [sha for sha, _ in matches]
+        files = _files_in_commits(shas)
+        test_files = [f for f in files if is_test_file(f)]
+
+        if test_files:
+            print(f"  scoped-tests for {name[:60]}: {len(test_files)} file(s)")
+            ok, msg = run_scoped_tests(test_files)
+            if not ok:
+                print(f"  ! scoped-tests fail; skip auto-ship: {msg[:200]}")
+                continue
+        else:
+            print(f"  no tests touched in matching commits for {name[:60]}; gen-test path")
+            gen = _generate_test_via_llm(card_def, matches)
+            if not gen or not gen.get("path") or not gen.get("code"):
+                print(f"  ! gen-tests: LLM returned nothing; skip")
+                continue
+            test_path = REPO_ROOT / gen["path"]
+            test_path.parent.mkdir(parents=True, exist_ok=True)
+            test_path.write_text(gen["code"], encoding="utf-8")
+
+            ok, msg = run_scoped_tests([gen["path"]])
+            if not ok:
+                test_path.unlink(missing_ok=True)
+                print(f"  ! gen-tests fail; skip: {msg[:200]}")
+                continue
+            if not _grade_test_via_llm(card_def, gen["code"]):
+                test_path.unlink(missing_ok=True)
+                print(f"  ! gen-tests deemed tautological; skip")
+                continue
+            git("add", gen["path"])
+            subprocess.run(["git", "commit", "-m", f"test: add coverage for {name}"],
+                           cwd=str(REPO_ROOT), check=False)
+            new_sha = git_head()
+            matches = matches + [(new_sha, f"test: add coverage for {name}")]
+
         existing_shas = list(card_def.get("commits", []))
         for sha, _ in matches:
             if sha not in existing_shas:
@@ -313,6 +458,8 @@ def reconcile_already_done(spec: dict, board_id: str) -> list[str]:
 def candidates(spec: dict) -> list[dict]:
     out = []
     for c in spec["cards"]:
+        if c["list"] == ts.DUPLICATES_LIST:
+            continue
         if c["list"] != ELIGIBLE_LIST:
             continue
         if any(l in SKIP_LABELS for l in c.get("labels", [])):
@@ -405,7 +552,8 @@ def spawn_claude(card: dict, model: str, log_path: Path) -> tuple[int, str]:
     with log_path.open("w", encoding="utf-8") as f:
         proc = subprocess.Popen(cmd, cwd=str(REPO_ROOT),
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                text=True, bufsize=1)
+                                text=True, bufsize=1,
+                                encoding="utf-8", errors="replace")
         for line in proc.stdout:
             f.write(line)
             f.flush()
@@ -454,13 +602,17 @@ def trello_apply() -> None:
     ts.apply_spec(spec, board_id, dry_run=False)
 
 
-def claim(spec: dict, name: str) -> None:
+def claim(spec: dict, name: str, board_id: str) -> None:
     card = find_card(spec, name)
     if not card:
         raise RuntimeError(f"card not found locally: {name}")
+    card_id = ts.find_card_id(board_id, name)
+    if not card_id:
+        raise RuntimeError(f"card not found on board: {name}")
+    list_id = next(l["id"] for l in ts.fetch_lists(board_id) if l["name"] == CLAIMED_LIST)
+    ts.update_card(card_id, idList=list_id)
     card["list"] = CLAIMED_LIST
     save_spec(spec)
-    trello_apply()
     git("add", str(CARDS_FILE.relative_to(REPO_ROOT)))
     subprocess.run(["git", "commit", "-m", f"chore(trello): claim {name} -> In progress"],
                    cwd=str(REPO_ROOT), check=False)
@@ -502,8 +654,15 @@ def iteration(args, board_id: str) -> str:
     ts.pull(board_id, CARDS_FILE)
     spec = load_spec()
 
+    print("\n=== dedupe ===")
+    moved_dups = ts.dedupe_cards(board_id, exclude_lists=set(ts.DONE_LISTS))
+    if moved_dups:
+        print(f"  moved {len(moved_dups)} duplicate-named card(s); re-pulling.")
+        ts.pull(board_id, CARDS_FILE)
+        spec = load_spec()
+
     print("\n=== reconcile already-implemented ===")
-    moved = reconcile_already_done(spec, board_id)
+    moved = reconcile_already_done(spec, board_id, commit_window=args.commit_window)
     if moved:
         print(f"  auto-shipped {len(moved)} card(s); re-pulling.")
         ts.pull(board_id, CARDS_FILE)
@@ -551,7 +710,7 @@ def iteration(args, board_id: str) -> str:
     print(f"  pre-attempt sha: {pre_sha}")
 
     print("\n=== claim card ===")
-    claim(spec, name)
+    claim(spec, name, board_id)
     spec = load_spec()
     card = find_card(spec, name)
 
@@ -611,6 +770,8 @@ def main() -> int:
                         choices=["auto", "straico", "openrouter"])
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--skip-tests", action="store_true")
+    parser.add_argument("--commit-window", type=int, default=200,
+                        help="how many recent commits to scan for already-implemented matches")
     args = parser.parse_args()
 
     ts.load_dotenv(ts.ENV_FILE)
