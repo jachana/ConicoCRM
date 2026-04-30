@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, Users, Package, ShoppingCart,
   Warehouse, Truck, UserCog, Building2, CreditCard,
   ChevronLeft, ChevronRight, LogOut, Sun, Moon, X, ClipboardList, Settings, Banknote, BarChart2, CheckSquare, AlarmClock, ShieldCheck,
-  Receipt, ScrollText, FileMinus, FilePlus, Contact,
+  Receipt, ScrollText, FileMinus, FilePlus, Contact, Download,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth'
 import { useTheme } from './ThemeProvider'
@@ -95,6 +95,7 @@ const SECTIONS: NavSection[] = [
       { to: '/configuracion',       icon: Settings,   label: 'Configuración',    adminOnly: true },
       { to: '/admin/tareas/config', icon: AlarmClock, label: 'Reglas de tareas', adminOnly: true },
       { to: '/admin/auditoria',     icon: ShieldCheck, label: 'Auditoría',       adminOnly: true },
+      { to: '/admin/migracion',     icon: Download,    label: 'Migración inicial', adminOnly: true },
     ],
   },
 ]

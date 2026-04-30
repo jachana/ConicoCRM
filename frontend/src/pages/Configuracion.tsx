@@ -371,6 +371,7 @@ const SIDEBAR_ITEMS: { to: string; label: string }[] = [
   { to: '/usuarios',                  label: 'Usuarios' },
   { to: '/admin/tareas/config',       label: 'Reglas de tareas' },
   { to: '/admin/auditoria',           label: 'Auditoría' },
+  { to: '/admin/migracion',           label: 'Migración inicial' },
 ]
 
 function SidebarSection() {
