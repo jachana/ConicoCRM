@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if ls alembic/versions/*.py 2>/dev/null | head -1 > /dev/null; then alembic heads 2>&1 | wc -l | grep -q '^1$' || echo 'WARN: multiple alembic heads'; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
