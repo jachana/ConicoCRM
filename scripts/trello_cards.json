@@ -153,19 +153,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "[DTE] Factura de compra tipo 46",
-      "labels": [
-        "DTE/SII"
-      ],
-      "desc": "Para compras a proveedores no contribuyentes / cambio de sujeto.",
-      "checklist": [
-        "Modelo FacturaCompra (o reuso de OC)",
-        "Pipeline DTE tipo 46",
-        "PDF + envío"
-      ]
-    },
-    {
       "list": "Feature requests",
       "name": "revamp dashboard, its boring now",
       "labels": [
@@ -711,6 +698,19 @@
       "labels": [],
       "desc": "",
       "checklist": []
+    },
+    {
+      "list": "In review",
+      "name": "[DTE] Factura de compra tipo 46",
+      "labels": [
+        "DTE/SII"
+      ],
+      "desc": "Para compras a proveedores no contribuyentes / cambio de sujeto.",
+      "checklist": [
+        "Modelo FacturaCompra (o reuso de OC)",
+        "Pipeline DTE tipo 46",
+        "PDF + envío"
+      ]
     },
     {
       "list": "In review",
