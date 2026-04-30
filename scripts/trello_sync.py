@@ -93,6 +93,79 @@ PROVIDER_MODELS = {
 }
 DONE_LISTS = {"Friendly Beta 0.1", "Live Beta 0.2", "Live 1.0", "In review"}
 
+# Rough public list-pricing in USD per 1M tokens (input, output).
+# These are estimates for budgeting only; actual billing varies by provider markup.
+MODEL_PRICES_USD_PER_M: dict[str, tuple[float, float]] = {
+    "claude-haiku-4.5":       (1.00,  5.00),
+    "claude-sonnet-4.5":      (3.00, 15.00),
+    "claude-sonnet-4.6":      (3.00, 15.00),
+    "claude-sonnet-4.7":      (3.00, 15.00),
+    "claude-opus-4.1":        (15.00, 75.00),
+    "claude-opus-4.6":        (15.00, 75.00),
+    "claude-opus-4.7":        (15.00, 75.00),
+    "qwen3-coder":            (0.20,  0.80),
+    "qwen-2.5-72b-instruct":  (0.13,  0.40),
+    "gemini-2.5-flash":       (0.30,  2.50),
+    "gpt-4.1-mini":           (0.40,  1.60),
+}
+
+
+def _price_for(model_id: str) -> tuple[float, float]:
+    """Return (input, output) price per 1M tokens for a model id, ($0,$0) if unknown."""
+    name = model_id.rsplit("/", 1)[-1]
+    return MODEL_PRICES_USD_PER_M.get(name, (0.0, 0.0))
+
+
+def estimate_cost_usd(model_id: str, in_tok: int, out_tok: int) -> float:
+    pi, po = _price_for(model_id)
+    return (in_tok * pi + out_tok * po) / 1_000_000
+
+
+# Cumulative LLM usage across this process. Each entry:
+#   {"provider", "model", "in", "out", "usd", "estimated"}
+USAGE_LOG: list[dict] = []
+
+
+def record_usage(provider: str, model: str, in_tok: int, out_tok: int,
+                 estimated: bool = False) -> dict:
+    entry = {
+        "provider": provider,
+        "model": model,
+        "in": int(in_tok),
+        "out": int(out_tok),
+        "usd": estimate_cost_usd(model, in_tok, out_tok),
+        "estimated": bool(estimated),
+    }
+    USAGE_LOG.append(entry)
+    return entry
+
+
+def usage_summary(reset: bool = False) -> str:
+    if not USAGE_LOG:
+        return "no LLM calls yet"
+    by_model: dict[str, dict] = {}
+    for u in USAGE_LOG:
+        k = f"{u['provider']}/{u['model']}"
+        d = by_model.setdefault(k, {"in": 0, "out": 0, "usd": 0.0, "n": 0, "est": False})
+        d["in"] += u["in"]
+        d["out"] += u["out"]
+        d["usd"] += u["usd"]
+        d["n"] += 1
+        d["est"] = d["est"] or u["estimated"]
+    lines = ["LLM usage:"]
+    total = 0.0
+    for k, d in sorted(by_model.items()):
+        flag = " (est)" if d["est"] else ""
+        lines.append(
+            f"  {k}: {d['n']} call(s)  {d['in']:>7d} in / {d['out']:>6d} out  "
+            f"~${d['usd']:.4f}{flag}"
+        )
+        total += d["usd"]
+    lines.append(f"  TOTAL: ~${total:.4f} (estimate; cache discounts ignored)")
+    if reset:
+        USAGE_LOG.clear()
+    return "\n".join(lines)
+
 COMMITS_MARKER_START = "<!-- conico-commits -->"
 COMMITS_MARKER_END = "<!-- /conico-commits -->"
 _COMMITS_BLOCK_RE = re.compile(
@@ -616,6 +689,21 @@ def _openrouter_parse(result: dict) -> str:
     return result["choices"][0]["message"]["content"]
 
 
+def _straico_extract_usage(result: dict) -> tuple[int, int]:
+    completions = (result.get("data") or {}).get("completions") or {}
+    if not completions:
+        return 0, 0
+    first = next(iter(completions.values()))
+    comp = first.get("completion", {}) or {}
+    u = comp.get("usage") or {}
+    return int(u.get("prompt_tokens", 0) or 0), int(u.get("completion_tokens", 0) or 0)
+
+
+def _openrouter_extract_usage(result: dict) -> tuple[int, int]:
+    u = result.get("usage") or {}
+    return int(u.get("prompt_tokens", 0) or 0), int(u.get("completion_tokens", 0) or 0)
+
+
 def _openrouter_headers() -> dict:
     h: dict[str, str] = {}
     if os.environ.get("OPENROUTER_REFERER"):
@@ -631,6 +719,7 @@ PROVIDERS = {
         "key_env": "STRAICO_API_KEY",
         "build_body": _straico_body,
         "parse": _straico_parse,
+        "extract_usage": _straico_extract_usage,
         "extra_headers": lambda: {},
     },
     "openrouter": {
@@ -638,6 +727,7 @@ PROVIDERS = {
         "key_env": "OPENROUTER_API_KEY",
         "build_body": _openrouter_body,
         "parse": _openrouter_parse,
+        "extract_usage": _openrouter_extract_usage,
         "extra_headers": _openrouter_headers,
     },
 }
@@ -665,7 +755,21 @@ def _call_provider(provider: str, bare_cards: list[dict], spec: dict,
     )
     with urllib.request.urlopen(req, timeout=180) as resp:
         result = json.loads(resp.read())
-    return _parse_llm_json(cfg["parse"](result))
+    text = cfg["parse"](result)
+
+    in_tok, out_tok = cfg["extract_usage"](result)
+    estimated = False
+    if in_tok == 0 and out_tok == 0:
+        # provider didn't return usage; estimate from chars (~4 chars/token)
+        in_tok = max(1, (len(system) + len(user)) // 4)
+        out_tok = max(1, len(text) // 4)
+        estimated = True
+    entry = record_usage(provider, model_id, in_tok, out_tok, estimated=estimated)
+    flag = " (est)" if estimated else ""
+    print(f"  llm: {provider}/{model_id}  {in_tok} in / {out_tok} out  "
+          f"~${entry['usd']:.4f}{flag}")
+
+    return _parse_llm_json(text)
 
 
 def call_llm(bare_cards: list[dict], spec: dict, model_alias: str,

@@ -534,6 +534,21 @@ CARD:
 """
 
 
+def _normalize_claude_model(m: str) -> str:
+    """claude-sonnet-4-6-20251001 -> claude-sonnet-4.6 (matches pricing keys)."""
+    if not m:
+        return m
+    mm = re.match(r"^(claude-(?:haiku|sonnet|opus)-\d+)-(\d+)", m)
+    if mm:
+        return f"{mm.group(1)}.{mm.group(2)}"
+    return m
+
+
+def _fmt_elapsed(seconds: float) -> str:
+    s = int(seconds)
+    return f"{s // 60:d}:{s % 60:02d}"
+
+
 def spawn_claude(card: dict, model: str, log_path: Path) -> tuple[int, str]:
     prompt = IMPLEMENTER_PROMPT.format(
         card_json=json.dumps(card, ensure_ascii=False, indent=2)
@@ -548,24 +563,90 @@ def spawn_claude(card: dict, model: str, log_path: Path) -> tuple[int, str]:
     ]
     print(f"  $ claude -p <prompt> --model {model} --permission-mode bypassPermissions")
     log_path.parent.mkdir(parents=True, exist_ok=True)
+
     last_text = ""
+    cum_in = 0
+    cum_out = 0
+    cum_cache_read = 0
+    cum_cache_write = 0
+    last_model_id = ""
+    started = time.monotonic()
+
     with log_path.open("w", encoding="utf-8") as f:
         proc = subprocess.Popen(cmd, cwd=str(REPO_ROOT),
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                 text=True, bufsize=1,
                                 encoding="utf-8", errors="replace")
         for line in proc.stdout:
-            f.write(line)
-            f.flush()
+            f.write(line); f.flush()
             try:
                 obj = json.loads(line)
-                if obj.get("type") == "assistant":
-                    msg = obj.get("message", {})
-                    for block in msg.get("content", []):
-                        if block.get("type") == "text":
-                            last_text = block.get("text", "")
             except Exception:
-                pass
+                continue
+
+            kind = obj.get("type")
+            elapsed = _fmt_elapsed(time.monotonic() - started)
+
+            if kind == "assistant":
+                msg = obj.get("message", {}) or {}
+                model_id = msg.get("model") or last_model_id
+                last_model_id = model_id
+
+                u = msg.get("usage") or {}
+                in_t  = int(u.get("input_tokens", 0) or 0)
+                out_t = int(u.get("output_tokens", 0) or 0)
+                cr_t  = int(u.get("cache_read_input_tokens", 0) or 0)
+                cw_t  = int(u.get("cache_creation_input_tokens", 0) or 0)
+                cum_in  += in_t
+                cum_out += out_t
+                cum_cache_read  += cr_t
+                cum_cache_write += cw_t
+
+                tool_names = []
+                for block in msg.get("content", []):
+                    btype = block.get("type")
+                    if btype == "text":
+                        last_text = block.get("text", "") or last_text
+                    elif btype == "tool_use":
+                        tool_names.append(block.get("name", "?"))
+
+                # rough live cost: input + cache (full rate; conservative)
+                norm = _normalize_claude_model(model_id)
+                step_usd = ts.estimate_cost_usd(norm, in_t + cr_t + cw_t, out_t)
+                cum_usd  = ts.estimate_cost_usd(
+                    norm, cum_in + cum_cache_read + cum_cache_write, cum_out)
+
+                snippet = ""
+                if tool_names:
+                    snippet = f"-> {', '.join(tool_names)}"
+                elif last_text:
+                    snippet = last_text.strip().split("\n", 1)[0][:80]
+
+                print(f"  [claude {elapsed}]  +{in_t}in/+{out_t}out  "
+                      f"cum {cum_in + cum_cache_read + cum_cache_write}/{cum_out} "
+                      f"~${cum_usd:.4f} (+${step_usd:.4f})  {snippet}",
+                      flush=True)
+
+            elif kind == "user":
+                # tool_result coming back
+                msg = obj.get("message", {}) or {}
+                for block in msg.get("content", []):
+                    if isinstance(block, dict) and block.get("type") == "tool_result":
+                        is_err = block.get("is_error")
+                        tag = "tool-err" if is_err else "tool-ok"
+                        print(f"  [claude {elapsed}]  {tag}", flush=True)
+                        break
+
+            elif kind == "result":
+                # final message; record cumulative usage to the global tracker
+                if cum_in or cum_out or cum_cache_read or cum_cache_write:
+                    norm = _normalize_claude_model(last_model_id) or model
+                    ts.record_usage(
+                        "claude-cli", norm,
+                        cum_in + cum_cache_read + cum_cache_write,
+                        cum_out, estimated=False,
+                    )
+
         proc.wait()
     return proc.returncode, last_text
 
@@ -752,6 +833,9 @@ def iteration(args, board_id: str) -> str:
     subprocess.run(["git", "push", "origin", args.branch],
                    cwd=str(REPO_ROOT), check=False)
 
+    print("\n=== iteration usage ===")
+    print(ts.usage_summary())
+
     return "continue"
 
 
@@ -799,6 +883,8 @@ def main() -> int:
             break
 
     print(f"\nfinished. iterations={n}")
+    print("\n=== session totals ===")
+    print(ts.usage_summary())
     return 0
 
 
