@@ -23,12 +23,12 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.  If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.  For more information, see https://radix-ui.com/primitives/docs/components/dialog",
       "labels": [
         "Bug"
       ],
-      "desc": "",
+      "desc": "\n\nFixed in commit e1a3124: GlobalSearchModal now embeds sr-only DialogTitle/Description (cmdk label prop only sets aria-label, Radix still requires Title).",
       "checklist": []
     }
   ]
