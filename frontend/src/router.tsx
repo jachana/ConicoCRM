@@ -43,6 +43,7 @@ import TareasPage from './pages/Tareas'
 import TareasConfigPage from './pages/TareasConfig'
 import AdminAuditoria from './pages/AdminAuditoria'
 import MigracionInicial from './pages/MigracionInicial'
+import Pipeline from './pages/Pipeline'
 import { useAuthStore } from './stores/auth'
 import AppLayout from './components/layout/AppLayout'
 
@@ -82,6 +83,7 @@ export const router = createBrowserRouter([
       { path: 'proveedores', element: <RequireNotVendedor><Proveedores /></RequireNotVendedor> },
       { path: 'catalogo', element: <Productos /> },
       { path: 'clientes', element: <Clientes /> },
+      { path: 'pipeline', element: <Pipeline /> },
       { path: 'cotizaciones', element: <Cotizaciones /> },
       { path: 'cotizaciones/nueva', element: <CotizacionDetalle /> },
       { path: 'cotizaciones/:id', element: <CotizacionDetalle /> },

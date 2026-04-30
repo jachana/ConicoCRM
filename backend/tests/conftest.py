@@ -111,6 +111,8 @@ def setup_test_db():
     import app.models.regla_tarea  # noqa: F401
     import app.models.audit_log  # noqa: F401
     import app.models.factura_compra  # noqa: F401 — registers FacturaCompra with Base.metadata
+    import app.models.notification  # noqa: F401
+    import app.models.oportunidad  # noqa: F401 — registers Oportunidad + Etapa with Base.metadata
     # Register audit listeners once for the test session.
     from app.services.auditoria import register_listeners as _register_audit
     _register_audit()

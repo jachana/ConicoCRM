@@ -44,6 +44,7 @@ import TareasPage from './pages/Tareas';
 import TareasConfigPage from './pages/TareasConfig';
 import AdminAuditoria from './pages/AdminAuditoria';
 import MigracionInicial from './pages/MigracionInicial';
+import Pipeline from './pages/Pipeline';
 import { useAuthStore } from './stores/auth';
 import AppLayout from './components/layout/AppLayout';
 function RequireAuth({ children }) {
@@ -82,6 +83,7 @@ export const router = createBrowserRouter([
             { path: 'proveedores', element: _jsx(RequireNotVendedor, { children: _jsx(Proveedores, {}) }) },
             { path: 'catalogo', element: _jsx(Productos, {}) },
             { path: 'clientes', element: _jsx(Clientes, {}) },
+            { path: 'pipeline', element: _jsx(Pipeline, {}) },
             { path: 'cotizaciones', element: _jsx(Cotizaciones, {}) },
             { path: 'cotizaciones/nueva', element: _jsx(CotizacionDetalle, {}) },
             { path: 'cotizaciones/:id', element: _jsx(CotizacionDetalle, {}) },

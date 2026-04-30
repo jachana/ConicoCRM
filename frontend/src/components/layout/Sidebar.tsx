@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, Users, Package, ShoppingCart,
   Warehouse, Truck, UserCog, Building2, CreditCard,
   ChevronLeft, ChevronRight, LogOut, Sun, Moon, X, ClipboardList, Settings, Banknote, BarChart2, CheckSquare, AlarmClock, ShieldCheck,
-  Receipt, ScrollText, FileMinus, FilePlus, Contact, Download,
+  Receipt, ScrollText, FileMinus, FilePlus, Contact, Download, Target,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth'
 import { useTheme } from './ThemeProvider'
@@ -49,6 +49,7 @@ const SECTIONS: NavSection[] = [
     items: [
       { to: '/clientes',     icon: Contact,      label: 'Clientes',       module: 'clientes' },
       { to: '/empresas',     icon: Building2,    label: 'Empresas',       module: 'empresas' },
+      { to: '/pipeline',     icon: Target,       label: 'Pipeline',       module: 'cotizaciones' },
       { to: '/cotizaciones', icon: FileText,     label: 'Cotizaciones',   module: 'cotizaciones' },
       { to: '/notas-venta',  icon: ShoppingCart, label: 'Notas de Venta', module: 'nota_venta' },
     ],
