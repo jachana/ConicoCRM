@@ -225,9 +225,16 @@ def looks_implemented(card: dict,
 
 
 def reconcile_already_done(spec: dict, board_id: str) -> list[str]:
-    """Move cards that look already-implemented directly to 'In review' with commit links."""
+    """Move cards that look already-implemented directly to 'In review' with commit links.
+
+    Goes around apply_spec() (which keys by card name and collapses duplicates)
+    by hitting the Trello API per-card-id. Every duplicate copy gets moved.
+    """
     commits = _recent_commits()
-    moved: list[str] = []
+    eligible_names = {c["name"] for c in spec["cards"]
+                      if c["list"] in ELIGIBLE_FOR_AUTOSHIP_LISTS}
+
+    todo: list[tuple[dict, list[tuple[str, str]]]] = []
     for c in spec["cards"]:
         if c["list"] not in ELIGIBLE_FOR_AUTOSHIP_LISTS:
             continue
@@ -238,15 +245,60 @@ def reconcile_already_done(spec: dict, board_id: str) -> list[str]:
         new_shas = [sha for sha, _ in matches if sha not in existing]
         if not new_shas:
             continue
-        c["list"] = SHIPPED_LIST
-        c["commits"] = list(existing) + new_shas
-        moved.append(c["name"])
-        print(f"  auto-ship (already implemented): {c['name'][:80]}")
+        todo.append((c, matches))
+
+    if not todo:
+        return []
+
+    lists = ts.http("GET", f"/boards/{board_id}/lists", params={"filter": "open"})
+    review_id = next(l["id"] for l in lists if l["name"] == SHIPPED_LIST)
+    list_name = {l["id"]: l["name"] for l in lists}
+
+    board_cards = ts.http("GET", f"/boards/{board_id}/cards",
+                          params={"filter": "open", "fields": "name,idList,desc"})
+    by_name: dict[str, list[dict]] = {}
+    for bc in board_cards:
+        by_name.setdefault(bc["name"], []).append(bc)
+
+    repo_url = ts._github_repo_url()
+    moved: list[str] = []
+    seen_names: set[str] = set()
+
+    for card_def, matches in todo:
+        name = card_def["name"]
+        if name in seen_names:
+            continue
+        seen_names.add(name)
+
+        copies = by_name.get(name, [])
+        copies_to_move = [bc for bc in copies
+                          if list_name.get(bc["idList"]) in ELIGIBLE_FOR_AUTOSHIP_LISTS]
+        if not copies_to_move:
+            continue
+
+        existing_shas = list(card_def.get("commits", []))
+        for sha, _ in matches:
+            if sha not in existing_shas:
+                existing_shas.append(sha)
+        commit_objs = ts._normalize_commits(existing_shas)
+        new_desc = ts._compose_desc(
+            ts._split_commits_block(card_def.get("desc", ""))[0],
+            commit_objs, repo_url,
+        )
+
+        for bc in copies_to_move:
+            ts.http("PUT", f"/cards/{bc['id']}",
+                    params={"idList": review_id, "desc": new_desc})
+            print(f"  auto-ship: {name[:80]}  (id={bc['id'][-6:]})")
+
+        card_def["list"] = SHIPPED_LIST
+        card_def["commits"] = existing_shas
+        moved.append(name)
         for sha, subj in matches[:3]:
-            print(f"    {sha[:7]}  {subj[:80]}")
+            print(f"    matched {sha[:7]}  {subj[:80]}")
+
     if moved:
         save_spec(spec)
-        ts.apply_spec(spec, board_id, dry_run=False)
         subprocess.run(["git", "add", "scripts/trello_cards.json"],
                        cwd=str(REPO_ROOT), check=False)
         subprocess.run(["git", "commit", "-m",
