@@ -23,18 +23,18 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[W1-07] 2FA TOTP + reset password",
+      "list": "In progress",
+      "name": "[Tier A #8] Notificaciones in-app + email digest",
       "labels": [
-        "Wave 1"
+        "Tier A"
       ],
-      "desc": "2FA TOTP + flujo reset password. Skip actual; reactivar pre-Live Beta 0.2.",
+      "desc": "No iniciado; tareas suplen parcialmente.",
       "checklist": [
-        "Setup TOTP (QR + verificación)",
-        "Endpoint enrollment + verify",
-        "Reset password vía email",
-        "Recovery codes",
-        "Settings UI"
+        "Modelo Notificacion (user, tipo, payload, leída)",
+        "WebSocket o polling para in-app",
+        "Bell icon header con badge unread",
+        "Email digest configurable (diario/semanal)",
+        "Settings de preferencias por tipo"
       ]
     }
   ]
