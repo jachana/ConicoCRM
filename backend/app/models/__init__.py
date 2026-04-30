@@ -32,3 +32,4 @@ from app.models.factura_adjunto import FacturaAdjunto  # noqa: F401
 from app.models.tarea import Tarea  # noqa: F401
 from app.models.regla_tarea import ReglaTarea  # noqa: F401
 from app.models.audit_log import AuditLog  # noqa: F401
+from app.models.notification import Notification  # noqa: F401

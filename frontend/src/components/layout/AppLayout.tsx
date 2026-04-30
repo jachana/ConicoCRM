@@ -4,6 +4,7 @@ import { LayoutDashboard, FileText, ShoppingCart, Users, Menu, Eye } from 'lucid
 import Sidebar from './Sidebar'
 import GlobalSearchModal from '../search/GlobalSearchModal'
 import SearchButton from '../search/SearchButton'
+import NotificationBell from '../NotificationBell'
 import { useGlobalShortcut } from '../../hooks/useGlobalShortcut'
 import { usePreferencesStore } from '../../stores/preferences'
 import { useViewAsStore } from '../../stores/viewAs'
@@ -83,11 +84,15 @@ export default function AppLayout() {
             <Menu size={20} />
           </button>
           <span className="text-sm font-bold tracking-widest text-white">CONICO</span>
-          <SearchButton onClick={() => setSearchOpen(true)} />
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <SearchButton onClick={() => setSearchOpen(true)} />
+          </div>
         </header>
 
         {/* Desktop header strip */}
         <header className="hidden md:flex items-center justify-end gap-2 h-10 px-4 border-b border-gray-200 dark:border-white/5 bg-white dark:bg-[#0f1422] flex-shrink-0">
+          <NotificationBell />
           <SearchButton onClick={() => setSearchOpen(true)} />
         </header>
 

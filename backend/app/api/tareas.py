@@ -10,6 +10,7 @@ from app.core.permissions import has_permission
 from app.models.tarea import Tarea
 from app.models.user import User
 from app.schemas.tarea import DescartarIn, MisPendientesOut, ReasignarIn, TareaIn, TareaOut, TareaPatch
+from app.services.notifications import create_notification
 
 router = APIRouter()
 
@@ -98,6 +99,23 @@ def crear_tarea(
         producto_id=payload.producto_id,
     )
     db.add(t)
+    db.flush()
+
+    if t.asignado_id != current_user.id:
+        create_notification(
+            db,
+            user_id=t.asignado_id,
+            tipo="tarea_asignada",
+            titulo=f"Nueva tarea: {t.titulo}",
+            cuerpo=(t.descripcion or None),
+            payload={
+                "tarea_id": t.id,
+                "due_date": t.due_date.isoformat(),
+                "creado_por_id": current_user.id,
+                "creado_por_nombre": current_user.name,
+            },
+        )
+
     db.commit()
     db.refresh(t)
     return serialize_tarea(t)
@@ -248,17 +266,34 @@ def patch_tarea(
         if t.creado_por_id != current_user.id and t.asignado_id != current_user.id and not is_admin:
             raise HTTPException(403, detail="Sin permisos para editar")
 
+    nuevo_asignado_id: int | None = None
     if payload.asignado_id is not None and payload.asignado_id != t.asignado_id:
         if not is_admin:
             raise HTTPException(403, detail="Solo admin reasigna")
         asignado = db.query(User).filter(User.id == payload.asignado_id, User.is_active.is_(True)).first()
         if asignado is None:
             raise HTTPException(422, detail="Usuario asignado inválido")
+        nuevo_asignado_id = payload.asignado_id
 
     for field in ("titulo", "descripcion", "due_date", "asignado_id"):
         val = getattr(payload, field)
         if val is not None:
             setattr(t, field, val)
+
+    if nuevo_asignado_id is not None and nuevo_asignado_id != current_user.id:
+        create_notification(
+            db,
+            user_id=nuevo_asignado_id,
+            tipo="tarea_asignada",
+            titulo=f"Tarea reasignada: {t.titulo}",
+            cuerpo=(t.descripcion or None),
+            payload={
+                "tarea_id": t.id,
+                "due_date": t.due_date.isoformat(),
+                "reasignado_por_id": current_user.id,
+                "reasignado_por_nombre": current_user.name,
+            },
+        )
 
     db.commit()
     db.refresh(t)
@@ -328,7 +363,22 @@ def reasignar(
     asignado = db.query(User).filter(User.id == payload.asignado_id, User.is_active.is_(True)).first()
     if asignado is None:
         raise HTTPException(422, detail="Usuario inválido")
+    cambio = t.asignado_id != payload.asignado_id
     t.asignado_id = payload.asignado_id
+    if cambio and payload.asignado_id != current_user.id:
+        create_notification(
+            db,
+            user_id=payload.asignado_id,
+            tipo="tarea_asignada",
+            titulo=f"Tarea reasignada: {t.titulo}",
+            cuerpo=(t.descripcion or None),
+            payload={
+                "tarea_id": t.id,
+                "due_date": t.due_date.isoformat(),
+                "reasignado_por_id": current_user.id,
+                "reasignado_por_nombre": current_user.name,
+            },
+        )
     db.commit()
     db.refresh(t)
     return serialize_tarea(t)
