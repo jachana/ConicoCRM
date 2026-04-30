@@ -24,25 +24,12 @@
   "cards": [
     {
       "list": "In review",
-      "name": "[Onboarding] Import Proveedores",
+      "name": "when selecting a Empresa using ctrl+k I get 404",
       "labels": [
-        "Core"
+        "Bug"
       ],
-      "desc": "Carga inicial de proveedores (necesario para OC históricas y futuras). Match por RUT.",
-      "checklist": [
-        "UI dentro de pestaña 'Migración inicial' (solo admin)",
-        "Plantilla .xlsx descargable con columnas documentadas",
-        "Backend: parser xlsx con validación de columnas/tipos",
-        "Validación previa con preview + conteo de filas válidas/inválidas",
-        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
-        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
-        "Idempotente: re-correr el mismo Excel no duplica",
-        "--- Específico ---",
-        "Columnas: rut, razon_social, giro, direccion, comuna, contacto, email, telefono, condicion_pago",
-        "Validar RUT módulo 11",
-        "Match por RUT normalizado; existente → UPDATE",
-        "Modelo Proveedor separado de Empresa (cliente)"
-      ]
+      "desc": "\n\nFixed in commit 01cb4fe: cmdk URL → /empresas?detalle=<id>; Empresas page opens detail modal from param.",
+      "checklist": []
     }
   ]
 }
