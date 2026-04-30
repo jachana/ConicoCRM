@@ -206,7 +206,7 @@ export default function DashboardHero({ userName, presetName }: DashboardHeroPro
           }
           icon={<AlertTriangle size={14} />}
           accent={data && data.stock_critico_count > 0 ? 'rose' : 'emerald'}
-          to="/productos"
+          to="/inventario"
         />
       </div>
     </div>
