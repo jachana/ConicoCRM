@@ -108,22 +108,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "Búsquedas insensibles a tildes (normalización unicode)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
-      "checklist": [
-        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
-        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
-        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
-      ],
-      "commits": [
-        "b655fdc494fb1ebc998d3f38683f67f31f084a93"
-      ]
-    },
-    {
       "list": "Feature requests",
       "name": "[W1-07] 2FA TOTP + reset password",
       "labels": [
@@ -169,7 +153,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In progress",
       "name": "[DTE] Factura de compra tipo 46",
       "labels": [
         "DTE/SII"
@@ -703,6 +687,22 @@
         "Visual QA mobile + desktop",
         "Storybook setup opcional para components/ui/*",
         "Documentar gaps que aparezcan"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
+      "checklist": [
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
+      ],
+      "commits": [
+        "b655fdc494fb1ebc998d3f38683f67f31f084a93"
       ]
     },
     {
