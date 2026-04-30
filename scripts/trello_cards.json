@@ -23,13 +23,8 @@
   },
   "cards": [
     {
-      "list": "Feature requests",
-      "name": "[Empresa] RUT no oficial — flag informativo para consolidación",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Algunas empresas tienen multiples RUT, necesitamos saberlos todos para contabilidad y consolidaciones",
-      "checklist": []
+      "name": "[Empresa] RUTs adicionales (multi-RUT) + validación dígito verificador",
+      "list": "In review"
     }
   ]
 }
