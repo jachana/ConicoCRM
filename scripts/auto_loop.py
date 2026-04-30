@@ -126,7 +126,7 @@ def git_head() -> str:
     return git("rev-parse", "HEAD", capture=True)
 
 
-DIRTY_IGNORE_PREFIXES = (".claude/", "Conico-reportes")
+DIRTY_IGNORE_PREFIXES = (".claude/", "Conico-reportes", "scripts/trello_cards.json")
 
 
 def git_dirty() -> bool:
