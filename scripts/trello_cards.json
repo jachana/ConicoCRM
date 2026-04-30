@@ -94,6 +94,27 @@
       ]
     },
     {
+      "list": "Bugs",
+      "name": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.  If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.  For more information, see https://radix-ui.com/primitives/docs/components/dialog",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Bugs",
+      "name": "when selecting somethign from inventario using ctrl+k Error: Invalid frameId for foreground frameId: 0\n    at le (background-redux-new.js:2:9576358)\n    at p (background-redux-new.js:2:9643653)\n    at background-redux-new.js:2:9644653\nle @ background-redux-new.js:2Understand this error\nchrome-extension://h…ound-redux-new.js:1 Uncaught (in promise) Error: No tab with id: 1218547717.Understand this error\nchrome-extension://h…ound-redux-new.js:1 Uncaught (in promise) Error: No tab with id: 1218547726.Understand this error\nchrome-extension://h…ound-redux-new.js:1 Uncaught (in promise) Error: No tab with id: 1218547729.Understand this error\nchrome-extension://h…ound-redux-new.js:1 Uncaught (in promise) Error: No tab with id: 1218547646.Understand this error\nchrome-extension://h…ound-redux-new.js:1 Uncaught (in promise) Error: No tab with id: 1218547720.",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Bugs",
+      "name": "when selecting a Empresa using ctrl+k I get 404",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
       "list": "Client feedback",
       "name": "[Cobranza] Envío automático de recordatorios",
       "labels": [
@@ -165,7 +186,6 @@
         "Definir KPIs visuales por rol (vendedor vs admin)",
         "Implementar new design con charts/cards interactivas",
         "Test A/B con subset de usuarios",
-        "[auto-attempt failed] backend pytest failed (exit 1):\n<3>WSL (9 - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n",
         "[auto-attempt failed] backend pytest failed (exit 1):\n<3>WSL (9 - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n"
       ]
     },
@@ -319,7 +339,7 @@
       ]
     },
     {
-      "list": "Feature requests",
+      "list": "In progress",
       "name": "[Onboarding] Import Proveedores",
       "labels": [
         "Core"
@@ -646,6 +666,13 @@
         "Notificación in-app al admin al crear solicitud; al vendedor al resolver",
         "Cotización detalle: mostrar estado de aprobación y quién aprobó/rechazó"
       ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "En el widget de ventas por periodo, el cliente quiere poder ver barras diarias por un entre semanas y años y tener una meta diaria visible, como una linea sobre las barras para saber que dias se cumple y que dias no",
+      "labels": [],
+      "desc": "",
+      "checklist": []
     },
     {
       "list": "In progress",
