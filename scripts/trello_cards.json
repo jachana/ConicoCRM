@@ -23,11 +23,19 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "buscador en NV Factura y Cotizacion debe poder buscar/filtrar por producto, tipo marca y tags",
-      "labels": [],
-      "desc": "",
-      "checklist": []
+      "list": "In progress",
+      "name": "[Bug:i18n] Reglas de tarea muestran \"owner\" en inglés",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Aplicación es es-CL pero la UI de Reglas de Tarea (/admin/tareas/config) muestra el término inglés \"owner\" en lugar de \"responsable\" o \"asignado\". Probable leak desde seed o desde nombres de columna sin traducir.",
+      "checklist": [
+        "Reemplazar owner → responsable/asignado en /admin/tareas/config UI",
+        "Revisar seed ReglaTarea (descripcion/labels)",
+        "Grep en frontend de strings EN restantes en módulo tareas (\"owner\", \"created\", \"due\", etc.)",
+        "Confirmar consistencia con resto de módulos"
+      ]
     }
   ]
 }
