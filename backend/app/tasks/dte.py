@@ -6,6 +6,7 @@ from app.celery_app import celery_app
 from app.database import SessionLocal
 from app.models.dte_emision import DteEmision
 from app.models.factura import Factura
+from app.models.factura_compra import FacturaCompra
 from app.models.guia_despacho import GuiaDespacho
 from app.models.nota_credito import NotaCredito
 from app.models.nota_debito import NotaDebito
@@ -58,6 +59,10 @@ def _sync_dte_estado(db: Session, emision: DteEmision, estado: str) -> None:
             guia.dte_estado = estado
             # D-12 / D-13: Guía DTE 52 NO descuenta stock — NO llamar revertir_stock_boleta
             # cuando estado == "rechazada" (a diferencia de boleta).
+    elif emision.factura_compra_id:
+        fc = db.get(FacturaCompra, emision.factura_compra_id)
+        if fc:
+            fc.dte_estado = estado
 
 
 def _process_emit(db: Session, emision: DteEmision, svc: DteService) -> None:
@@ -98,6 +103,14 @@ def _process_emit(db: Session, emision: DteEmision, svc: DteService) -> None:
         if not doc:
             raise ValueError(f"GuiaDespacho {emision.guia_despacho_id} no encontrada")
         payload = svc.build_guia_payload(doc, db)
+    elif emision.factura_compra_id:
+        doc = db.query(FacturaCompra).options(
+            joinedload(FacturaCompra.lineas),
+            joinedload(FacturaCompra.proveedor),
+        ).filter_by(id=emision.factura_compra_id).first()
+        if not doc:
+            raise ValueError(f"FacturaCompra {emision.factura_compra_id} no encontrada")
+        payload = svc.build_factura_compra_payload(doc, db)
     else:
         raise ValueError(f"DteEmision {emision.id} has no document FK set")
 

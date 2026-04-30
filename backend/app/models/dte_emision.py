@@ -12,7 +12,8 @@ class DteEmision(Base):
             "(CASE WHEN nota_credito_id IS NOT NULL THEN 1 ELSE 0 END) + "
             "(CASE WHEN nota_debito_id IS NOT NULL THEN 1 ELSE 0 END) + "
             "(CASE WHEN boleta_id IS NOT NULL THEN 1 ELSE 0 END) + "
-            "(CASE WHEN guia_despacho_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
+            "(CASE WHEN guia_despacho_id IS NOT NULL THEN 1 ELSE 0 END) + "
+            "(CASE WHEN factura_compra_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
             name="ck_dte_emision_one_document",
         ),
     )
@@ -36,6 +37,9 @@ class DteEmision(Base):
     )
     guia_despacho_id: Mapped[int | None] = mapped_column(
         ForeignKey("guias_despacho.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    factura_compra_id: Mapped[int | None] = mapped_column(
+        ForeignKey("facturas_compra.id", ondelete="CASCADE"), nullable=True
     )
     monto_neto: Mapped[int] = mapped_column(Integer)
     monto_iva: Mapped[int] = mapped_column(Integer)

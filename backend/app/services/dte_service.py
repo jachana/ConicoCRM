@@ -5,6 +5,7 @@ import httpx
 from sqlalchemy.orm import Session
 
 from app.models.factura import Factura
+from app.models.factura_compra import FacturaCompra
 from app.models.nota_credito import NotaCredito
 from app.models.nota_debito import NotaDebito
 from app.models.boleta import Boleta
@@ -268,6 +269,41 @@ class DteService:
             },
         }
         return payload
+
+    def build_factura_compra_payload(self, fc: FacturaCompra, db: Session) -> dict:
+        cfg = _get_config(db)
+        receptor: dict = {}
+        if fc.proveedor:
+            receptor = {
+                "rut": fc.proveedor.rut or "",
+                "razon_social": fc.proveedor.nombre,
+                "giro": "",
+                "direccion": "",
+                "ciudad": "",
+                "comuna": "",
+            }
+        detalle = [
+            {
+                "nombre": l.descripcion,
+                "cantidad": float(l.cantidad),
+                "precio_unitario": int(l.valor_neto),
+                "descuento_porcentaje": 0,
+            }
+            for l in fc.lineas
+        ]
+        return {
+            "tipo_dte": 46,
+            "fecha_emision": (fc.fecha or date.today()).isoformat(),
+            "emisor": self._emisor(cfg),
+            "receptor": receptor,
+            "detalle": detalle,
+            "totales": {
+                "monto_neto": int(fc.total_neto),
+                "tasa_iva": 19,
+                "iva": int(fc.total_iva),
+                "monto_total": int(fc.total),
+            },
+        }
 
     def emit(self, payload: dict) -> dict:
         resp = httpx.post(

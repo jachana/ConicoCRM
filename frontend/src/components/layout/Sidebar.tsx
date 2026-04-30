@@ -76,8 +76,9 @@ const SECTIONS: NavSection[] = [
   {
     label: 'Compras',
     items: [
-      { to: '/ordenes-compra', icon: ShoppingCart, label: 'Órdenes de Compra', module: 'ordenes_compra' },
-      { to: '/proveedores',    icon: Truck,        label: 'Proveedores',        module: 'proveedores' },
+      { to: '/ordenes-compra',   icon: ShoppingCart, label: 'Órdenes de Compra',     module: 'ordenes_compra' },
+      { to: '/facturas-compra',  icon: Receipt,      label: 'Facturas de Compra',     adminOnly: true },
+      { to: '/proveedores',      icon: Truck,        label: 'Proveedores',            module: 'proveedores' },
     ],
   },
   {

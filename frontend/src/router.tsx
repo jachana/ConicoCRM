@@ -35,6 +35,8 @@ import GuiaDespachoDetalle from './pages/GuiaDespachoDetalle'
 import NotasDebito from './pages/NotasDebito'
 import NotaDebitoDetalle from './pages/NotaDebitoDetalle'
 import NotaDebitoNueva from './pages/NotaDebitoNueva'
+import FacturasCompraList from './pages/FacturasCompraList'
+import FacturaCompraDetalle from './pages/FacturaCompraDetalle'
 import TareasPage from './pages/Tareas'
 import TareasConfigPage from './pages/TareasConfig'
 import AdminAuditoria from './pages/AdminAuditoria'
@@ -81,6 +83,9 @@ export const router = createBrowserRouter([
       { path: 'ordenes-compra', element: <RequireNotVendedor><OrdenesCompra /></RequireNotVendedor> },
       { path: 'ordenes-compra/nueva', element: <RequireNotVendedor><OrdenCompraDetalle /></RequireNotVendedor> },
       { path: 'ordenes-compra/:id', element: <RequireNotVendedor><OrdenCompraDetalle /></RequireNotVendedor> },
+      { path: 'facturas-compra', element: <RequireNotVendedor><FacturasCompraList /></RequireNotVendedor> },
+      { path: 'facturas-compra/nueva', element: <RequireNotVendedor><FacturaCompraDetalle /></RequireNotVendedor> },
+      { path: 'facturas-compra/:id', element: <RequireNotVendedor><FacturaCompraDetalle /></RequireNotVendedor> },
       { path: 'notas-venta', element: <NotaVentas /> },
       { path: 'notas-venta/nueva', element: <NotaVentaDetalle /> },
       { path: 'notas-venta/:id', element: <NotaVentaDetalle /> },

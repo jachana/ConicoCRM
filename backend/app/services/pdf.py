@@ -47,6 +47,13 @@ def generar_pdf_boleta(boleta, config: dict) -> bytes:
     return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()
 
 
+def generar_pdf_factura_compra(factura_compra, config: dict) -> bytes:
+    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+    template = env.get_template("factura_compra.html")
+    html_str = template.render(factura_compra=factura_compra, config=config)
+    return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()
+
+
 def generar_pdf_guia_despacho(guia_despacho, config: dict) -> bytes:
     env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
     template = env.get_template("guia_despacho.html")

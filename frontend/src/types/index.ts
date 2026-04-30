@@ -651,6 +651,34 @@ export interface NotaDebito {
   lineas: NotaDebitoLinea[]
 }
 
+export interface FacturaCompraLinea {
+  id: number
+  orden: number
+  producto_id: number | null
+  sku: string | null
+  descripcion: string
+  cantidad: number
+  valor_neto: string
+  total_neto: string
+  iva: string
+  total: string
+}
+
+export interface FacturaCompra {
+  id: number
+  numero: number
+  proveedor_id: number | null
+  fecha: string
+  estado: string
+  nota: string | null
+  total_neto: string
+  total_iva: string
+  total: string
+  dte_estado: string
+  created_at: string
+  lineas: FacturaCompraLinea[]
+}
+
 // ── Reportes ──────────────────────────────────────────────────────────────────
 export interface ReportesVentasKpis {
   total_vendido: number
