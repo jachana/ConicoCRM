@@ -23,22 +23,11 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Productos] Tags de tipo: hidráulico, motor, transmisión (multi-valor)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los productos necesitan un campo 'Tipo' que funcione como tags (multi-selección), no como categoría exclusiva. Un producto puede ser simultáneamente 'hidráulico' y 'de motor'.\n\nTipos iniciales: hidráulico, motor, transmisión. El listado debe ser configurable (admin agrega/quita tipos).\n\nComportamiento esperado:\n- ProductoModal: selector multi-tag para tipo (chips seleccionables + opción de crear nuevo tipo).\n- Listado de productos: columna de tipos como chips, filtrable por uno o varios tipos.\n- PDF/documentos: mostrar tipos del producto si aplica.",
-      "checklist": [
-        "Modelo TipoProducto (id, nombre) + tabla M2M ProductoTipo (producto_id, tipo_id) + migraciones",
-        "Seed inicial: hidráulico, motor, transmisión",
-        "CRUD /api/tipos-producto (GET lista, POST, DELETE — solo admin)",
-        "ProductoCreate/Update schema: campo tipos: list[int] (ids)",
-        "ProductoRead schema: exponer tipos como lista de strings/objetos",
-        "ProductoModal UI: multi-select chips para tipos (con opción crear nuevo)",
-        "Listado productos: columna 'Tipos' con chips + filtro multi-selección por tipo",
-        "Búsqueda/filtro: GET /api/productos?tipo=hidraulico soporta múltiples valores"
-      ]
+      "list": "In progress",
+      "name": "buscador en NV Factura y Cotizacion debe poder buscar/filtrar por producto, tipo marca y tags",
+      "labels": [],
+      "desc": "",
+      "checklist": []
     }
   ]
 }
