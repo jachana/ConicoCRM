@@ -113,6 +113,21 @@ export default function Empresas() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Deep-link: ?detalle=<id> opens detail modal (e.g. from Cmd+K)
+  useEffect(() => {
+    const detalleId = searchParams.get('detalle')
+    if (!detalleId || empresas.length === 0) return
+    const target = empresas.find(e => e.id === Number(detalleId))
+    if (target) {
+      setDetalleEmpresa(target)
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev)
+        next.delete('detalle')
+        return next
+      }, { replace: true })
+    }
+  }, [searchParams, empresas, setSearchParams])
+
   const totalDeuda = deudaBulk.reduce((s, d) => s + Number(d.deuda_total), 0)
   const totalVencida = deudaBulk.reduce((s, d) => s + Number(d.deuda_vencida), 0)
   const empresasConDeuda = deudaBulk.filter(d => Number(d.deuda_total) > 0).length

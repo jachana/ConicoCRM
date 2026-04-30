@@ -19,7 +19,7 @@ interface Props {
 const URL_BY_TIPO: Record<RecentTipo, (id: number) => string> = {
   producto:      () => '/catalogo',
   cliente:       () => '/clientes',
-  empresa:       id => `/empresas/${id}`,
+  empresa:       id => `/empresas?detalle=${id}`,
   cotizacion:    id => `/cotizaciones/${id}`,
   nota_venta:    id => `/notas-venta/${id}`,
   factura:       id => `/facturas/${id}`,
