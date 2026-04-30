@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Search, FileSpreadsheet, Inbox, Pencil, Trash2, Tag, X, Check } from 'lucide-react'
 import { toast } from 'sonner'
@@ -66,6 +67,24 @@ export default function Productos() {
   function abrirCrear() { setEditando(null); setModalOpen(true) }
   function abrirEditar(p: Producto) { setEditando(p); setModalOpen(true) }
   function cerrarModal() { setModalOpen(false); setEditando(null) }
+
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Deep-link: ?detalle=<id> opens producto modal (e.g. from Cmd+K)
+  useEffect(() => {
+    const detalleId = searchParams.get('detalle')
+    if (!detalleId || productos.length === 0) return
+    const target = productos.find(p => p.id === Number(detalleId))
+    if (target) {
+      setEditando(target)
+      setModalOpen(true)
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev)
+        next.delete('detalle')
+        return next
+      }, { replace: true })
+    }
+  }, [searchParams, productos, setSearchParams])
 
   function toggleBulk() {
     setBulkMode(v => !v)
