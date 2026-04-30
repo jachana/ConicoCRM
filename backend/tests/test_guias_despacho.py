@@ -1,15 +1,18 @@
 """
-Tests para Guías de Despacho DTE 52 — Phase 1 Backend.
+Tests para Guías de Despacho — Phase 1 Backend.
+
+Guías de despacho son documentos logísticos internos: NO se emite DTE 52 al SII
+(commit 7eb9355). Por tanto crear_guia_despacho ya no crea DteEmision ni dispara
+emit_dte.delay. Los tests de pipeline DTE construyen DteEmision manualmente para
+ejercitar _process_emit / _sync_dte_estado de forma aislada.
 
 Cubre: CRUD básico, permisos, validaciones, invariante stock (D-13),
-pipeline DTE mock (emit_dte.delay + _process_emit polling path DTE-02),
-anulación vía NC aceptada (D-16), PDF, audit log (DTE-07), DELETE 409,
-y test de concurrencia Postgres-only (D-28 — skipped en SQLite).
+_process_emit (path guia_despacho_id), anulación vía NC aceptada (D-16), PDF,
+audit log (DTE-07), DELETE 409, y test concurrencia Postgres-only (D-28).
 """
 
 import os
 import uuid
-from unittest.mock import patch
 
 import pytest
 
@@ -38,9 +41,8 @@ def _next_nc_numero(db):
 # ── 1. CRUD básico ─────────────────────────────────────────────────────────────
 
 
-@patch("app.api.guias_despacho.emit_dte")
-def test_crear_guia_basica(mock_emit, client, admin_token):
-    """Happy path: POST /api/guias-despacho/ crea guía con motivo=1, dte_estado=pendiente."""
+def test_crear_guia_basica(client, admin_token):
+    """Happy path: POST /api/guias-despacho/ crea guía. dte_estado='no_emitida' (no se emite DTE 52)."""
     r = client.post(
         "/api/guias-despacho/",
         json={
@@ -54,16 +56,14 @@ def test_crear_guia_basica(mock_emit, client, admin_token):
     assert r.status_code == 201, r.text
     body = r.json()
     assert body["motivo_traslado"] == 1
-    assert body["dte_estado"] == "pendiente"
+    assert body["dte_estado"] == "no_emitida"
     assert body["numero"] >= 1
-    mock_emit.delay.assert_called_once()
 
 
 # ── 2. Permisos (DTE-06) ───────────────────────────────────────────────────────
 
 
-@patch("app.api.guias_despacho.emit_dte")
-def test_crear_guia_sin_permiso_403(mock_emit, client, admin_token, vendedor_token):
+def test_crear_guia_sin_permiso_403(client, admin_token, vendedor_token):
     """Vendedor (delete=False) intenta eliminar guía → 403."""
     r = client.post(
         "/api/guias-despacho/",
@@ -112,8 +112,7 @@ def test_lineas_vacias_422(client, admin_token):
 # ── 4. Invariante stock (D-13 / INV-04) ───────────────────────────────────────
 
 
-@patch("app.api.guias_despacho.emit_dte")
-def test_guia_no_descuenta_stock(mock_emit, client, admin_token, db):
+def test_guia_no_descuenta_stock(client, admin_token, db):
     """Crear guía con producto → stock_actual invariante; sin MovimientoInventario (D-13)."""
     from app.models.producto import Producto
     from app.models.movimiento_inventario import MovimientoInventario
@@ -152,12 +151,15 @@ def test_guia_no_descuenta_stock(mock_emit, client, admin_token, db):
     assert len(movs) == 0, f"Movimientos de guía encontrados inesperadamente: {movs}"
 
 
-# ── 5. Pipeline DTE — emit_dte.delay (DTE-02) ─────────────────────────────────
+# ── 5. Pipeline DTE — guía NO emite DTE 52 al crear (commit 7eb9355) ─────────
 
 
-@patch("app.api.guias_despacho.emit_dte")
-def test_emitir_guia_dispara_dte(mock_emit, client, admin_token):
-    """emit_dte.delay se llama una vez con un int (emision.id) al crear guía."""
+def test_crear_guia_no_emite_dte(client, admin_token, db):
+    """Guía es doc logístico interno: POST NO debe crear DteEmision ni dejar dte_estado='pendiente'."""
+    from app.models.dte_emision import DteEmision
+
+    emisiones_antes = db.query(DteEmision).count()
+
     r = client.post(
         "/api/guias-despacho/",
         json={
@@ -167,9 +169,17 @@ def test_emitir_guia_dispara_dte(mock_emit, client, admin_token):
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 201
-    mock_emit.delay.assert_called_once()
-    args, _kwargs = mock_emit.delay.call_args
-    assert isinstance(args[0], int), f"emit_dte.delay debe recibir int, recibió {type(args[0])}"
+    guia_id = r.json()["id"]
+
+    db.expire_all()
+    emisiones_despues = (
+        db.query(DteEmision).filter(DteEmision.guia_despacho_id == guia_id).all()
+    )
+    assert emisiones_despues == [], (
+        f"Crear guía NO debe crear DteEmision; encontradas: {emisiones_despues}"
+    )
+    assert db.query(DteEmision).count() == emisiones_antes
+    assert r.json()["dte_estado"] == "no_emitida"
 
 
 # ── 6. Pipeline DTE — _process_emit asigna track_id (DTE-02 polling path) ─────
@@ -178,15 +188,18 @@ def test_emitir_guia_dispara_dte(mock_emit, client, admin_token):
 # Valida que la asignación de track_id ocurre y persiste.
 
 
-@patch("app.api.guias_despacho.emit_dte")
-def test_process_emit_guia_asigna_track_id(mock_emit_celery, client, admin_token, db):
-    """_process_emit con guia_despacho_id debe asignar emision.track_id tras svc.emit() mockeado (DTE-02)."""
+def test_process_emit_guia_asigna_track_id(client, admin_token, db):
+    """_process_emit con guia_despacho_id asigna emision.track_id tras svc.emit() mockeado.
+
+    Se construye DteEmision manualmente porque crear_guia_despacho ya no lo hace
+    (commit 7eb9355). El endpoint del pipeline DTE sigue soportando guías por si
+    se reactiva la emisión en el futuro.
+    """
     from unittest.mock import patch as _patch
     from app.models.dte_emision import DteEmision
     from app.tasks.dte import _process_emit
     from app.services.dte_service import DteService
 
-    # 1. Crear guía vía API (Celery .delay mockeado, no se ejecuta worker real)
     r = client.post(
         "/api/guias-despacho/",
         json={
@@ -200,35 +213,30 @@ def test_process_emit_guia_asigna_track_id(mock_emit_celery, client, admin_token
     assert r.status_code == 201, r.text
     guia_id = r.json()["id"]
 
-    # 2. Localizar la DteEmision creada por el endpoint (FK guia_despacho_id)
-    db.expire_all()
-    emision = (
-        db.query(DteEmision)
-        .filter(DteEmision.guia_despacho_id == guia_id)
-        .order_by(DteEmision.id.desc())
-        .first()
+    emision = DteEmision(
+        tipo="052",
+        guia_despacho_id=guia_id,
+        monto_neto=1000,
+        monto_iva=190,
+        monto_total=1190,
     )
-    assert emision is not None, "Plan 02 debe crear DteEmision con guia_despacho_id en el POST"
-    assert emision.track_id in (None, ""), (
-        f"track_id pre-emit debe ser None/empty, got {emision.track_id!r}"
-    )
+    db.add(emision)
+    db.commit()
+    db.refresh(emision)
+    assert emision.track_id in (None, "")
 
-    # 3. Mockear DteService.__init__ (evitar credenciales reales) y DteService.emit
     with _patch.object(DteService, "__init__", return_value=None), \
          _patch.object(
              DteService, "emit", return_value={"track_id": "TRK-12345", "estado": "procesando"}
          ) as mock_emit_svc:
         svc = DteService()
-        # Firma real: _process_emit(db, emision, svc)
         _process_emit(db=db, emision=emision, svc=svc)
         mock_emit_svc.assert_called_once()
 
-    # 4. Verificar que track_id se asignó
     assert emision.track_id == "TRK-12345", (
         f"_process_emit no asignó track_id: got {emision.track_id!r}"
     )
 
-    # 5. Persistir y verificar que sobrevive al db.expire_all()
     db.commit()
     db.expire_all()
     emision_post = db.get(DteEmision, emision.id)
@@ -240,8 +248,7 @@ def test_process_emit_guia_asigna_track_id(mock_emit_celery, client, admin_token
 # ── 7. Anulación vía NC (DTE-04 / D-16) ───────────────────────────────────────
 
 
-@patch("app.api.guias_despacho.emit_dte")
-def test_anular_guia_via_nc_aceptada(mock_emit, client, admin_token, db):
+def test_anular_guia_via_nc_aceptada(client, admin_token, db):
     """NC aceptada por SII con guia_despacho_id anula la guía (D-16)."""
     from app.models.guia_despacho import GuiaDespacho
     from app.models.nota_credito import NotaCredito
@@ -294,8 +301,7 @@ def test_anular_guia_via_nc_aceptada(mock_emit, client, admin_token, db):
     )
 
 
-@patch("app.api.guias_despacho.emit_dte")
-def test_anular_guia_nc_pendiente_no_anula(mock_emit, client, admin_token, db):
+def test_anular_guia_nc_pendiente_no_anula(client, admin_token, db):
     """NC en estado 'procesando' NO anula guía (guard de D-16)."""
     from app.models.guia_despacho import GuiaDespacho
     from app.models.nota_credito import NotaCredito
@@ -350,8 +356,7 @@ def test_anular_guia_nc_pendiente_no_anula(mock_emit, client, admin_token, db):
 # ── 8. PDF (DTE-03) ────────────────────────────────────────────────────────────
 
 
-@patch("app.api.guias_despacho.emit_dte")
-def test_pdf_genera(mock_emit, client, admin_token):
+def test_pdf_genera(client, admin_token):
     """GET /pdf retorna bytes con magic %PDF- (WeasyPrint mockeado en conftest)."""
     r = client.post(
         "/api/guias-despacho/",
@@ -376,8 +381,7 @@ def test_pdf_genera(mock_emit, client, admin_token):
 # ── 9. DELETE 409 ─────────────────────────────────────────────────────────────
 
 
-@patch("app.api.guias_despacho.emit_dte")
-def test_delete_guia_emitida_409(mock_emit, client, admin_token, db):
+def test_delete_guia_emitida_409(client, admin_token, db):
     """Guía con dte_estado != 'no_emitida' → DELETE → 409 con hint de NC."""
     from app.models.guia_despacho import GuiaDespacho
 
@@ -392,13 +396,12 @@ def test_delete_guia_emitida_409(mock_emit, client, admin_token, db):
     assert r.status_code == 201
     guia_id = r.json()["id"]
 
-    # La guía recién creada ya tiene dte_estado="pendiente" (no "no_emitida"),
-    # lo que es suficiente para que DELETE retorne 409.
+    # crear_guia_despacho ya no emite DTE (commit 7eb9355): por defecto dte_estado='no_emitida'.
+    # Forzamos 'aceptada' para ejercitar el guard que pide anular vía NC en lugar de DELETE.
     db.expire_all()
     guia = db.get(GuiaDespacho, guia_id)
-    assert guia.dte_estado != "no_emitida", (
-        "Precondición: guía debe tener dte_estado != 'no_emitida'"
-    )
+    guia.dte_estado = "aceptada"
+    db.commit()
 
     rd = client.delete(
         f"/api/guias-despacho/{guia_id}",
@@ -413,8 +416,7 @@ def test_delete_guia_emitida_409(mock_emit, client, admin_token, db):
 # ── 10. Audit log (DTE-07) ────────────────────────────────────────────────────
 
 
-@patch("app.api.guias_despacho.emit_dte")
-def test_audit_log_diff(mock_emit, client, admin_token, audit_enabled, db):
+def test_audit_log_diff(client, admin_token, audit_enabled, db):
     """Crear + editar guía → AuditLog tiene ≥ 2 entries con model_name='GuiaDespacho' (DTE-07)."""
     from app.models.audit_log import AuditLog
 
@@ -449,8 +451,7 @@ def test_audit_log_diff(mock_emit, client, admin_token, audit_enabled, db):
     "sqlite" in os.environ.get("DATABASE_URL", "sqlite"),
     reason="row-level lock with_for_update requires Postgres",
 )
-@patch("app.api.guias_despacho.emit_dte")
-def test_numeracion_concurrente_guias(mock_emit, client, admin_token):
+def test_numeracion_concurrente_guias(client, admin_token):
     """Numeración concurrente bajo Postgres — dos transacciones no colisionan en numero."""
     # TODO(W1-05-followup): implementar test threaded (ver test_boletas.py:280-310)
     # si se decide habilitar en sprint futuro. Por ahora esqueleto skipif en SQLite.
@@ -460,8 +461,7 @@ def test_numeracion_concurrente_guias(mock_emit, client, admin_token):
 # ── 12. Export Excel ───────────────────────────────────────────────────────────
 
 
-@patch("app.api.guias_despacho.emit_dte")
-def test_exportar_excel_admin(mock_emit, client, admin_token, db):
+def test_exportar_excel_admin(client, admin_token, db):
     """GET /export/excel retorna .xlsx con content-type correcto y contenido no vacío."""
     payload = {
         "cliente_id": 1,
