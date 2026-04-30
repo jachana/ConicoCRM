@@ -577,22 +577,6 @@
       ]
     },
     {
-      "list": "In review",
-      "name": "Búsquedas insensibles a tildes (normalización unicode)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
-      "checklist": [
-        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
-        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
-        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
-      ],
-      "commits": [
-        "b655fdc494fb1ebc998d3f38683f67f31f084a93"
-      ]
-    },
-    {
       "list": "Feature requests",
       "name": "[Onboarding] Carga de CAFs SII (folios)",
       "labels": [
@@ -791,6 +775,22 @@
         "Preview diff antes de guardar (precio actual → precio nuevo)",
         "Commit atómico con feedback de éxito/error por fila",
         "Actualizar listas de precios vinculadas si aplica"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
+      "checklist": [
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
+      ],
+      "commits": [
+        "b655fdc494fb1ebc998d3f38683f67f31f084a93"
       ]
     },
     {
