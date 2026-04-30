@@ -23,7 +23,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[W1-07] 2FA TOTP + reset password",
       "labels": [
         "Wave 1"
