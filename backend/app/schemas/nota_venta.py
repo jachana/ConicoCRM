@@ -40,6 +40,7 @@ class NotaVentaCreate(BaseModel):
     terminos_pago: str | None = None
     metodo_pago: str | None = None
     plazo_dias: int = 0
+    numero_oc_cliente: str | None = None
 
     @model_validator(mode="after")
     def check_plazo_metodo(self) -> Self:
@@ -60,6 +61,7 @@ class NotaVentaUpdate(BaseModel):
     terminos_pago: str | None = None
     metodo_pago: str | None = None
     plazo_dias: int | None = None
+    numero_oc_cliente: str | None = None
 
     @model_validator(mode="after")
     def check_plazo_metodo(self) -> Self:
@@ -125,6 +127,7 @@ class NotaVentaOut(BaseModel):
     terminos_pago: str | None = None
     metodo_pago: str | None = None
     plazo_dias: int = 0
+    numero_oc_cliente: str | None = None
     is_locked: bool = False
     model_config = {"from_attributes": True}
 

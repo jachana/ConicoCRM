@@ -12,8 +12,9 @@ import type { NotaVenta, NotaVentaLinea, Cliente, User, Producto, Empresa, SedeD
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 import UnsavedChangesModal from '../components/UnsavedChangesModal'
 import TareasRelacionadas from '../components/TareasRelacionadas'
+import NotaVentaAdjuntos from '../components/NotaVentaAdjuntos'
 import {
-  Button, Input, Textarea, FormField, Badge, Card, CardContent,
+  Button, Input, Textarea, FormField, Badge, Card, CardContent, CardHeader,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Popover, PopoverTrigger, PopoverContent,
   Modal, ModalContent, ModalHeader, ModalTitle, ModalBody, ModalFooter,
@@ -103,6 +104,7 @@ function nvSnapshot(nv: NotaVenta): string {
     sedeDespachoId: nv.sede_despacho_id ?? null,
     metodoPago: nv.metodo_pago ?? '',
     plazoDias: nv.plazo_dias ?? 0,
+    numeroOcCliente: nv.numero_oc_cliente ?? '',
     lineas: (nv.lineas ?? []).map(l => ({
       producto_id: l.producto_id ?? null,
       cantidad: l.cantidad,
@@ -134,6 +136,7 @@ export default function NotaVentaDetalle() {
   const [sedeDespachoId, setSedeDespachoId] = useState<number | null>(null)
   const [metodoPago, setMetodoPago] = useState<string>('')
   const [plazoDias, setPlazoDias] = useState<number>(0)
+  const [numeroOcCliente, setNumeroOcCliente] = useState<string>('')
   const [sedes, setSedes] = useState<SedeDespacho[]>([])
   const [lineas, setLineas] = useState<LineaLocal[]>([newLinea(1)])
   const [empresaId, setEmpresaId] = useState<number | ''>('')
@@ -157,7 +160,7 @@ export default function NotaVentaDetalle() {
 
   const currentSnapshot = useMemo(() => JSON.stringify({
     clienteId, vendedorId, contacto, correo, fecha, nota, empresaId,
-    retiroEnConico, sedeDespachoId, metodoPago, plazoDias,
+    retiroEnConico, sedeDespachoId, metodoPago, plazoDias, numeroOcCliente,
     lineas: lineas.map(l => ({
       producto_id: l.producto_id ?? null,
       cantidad: l.cantidad,
@@ -166,7 +169,7 @@ export default function NotaVentaDetalle() {
       sku: l.sku ?? null,
       formato: l.formato ?? null,
     }))
-  }), [clienteId, vendedorId, contacto, correo, fecha, nota, empresaId, retiroEnConico, sedeDespachoId, metodoPago, plazoDias, lineas])
+  }), [clienteId, vendedorId, contacto, correo, fecha, nota, empresaId, retiroEnConico, sedeDespachoId, metodoPago, plazoDias, numeroOcCliente, lineas])
 
   const isDirty = !isNew && savedSnapshot !== null && currentSnapshot !== savedSnapshot
 
@@ -204,6 +207,7 @@ export default function NotaVentaDetalle() {
       setSedeDespachoId(nv.sede_despacho_id ?? null)
       setMetodoPago(nv.metodo_pago ?? '')
       setPlazoDias(nv.plazo_dias ?? 0)
+      setNumeroOcCliente(nv.numero_oc_cliente ?? '')
       setEmpresaId(nv.empresa_id ?? '')
       setLineas(
         (nv.lineas ?? []).map((l, i) => ({
@@ -392,6 +396,7 @@ export default function NotaVentaDetalle() {
         sede_despacho_id: retiroEnConico ? null : sedeDespachoId,
         metodo_pago: metodoPago || null,
         plazo_dias: plazoDias,
+        numero_oc_cliente: numeroOcCliente.trim() || null,
       }
       const lineasPayload = lineas.map((l, i) => ({
         orden: i + 1,
@@ -447,6 +452,7 @@ export default function NotaVentaDetalle() {
       setSedeDespachoId(nv.sede_despacho_id ?? null)
       setMetodoPago(nv.metodo_pago ?? '')
       setPlazoDias(nv.plazo_dias ?? 0)
+      setNumeroOcCliente(nv.numero_oc_cliente ?? '')
       setEmpresaId(nv.empresa_id ?? '')
       setLineas(
         (nv.lineas ?? []).map((l, i) => ({
@@ -805,6 +811,18 @@ export default function NotaVentaDetalle() {
               />
             </FormField>
 
+            <FormField label="N° OC del cliente" className="sm:col-span-2 lg:col-span-3">
+              <input
+                type="text"
+                value={numeroOcCliente}
+                onChange={e => setNumeroOcCliente(e.target.value)}
+                disabled={isLocked}
+                maxLength={100}
+                placeholder="Ej. OC-12345"
+                className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 disabled:opacity-60 disabled:cursor-not-allowed ${df('numeroOcCliente', numeroOcCliente) ? dirtyBorder : 'border-gray-300 dark:border-gray-700'}`}
+              />
+            </FormField>
+
             <div className="sm:col-span-2 lg:col-span-3 space-y-2">
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
@@ -983,6 +1001,19 @@ export default function NotaVentaDetalle() {
           </CardContent>
         </Card>
       </div>
+
+      {!isNew && nv && (
+        <div className="mt-5">
+          <Card>
+            <CardHeader>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-white">Adjuntos (OC u otros)</h2>
+            </CardHeader>
+            <CardContent>
+              <NotaVentaAdjuntos nvId={nv.id} disabled={isLocked} />
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {!isNew && nv && (
         <div className="mt-5">

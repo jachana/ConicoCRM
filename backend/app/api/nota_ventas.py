@@ -306,6 +306,7 @@ def crear_nv(
         terminos_pago=body.terminos_pago,
         metodo_pago=body.metodo_pago,
         plazo_dias=body.plazo_dias,
+        numero_oc_cliente=body.numero_oc_cliente,
     )
     db.add(nv)
     db.flush()

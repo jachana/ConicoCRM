@@ -31,6 +31,7 @@ class NotaVenta(Base):
     terminos_pago: Mapped[str | None] = mapped_column(String(255), nullable=True)
     metodo_pago: Mapped[str | None] = mapped_column(String(50), nullable=True)
     plazo_dias: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    numero_oc_cliente: Mapped[str | None] = mapped_column(String(100), nullable=True)
     correo: Mapped[str | None] = mapped_column(String(255), nullable=True)
     total_neto: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     total_iva: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
@@ -62,6 +63,12 @@ class NotaVenta(Base):
         "Factura", back_populates="nv", uselist=False
     )
     sede_despacho: Mapped["SedeDespacho | None"] = relationship("SedeDespacho")
+    adjuntos: Mapped[list["NotaVentaAdjunto"]] = relationship(
+        "NotaVentaAdjunto",
+        back_populates="nv",
+        cascade="all, delete-orphan",
+        order_by="NotaVentaAdjunto.subido_en.desc()",
+    )
 
     @property
     def factura_id(self) -> int | None:

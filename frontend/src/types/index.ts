@@ -317,6 +317,7 @@ export interface NotaVenta {
   terminos_pago: string | null
   metodo_pago: string | null
   plazo_dias: number
+  numero_oc_cliente: string | null
   total_neto: number
   total_iva: number
   total: number
@@ -327,6 +328,15 @@ export interface NotaVenta {
   cotizacion?: { id: number; numero: number } | null
   lineas?: NotaVentaLinea[]
   is_locked?: boolean
+}
+
+export interface NotaVentaAdjunto {
+  id: number
+  nv_id: number
+  nombre: string
+  mime_type: string
+  subido_en: string
+  subido_por_id: number | null
 }
 
 export interface FacturaLinea {
