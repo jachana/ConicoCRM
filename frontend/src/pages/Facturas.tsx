@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
-import { Eye, ChevronDown, X, Inbox, FileSpreadsheet } from 'lucide-react'
+import { Eye, ChevronDown, X, Inbox, FileSpreadsheet, Search } from 'lucide-react'
 import { api } from '../lib/api'
 import type { FacturaList, FlatLine } from '../types'
 import ExportPreviewPanel from '../components/ExportPreviewPanel'
@@ -121,6 +121,14 @@ export default function Facturas() {
   const [montoMax, setMontoMax] = useState('')
   const [productos, setProductos] = useState<ProductoMin[]>([])
   const [productoSearch, setProductoSearch] = useState('')
+  const [busqueda, setBusqueda] = useState('')
+  const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
+    return () => clearTimeout(t)
+  }, [busqueda])
+
   const [openPill, setOpenPill] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'list' | 'preview'>('list')
   const [showPreview, setShowPreview] = useState(false)
@@ -167,8 +175,9 @@ export default function Facturas() {
     if (montoMin) p.append('monto_min', montoMin)
     if (montoMax) p.append('monto_max', montoMax)
     productos.forEach(prod => p.append('producto_id', String(prod.id)))
+    if (debouncedBusqueda.trim()) p.append('q', debouncedBusqueda.trim())
     return p.toString()
-  }, [estados, clienteId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos])
+  }, [estados, clienteId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda])
 
   const { data: facturas = [], isLoading } = useQuery<FacturaList[]>({
     queryKey: ['facturas-list', listParams],
@@ -209,12 +218,13 @@ export default function Facturas() {
   )
 
   const hasFilters = estados.length > 0 || !!clienteId || !!empresaId ||
-    !!fechaDesde || !!fechaHasta || !!montoMin || !!montoMax || productos.length > 0
+    !!fechaDesde || !!fechaHasta || !!montoMin || !!montoMax || productos.length > 0 || !!debouncedBusqueda
 
   function clearAll() {
     setEstados([]); setClienteId(null); setClienteNombre('')
     setEmpresaId(null); setEmpresaNombre(''); setFechaDesde(''); setFechaHasta('')
     setMontoMin(''); setMontoMax(''); setProductos([]); setProductoSearch('')
+    setBusqueda('')
   }
 
   const fechaSummary = fechaDesde && fechaHasta
@@ -246,6 +256,16 @@ export default function Facturas() {
       {/* Filter bar */}
       <div ref={filterBarRef} className="mb-4">
         <div className="flex flex-wrap gap-2 items-center">
+
+          <Input
+            type="text"
+            size="sm"
+            placeholder="Buscar Nº, cliente, producto, marca, tipo, tag..."
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            leftAddon={<Search />}
+            className="w-72"
+          />
 
           {/* Estado */}
           <FilterPill label="Estado" active={estados.length > 0}

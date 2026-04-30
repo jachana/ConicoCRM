@@ -7,6 +7,7 @@ import re
 import openpyxl
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy import String as SqlString, cast, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.auth import get_current_user
@@ -14,11 +15,13 @@ from app.api.deps import require_permission
 from app.api.shared import enforce_al_contado
 from app.database import get_db
 from app.models.aprobacion_margen import AprobacionMargen
+from app.models.cliente import Cliente
 from app.models.cotizacion import Cotizacion, CotizacionLinea
 from app.models.empresa import Empresa
 from app.models.producto import Producto
 from app.models.system_config import SystemConfig
 from app.models.user import User
+from app.utils.search import producto_ids_matching, unaccent_ilike
 from app.schemas.cotizacion import (
     CotizacionCreate,
     CotizacionListOut,
@@ -32,6 +35,25 @@ from app.services.pdf import generar_pdf_cotizacion
 from app.utils.logo import apply_config_logo
 
 router = APIRouter()
+
+
+def _apply_text_search(query, db: Session, q: str):
+    """Filter Cotizacion query by free text matching numero, cliente nombre, or
+    line item (descripción/SKU/producto nombre/SKU/marca/tipo/tag)."""
+    prod_ids = producto_ids_matching(db, q)
+    line_conds = [
+        unaccent_ilike(CotizacionLinea.descripcion, f"%{q}%"),
+        unaccent_ilike(CotizacionLinea.sku, f"%{q}%"),
+    ]
+    if prod_ids:
+        line_conds.append(CotizacionLinea.producto_id.in_(prod_ids))
+    return query.filter(
+        or_(
+            cast(Cotizacion.numero, SqlString).ilike(f"%{q}%"),
+            Cotizacion.cliente.has(unaccent_ilike(Cliente.nombre, f"%{q}%")),
+            Cotizacion.lineas.any(or_(*line_conds)),
+        )
+    )
 
 _ESTADO_LABELS: dict[str, str] = {
     "no_definido": "Sin definir", "abierta": "Abierta", "aprobada": "Aprobada",
@@ -227,6 +249,7 @@ def exportar_excel(
     monto_max: Decimal | None = Query(None),
     producto_id: list[int] | None = Query(None),
     columns: list[str] | None = Query(None),
+    texto: str = Query("", alias="q"),
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
     current_user, db = perms
@@ -259,6 +282,8 @@ def exportar_excel(
         q = q.join(CotizacionLinea, CotizacionLinea.cotizacion_id == Cotizacion.id).filter(
             CotizacionLinea.producto_id.in_(producto_id)
         ).distinct()
+    if texto:
+        q = _apply_text_search(q, db, texto)
     cotizaciones = q.order_by(Cotizacion.fecha.desc(), Cotizacion.numero.desc()).all()
 
     col_keys = [k for k in (columns or _COT_DEFAULT_COLUMNS) if k in _COT_EXPORT_COLUMNS]
@@ -298,38 +323,41 @@ def listar_cotizaciones(
     monto_max: Decimal | None = Query(None),
     producto_id: list[int] | None = Query(None),
     terminos_pago_estado: str | None = Query(None),
+    q: str = Query(""),
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
     current_user, db = perms
-    q = db.query(Cotizacion).options(
+    query = db.query(Cotizacion).options(
         joinedload(Cotizacion.cliente),
         joinedload(Cotizacion.vendedor),
         joinedload(Cotizacion.empresa),
         selectinload(Cotizacion.lineas),
     )
     if estado:
-        q = q.filter(Cotizacion.estado.in_(estado))
+        query = query.filter(Cotizacion.estado.in_(estado))
     if vendedor_id:
-        q = q.filter(Cotizacion.vendedor_id == vendedor_id)
+        query = query.filter(Cotizacion.vendedor_id == vendedor_id)
     if empresa_id:
-        q = q.filter(Cotizacion.empresa_id == empresa_id)
+        query = query.filter(Cotizacion.empresa_id == empresa_id)
     if cliente_id:
-        q = q.filter(Cotizacion.cliente_id == cliente_id)
+        query = query.filter(Cotizacion.cliente_id == cliente_id)
     if fecha_desde:
-        q = q.filter(Cotizacion.fecha >= fecha_desde)
+        query = query.filter(Cotizacion.fecha >= fecha_desde)
     if fecha_hasta:
-        q = q.filter(Cotizacion.fecha <= fecha_hasta)
+        query = query.filter(Cotizacion.fecha <= fecha_hasta)
     if monto_min is not None:
-        q = q.filter(Cotizacion.total >= monto_min)
+        query = query.filter(Cotizacion.total >= monto_min)
     if monto_max is not None:
-        q = q.filter(Cotizacion.total <= monto_max)
+        query = query.filter(Cotizacion.total <= monto_max)
     if producto_id:
-        q = q.join(CotizacionLinea, CotizacionLinea.cotizacion_id == Cotizacion.id).filter(
+        query = query.join(CotizacionLinea, CotizacionLinea.cotizacion_id == Cotizacion.id).filter(
             CotizacionLinea.producto_id.in_(producto_id)
         ).distinct()
     if terminos_pago_estado:
-        q = q.filter(Cotizacion.terminos_pago_estado == terminos_pago_estado)
-    results = [CotizacionListOut.model_validate(c) for c in q.order_by(Cotizacion.fecha.desc(), Cotizacion.numero.desc()).all()]
+        query = query.filter(Cotizacion.terminos_pago_estado == terminos_pago_estado)
+    if q:
+        query = _apply_text_search(query, db, q)
+    results = [CotizacionListOut.model_validate(c) for c in query.order_by(Cotizacion.fecha.desc(), Cotizacion.numero.desc()).all()]
     if current_user.role == "vendedor":
         for cot in results:
             cot.margen_total = None

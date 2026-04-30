@@ -7,15 +7,18 @@ from io import BytesIO
 import openpyxl
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy import String as SqlString, cast, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import require_permission
 from app.database import get_db
+from app.models.cliente import Cliente
 from app.models.factura import Factura, FacturaLinea
 from app.models.nota_venta import NotaVenta
 from app.models.producto import Producto
 from app.models.system_config import SystemConfig
 from app.models.user import User
+from app.utils.search import producto_ids_matching, unaccent_ilike
 from app.schemas.cotizacion import RecotizarOut
 from app.schemas.factura import (
     FacturaCreate,
@@ -46,6 +49,25 @@ _DTE_LOCKED_STATES = ("pendiente", "procesando", "aceptada")
 
 def _dte_is_locked(dte_estado: str | None) -> bool:
     return dte_estado in _DTE_LOCKED_STATES
+
+
+def _apply_text_search(query, db: Session, q: str):
+    """Filter Factura query by free text matching numero, cliente nombre, or
+    line item (descripción/SKU/producto nombre/SKU/marca/tipo/tag)."""
+    prod_ids = producto_ids_matching(db, q)
+    line_conds = [
+        unaccent_ilike(FacturaLinea.descripcion, f"%{q}%"),
+        unaccent_ilike(FacturaLinea.sku, f"%{q}%"),
+    ]
+    if prod_ids:
+        line_conds.append(FacturaLinea.producto_id.in_(prod_ids))
+    return query.filter(
+        or_(
+            cast(Factura.numero, SqlString).ilike(f"%{q}%"),
+            Factura.cliente.has(unaccent_ilike(Cliente.nombre, f"%{q}%")),
+            Factura.lineas.any(or_(*line_conds)),
+        )
+    )
 
 
 _FAC_EXPORT_COLUMNS: dict[str, tuple[str, Callable]] = {
@@ -214,6 +236,7 @@ def exportar_excel(
     monto_max: Decimal | None = Query(None),
     producto_id: list[int] | None = Query(None),
     columns: list[str] | None = Query(None),
+    texto: str = Query("", alias="q"),
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     current_user, db = perms
@@ -246,6 +269,8 @@ def exportar_excel(
         q = q.join(FacturaLinea, FacturaLinea.factura_id == Factura.id).filter(
             FacturaLinea.producto_id.in_(producto_id)
         ).distinct()
+    if texto:
+        q = _apply_text_search(q, db, texto)
     facturas = q.order_by(Factura.fecha.desc(), Factura.numero.desc()).all()
 
     col_keys = [k for k in (columns or _FAC_DEFAULT_COLUMNS) if k in _FAC_EXPORT_COLUMNS]
@@ -284,36 +309,39 @@ def listar_facturas(
     monto_min: Decimal | None = Query(None),
     monto_max: Decimal | None = Query(None),
     producto_id: list[int] | None = Query(None),
+    q: str = Query(""),
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     current_user, db = perms
-    q = db.query(Factura).options(
+    query = db.query(Factura).options(
         joinedload(Factura.cliente),
         joinedload(Factura.vendedor),
         joinedload(Factura.empresa),
         selectinload(Factura.lineas),
     )
     if estado:
-        q = q.filter(Factura.estado.in_(estado))
+        query = query.filter(Factura.estado.in_(estado))
     if cliente_id:
-        q = q.filter(Factura.cliente_id == cliente_id)
+        query = query.filter(Factura.cliente_id == cliente_id)
     if empresa_id:
-        q = q.filter(Factura.empresa_id == empresa_id)
+        query = query.filter(Factura.empresa_id == empresa_id)
     if vendedor_id:
-        q = q.filter(Factura.vendedor_id == vendedor_id)
+        query = query.filter(Factura.vendedor_id == vendedor_id)
     if fecha_desde:
-        q = q.filter(Factura.fecha >= fecha_desde)
+        query = query.filter(Factura.fecha >= fecha_desde)
     if fecha_hasta:
-        q = q.filter(Factura.fecha <= fecha_hasta)
+        query = query.filter(Factura.fecha <= fecha_hasta)
     if monto_min is not None:
-        q = q.filter(Factura.total >= monto_min)
+        query = query.filter(Factura.total >= monto_min)
     if monto_max is not None:
-        q = q.filter(Factura.total <= monto_max)
+        query = query.filter(Factura.total <= monto_max)
     if producto_id:
-        q = q.join(FacturaLinea, FacturaLinea.factura_id == Factura.id).filter(
+        query = query.join(FacturaLinea, FacturaLinea.factura_id == Factura.id).filter(
             FacturaLinea.producto_id.in_(producto_id)
         ).distinct()
-    results = [FacturaListOut.model_validate(f) for f in q.order_by(Factura.fecha.desc(), Factura.numero.desc()).all()]
+    if q:
+        query = _apply_text_search(query, db, q)
+    results = [FacturaListOut.model_validate(f) for f in query.order_by(Factura.fecha.desc(), Factura.numero.desc()).all()]
     if current_user.role == "vendedor":
         for fac in results:
             fac.margen_total = None

@@ -93,11 +93,11 @@ export default function NotaVentas() {
         <Input
           type="text"
           size="sm"
-          placeholder="Buscar por Nº o cliente..."
+          placeholder="Buscar Nº, cliente, producto, marca, tipo, tag..."
           value={busqueda}
           onChange={e => setBusqueda(e.target.value)}
           leftAddon={<Search />}
-          className="w-56"
+          className="w-72"
         />
         <Select value={estado || 'all'} onValueChange={(v) => setEstado(v === 'all' ? '' : v)}>
           <SelectTrigger size="sm" className="w-44"><SelectValue /></SelectTrigger>

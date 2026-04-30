@@ -35,7 +35,7 @@ from app.models.movimiento_inventario import MovimientoInventario
 from app.services.email import EmailNotConfiguredError, enviar_nota_venta
 from app.services.pdf import generar_pdf_nota_venta
 from app.utils.logo import apply_config_logo
-from app.utils.search import unaccent_ilike
+from app.utils.search import producto_ids_matching, unaccent_ilike
 
 router = APIRouter()
 
@@ -264,10 +264,18 @@ def listar_nvs(
     if fecha_hasta:
         query = query.filter(NotaVenta.fecha <= fecha_hasta)
     if q:
+        prod_ids = producto_ids_matching(db, q)
+        line_conds = [
+            unaccent_ilike(NotaVentaLinea.descripcion, f"%{q}%"),
+            unaccent_ilike(NotaVentaLinea.sku, f"%{q}%"),
+        ]
+        if prod_ids:
+            line_conds.append(NotaVentaLinea.producto_id.in_(prod_ids))
         query = query.filter(
             or_(
                 cast(NotaVenta.numero, SqlString).ilike(f"%{q}%"),
                 NotaVenta.cliente.has(unaccent_ilike(Cliente.nombre, f"%{q}%")),
+                NotaVenta.lineas.any(or_(*line_conds)),
             )
         )
     return query.order_by(NotaVenta.fecha.desc(), NotaVenta.numero.desc()).all()

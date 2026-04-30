@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
 import { toast } from 'sonner'
-import { Plus, FileText, Mail, Trash2, Eye, ChevronDown, X, Download, Inbox } from 'lucide-react'
+import { Plus, FileText, Mail, Trash2, Eye, ChevronDown, X, Download, Inbox, Search } from 'lucide-react'
 import { api } from '../lib/api'
 import type { Cotizacion } from '../types'
 import ExportPreviewPanel from '../components/ExportPreviewPanel'
@@ -105,6 +105,7 @@ function buildListParams(
   montoMin: string,
   montoMax: string,
   productos: { id: number }[],
+  q: string,
 ): URLSearchParams {
   const p = new URLSearchParams()
   estados.forEach(e => p.append('estado', e))
@@ -115,6 +116,7 @@ function buildListParams(
   if (montoMin) p.append('monto_min', montoMin)
   if (montoMax) p.append('monto_max', montoMax)
   productos.forEach(p2 => p.append('producto_id', String(p2.id)))
+  if (q.trim()) p.append('q', q.trim())
   return p
 }
 
@@ -134,6 +136,13 @@ export default function Cotizaciones() {
   const [montoMax, setMontoMax] = useState('')
   const [productos, setProductos] = useState<ProductoMin[]>([])
   const [productoSearch, setProductoSearch] = useState('')
+  const [busqueda, setBusqueda] = useState('')
+  const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
+    return () => clearTimeout(t)
+  }, [busqueda])
 
   const [openPill, setOpenPill] = useState<string | null>(null)
   const filterBarRef = useRef<HTMLDivElement>(null)
@@ -173,22 +182,23 @@ export default function Cotizaciones() {
   })
 
   const params = useMemo(
-    () => buildListParams(estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos),
-    [estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos],
+    () => buildListParams(estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda),
+    [estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda],
   )
 
   const hasFilters = estados.length > 0 || !!emisorId || !!empresaId ||
-    !!fechaDesde || !!fechaHasta || !!montoMin || !!montoMax || productos.length > 0
+    !!fechaDesde || !!fechaHasta || !!montoMin || !!montoMax || productos.length > 0 || !!debouncedBusqueda
 
   function clearAll() {
     setEstados([]); setEmisorId(null); setEmpresaId(null)
     setFechaDesde(''); setFechaHasta('')
     setMontoMin(''); setMontoMax('')
     setProductos([]); setProductoSearch('')
+    setBusqueda('')
   }
 
   const { data: cotizaciones = [], isLoading } = useQuery<Cotizacion[]>({
-    queryKey: ['cotizaciones', estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos.map(p => p.id)],
+    queryKey: ['cotizaciones', estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos.map(p => p.id), debouncedBusqueda],
     queryFn: () => api.get(`/api/cotizaciones/?${params.toString()}`).then(r => r.data),
   })
 
@@ -217,9 +227,9 @@ export default function Cotizaciones() {
     ), [cotizaciones])
 
   const exportBaseUrl = useMemo(() => {
-    const qs = buildListParams(estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos).toString()
+    const qs = buildListParams(estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda).toString()
     return `/api/cotizaciones/export/excel${qs ? '?' + qs : ''}`
-  }, [estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos])
+  }, [estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda])
 
   const deleteMut = useMutation({
     mutationFn: (id: number) => api.delete(`/api/cotizaciones/${id}`),
@@ -268,6 +278,15 @@ export default function Cotizaciones() {
 
       <div ref={filterBarRef} className="mb-4">
         <div className="flex flex-wrap gap-2 items-center">
+          <Input
+            type="text"
+            size="sm"
+            placeholder="Buscar Nº, cliente, producto, marca, tipo, tag..."
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            leftAddon={<Search />}
+            className="w-72"
+          />
           <FilterPill
             label="Estado" active={estados.length > 0}
             summary={estados.length === 1 ? ESTADO_LABELS[estados[0]] : `${estados.length} estados`}
