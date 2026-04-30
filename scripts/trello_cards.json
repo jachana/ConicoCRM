@@ -23,13 +23,28 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Empresa] RUT no oficial — flag informativo para consolidación",
+      "list": "In progress",
+      "name": "[Factura] Adjuntar archivo de Orden de Compra (PDF/imagen) y reutilizar al facturar",
       "labels": [
         "Core"
       ],
-      "desc": "Algunas empresas tienen multiples RUT, necesitamos saberlos todos para contabilidad y consolidaciones",
-      "checklist": []
+      "desc": "Hoy el cliente envía la OC por email/WhatsApp como PDF o foto, y al momento de facturar hay que ir a buscarla — se pierde, se traspapela, o el vendedor no la tiene a mano. Permitir subir el archivo de la OC al sistema y dejarlo accesible desde la ficha de empresa/cliente y desde la factura que la referencia.\n\nFlujo:\n1. Subir archivo OC (PDF / JPG / PNG) en sección 'Órdenes de compra del cliente' (ficha empresa o vista global). Capturar metadata: número OC, fecha, monto, vigencia, archivo.\n2. Al emitir factura → selector 'Adjuntar OC del cliente' lista las OC subidas para esa empresa, sin facturar (o parcialmente facturadas). Al elegir, se auto-llena el bloque de Documentos referenciados (tipo 801, folio, fecha).\n3. La factura queda con link al archivo + en la referencia SII.\n\nRelación con cards existentes:\n- Complementa '[Factura] Documentos referenciados (OC, HES, contrato, guía, NV)' — esta card aporta el storage/upload, la otra el modelo de referencias.\n- Distinto de '[Onboarding] Import OC históricas' (eso es batch xlsx legacy).",
+      "checklist": [
+        "Modelo: OrdenCompraCliente (empresa_id, numero, fecha, monto, vigencia_hasta, archivo_url, estado)",
+        "Estados: vigente / facturada_parcial / facturada_total / vencida / anulada",
+        "Storage: subir archivo (PDF/JPG/PNG, max 10MB) — usar mismo bucket/disk que adjuntos existentes",
+        "UI: sección 'Órdenes de compra' en ficha de Empresa con upload + tabla + preview",
+        "Vista global '/ordenes-compra-clientes' filtrable por empresa, estado, vigencia",
+        "Modal upload: drag&drop archivo + form con número OC, fecha, monto (opcional), vigencia",
+        "Validación: número OC único por empresa (warning si duplicado, no bloqueo)",
+        "Emisión factura: nuevo selector 'Adjuntar OC del cliente' que lista OC vigentes/parciales de esa empresa",
+        "Al seleccionar OC → auto-llenar Documento Referenciado (tipo=801, folio=numero, fecha=fecha)",
+        "Auto-llenar también link al archivo (queda visible en la ficha de la factura)",
+        "Tracking: cuando una factura referencia una OC, marcar OC como facturada_parcial/total según monto",
+        "Permitir despegar OC de factura (revertir estado)",
+        "Permisos: vendedor sube OC de su cliente; admin ve todas",
+        "Tests: subir, listar, asociar a factura, estado se actualiza, archivo accesible vía URL firmada"
+      ]
     }
   ]
 }
