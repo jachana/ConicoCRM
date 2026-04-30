@@ -24,18 +24,24 @@
   "cards": [
     {
       "list": "In review",
-      "name": "revamp dashboard, its boring now",
+      "name": "[Onboarding] Import Proveedores",
       "labels": [
-        "Design System"
+        "Core"
       ],
-      "desc": "Dashboard actual carece de engagement visual y organización. Rediseñar con widgets dinámicos, colores, y datos relevantes por rol para mejorar UX y adopción.",
+      "desc": "Carga inicial de proveedores (necesario para OC históricas y futuras). Match por RUT.",
       "checklist": [
-        "Auditar dashboard actual: qué datos + qué roles lo usan",
-        "Mockups: layout responsive, widgets customizables",
-        "Definir KPIs visuales por rol (vendedor vs admin)",
-        "Implementar new design con charts/cards interactivas",
-        "Test A/B con subset de usuarios",
-        "Shipped: hero greeting + KPI strip + pill tabs + gradient empty state. Backend /summary endpoint. Commit 6412835"
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: rut, razon_social, giro, direccion, comuna, contacto, email, telefono, condicion_pago",
+        "Validar RUT módulo 11",
+        "Match por RUT normalizado; existente → UPDATE",
+        "Modelo Proveedor separado de Empresa (cliente)"
       ]
     }
   ]
