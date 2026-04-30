@@ -23,12 +23,12 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Tier A #8] Notificaciones in-app + email digest",
       "labels": [
         "Tier A"
       ],
-      "desc": "No iniciado; tareas suplen parcialmente.",
+      "desc": "No iniciado; tareas suplen parcialmente.\n\nMVP shipped en 8c2150b: modelo Notification + REST + bell con polling + hooks tareas. Email digest pendiente como follow-up (SMTP + cron).",
       "checklist": [
         "Modelo Notificacion (user, tipo, payload, leída)",
         "WebSocket o polling para in-app",
