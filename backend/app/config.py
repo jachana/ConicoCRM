@@ -25,4 +25,10 @@ class Settings(BaseSettings):
     log_format: str = "pretty"  # "json" | "pretty"
     log_level: str = "INFO"
 
+    # Auth W1-07
+    totp_issuer: str = "Conico"
+    twofa_ticket_expire_seconds: int = 300
+    password_reset_expire_minutes: int = 30
+    password_reset_url_base: str = "http://localhost:15173/reset-password"
+
 settings = Settings()

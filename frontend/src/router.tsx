@@ -1,6 +1,8 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import RouteError from './pages/RouteError'
 import Login from './pages/Login'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import Users from './pages/Users'
 import Empresas from './pages/Empresas'
 import Proveedores from './pages/Proveedores'
@@ -66,6 +68,8 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login />, errorElement: <RouteError /> },
+  { path: '/forgot-password', element: <ForgotPassword />, errorElement: <RouteError /> },
+  { path: '/reset-password/:token', element: <ResetPassword />, errorElement: <RouteError /> },
   {
     path: '/',
     element: <RequireAuth><AppLayout /></RequireAuth>,

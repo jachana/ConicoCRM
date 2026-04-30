@@ -2,6 +2,8 @@ import { jsx as _jsx, Fragment as _Fragment } from "react/jsx-runtime";
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import RouteError from './pages/RouteError';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Users from './pages/Users';
 import Empresas from './pages/Empresas';
 import Proveedores from './pages/Proveedores';
@@ -41,6 +43,7 @@ import FacturaCompraDetalle from './pages/FacturaCompraDetalle';
 import TareasPage from './pages/Tareas';
 import TareasConfigPage from './pages/TareasConfig';
 import AdminAuditoria from './pages/AdminAuditoria';
+import MigracionInicial from './pages/MigracionInicial';
 import { useAuthStore } from './stores/auth';
 import AppLayout from './components/layout/AppLayout';
 function RequireAuth({ children }) {
@@ -65,6 +68,8 @@ function RequireAdmin({ children }) {
 }
 export const router = createBrowserRouter([
     { path: '/login', element: _jsx(Login, {}), errorElement: _jsx(RouteError, {}) },
+    { path: '/forgot-password', element: _jsx(ForgotPassword, {}), errorElement: _jsx(RouteError, {}) },
+    { path: '/reset-password/:token', element: _jsx(ResetPassword, {}), errorElement: _jsx(RouteError, {}) },
     {
         path: '/',
         element: _jsx(RequireAuth, { children: _jsx(AppLayout, {}) }),
@@ -114,6 +119,7 @@ export const router = createBrowserRouter([
             { path: 'tareas', element: _jsx(TareasPage, {}) },
             { path: 'admin/tareas/config', element: _jsx(RequireAdmin, { children: _jsx(TareasConfigPage, {}) }) },
             { path: 'admin/auditoria', element: _jsx(RequireAdmin, { children: _jsx(AdminAuditoria, {}) }) },
+            { path: 'admin/migracion', element: _jsx(RequireAdmin, { children: _jsx(MigracionInicial, {}) }) },
         ],
     },
 ]);

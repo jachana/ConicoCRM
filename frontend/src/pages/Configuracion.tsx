@@ -10,6 +10,7 @@ import type { SystemConfig, BancoReceptor, User } from '../types'
 import { usePreferencesStore } from '../stores/preferences'
 import { patchPreferencias, type AtajoBusqueda } from '../api/preferencias'
 import { atajoLabel } from '../components/search/SearchButton'
+import TwoFASection from '../components/config/TwoFASection'
 import {
   Button, Input, FormField, Card, Skeleton,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
@@ -95,6 +96,8 @@ export default function Configuracion() {
       <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Configuración del Sistema</h1>
 
       <BusquedaSection />
+
+      <TwoFASection />
 
       {isAdmin && <ViewAsSection />}
 

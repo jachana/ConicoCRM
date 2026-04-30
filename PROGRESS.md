@@ -303,7 +303,14 @@ Ver `docs/state-of-product.html` para snapshot ejecutivo y `docs/backlog.md` par
     - Tipos: `direccion_despacho`/`comuna` agregados a `NotaVenta.cliente`; tsconfig lib bumped a ES2022 (Array.at en tests)
     - Tests: GuiasDespachoList (3), GuiaDespachoNueva (5), GuiaDespachoDetalle (6), NotaCreditoNueva (1) — todos pass
 - [ ] Observabilidad (Sentry + structured logs + healthz)
-- [ ] 2FA TOTP + reset password
+- [x] **2FA TOTP + reset password (W1-07)**
+  - User columns: `totp_secret`, `totp_enabled`, `totp_recovery_codes` (sha256-hashed list), `password_reset_token_hash`, `password_reset_expires_at` (Alembic `d5e6f7a8b9c0`)
+  - Backend `pyotp` + `segno` (pure-python QR PNG)
+  - Endpoints: `/auth/2fa/{status,setup,verify,disable,recovery-codes/regenerate}` + 2-step `/auth/login` returning `{twofa_required, ticket}` and `/auth/login/2fa` accepting TOTP **or** recovery code
+  - Recovery codes: 10× `xxxx-xxxx-xxxx`, plaintext shown once, sha256 stored, single-use enforced
+  - Password reset: `/auth/password-reset/{request,confirm}` — token hashed in DB, 30 min TTL, request always returns 204 (no enumeration)
+  - Frontend: 2-step Login flow (password → TOTP/recovery code), `/forgot-password` + `/reset-password/:token` pages, `Configuracion → Verificación en dos pasos` (enroll wizard with QR + verify, recovery code reveal once, regenerate, disable)
+  - Tests: `test_auth_2fa.py` (12) + `test_auth_password_reset.py` (6) — all pass
 
 ---
 
