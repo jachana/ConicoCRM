@@ -517,9 +517,15 @@ def pick_easiest(triaged: list[dict]) -> dict | None:
 
 IMPLEMENTER_PROMPT = """You are an autonomous implementer for the Conico CRM project.
 
-TASK: implement the Trello card below. Make ALL the changes (backend, frontend, migrations, tests as needed). When you finish, your code must:
-  - pass `cd backend && ./run_tests.sh`
-  - pass `cd frontend && npm test -- --run` AND `npm run build`
+TASK: implement the Trello card below. Make ALL the changes (backend, frontend, migrations, tests as needed).
+
+BEFORE you commit anything, run the tests YOURSELF to confirm they pass:
+  - backend: `cd backend && ./run_tests.sh`  (or run only the relevant test files)
+  - frontend: `cd frontend && npm test -- --run`
+  - frontend build: `cd frontend && npm run build`
+After you commit, the loop will re-run the FULL suite. If it fails, the loop will
+hand the failure back to you for a fix attempt — but you should not rely on that;
+aim to ship green on the first try.
 
 Work directly on the current branch. Commit your changes with a clear message
 referencing the card. You may make multiple commits. Do NOT push — the loop pushes.
@@ -531,6 +537,26 @@ with a message starting with "ABORT:" and explain. Do not commit half-broken cod
 
 CARD:
 {card_json}
+"""
+
+
+FIX_PROMPT = """You are continuing work on the SAME branch you just committed to.
+The loop ran the full test suite and it FAILED. Diagnose and fix.
+
+Failure tail (last ~2000 chars of stdout+stderr):
+---
+{failure}
+---
+
+Original card you were implementing:
+{card_json}
+
+RULES:
+  - Do NOT reset or revert. Add new commits on top to fix the failure.
+  - Run the failing tests yourself before committing your fix to confirm.
+  - If after analysis the failure is unfixable in scope (wrong scope, missing
+    spec, blocked on infra), exit with a message starting with "ABORT:" and explain.
+  - Do NOT touch scripts/trello_cards.json or scripts/trello_sync.py.
 """
 
 
@@ -549,10 +575,7 @@ def _fmt_elapsed(seconds: float) -> str:
     return f"{s // 60:d}:{s % 60:02d}"
 
 
-def spawn_claude(card: dict, model: str, log_path: Path) -> tuple[int, str]:
-    prompt = IMPLEMENTER_PROMPT.format(
-        card_json=json.dumps(card, ensure_ascii=False, indent=2)
-    )
+def _run_claude_with_prompt(prompt: str, model: str, log_path: Path) -> tuple[int, str]:
     cmd = [
         CLAUDE_CLI,
         "-p", prompt,
@@ -649,6 +672,21 @@ def spawn_claude(card: dict, model: str, log_path: Path) -> tuple[int, str]:
 
         proc.wait()
     return proc.returncode, last_text
+
+
+def spawn_claude(card: dict, model: str, log_path: Path) -> tuple[int, str]:
+    prompt = IMPLEMENTER_PROMPT.format(
+        card_json=json.dumps(card, ensure_ascii=False, indent=2)
+    )
+    return _run_claude_with_prompt(prompt, model, log_path)
+
+
+def spawn_claude_fix(card: dict, model: str, failure: str, log_path: Path) -> tuple[int, str]:
+    prompt = FIX_PROMPT.format(
+        failure=failure[-2000:],
+        card_json=json.dumps(card, ensure_ascii=False, indent=2),
+    )
+    return _run_claude_with_prompt(prompt, model, log_path)
 
 
 # ------------------------------- tests ----------------------------------- #
@@ -800,11 +838,16 @@ def iteration(args, board_id: str) -> str:
     rc, last_text = spawn_claude(card, impl_model, log_path)
     print(f"  claude exit={rc}; log={log_path}")
 
+    test_runs = 0
+    fix_attempts = 0
+
     if rc != 0 or last_text.strip().upper().startswith("ABORT"):
         print("agent reported failure; rolling back.", file=sys.stderr)
         rollback_to(pre_sha)
         spec = load_spec()
         fail(spec, name, last_text or f"claude exit {rc}")
+        print_conclusion("FAILED", name, ELIGIBLE_LIST, fix_attempts, test_runs,
+                         reason=last_text[:300] or f"claude exit {rc}")
         return "continue"
 
     new_sha = git_head()
@@ -812,31 +855,90 @@ def iteration(args, board_id: str) -> str:
         print("agent made no commits; rolling back.", file=sys.stderr)
         spec = load_spec()
         fail(spec, name, "agent produced no commits")
+        print_conclusion("NO-OP", name, ELIGIBLE_LIST, fix_attempts, test_runs,
+                         reason="agent produced no commits")
         return "continue"
 
+    final_sha = new_sha
     if not args.skip_tests:
-        print("\n=== run tests ===")
-        ok, msg = run_tests()
-        if not ok:
+        while True:
+            print(f"\n=== run tests (attempt {test_runs + 1}) ===")
+            ok, msg = run_tests()
+            test_runs += 1
+            if ok:
+                print(f"  {msg}")
+                final_sha = git_head()
+                break
+
             print(f"tests failed: {msg[:400]}", file=sys.stderr)
-            rollback_to(pre_sha)
-            spec = load_spec()
-            fail(spec, name, msg)
-            return "continue"
-        print(f"  {msg}")
+            if fix_attempts >= args.max_fix_attempts:
+                print(f"out of fix attempts ({args.max_fix_attempts}); rolling back.",
+                      file=sys.stderr)
+                rollback_to(pre_sha)
+                spec = load_spec()
+                fail(spec, name, msg)
+                print_conclusion("FAILED", name, ELIGIBLE_LIST,
+                                 fix_attempts, test_runs,
+                                 reason=f"tests failed after "
+                                        f"{fix_attempts} fix attempt(s)")
+                return "continue"
+
+            fix_attempts += 1
+            print(f"\n=== fix attempt {fix_attempts}/{args.max_fix_attempts} ===")
+            fix_log = LOG_DIR / f"{int(time.time())}_{slugify(name)}_fix{fix_attempts}.log"
+            rc2, last2 = spawn_claude_fix(card, impl_model, msg, fix_log)
+            print(f"  claude-fix exit={rc2}; log={fix_log}")
+
+            if rc2 != 0 or last2.strip().upper().startswith("ABORT"):
+                print("fix agent ABORTed; rolling back.", file=sys.stderr)
+                rollback_to(pre_sha)
+                spec = load_spec()
+                fail(spec, name, last2 or f"fix exit {rc2}")
+                print_conclusion("ABORTED", name, ELIGIBLE_LIST,
+                                 fix_attempts, test_runs,
+                                 reason=last2[:300] or f"fix exit {rc2}")
+                return "continue"
+
+            new_after_fix = git_head()
+            if new_after_fix == final_sha:
+                print("fix produced no commits; rolling back.", file=sys.stderr)
+                rollback_to(pre_sha)
+                spec = load_spec()
+                fail(spec, name, "fix attempt produced no commits")
+                print_conclusion("FAILED", name, ELIGIBLE_LIST,
+                                 fix_attempts, test_runs,
+                                 reason="fix attempt produced no commits")
+                return "continue"
+            final_sha = new_after_fix
 
     print("\n=== ship ===")
     spec = load_spec()
-    ship(spec, name, git_head())
+    ship(spec, name, final_sha)
 
     print("\n=== push ===")
     subprocess.run(["git", "push", "origin", args.branch],
                    cwd=str(REPO_ROOT), check=False)
 
-    print("\n=== iteration usage ===")
-    print(ts.usage_summary())
-
+    print_conclusion("SHIPPED", name, SHIPPED_LIST, fix_attempts, test_runs,
+                     reason=f"final sha {final_sha[:7]}")
     return "continue"
+
+
+def print_conclusion(status: str, name: str, list_now: str,
+                     fix_attempts: int, test_runs: int,
+                     reason: str = "") -> None:
+    bar = "=" * 60
+    print(f"\n{bar}")
+    print(f"  ITERATION RESULT")
+    print(f"  status:        {status}")
+    print(f"  card:          {name}")
+    print(f"  trello list:   {list_now}")
+    print(f"  test runs:     {test_runs}")
+    print(f"  fix attempts:  {fix_attempts}")
+    if reason:
+        print(f"  note:          {reason[:300]}")
+    print(bar)
+    print(ts.usage_summary())
 
 
 def rollback_to(sha: str) -> None:
@@ -856,6 +958,8 @@ def main() -> int:
     parser.add_argument("--skip-tests", action="store_true")
     parser.add_argument("--commit-window", type=int, default=200,
                         help="how many recent commits to scan for already-implemented matches")
+    parser.add_argument("--max-fix-attempts", type=int, default=2,
+                        help="how many times to re-spawn claude with the failure tail before rolling back")
     args = parser.parse_args()
 
     ts.load_dotenv(ts.ENV_FILE)
