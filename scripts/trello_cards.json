@@ -23,18 +23,18 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Tier A #8] Notificaciones in-app + email digest",
+      "list": "In progress",
+      "name": "[Tier A #6] Pipeline / Oportunidades",
       "labels": [
         "Tier A"
       ],
-      "desc": "No iniciado; tareas suplen parcialmente.\n\nMVP shipped en 8c2150b: modelo Notification + REST + bell con polling + hooks tareas. Email digest pendiente como follow-up (SMTP + cron).",
+      "desc": "No iniciado. Bloqueante: etapas fijas vs configurables.",
       "checklist": [
-        "Modelo Notificacion (user, tipo, payload, leída)",
-        "WebSocket o polling para in-app",
-        "Bell icon header con badge unread",
-        "Email digest configurable (diario/semanal)",
-        "Settings de preferencias por tipo"
+        "Decidir etapas fijas vs configurables",
+        "Modelo Oportunidad (cliente, empresa, vendedor, etapa, monto estimado, fecha cierre estimada)",
+        "Kanban /pipeline con drag entre etapas",
+        "Conversión oportunidad → cotización",
+        "Reportes ganadas/perdidas + tasa de conversión"
       ]
     }
   ]
