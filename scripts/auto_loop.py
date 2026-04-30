@@ -160,6 +160,101 @@ def find_card(spec: dict, name: str) -> dict | None:
     return next((c for c in spec["cards"] if c["name"] == name), None)
 
 
+# ----------------------- already-implemented detector -------------------- #
+
+ALREADY_DONE_STOPWORDS = {
+    "de", "la", "el", "los", "las", "del", "para", "por", "con", "que",
+    "una", "uno", "unos", "unas", "este", "esta", "estos", "estas", "and",
+    "the", "for", "from", "with", "into", "onto", "via", "en", "al", "su",
+    "sus", "se", "es", "no", "si", "más", "mas", "como", "todo", "todos",
+    "card", "feat", "fix", "chore", "feature", "request", "bug", "issue",
+    "tag", "tags", "data", "test", "tests", "user", "users",
+}
+
+ELIGIBLE_FOR_AUTOSHIP_LISTS = {"Feature requests", "Bugs", "Client feedback"}
+
+
+def _ascii_lower(s: str) -> str:
+    return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
+
+
+def _significant_tokens(name: str) -> set[str]:
+    s = _ascii_lower(name)
+    s = re.sub(r"\[[^\]]*\]", " ", s)  # drop bracket prefixes
+    return {t for t in re.findall(r"[a-z]{4,}", s)
+            if t not in ALREADY_DONE_STOPWORDS}
+
+
+def _recent_commits(n: int = 500) -> list[tuple[str, str, str]]:
+    """Return [(sha, subject, ascii_subject_lower)] for last n commits across all refs."""
+    r = subprocess.run(["git", "log", "--all", f"-n{n}", "--pretty=%H%x09%s"],
+                       cwd=str(REPO_ROOT), capture_output=True, check=True)
+    text = r.stdout.decode("utf-8", errors="replace")
+    out = []
+    for line in text.splitlines():
+        if "\t" not in line:
+            continue
+        sha, subj = line.split("\t", 1)
+        out.append((sha, subj, _ascii_lower(subj)))
+    return out
+
+
+def looks_implemented(card: dict,
+                      commits: list[tuple[str, str, str]],
+                      min_hits: int = 3,
+                      min_ratio: float = 0.6) -> list[tuple[str, str]]:
+    """Return commits that look like they implemented this card.
+
+    Requires both an absolute hit threshold AND a high token-overlap ratio,
+    so generic commits (e.g. shared infra touching the same module) don't
+    falsely match unrelated cards.
+    """
+    tokens = _significant_tokens(card["name"])
+    if len(tokens) < min_hits:
+        return []
+    matches: list[tuple[str, str]] = []
+    for sha, subj, norm in commits:
+        if not re.match(r"^(feat|fix)[\(:]", norm):
+            continue
+        if "trello" in norm or "claim" in norm or "ship" in norm:
+            continue
+        hits = sum(1 for t in tokens if t in norm)
+        if hits >= min_hits and (hits / len(tokens)) >= min_ratio:
+            matches.append((sha, subj))
+    return matches
+
+
+def reconcile_already_done(spec: dict, board_id: str) -> list[str]:
+    """Move cards that look already-implemented directly to 'In review' with commit links."""
+    commits = _recent_commits()
+    moved: list[str] = []
+    for c in spec["cards"]:
+        if c["list"] not in ELIGIBLE_FOR_AUTOSHIP_LISTS:
+            continue
+        matches = looks_implemented(c, commits)
+        if not matches:
+            continue
+        existing = set(c.get("commits", []))
+        new_shas = [sha for sha, _ in matches if sha not in existing]
+        if not new_shas:
+            continue
+        c["list"] = SHIPPED_LIST
+        c["commits"] = list(existing) + new_shas
+        moved.append(c["name"])
+        print(f"  auto-ship (already implemented): {c['name'][:80]}")
+        for sha, subj in matches[:3]:
+            print(f"    {sha[:7]}  {subj[:80]}")
+    if moved:
+        save_spec(spec)
+        ts.apply_spec(spec, board_id, dry_run=False)
+        subprocess.run(["git", "add", "scripts/trello_cards.json"],
+                       cwd=str(REPO_ROOT), check=False)
+        subprocess.run(["git", "commit", "-m",
+                        f"chore(trello): auto-ship {len(moved)} already-implemented card(s) -> In review"],
+                       cwd=str(REPO_ROOT), check=False)
+    return moved
+
+
 # ------------------------------ triage ----------------------------------- #
 
 
@@ -354,6 +449,13 @@ def iteration(args, board_id: str) -> str:
     print("\n=== iteration: pull ===")
     ts.pull(board_id, CARDS_FILE)
     spec = load_spec()
+
+    print("\n=== reconcile already-implemented ===")
+    moved = reconcile_already_done(spec, board_id)
+    if moved:
+        print(f"  auto-shipped {len(moved)} card(s); re-pulling.")
+        ts.pull(board_id, CARDS_FILE)
+        spec = load_spec()
 
     cands = candidates(spec)
     if not cands:
