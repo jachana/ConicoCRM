@@ -29,6 +29,7 @@ from app.api import cobranza
 from app.api import dte
 from app.api import reportes
 from app.api import tags
+from app.api import tipos_producto
 from app.api import bancos_receptores
 from app.api import sedes_despacho
 from app.api import empresa_logo
@@ -128,6 +129,7 @@ app.include_router(cobranza.router, prefix="/api/cobranza", tags=["cobranza"])
 app.include_router(dte.router, prefix="/api/dte", tags=["dte"])
 app.include_router(reportes.router, prefix="/api/reportes", tags=["reportes"])
 app.include_router(tags.router, prefix="/api/tags", tags=["tags"])
+app.include_router(tipos_producto.router, prefix="/api/tipos-producto", tags=["catálogo"])
 app.include_router(bancos_receptores.router, prefix="/api/bancos-receptores", tags=["config"])
 app.include_router(sedes_despacho.router, prefix="/api/sedes-despacho", tags=["empresas"])
 app.include_router(empresa_logo.router, prefix="/api/empresas", tags=["empresas"])

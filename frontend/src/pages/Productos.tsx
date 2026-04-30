@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Search, FileSpreadsheet, Inbox, Pencil, Trash2, Tag, X, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '../lib/api'
-import type { Producto } from '../types'
+import type { Producto, TipoProducto } from '../types'
 import ProductoModal from '../components/ProductoModal'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
@@ -11,7 +11,7 @@ import {
   Button, Input, FormField, EmptyState, Skeleton, Tooltip,
   Table, THead, TBody, TR, TH, TD,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalTitle,
-  Card,
+  Card, Badge,
 } from '../components/ui'
 
 function formatPrecio(n: number) {
@@ -29,11 +29,26 @@ export default function Productos() {
   const isVendedor = (effectiveRole ?? user?.role) === 'vendedor'
   const canEdit = !!permissions?.catalogo?.edit
   const [busqueda, setBusqueda] = useState('')
+  const [tiposFiltro, setTiposFiltro] = useState<string[]>([])
+
+  const { data: tipos = [] } = useQuery<TipoProducto[]>({
+    queryKey: ['tipos-producto'],
+    queryFn: () => api.get('/api/tipos-producto/').then(r => r.data),
+  })
 
   const { data: productos = [], isLoading } = useQuery<Producto[]>({
-    queryKey: ['productos', busqueda],
-    queryFn: () => api.get(`/api/productos/?q=${encodeURIComponent(busqueda)}`).then(r => r.data),
+    queryKey: ['productos', busqueda, tiposFiltro],
+    queryFn: () => {
+      const params = new URLSearchParams()
+      if (busqueda) params.set('q', busqueda)
+      for (const t of tiposFiltro) params.append('tipo', t)
+      return api.get(`/api/productos/?${params.toString()}`).then(r => r.data)
+    },
   })
+
+  function toggleTipoFiltro(nombre: string) {
+    setTiposFiltro(prev => prev.includes(nombre) ? prev.filter(t => t !== nombre) : [...prev, nombre])
+  }
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editando, setEditando] = useState<Producto | null>(null)
@@ -211,6 +226,35 @@ export default function Productos() {
         </FormField>
       </div>
 
+      {tipos.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">Filtrar por tipo:</span>
+          {tipos.map(t => {
+            const sel = tiposFiltro.includes(t.nombre)
+            return (
+              <button
+                type="button"
+                key={t.id}
+                onClick={() => toggleTipoFiltro(t.nombre)}
+                className="focus:outline-none"
+                aria-pressed={sel}
+              >
+                <Badge variant={sel ? 'brand' : 'outline'}>{t.nombre}</Badge>
+              </button>
+            )
+          })}
+          {tiposFiltro.length > 0 && (
+            <button
+              type="button"
+              className="text-xs text-gray-500 hover:underline ml-1"
+              onClick={() => setTiposFiltro([])}
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+      )}
+
       {bulkMode && (
         <Card padded className="mb-4">
           <div className="flex flex-wrap items-end gap-3">
@@ -294,6 +338,7 @@ export default function Productos() {
                 )}
                 <TH>Nombre</TH>
                 <TH>Marca</TH>
+                {!bulkMode && <TH>Tipos</TH>}
                 {!isVendedor && <TH className="text-right">Precio costo</TH>}
                 <TH className="text-right">Precio venta</TH>
                 {bulkMode && <TH className="text-right w-32">Precio nuevo</TH>}
@@ -329,6 +374,19 @@ export default function Productos() {
                     <TD className="text-gray-500 dark:text-gray-400 text-xs">
                       {p.marca ? p.marca.nombre : <span className="text-gray-300 dark:text-gray-600">—</span>}
                     </TD>
+                    {!bulkMode && (
+                      <TD>
+                        {p.tipos && p.tipos.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {p.tipos.map(t => (
+                              <Badge key={t.id} variant="brand" size="sm">{t.nombre}</Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>
+                        )}
+                      </TD>
+                    )}
                     {!isVendedor && <TD className="text-right text-gray-500 dark:text-gray-400 font-num">{formatPrecio(Number(p.precio_costo ?? 0))}</TD>}
                     <TD className={`text-right font-num ${cambia ? 'text-gray-400 line-through' : 'font-medium text-gray-900 dark:text-white'}`}>
                       {formatPrecio(Number(p.precio_venta))}

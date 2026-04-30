@@ -16,6 +16,7 @@ from app.models.lista_precios import ListaPrecios, ListaPreciosItem
 from app.models.producto import Producto
 from app.models.system_config import SystemConfig
 from app.models.tag import ProductoTag
+from app.models.tipo_producto import TipoProducto
 from app.models.user import User
 from app.models.movimiento_inventario import MovimientoInventario
 from app.schemas.lista_precios import HistorialCostoItem
@@ -31,6 +32,22 @@ from app.schemas.producto import (
 )
 from app.utils.search import unaccent_ilike
 from app.schemas.movimiento_inventario import MovimientoListOut
+
+
+def _sync_tipos(producto: Producto, tipo_ids: list[int], db: Session) -> None:
+    if not tipo_ids:
+        producto.tipos = []
+        return
+    ids = list(dict.fromkeys(tipo_ids))
+    tipos = db.query(TipoProducto).filter(TipoProducto.id.in_(ids)).all()
+    found = {t.id for t in tipos}
+    missing = [i for i in ids if i not in found]
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Tipo(s) no encontrado(s): {missing}",
+        )
+    producto.tipos = tipos
 
 
 def _sync_tags(producto: Producto, tag_nombres: list[str], db: Session) -> None:
@@ -204,6 +221,7 @@ def actualizar_precios_bulk(
 @router.get("/")
 def listar_productos(
     q: str = Query("", description="Filtrar por nombre, SKU o tag"),
+    tipo: list[str] = Query(default_factory=list, description="Filtrar por nombre(s) de tipo (multi-valor)"),
     perms: tuple[User, Session] = require_permission("catalogo", "view"),
 ):
     user, db = perms
@@ -217,6 +235,14 @@ def listar_productos(
                 unaccent_ilike(ProductoTag.nombre, pattern),
             )
         ).distinct()
+    if tipo:
+        nombres = [t.strip().lower() for t in tipo if t.strip()]
+        if nombres:
+            query = (
+                query.join(Producto.tipos)
+                .filter(TipoProducto.nombre.in_(nombres))
+                .distinct()
+            )
     rows = query.order_by(Producto.nombre).all()
 
     if user.role != "admin":
@@ -240,11 +266,12 @@ def crear_producto(
     perms: tuple[User, Session] = require_permission("catalogo", "create"),
 ):
     user, db = perms
-    data = body.model_dump(exclude={"tags"})
+    data = body.model_dump(exclude={"tags", "tipos"})
     producto = Producto(**data)
     db.add(producto)
     db.flush()
     _sync_tags(producto, body.tags, db)
+    _sync_tipos(producto, body.tipos, db)
     db.commit()
     db.refresh(producto)
     return _serialize_producto(db, producto, user)
@@ -272,10 +299,12 @@ def actualizar_producto(
     p = db.get(Producto, producto_id)
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
-    for field, value in body.model_dump(exclude_unset=True, exclude={"tags"}).items():
+    for field, value in body.model_dump(exclude_unset=True, exclude={"tags", "tipos"}).items():
         setattr(p, field, value)
     if body.tags is not None:
         _sync_tags(p, body.tags, db)
+    if body.tipos is not None:
+        _sync_tipos(p, body.tipos, db)
     db.commit()
     db.refresh(p)
     return _serialize_producto(db, p, user)

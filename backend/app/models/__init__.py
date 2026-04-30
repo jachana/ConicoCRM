@@ -20,6 +20,7 @@ from app.models.dte_emision import DteEmision  # noqa: F401
 from app.models.nota_credito import NotaCredito, NotaCreditoLinea  # noqa: F401
 from app.models.nota_debito import NotaDebito, NotaDebitoLinea  # noqa: F401
 from app.models.tag import ProductoTag, producto_tag_link  # noqa: F401
+from app.models.tipo_producto import TipoProducto, producto_tipo_link  # noqa: F401
 from app.models.banco_receptor import BancoReceptor  # noqa: F401
 from app.models.sede_despacho import SedeDespacho  # noqa: F401
 from app.models.contacto_empresa import ContactoEmpresa  # noqa: F401

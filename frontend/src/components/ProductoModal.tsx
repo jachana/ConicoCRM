@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { X } from 'lucide-react'
 import { api } from '../lib/api'
-import type { Producto, Marca } from '../types'
+import type { Producto, Marca, TipoProducto } from '../types'
 import ProductoDocumentos from './ProductoDocumentos'
 import ProductoHistorial from './ProductoHistorial'
 import ProductoHistorialCostos from './ProductoHistorialCostos'
 import {
   Modal, ModalContent, ModalHeader, ModalTitle,
-  Button, Input, Textarea, FormField,
+  Button, Input, Textarea, FormField, Badge,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from './ui'
@@ -21,11 +22,13 @@ type FormData = {
   proveedor_id: string
   marca_id: string
   volumen: string
+  tipos: number[]
 }
 
 const EMPTY_FORM: FormData = {
   nombre: '', descripcion: '', precio_venta: '0',
   margen: '0', stock_minimo: '0', proveedor_id: '', marca_id: '', volumen: '',
+  tipos: [],
 }
 
 function calcMargen(costo: number, venta: string): string {
@@ -56,14 +59,38 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
       proveedor_id: editando.proveedor_id ? String(editando.proveedor_id) : '',
       marca_id: editando.marca_id ? String(editando.marca_id) : '',
       volumen: editando.volumen !== null ? String(editando.volumen) : '',
+      tipos: (editando.tipos ?? []).map(t => t.id),
     }
   })
+  const [nuevoTipo, setNuevoTipo] = useState('')
   const [formDirty, setFormDirty] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const { data: marcas = [] } = useQuery<Marca[]>({
     queryKey: ['marcas'],
     queryFn: () => api.get('/api/marcas/').then(r => r.data),
+  })
+
+  const { data: tipos = [] } = useQuery<TipoProducto[]>({
+    queryKey: ['tipos-producto'],
+    queryFn: () => api.get('/api/tipos-producto/').then(r => r.data),
+  })
+
+  const tipoNombrePorId = useMemo(() => {
+    const m = new Map<number, string>()
+    for (const t of tipos) m.set(t.id, t.nombre)
+    return m
+  }, [tipos])
+
+  const crearTipo = useMutation({
+    mutationFn: (nombre: string) =>
+      api.post('/api/tipos-producto/', { nombre }).then(r => r.data as TipoProducto),
+    onSuccess: (nuevo) => {
+      qc.invalidateQueries({ queryKey: ['tipos-producto'] })
+      setForm(f => f.tipos.includes(nuevo.id) ? f : { ...f, tipos: [...f.tipos, nuevo.id] })
+      setNuevoTipo('')
+    },
+    onError: (e: any) => setError(e?.response?.data?.detail ?? 'Error al crear tipo'),
   })
 
   const guardar = useMutation({
@@ -76,6 +103,7 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
         proveedor_id: data.proveedor_id ? parseInt(data.proveedor_id) : null,
         marca_id: data.marca_id ? parseInt(data.marca_id) : null,
         volumen: data.volumen ? parseFloat(data.volumen) : null,
+        tipos: data.tipos,
       }
       if (editando) return api.patch(`/api/productos/${editando.id}`, payload).then(r => r.data)
       return api.post('/api/productos/', payload).then(r => r.data)
@@ -83,6 +111,26 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['productos'] }); onClose() },
     onError: (e: any) => setError(e?.response?.data?.detail ?? 'Error al guardar'),
   })
+
+  function toggleTipo(id: number) {
+    setFormDirty(true)
+    setForm(f => f.tipos.includes(id)
+      ? { ...f, tipos: f.tipos.filter(t => t !== id) }
+      : { ...f, tipos: [...f.tipos, id] }
+    )
+  }
+
+  function handleCrearTipo() {
+    const nombre = nuevoTipo.trim().toLowerCase()
+    if (!nombre) return
+    const ya = tipos.find(t => t.nombre === nombre)
+    if (ya) {
+      if (!form.tipos.includes(ya.id)) toggleTipo(ya.id)
+      setNuevoTipo('')
+      return
+    }
+    crearTipo.mutate(nombre)
+  }
 
   const venta = parseFloat(form.precio_venta)
   const costo = Number(editando?.precio_costo ?? 0)
@@ -133,6 +181,67 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
           value={form.volumen}
           onChange={e => { setFormDirty(true); setForm(f => ({ ...f, volumen: e.target.value })) }}
         />
+      </FormField>
+
+      <FormField label="Tipos" className="col-span-2" hint={isAdmin ? 'Multi-selección. Admins pueden crear nuevos tipos.' : 'Multi-selección.'}>
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {tipos.length === 0 && (
+            <span className="text-xs text-gray-400">Sin tipos disponibles</span>
+          )}
+          {tipos.map(t => {
+            const sel = form.tipos.includes(t.id)
+            return (
+              <button
+                type="button"
+                key={t.id}
+                onClick={() => toggleTipo(t.id)}
+                className="focus:outline-none"
+                aria-pressed={sel}
+              >
+                <Badge variant={sel ? 'brand' : 'outline'}>
+                  {t.nombre}
+                </Badge>
+              </button>
+            )
+          })}
+        </div>
+        {form.tipos.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {form.tipos.map(id => (
+              <Badge key={id} variant="brand">
+                {tipoNombrePorId.get(id) ?? `#${id}`}
+                <button type="button" onClick={() => toggleTipo(id)} aria-label={`Quitar ${tipoNombrePorId.get(id) ?? id}`}>
+                  <X size={10} />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
+        {isAdmin && (
+          <div className="flex gap-2">
+            <Input
+              placeholder="Nuevo tipo (ej: hidraulico)"
+              value={nuevoTipo}
+              onChange={e => setNuevoTipo(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleCrearTipo()
+                }
+              }}
+              className="max-w-xs"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCrearTipo}
+              disabled={!nuevoTipo.trim() || crearTipo.isPending}
+            >
+              Agregar
+            </Button>
+          </div>
+        )}
       </FormField>
 
       <FormField

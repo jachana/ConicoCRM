@@ -9,6 +9,12 @@ class MarcaRef(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class TipoRef(BaseModel):
+    id: int
+    nombre: str
+    model_config = {"from_attributes": True}
+
+
 class ProductoBase(BaseModel):
     nombre: str
     descripcion: str | None = None
@@ -31,7 +37,7 @@ class ProductoBase(BaseModel):
 
 
 class ProductoCreate(ProductoBase):
-    pass
+    tipos: list[int] = []
 
 
 class ProductoUpdate(BaseModel):
@@ -44,6 +50,7 @@ class ProductoUpdate(BaseModel):
     marca_id: int | None = None
     volumen: Decimal | None = None
     tags: list[str] | None = None
+    tipos: list[int] | None = None
 
 
 class ProductoOutPublic(ProductoBase):
@@ -52,6 +59,7 @@ class ProductoOutPublic(ProductoBase):
     formato: str | None = None
     precio_con_iva: Decimal = Decimal("0")
     marca: MarcaRef | None = None
+    tipos: list[TipoRef] = []
     created_at: datetime
     model_config = {"from_attributes": True}
 
@@ -73,6 +81,7 @@ class ProductoBusquedaOutPublic(BaseModel):
     stock_actual: int
     marca_id: int | None = None
     tags: list[str] = []
+    tipos: list[TipoRef] = []
     model_config = {"from_attributes": True}
 
     @field_validator("tags", mode="before")

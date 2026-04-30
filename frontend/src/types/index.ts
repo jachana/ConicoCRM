@@ -123,7 +123,13 @@ export interface Producto {
   marca: { id: number; nombre: string } | null
   volumen: number | string | null
   tags: string[]
+  tipos: TipoProducto[]
   created_at: string
+}
+
+export interface TipoProducto {
+  id: number
+  nombre: string
 }
 
 export interface ListaPrecios {
