@@ -5,9 +5,14 @@ from pydantic import BaseModel
 class ProveedorBase(BaseModel):
     nombre: str
     rut: str | None = None
+    razon_social: str | None = None
+    giro: str | None = None
+    direccion: str | None = None
+    comuna: str | None = None
     contacto: str | None = None
     email: str | None = None
     telefono: str | None = None
+    condicion_pago: str | None = None
     notas: str | None = None
 
 
@@ -18,9 +23,14 @@ class ProveedorCreate(ProveedorBase):
 class ProveedorUpdate(BaseModel):
     nombre: str | None = None
     rut: str | None = None
+    razon_social: str | None = None
+    giro: str | None = None
+    direccion: str | None = None
+    comuna: str | None = None
     contacto: str | None = None
     email: str | None = None
     telefono: str | None = None
+    condicion_pago: str | None = None
     notas: str | None = None
 
 
