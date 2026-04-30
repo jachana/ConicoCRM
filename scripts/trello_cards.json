@@ -23,12 +23,12 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Tier A #6] Pipeline / Oportunidades",
       "labels": [
         "Tier A"
       ],
-      "desc": "No iniciado. Bloqueante: etapas fijas vs configurables.",
+      "desc": "Shipped commit e738755. Stages configurable (default seed: Lead/Calificada/Propuesta/Negociación/Ganada/Perdida). Backend + tests + kanban UI + convert-to-cotización.",
       "checklist": [
         "Decidir etapas fijas vs configurables",
         "Modelo Oportunidad (cliente, empresa, vendedor, etapa, monto estimado, fecha cierre estimada)",
