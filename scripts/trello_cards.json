@@ -566,7 +566,8 @@
         "Columnas: codigo, nombre, parent_codigo (opcional para árbol)",
         "Soporta jerarquía (parent_codigo apunta a otra fila del mismo Excel)",
         "Validar ciclos en el árbol",
-        "Re-import actualiza nombre/parent (no borra hijos)"
+        "Re-import actualiza nombre/parent (no borra hijos)",
+        "[auto-attempt failed] fix attempt produced no commits"
       ]
     },
     {
