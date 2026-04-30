@@ -1,5 +1,6 @@
 # Worktrees
 .worktrees/
+.claude/worktrees/
 
 # Environment
 .env
@@ -36,9 +37,19 @@ Thumbs.db
 
 # Test artifacts
 *.db
+backend/test-reports/
+frontend/coverage/
+backend/htmlcov/
+.coverage
+coverage.xml
 
 # Claude local settings (permissions, personal config)
 .claude/settings.local.json
+.claude/auto_loop_logs/
+.claude/loop.md
+
+# Auto-loop local artifacts
+scripts/auto_loop_infographic.html
 
 # Superpowers plugin session artifacts
 .superpowers/
