@@ -23,7 +23,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "revamp dashboard, its boring now",
       "labels": [
         "Design System"
@@ -34,7 +34,8 @@
         "Mockups: layout responsive, widgets customizables",
         "Definir KPIs visuales por rol (vendedor vs admin)",
         "Implementar new design con charts/cards interactivas",
-        "Test A/B con subset de usuarios"
+        "Test A/B con subset de usuarios",
+        "Shipped: hero greeting + KPI strip + pill tabs + gradient empty state. Backend /summary endpoint. Commit 6412835"
       ]
     }
   ]
