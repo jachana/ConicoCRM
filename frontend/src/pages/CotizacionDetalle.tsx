@@ -126,6 +126,7 @@ export default function CotizacionDetalle() {
   const [empresaId, setEmpresaId] = useState<number | ''>('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [descuentoBlocked, setDescuentoBlocked] = useState(false)
 
   const [autocompleteIdx, setAutocompleteIdx] = useState<number | null>(null)
   const [autocompleteResults, setAutocompleteResults] = useState<Producto[]>([])
@@ -609,10 +610,43 @@ export default function CotizacionDetalle() {
       navigate(`/cotizaciones/${cotId}`)
       return true
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Error al guardar')
+      const detail = err?.response?.data?.detail || 'Error al guardar'
+      setError(detail)
+      setDescuentoBlocked(typeof detail === 'string' && detail.includes('descuento_supera_umbral'))
       return false
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleSolicitarDescuento() {
+    if (isNew) {
+      toast.error('Guarda la cotización con descuento 0 primero, luego solicita la aprobación.')
+      return
+    }
+    const propuestas = lineas
+      .filter(l => l.id != null && Number(l.descuento ?? 0) > 0)
+      .map(l => ({
+        linea_id: l.id!,
+        descripcion: l.descripcion,
+        descuento_actual: 0,
+        descuento_propuesto: Number(l.descuento ?? 0),
+      }))
+    if (propuestas.length === 0) {
+      toast.error('No hay líneas con descuento para solicitar')
+      return
+    }
+    try {
+      await api.post('/api/solicitudes-descuento/', {
+        cotizacion_id: Number(id),
+        nota: nota || null,
+        lineas_propuestas: propuestas,
+      })
+      toast.success('Solicitud de descuento enviada al supervisor')
+      setDescuentoBlocked(false)
+      setError('')
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || 'Error al solicitar aprobación')
     }
   }
 
@@ -828,8 +862,13 @@ export default function CotizacionDetalle() {
       </div>
 
       {error && (
-        <div className="mb-4 px-4 py-3 bg-danger-50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-800 rounded-lg text-sm text-danger-600 dark:text-danger-400">
-          {error}
+        <div className="mb-4 px-4 py-3 bg-danger-50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-800 rounded-lg text-sm text-danger-600 dark:text-danger-400 flex items-center justify-between gap-3">
+          <span>{error}</span>
+          {descuentoBlocked && !isNew && (
+            <Button size="sm" variant="primary" onClick={handleSolicitarDescuento}>
+              Solicitar aprobación
+            </Button>
+          )}
         </div>
       )}
 

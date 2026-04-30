@@ -21,6 +21,7 @@ INITIAL_CONFIG = {
     "empresa_numero_cuenta": "",
     "empresa_nombre_titular": "",
     "dias_alerta_costo_desactualizado": "60",
+    "descuento_umbral_libre_pct": "5",
 }
 
 

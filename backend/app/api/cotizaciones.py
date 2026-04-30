@@ -13,12 +13,18 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.api.auth import get_current_user
 from app.api.deps import require_permission
 from app.api.shared import enforce_al_contado
+from app.api.solicitudes_descuento import (
+    check_descuento_approval_required,
+    get_umbral_libre_pct,
+    lineas_exceed_umbral,
+)
 from app.database import get_db
 from app.models.aprobacion_margen import AprobacionMargen
 from app.models.cliente import Cliente
 from app.models.cotizacion import Cotizacion, CotizacionLinea
 from app.models.empresa import Empresa
 from app.models.producto import Producto
+from app.models.solicitud_descuento import SolicitudDescuento
 from app.models.system_config import SystemConfig
 from app.models.user import User
 from app.utils.search import producto_ids_matching, unaccent_ilike
@@ -187,6 +193,25 @@ def _check_lineas_invalidas(lineas: list[CotizacionLinea]) -> None:
         raise HTTPException(
             status_code=422,
             detail=" | ".join(messages[e] for e in errors),
+        )
+
+
+def _enforce_descuento_libre(
+    current_user: User,
+    lineas: list[CotizacionLinea],
+    db: Session,
+) -> None:
+    """Vendor can't save a línea with descuento > umbral; must request approval."""
+    if current_user.role in ("admin", "subadmin"):
+        return
+    umbral = get_umbral_libre_pct(db)
+    if lineas_exceed_umbral(lineas, umbral):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"descuento_supera_umbral: el descuento por línea no puede superar {umbral}% "
+                "sin aprobación. Solicita aprobación al supervisor."
+            ),
         )
 
 
@@ -403,6 +428,7 @@ def crear_cotizacion(
 
     cotizacion.lineas = _calcular_lineas(db, body.lineas)
     _check_lineas_invalidas(cotizacion.lineas)
+    _enforce_descuento_libre(current_user, cotizacion.lineas, db)
     _recalcular_totales(cotizacion)
     db.commit()
     db.refresh(cotizacion)
@@ -503,6 +529,7 @@ def reemplazar_lineas(
 
     nuevas_lineas = _calcular_lineas(db, lineas_data)
     _check_lineas_invalidas(nuevas_lineas)
+    _enforce_descuento_libre(current_user, nuevas_lineas, db)
 
     for linea in list(cot.lineas):
         db.delete(linea)
@@ -569,6 +596,11 @@ def generar_pdf(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Requiere aprobación de términos de pago",
+        )
+    if current_user.role not in ("admin", "subadmin") and check_descuento_approval_required(db, cotizacion_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Requiere aprobación de descuento",
         )
 
     config = _get_config_dict(db)
@@ -709,6 +741,11 @@ def enviar_email(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Requiere aprobación de términos de pago",
+        )
+    if current_user.role not in ("admin", "subadmin") and check_descuento_approval_required(db, cotizacion_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Requiere aprobación de descuento",
         )
 
     config = _get_config_dict(db)

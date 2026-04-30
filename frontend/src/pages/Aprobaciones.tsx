@@ -45,7 +45,25 @@ interface MargenAprobacion {
   created_at: string
 }
 
-type AnyAprobacion = CreditAprobacion | MargenAprobacion
+interface LineaDescuentoPropuesta {
+  linea_id: number
+  descripcion: string
+  descuento_actual: number
+  descuento_propuesto: number
+}
+
+interface DescuentoSolicitud {
+  tipo: 'descuento'
+  id: number
+  vendedor: { id: number; name: string; email: string } | null
+  cotizacion_id: number | null
+  nota: string | null
+  estado: string
+  lineas_propuestas: LineaDescuentoPropuesta[]
+  created_at: string
+}
+
+type AnyAprobacion = CreditAprobacion | MargenAprobacion | DescuentoSolicitud
 
 interface TerminoPendiente {
   id: number
@@ -86,6 +104,15 @@ export default function Aprobaciones() {
     enabled: isAdminUser,
   })
 
+  const { data: descuentos = [], isLoading: loadingDescuento } = useQuery<DescuentoSolicitud[]>({
+    queryKey: ['solicitudes-descuento-pendientes'],
+    queryFn: () =>
+      api.get('/api/solicitudes-descuento/?estado=pendiente').then(r =>
+        (r.data as Omit<DescuentoSolicitud, 'tipo'>[]).map(a => ({ ...a, tipo: 'descuento' as const }))
+      ),
+    enabled: isAdminUser,
+  })
+
   const { data: terminosPendientes = [] } = useQuery<TerminoPendiente[]>({
     queryKey: ['cotizaciones-terminos-pendientes'],
     queryFn: () =>
@@ -93,9 +120,9 @@ export default function Aprobaciones() {
     enabled: isAdminUser,
   })
 
-  const isLoading = loadingCredito || loadingMargen
+  const isLoading = loadingCredito || loadingMargen || loadingDescuento
 
-  const all: AnyAprobacion[] = [...creditos, ...margenes].sort(
+  const all: AnyAprobacion[] = [...creditos, ...margenes, ...descuentos].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
 
@@ -127,6 +154,20 @@ export default function Aprobaciones() {
     },
   })
 
+  const descuentoMutation = useMutation({
+    mutationFn: ({ id, accion, comentario }: { id: number; accion: 'aprobar' | 'rechazar'; comentario?: string }) =>
+      api.patch(`/api/solicitudes-descuento/${id}`, { accion, comentario }),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['solicitudes-descuento-pendientes'] })
+      setActingKey(null)
+      toast.success(vars.accion === 'aprobar' ? 'Aprobado' : 'Rechazado')
+    },
+    onError: () => {
+      setActingKey(null)
+      toast.error('Error al procesar')
+    },
+  })
+
   const terminosMutation = useMutation({
     mutationFn: ({ id, accion }: { id: number; accion: 'aprobado' | 'rechazado' }) =>
       api.patch(`/api/cotizaciones/${id}`, { terminos_pago_estado: accion }),
@@ -145,7 +186,11 @@ export default function Aprobaciones() {
     const key = `${a.tipo}-${a.id}`
     setActingKey(key)
     if (a.tipo === 'credito') creditMutation.mutate({ id: a.id, accion })
-    else margenMutation.mutate({ id: a.id, accion })
+    else if (a.tipo === 'margen') margenMutation.mutate({ id: a.id, accion })
+    else descuentoMutation.mutate({
+      id: a.id,
+      accion: accion === 'aprobar' ? 'aprobar' : 'rechazar',
+    })
   }
 
   if (!isAdminUser) return <Navigate to="/" replace />
@@ -185,8 +230,10 @@ export default function Aprobaciones() {
                       <TD>
                         {a.tipo === 'credito' ? (
                           <Badge variant="warning">Crédito</Badge>
-                        ) : (
+                        ) : a.tipo === 'margen' ? (
                           <Badge variant="info">Margen</Badge>
+                        ) : (
+                          <Badge variant="warning">Descuento</Badge>
                         )}
                       </TD>
                       <TD>{a.vendedor?.name ?? <span className="text-gray-400">—</span>}</TD>
@@ -206,7 +253,7 @@ export default function Aprobaciones() {
                       </TD>
                       <TD>
                         <div className="flex items-center gap-2">
-                          {a.tipo === 'margen' && (
+                          {(a.tipo === 'margen' || a.tipo === 'descuento') && (
                             <Tooltip label={isExpanded ? 'Ocultar detalle' : 'Ver detalle'}>
                               <Button
                                 size="icon-sm"
@@ -231,11 +278,35 @@ export default function Aprobaciones() {
                             disabled={acting}
                             onClick={() => handleAccion(a, 'denegar')}
                           >
-                            Denegar
+                            {a.tipo === 'descuento' ? 'Rechazar' : 'Denegar'}
                           </Button>
                         </div>
                       </TD>
                     </TR>
+                    {a.tipo === 'descuento' && isExpanded && (
+                      <TR key={`${key}-detail`} className="bg-warning-50/50 dark:bg-warning-500/10">
+                        <TD colSpan={7} className="px-6 py-3">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                                <th className="pb-1.5 text-left font-medium">Producto</th>
+                                <th className="pb-1.5 text-right font-medium">Descuento actual</th>
+                                <th className="pb-1.5 text-right font-medium">Descuento propuesto</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {a.lineas_propuestas.map((lp, i) => (
+                                <tr key={i} className="border-t border-gray-100 dark:border-gray-800">
+                                  <td className="py-1.5 text-gray-700 dark:text-gray-300">{lp.descripcion}</td>
+                                  <td className="py-1.5 text-right text-gray-600 dark:text-gray-400 font-num">{lp.descuento_actual}%</td>
+                                  <td className="py-1.5 text-right font-medium text-warning-700 dark:text-warning-300 font-num">{lp.descuento_propuesto}%</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </TD>
+                      </TR>
+                    )}
                     {a.tipo === 'margen' && isExpanded && (
                       <TR key={`${key}-detail`} className="bg-info-50/50 dark:bg-info-500/10">
                         <TD colSpan={7} className="px-6 py-3">

@@ -15,6 +15,7 @@ from app.models.movimiento_inventario import MovimientoInventario  # noqa: F401
 from app.models.pago import Pago  # noqa: F401
 from app.models.aprobacion_credito import AprobacionCredito  # noqa: F401
 from app.models.aprobacion_margen import AprobacionMargen  # noqa: F401
+from app.models.solicitud_descuento import SolicitudDescuento  # noqa: F401
 from app.models.cobranza_config import CobranzaConfig  # noqa: F401
 from app.models.dte_emision import DteEmision  # noqa: F401
 from app.models.nota_credito import NotaCredito, NotaCreditoLinea  # noqa: F401

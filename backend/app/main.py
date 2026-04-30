@@ -25,6 +25,7 @@ from app.api import dashboard
 from app.api import pagos
 from app.api import aprobaciones
 from app.api import aprobaciones_margen
+from app.api import solicitudes_descuento
 from app.api import cobranza
 from app.api import dte
 from app.api import facturas_compra
@@ -130,6 +131,7 @@ app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"]
 app.include_router(pagos.router, prefix="/api/pagos", tags=["pagos"])
 app.include_router(aprobaciones.router, prefix="/api/aprobaciones", tags=["aprobaciones"])
 app.include_router(aprobaciones_margen.router, prefix="/api/aprobaciones_margen", tags=["aprobaciones_margen"])
+app.include_router(solicitudes_descuento.router, prefix="/api/solicitudes-descuento", tags=["solicitudes_descuento"])
 app.include_router(cobranza.router, prefix="/api/cobranza", tags=["cobranza"])
 app.include_router(dte.router, prefix="/api/dte", tags=["dte"])
 app.include_router(facturas_compra.router, prefix="/api/facturas-compra", tags=["facturas_compra"])
