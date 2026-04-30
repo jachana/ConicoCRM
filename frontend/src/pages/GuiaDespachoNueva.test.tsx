@@ -76,7 +76,7 @@ describe('GuiaDespachoNueva', () => {
 
   it('blocks submit without cliente', async () => {
     renderPage()
-    const submitBtn = screen.getByRole('button', { name: /guardar y emitir/i })
+    const submitBtn = screen.getByRole('button', { name: /guardar guía/i })
     expect(submitBtn).toBeDisabled()
   })
 
@@ -87,13 +87,12 @@ describe('GuiaDespachoNueva', () => {
     await userEvent.click(screen.getByText('pick-cliente'))
     await userEvent.type(screen.getByLabelText(/dirección destino/i), 'Av Test 123')
     await userEvent.type(screen.getByLabelText(/comuna/i), 'Santiago')
-    const submitBtn = screen.getByRole('button', { name: /guardar y emitir/i })
+    const submitBtn = screen.getByRole('button', { name: /guardar guía/i })
     expect(submitBtn).toBeDisabled()
   })
 
   it('submits successfully with valid form', async () => {
     vi.mocked(apiGuias.crearGuiaDespacho).mockResolvedValue({ id: 42 } as apiGuias.GuiaDespacho)
-    vi.mocked(apiGuias.emitirGuiaDespachoDte).mockResolvedValue({ id: 42 } as apiGuias.GuiaDespacho)
     renderPage()
     await waitFor(() => expect(screen.getByRole('button', { name: /seleccionar cliente/i })).not.toBeDisabled())
     await userEvent.click(screen.getByRole('button', { name: /seleccionar cliente/i }))
@@ -109,9 +108,8 @@ describe('GuiaDespachoNueva', () => {
     await userEvent.clear(precInputs[0])
     await userEvent.type(precInputs[0], '1000')
 
-    await userEvent.click(screen.getByRole('button', { name: /guardar y emitir/i }))
+    await userEvent.click(screen.getByRole('button', { name: /guardar guía/i }))
     await waitFor(() => expect(apiGuias.crearGuiaDespacho).toHaveBeenCalled())
-    await waitFor(() => expect(apiGuias.emitirGuiaDespachoDte).toHaveBeenCalledWith(42))
     await waitFor(() => expect(screen.getByText(/detalle-stub/)).toBeInTheDocument())
   })
 

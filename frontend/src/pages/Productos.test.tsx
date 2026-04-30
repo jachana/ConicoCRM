@@ -18,17 +18,22 @@ function wrap(ui: React.ReactNode) {
   )
 }
 
-it('muestra lista de productos', async () => {
-  vi.mocked(apiModule.api.get).mockResolvedValue({
-    data: [{ id: 1, nombre: 'Tornillo M6', descripcion: null, precio_costo: 50, precio_venta: 120, stock_minimo: 10, stock_actual: 50, proveedor_id: null, created_at: '' }],
+function mockApiByUrl(productos: any[]) {
+  vi.mocked(apiModule.api.get).mockImplementation((url: string) => {
+    if (url.startsWith('/api/productos/')) return Promise.resolve({ data: productos }) as any
+    return Promise.resolve({ data: [] }) as any
   })
+}
+
+it('muestra lista de productos', async () => {
+  mockApiByUrl([{ id: 1, nombre: 'Tornillo M6', descripcion: null, precio_costo: 50, precio_venta: 120, stock_minimo: 10, stock_actual: 50, proveedor_id: null, created_at: '' }])
   render(wrap(<Productos />))
   await waitFor(() => expect(screen.getByText('Tornillo M6')).toBeInTheDocument())
   expect(screen.getByText('$120')).toBeInTheDocument()
 })
 
 it('muestra botón Agregar producto', async () => {
-  vi.mocked(apiModule.api.get).mockResolvedValue({ data: [] })
+  mockApiByUrl([])
   render(wrap(<Productos />))
   await waitFor(() => expect(screen.getByText('Agregar producto')).toBeInTheDocument())
 })
