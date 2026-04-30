@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/auth'
 import type { Factura, FacturaLinea, Cliente, User, Empresa, Pago, BancoReceptor } from '../types'
 import DteBadge from '../components/DteBadge'
 import TareasRelacionadas from '../components/TareasRelacionadas'
+import FacturaAdjuntos from '../components/FacturaAdjuntos'
 import {
   Button, Input, Textarea, FormField, Badge, Card, CardContent,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
@@ -1039,6 +1040,13 @@ export default function FacturaDetalle() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mb-5">
+        <CardContent className="p-5">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-3">Adjuntos (OC u otros)</h2>
+          <FacturaAdjuntos facturaId={factura.id} disabled={factura.is_locked} />
+        </CardContent>
+      </Card>
 
       <TareasRelacionadas tipo="factura" id={factura.id} />
 

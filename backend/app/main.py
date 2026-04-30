@@ -38,6 +38,7 @@ from app.api import marcas
 from app.api import aprobaciones_costo
 from app.api import productos_documentos
 from app.api import nota_ventas_adjuntos
+from app.api import facturas_adjuntos
 from app.api import listas_precios
 from app.api import tareas as tareas_api
 from app.api import reglas_tarea as reglas_tarea_api
@@ -138,6 +139,7 @@ app.include_router(marcas.router, prefix="/api/marcas", tags=["catálogo"])
 app.include_router(aprobaciones_costo.router, prefix="/api/aprobaciones-costo", tags=["aprobaciones"])
 app.include_router(productos_documentos.router, prefix="/api/productos", tags=["catálogo"])
 app.include_router(nota_ventas_adjuntos.router, prefix="/api/nota_ventas", tags=["nota_ventas"])
+app.include_router(facturas_adjuntos.router, prefix="/api/facturas", tags=["facturas"])
 app.include_router(listas_precios.router, prefix="/api/listas-precios", tags=["listas_precios"])
 app.include_router(reglas_tarea_api.router, prefix="/api")
 app.include_router(tareas_api.router, prefix="/api/tareas", tags=["tareas"])

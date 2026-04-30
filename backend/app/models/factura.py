@@ -74,6 +74,12 @@ class Factura(Base):
         back_populates="factura",
         order_by="Pago.fecha",
     )
+    adjuntos: Mapped[list["FacturaAdjunto"]] = relationship(
+        "FacturaAdjunto",
+        back_populates="factura",
+        cascade="all, delete-orphan",
+        order_by="FacturaAdjunto.subido_en.desc()",
+    )
 
     @property
     def margen_total(self) -> "Decimal | None":

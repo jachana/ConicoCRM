@@ -339,6 +339,15 @@ export interface NotaVentaAdjunto {
   subido_por_id: number | null
 }
 
+export interface FacturaAdjunto {
+  id: number
+  factura_id: number
+  nombre: string
+  mime_type: string
+  subido_en: string
+  subido_por_id: number | null
+}
+
 export interface FacturaLinea {
   id: number;
   orden: number;
