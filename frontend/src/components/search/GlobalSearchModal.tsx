@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Command } from 'cmdk'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { useNavigate } from 'react-router-dom'
 import { Search, Loader2 } from 'lucide-react'
 import { useGlobalSearch } from '../../hooks/useGlobalSearch'
@@ -55,6 +56,10 @@ export default function GlobalSearchModal({ open, onOpenChange }: Props) {
         className="w-[640px] max-w-[92vw] bg-white dark:bg-[#111827] rounded-xl shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
+        <DialogPrimitive.Title className="sr-only">Búsqueda global</DialogPrimitive.Title>
+        <DialogPrimitive.Description className="sr-only">
+          Busca productos, clientes, empresas y documentos
+        </DialogPrimitive.Description>
         <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-white/5">
           <Search size={18} className="text-gray-400" />
           <Command.Input
