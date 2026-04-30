@@ -733,14 +733,18 @@ PROVIDERS = {
 }
 
 
-def _call_provider(provider: str, bare_cards: list[dict], spec: dict,
-                   model_alias: str) -> list[dict]:
+def _provider_send(provider: str, model_alias: str,
+                   system: str, user: str) -> str:
+    """Generic system+user -> raw text via one provider. Records usage.
+
+    Reusable across card-triage (--enrich) and the backlog groomer. No
+    JSON parsing here — caller decides how to interpret the text.
+    """
     cfg = PROVIDERS[provider]
     api_key = os.environ.get(cfg["key_env"])
     if not api_key:
         raise RuntimeError(f"missing {cfg['key_env']}")
     model_id = PROVIDER_MODELS[provider].get(model_alias, model_alias)
-    system, user = _build_prompt(bare_cards, spec)
     body = cfg["build_body"](model_id, system, user)
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -768,21 +772,56 @@ def _call_provider(provider: str, bare_cards: list[dict], spec: dict,
     flag = " (est)" if estimated else ""
     print(f"  llm: {provider}/{model_id}  {in_tok} in / {out_tok} out  "
           f"~${entry['usd']:.4f}{flag}")
+    return text
 
+
+def _provider_candidates(provider: str) -> list[str]:
+    if provider == "auto":
+        cands = [p for p in PROVIDER_ORDER
+                 if os.environ.get(PROVIDERS[p]["key_env"])]
+        if not cands:
+            raise RuntimeError(
+                "no provider key set (STRAICO_API_KEY or OPENROUTER_API_KEY)"
+            )
+        return cands
+    return [provider]
+
+
+def prompt_json(system: str, user: str, model_alias: str,
+                provider: str = "auto") -> Any:
+    """Send one system+user prompt, expect JSON, with provider fallback.
+
+    Public helper for callers outside the card-triage flow (e.g. the
+    backlog groomer). Returns whatever the JSON parses to (dict or list).
+    Strips ``` fences.
+    """
+    candidates = _provider_candidates(provider)
+    last_err: Exception | None = None
+    for p in candidates:
+        try:
+            print(f"  llm: trying {p} ({PROVIDER_MODELS[p].get(model_alias, model_alias)})")
+            text = _provider_send(p, model_alias, system, user)
+            text = (text or "").strip()
+            if text.startswith("```"):
+                text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+            return json.loads(text)
+        except Exception as e:
+            print(f"  llm: {p} failed: {e}", file=sys.stderr)
+            last_err = e
+    raise RuntimeError(f"all providers failed; last error: {last_err}")
+
+
+def _call_provider(provider: str, bare_cards: list[dict], spec: dict,
+                   model_alias: str) -> list[dict]:
+    """Card-triage flow — builds the existing enrichment prompt, parses cards."""
+    system, user = _build_prompt(bare_cards, spec)
+    text = _provider_send(provider, model_alias, system, user)
     return _parse_llm_json(text)
 
 
 def call_llm(bare_cards: list[dict], spec: dict, model_alias: str,
              provider: str = "auto") -> list[dict]:
-    if provider == "auto":
-        candidates = [p for p in PROVIDER_ORDER
-                      if os.environ.get(PROVIDERS[p]["key_env"])]
-        if not candidates:
-            raise RuntimeError(
-                "no provider key set (STRAICO_API_KEY or OPENROUTER_API_KEY)"
-            )
-    else:
-        candidates = [provider]
+    candidates = _provider_candidates(provider)
 
     last_err: Exception | None = None
     for p in candidates:

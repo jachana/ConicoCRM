@@ -42,6 +42,7 @@ import unicodedata
 from pathlib import Path
 
 import trello_sync as ts
+from trello_groom import parse_groom_block
 
 
 IS_WIN = platform.system() == "Windows"
@@ -456,6 +457,10 @@ def reconcile_already_done(spec: dict, board_id: str,
 
 
 def candidates(spec: dict) -> list[dict]:
+    # done = any list the groomer should treat as "satisfied" for dep checks.
+    done_names = {c["name"] for c in spec["cards"]
+                  if c.get("list") in ts.DONE_LISTS}
+
     out = []
     for c in spec["cards"]:
         if c["list"] == ts.DUPLICATES_LIST:
@@ -468,6 +473,19 @@ def candidates(spec: dict) -> list[dict]:
             continue
         if not c.get("checklist"):
             continue
+
+        groom = parse_groom_block(c.get("desc") or "")
+        if groom:
+            status = (groom.get("status") or "").lower()
+            if status and status != "ready":
+                print(f"  skip {c['name']!r}  groom status={status}")
+                continue
+            unmet = [d for d in (groom.get("dependencies") or [])
+                     if d and d not in done_names]
+            if unmet:
+                print(f"  skip {c['name']!r}  blocked on: {unmet}")
+                continue
+            c["_groom"] = groom
         out.append(c)
     return out
 
@@ -503,12 +521,26 @@ def triage(cards: list[dict], model_alias: str, provider: str) -> list[dict]:
     return result
 
 
-def pick_easiest(triaged: list[dict]) -> dict | None:
+def pick_easiest(triaged: list[dict],
+                 priorities: dict[str, int] | None = None) -> dict | None:
+    """Pick the next card.
+
+    Sort key: groomed cards (have a priority_score) outrank ungroomed ones,
+    high priority first; tie-break by LLM difficulty (easier first).
+    """
     feasible = [t for t in triaged if t.get("feasible", True)
                 and isinstance(t.get("difficulty"), (int, float))]
     if not feasible:
         return None
-    feasible.sort(key=lambda t: t["difficulty"])
+    pri = priorities or {}
+
+    def _key(t: dict) -> tuple:
+        score = pri.get(t.get("name") or "", -1)
+        groomed = score >= 0
+        # groomed first, then high score, then low difficulty
+        return (0 if groomed else 1, -score, t["difficulty"])
+
+    feasible.sort(key=_key)
     return feasible[0]
 
 
@@ -799,13 +831,21 @@ def iteration(args, board_id: str) -> str:
         print(f"triage failed: {e}", file=sys.stderr)
         return "stop"
 
+    priorities = {
+        c["name"]: int((c.get("_groom") or {}).get("priority_score") or 0)
+        for c in cands if c.get("_groom")
+    }
+
     for t in triaged:
+        prio = priorities.get(t.get("name") or "")
+        prio_str = f"prio={prio}" if prio is not None else "ungroomed"
         print(f"  {t.get('difficulty', '?'):>3}  "
               f"{t.get('model', '?'):<7}  "
               f"feasible={t.get('feasible', True)}  "
-              f"{t.get('name', '?')[:80]}")
+              f"{prio_str:<14}  "
+              f"{t.get('name', '?')[:70]}")
 
-    pick = pick_easiest(triaged)
+    pick = pick_easiest(triaged, priorities=priorities)
     if not pick:
         print("no feasible cards after triage. stopping.")
         return "done"
