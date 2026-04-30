@@ -23,10 +23,12 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "Dashboard widget of sales should be able to set a goal",
-      "labels": [],
-      "desc": "",
+      "list": "In progress",
+      "name": "[Empresa] RUT no oficial — flag informativo para consolidación",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Algunas empresas tienen multiples RUT, necesitamos saberlos todos para contabilidad y consolidaciones",
       "checklist": []
     }
   ]
