@@ -32,6 +32,12 @@ const TIPO_LABELS: Record<string, string> = {
 
 const ROL_OPTIONS: AsignadoRol[] = ['vendedor', 'admin', 'owner'];
 
+const ROL_LABELS: Record<AsignadoRol, string> = {
+  vendedor: 'Vendedor',
+  admin: 'Administrador',
+  owner: 'Responsable',
+};
+
 function prettyTipo(tipo: string): string {
   return TIPO_LABELS[tipo] ?? tipo.replace(/_/g, ' ');
 }
@@ -161,7 +167,7 @@ export default function TareasConfigPage() {
                         <SelectContent>
                           {ROL_OPTIONS.map((opt) => (
                             <SelectItem key={opt} value={opt}>
-                              {opt === 'owner' ? 'responsable' : opt}
+                              {ROL_LABELS[opt]}
                             </SelectItem>
                           ))}
                         </SelectContent>
