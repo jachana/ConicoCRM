@@ -14,6 +14,8 @@ export type ChartType = 'kpi' | 'bar' | 'line' | 'table'
 
 export type DateRange = 'today' | 'week' | 'month' | 'quarter' | 'year' | 'custom'
 
+export type Granularity = 'day' | 'week' | 'month' | 'year'
+
 export interface WidgetGridPos {
   x: number
   y: number
@@ -30,6 +32,7 @@ export interface WidgetConfig {
   date_to?: string
   limit: number
   goal?: number | null
+  granularity?: Granularity
   grid: WidgetGridPos
 }
 

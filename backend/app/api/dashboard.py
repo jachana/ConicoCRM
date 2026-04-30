@@ -143,17 +143,32 @@ def _date_filter(q, model, date_from: date | None, date_to: date | None):
 
 # ── data handlers ─────────────────────────────────────────────────────────────
 
-def _data_ventas_periodo(db, current_user, date_from, date_to, limit):
+_VALID_GRANULARITIES = {"day", "week", "month", "year"}
+
+
+def _period_key(d: date, granularity: str) -> str:
+    if granularity == "day":
+        return d.strftime("%Y-%m-%d")
+    if granularity == "week":
+        iso = d.isocalendar()
+        return f"{iso[0]}-W{iso[1]:02d}"
+    if granularity == "year":
+        return d.strftime("%Y")
+    return d.strftime("%Y-%m")
+
+
+def _data_ventas_periodo(db, current_user, date_from, date_to, limit, granularity="month"):
+    if granularity not in _VALID_GRANULARITIES:
+        granularity = "month"
     q = db.query(NotaVenta).filter(NotaVenta.estado.in_(["pagada", "entregada", "despachada"]))
     q = _vendor_filter(q, NotaVenta, current_user)
     q = _date_filter(q, NotaVenta, date_from, date_to)
     nvs = q.all()
     total = sum(float(nv.total) for nv in nvs)
-    by_month: dict[str, float] = defaultdict(float)
+    by_period: dict[str, float] = defaultdict(float)
     for nv in nvs:
-        key = nv.fecha.strftime("%Y-%m")
-        by_month[key] += float(nv.total)
-    series = [VentasPeriodoSerie(periodo=k, monto=v) for k, v in sorted(by_month.items())]
+        by_period[_period_key(nv.fecha, granularity)] += float(nv.total)
+    series = [VentasPeriodoSerie(periodo=k, monto=v) for k, v in sorted(by_period.items())]
     return VentasPeriodoOut(total=total, series=series)
 
 
@@ -370,6 +385,7 @@ def get_widget_data(
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
     limit: int = Query(10, ge=1, le=100),
+    granularity: str | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -378,4 +394,6 @@ def get_widget_data(
     if widget_type in _ADMIN_ONLY and current_user.role == "vendedor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permisos")
     handler = _DATA_HANDLERS[widget_type]
+    if widget_type == "ventas_periodo":
+        return handler(db, current_user, date_from, date_to, limit, granularity or "month")
     return handler(db, current_user, date_from, date_to, limit)

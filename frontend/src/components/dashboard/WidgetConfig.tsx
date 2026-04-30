@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { WidgetConfig, ChartType, DateRange } from '../../types/dashboard'
+import type { WidgetConfig, ChartType, DateRange, Granularity } from '../../types/dashboard'
 import { WIDGET_BY_TYPE } from './widgetCatalog'
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalTitle,
@@ -21,6 +21,13 @@ const DATE_RANGE_LABELS: Record<DateRange, string> = {
   quarter: 'Este trimestre',
   year: 'Este año',
   custom: 'Personalizado',
+}
+
+const GRANULARITY_LABELS: Record<Granularity, string> = {
+  day: 'Diario',
+  week: 'Semanal',
+  month: 'Mensual',
+  year: 'Anual',
 }
 
 interface WidgetConfigProps {
@@ -78,6 +85,22 @@ export default function WidgetConfigModal({ widget, onSave, onClose }: WidgetCon
             />
           </FormField>
 
+          {draft.type === 'ventas_periodo' && (draft.chart === 'bar' || draft.chart === 'line') && (
+            <FormField label="Granularidad">
+              <Select
+                value={draft.granularity ?? 'month'}
+                onValueChange={(v) => set('granularity', v as Granularity)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(GRANULARITY_LABELS) as Granularity[]).map(g => (
+                    <SelectItem key={g} value={g}>{GRANULARITY_LABELS[g]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          )}
+
           {draft.type === 'ventas_periodo' && draft.chart === 'kpi' && (
             <FormField label="Meta del período (CLP, opcional)">
               <Input
@@ -85,6 +108,19 @@ export default function WidgetConfigModal({ widget, onSave, onClose }: WidgetCon
                 min={0}
                 step={1000}
                 placeholder="Ej: 5000000"
+                value={draft.goal ?? ''}
+                onChange={e => set('goal', e.target.value === '' ? null : Number(e.target.value))}
+              />
+            </FormField>
+          )}
+
+          {draft.type === 'ventas_periodo' && (draft.chart === 'bar' || draft.chart === 'line') && (
+            <FormField label="Meta por barra (CLP, opcional)">
+              <Input
+                type="number"
+                min={0}
+                step={1000}
+                placeholder="Ej: 200000 (línea de meta sobre el gráfico)"
                 value={draft.goal ?? ''}
                 onChange={e => set('goal', e.target.value === '' ? null : Number(e.target.value))}
               />

@@ -1,7 +1,7 @@
 // frontend/src/components/dashboard/Widget.tsx
 import { useQuery } from '@tanstack/react-query'
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts'
 import { Settings, X, Loader2 } from 'lucide-react'
 import { api } from '../../lib/api'
@@ -34,6 +34,7 @@ function buildParams(w: WidgetConfig) {
     if (w.date_to) p.set('date_to', w.date_to)
   }
   p.set('limit', String(w.limit))
+  if (w.type === 'ventas_periodo' && w.granularity) p.set('granularity', w.granularity)
   return p.toString()
 }
 
@@ -48,7 +49,7 @@ function KpiCard({ value, label }: { value: string; label: string }) {
   )
 }
 
-function SimpleBarChart({ data, xKey, yKey }: { data: object[]; xKey: string; yKey: string }) {
+function SimpleBarChart({ data, xKey, yKey, goal }: { data: object[]; xKey: string; yKey: string; goal?: number | null }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
@@ -56,12 +57,21 @@ function SimpleBarChart({ data, xKey, yKey }: { data: object[]; xKey: string; yK
         <YAxis tick={{ fontSize: 10 }} width={50} />
         <Tooltip formatter={(v) => formatMoney(v as number)} />
         <Bar dataKey={yKey} fill="#6366f1" radius={[3, 3, 0, 0]} />
+        {goal != null && goal > 0 && (
+          <ReferenceLine
+            y={goal}
+            stroke="#10b981"
+            strokeDasharray="4 4"
+            strokeWidth={2}
+            label={{ value: `Meta ${formatMoney(goal)}`, position: 'insideTopRight', fontSize: 10, fill: '#10b981' }}
+          />
+        )}
       </BarChart>
     </ResponsiveContainer>
   )
 }
 
-function SimpleLineChart({ data, xKey, yKey }: { data: object[]; xKey: string; yKey: string }) {
+function SimpleLineChart({ data, xKey, yKey, goal }: { data: object[]; xKey: string; yKey: string; goal?: number | null }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
@@ -69,6 +79,15 @@ function SimpleLineChart({ data, xKey, yKey }: { data: object[]; xKey: string; y
         <YAxis tick={{ fontSize: 10 }} width={50} />
         <Tooltip formatter={(v) => formatMoney(v as number)} />
         <Line type="monotone" dataKey={yKey} stroke="#6366f1" dot={false} strokeWidth={2} />
+        {goal != null && goal > 0 && (
+          <ReferenceLine
+            y={goal}
+            stroke="#10b981"
+            strokeDasharray="4 4"
+            strokeWidth={2}
+            label={{ value: `Meta ${formatMoney(goal)}`, position: 'insideTopRight', fontSize: 10, fill: '#10b981' }}
+          />
+        )}
       </LineChart>
     </ResponsiveContainer>
   )
@@ -107,8 +126,8 @@ function RenderVentas({ data, chart, goal }: { data: VentasPeriodoOut; chart: st
     if (goal && goal > 0) return <VentasGoalKpi total={data.total} goal={goal} />
     return <KpiCard value={formatMoney(data.total)} label="Ventas del período" />
   }
-  if (chart === 'line') return <SimpleLineChart data={data.series} xKey="periodo" yKey="monto" />
-  return <SimpleBarChart data={data.series} xKey="periodo" yKey="monto" />
+  if (chart === 'line') return <SimpleLineChart data={data.series} xKey="periodo" yKey="monto" goal={goal} />
+  return <SimpleBarChart data={data.series} xKey="periodo" yKey="monto" goal={goal} />
 }
 
 function RenderCotizaciones({ data, chart }: { data: CotizacionesAbiertasOut; chart: string }) {

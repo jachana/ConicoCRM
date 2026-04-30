@@ -213,6 +213,48 @@ class TestDataEndpoints:
         assert "series" in body
         assert body["total"] > 0
 
+    def test_ventas_periodo_granularity_day(self, client, setup_test_db):
+        _make_user("admin", "a@test.cl")
+        v = _make_user("vendedor", "v@test.cl")
+        _seed_data(v.id)
+        tok = _token(client, "a@test.cl")
+        r = client.get(
+            "/api/dashboard/data/ventas_periodo?granularity=day",
+            headers={"Authorization": f"Bearer {tok}"},
+        )
+        assert r.status_code == 200
+        body = r.json()
+        # Seed creates 1 NV pagada today → expect daily key like YYYY-MM-DD
+        assert len(body["series"]) >= 1
+        assert all(len(s["periodo"]) == 10 and s["periodo"].count("-") == 2 for s in body["series"])
+
+    def test_ventas_periodo_granularity_week(self, client, setup_test_db):
+        _make_user("admin", "a@test.cl")
+        v = _make_user("vendedor", "v@test.cl")
+        _seed_data(v.id)
+        tok = _token(client, "a@test.cl")
+        r = client.get(
+            "/api/dashboard/data/ventas_periodo?granularity=week",
+            headers={"Authorization": f"Bearer {tok}"},
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert all("-W" in s["periodo"] for s in body["series"])
+
+    def test_ventas_periodo_granularity_invalid_falls_back_to_month(self, client, setup_test_db):
+        _make_user("admin", "a@test.cl")
+        v = _make_user("vendedor", "v@test.cl")
+        _seed_data(v.id)
+        tok = _token(client, "a@test.cl")
+        r = client.get(
+            "/api/dashboard/data/ventas_periodo?granularity=bogus",
+            headers={"Authorization": f"Bearer {tok}"},
+        )
+        assert r.status_code == 200
+        body = r.json()
+        # Fallback to month → keys are YYYY-MM (length 7)
+        assert all(len(s["periodo"]) == 7 for s in body["series"])
+
     def test_ventas_periodo_vendedor_sees_own(self, client, setup_test_db):
         _make_user("admin", "a@test.cl")
         v1 = _make_user("vendedor", "v1@test.cl")
