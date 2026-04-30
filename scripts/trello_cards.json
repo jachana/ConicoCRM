@@ -23,12 +23,10 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.  If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.  For more information, see https://radix-ui.com/primitives/docs/components/dialog",
-      "labels": [
-        "Bug"
-      ],
-      "desc": "\n\nFixed in commit e1a3124: GlobalSearchModal now embeds sr-only DialogTitle/Description (cmdk label prop only sets aria-label, Radix still requires Title).",
+      "list": "In progress",
+      "name": "En el widget de ventas por periodo, el cliente quiere poder ver barras diarias por un entre semanas y años y tener una meta diaria visible, como una linea sobre las barras para saber que dias se cumple y que dias no",
+      "labels": [],
+      "desc": "",
       "checklist": []
     }
   ]

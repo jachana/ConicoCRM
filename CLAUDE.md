@@ -1,5 +1,10 @@
 # Conico Project
 
+## Trello Workflow
+- Trello online is the canonical source of truth; local JSON only tracks the active card.
+- Before claiming a card, verify it isn't already shipped/implemented by checking recent commits and the actual codebase, not just the card title.
+- After implementing, run full test suite, commit, push, AND move the card to 'In review' on Trello.
+
 ## Execution
 
 When executing implementation plans, always use **superpowers:subagent-driven-development** (never superpowers:executing-plans or inline execution).
@@ -58,5 +63,19 @@ Logs at `.claude/auto_loop_logs/<ts>_<slug>.log`.
   - `git status`
   - `ls`
 - **Confirmation Required**: Always ask before running destructive commands like `rm` or `git reset --hard`.
+
+## Testing & Shipping Checklist
+- Always run the full test suite (backend + frontend) before committing.
+- Always commit AND push when the user asks to 'ship' or 'implement' a task — don't stop at commit.
+- After Alembic migrations, verify there's only one head before committing.
+
+## UI Component Conventions
+- This project uses `Modal` (not `Dialog`) and the `danger` variant (not `destructive`).
+- Import icons from `lucide-react` directly; do not redefine `LucideIcon` types.
+- Check existing component usage in the codebase before introducing new component names.
+
+## Encoding
+- Always read/write subprocess output and files with `encoding='utf-8'` explicitly. Windows/WSL defaults to cp1252 and will crash on Spanish characters or emoji.
+
 CLAUDE_CODE_DISABLE_1M_CONTEXT=1
 keep context lower than 300k
