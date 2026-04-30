@@ -23,18 +23,23 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Tier A #6] Pipeline / Oportunidades",
+      "list": "In progress",
+      "name": "[Cotizaciones] Descuento requiere aprobación — vendedor no puede aplicarlo directo",
       "labels": [
-        "Tier A"
+        "Core"
       ],
-      "desc": "Shipped commit e738755. Stages configurable (default seed: Lead/Calificada/Propuesta/Negociación/Ganada/Perdida). Backend + tests + kanban UI + convert-to-cotización.",
+      "desc": "El vendedor no debe poder aplicar descuentos libremente en una cotización. En su lugar debe solicitar el descuento al admin/supervisor, quien lo aprueba o rechaza.\n\nFlujo esperado:\n- Vendedor propone descuento (% o monto) → cotización queda en estado 'descuento pendiente'.\n- Admin recibe notificación/alerta y puede aprobar o rechazar con comentario.\n- Si aprobado: descuento se aplica y cotización vuelve a estado normal.\n- Si rechazado: cotización sigue sin descuento, vendedor ve el motivo.\n- Config: umbral configurable (ej: descuentos > 5% requieren aprobación; menores, libres).",
       "checklist": [
-        "Decidir etapas fijas vs configurables",
-        "Modelo Oportunidad (cliente, empresa, vendedor, etapa, monto estimado, fecha cierre estimada)",
-        "Kanban /pipeline con drag entre etapas",
-        "Conversión oportunidad → cotización",
-        "Reportes ganadas/perdidas + tasa de conversión"
+        "Definir umbral configurable: % máximo de descuento libre por vendedor (config por empresa)",
+        "Modelo SolicitudDescuento (cotizacion_id, vendedor_id, descuento_solicitado, estado, revisor_id, comentario)",
+        "Migración Alembic",
+        "Endpoint POST /cotizaciones/{id}/solicitar-descuento",
+        "Endpoint PATCH /solicitudes-descuento/{id} (aprobar/rechazar — solo admin/supervisor)",
+        "Cotización con descuento pendiente: bloquear emisión hasta resolución",
+        "UI vendedor: input descuento muestra 'solicitar' si supera umbral, aplica directo si está dentro",
+        "UI admin: lista de solicitudes pendientes con aprobar/rechazar + campo comentario",
+        "Notificación in-app al admin al crear solicitud; al vendedor al resolver",
+        "Cotización detalle: mostrar estado de aprobación y quién aprobó/rechazó"
       ]
     }
   ]
