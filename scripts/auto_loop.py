@@ -126,10 +126,23 @@ def git_head() -> str:
     return git("rev-parse", "HEAD", capture=True)
 
 
+DIRTY_IGNORE_PREFIXES = (".claude/", "Conico-reportes")
+
+
 def git_dirty() -> bool:
+    """True if working tree has uncommitted changes outside ignorable paths.
+
+    Ignores `.claude/` (Claude Code internal state) and submodule pointer changes
+    so the loop can run when only those are dirty.
+    """
     r = subprocess.run(["git", "status", "--porcelain"], cwd=str(REPO_ROOT),
                        capture_output=True, text=True, check=True)
-    return bool(r.stdout.strip())
+    for line in r.stdout.splitlines():
+        path = line[3:].strip().strip('"')
+        if any(path.startswith(p) for p in DIRTY_IGNORE_PREFIXES):
+            continue
+        return True
+    return False
 
 
 def load_spec() -> dict:
