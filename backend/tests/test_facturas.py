@@ -419,7 +419,7 @@ def test_lista_includes_lineas_and_margen_total(client, admin_token):
 def _create_empresa(client, admin_token, nombre="Empresa Test"):
     r = client.post(
         "/api/empresas/",
-        json={"nombre": nombre, "rut": f"99.{abs(hash(nombre)) % 999:03d}.000-0"},
+        json={"nombre": nombre},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 201, r.text

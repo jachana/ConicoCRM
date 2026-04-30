@@ -62,6 +62,7 @@ export interface Empresa {
   ubicacion: string | null
   created_at: string
   has_logo: boolean
+  ruts_adicionales: string[]
 }
 
 export interface DeudaBulkItem {

@@ -124,7 +124,7 @@ def test_listar_clientes_acento_en_query(client, admin_token):
 def test_crear_cliente_con_empresa(client, admin_token):
     emp = client.post(
         "/api/empresas/",
-        json={"nombre": "Empresa Z", "rut": "76.999.999-9"},
+        json={"nombre": "Empresa Z", "rut": "76.999.999-K"},
         headers={"Authorization": f"Bearer {admin_token}"},
     ).json()
     r = client.post(
@@ -136,7 +136,7 @@ def test_crear_cliente_con_empresa(client, admin_token):
     data = r.json()
     assert data["empresa_id"] == emp["id"]
     assert data["empresa"]["nombre"] == "Empresa Z"
-    assert data["empresa"]["rut"] == "76.999.999-9"
+    assert data["empresa"]["rut"] == "76.999.999-K"
 
 
 def test_filtrar_clientes_por_empresa(client, admin_token):

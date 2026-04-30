@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useAuthStore } from '../stores/auth'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { Plus, FileSpreadsheet, Eye, Pencil, Trash2, Inbox } from 'lucide-react'
 import { api } from '../lib/api'
+import { validateRut, cleanRut } from '../utils/rut'
 import type { Empresa, EmpresaListItem, DeudaBulkItem, SedeDespacho } from '../types'
 import EmpresaFilters from '../components/EmpresaFilters'
 import EmpresaDetailModal from '../components/EmpresaDetailModal'
@@ -31,6 +32,7 @@ type FormData = {
   email: string
   nota_cobranza: string
   ubicacion: string
+  ruts_adicionales: string[]
 }
 
 const EMPTY_FORM: FormData = {
@@ -38,6 +40,7 @@ const EMPTY_FORM: FormData = {
   rut_no_oficial: false,
   linea_credito: '', plazo_credito: '',
   sector: '', email: '', nota_cobranza: '', ubicacion: '',
+  ruts_adicionales: [],
 }
 
 type SortField = 'nombre' | 'rut' | 'sector' | 'ultima_compra' | 'deuda_total' | 'deuda_vencida'
@@ -77,6 +80,9 @@ export default function Empresas() {
   const [editando, setEditando] = useState<Empresa | null>(null)
   const [form, setForm] = useState<FormData>(EMPTY_FORM)
   const [error, setError] = useState<string | null>(null)
+  const [rutError, setRutError] = useState<string | null>(null)
+  const [rutAdicionalInput, setRutAdicionalInput] = useState('')
+  const [rutAdicionalError, setRutAdicionalError] = useState<string | null>(null)
   const [eliminandoId, setEliminandoId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const { data: deudaBulk = [] } = useQuery<DeudaBulkItem[]>({
@@ -151,14 +157,36 @@ export default function Empresas() {
       plazo_credito: e.plazo_credito ?? '',
       sector: e.sector ?? '',
       email: e.email ?? '', nota_cobranza: e.nota_cobranza ?? '', ubicacion: e.ubicacion ?? '',
+      ruts_adicionales: e.ruts_adicionales ?? [],
     })
+    setRutError(null); setRutAdicionalInput(''); setRutAdicionalError(null)
     setError(null); setModalOpen(true)
   }
+
+  const agregarRutAdicional = useCallback(() => {
+    const v = rutAdicionalInput.trim()
+    if (!v) return
+    if (!validateRut(v)) {
+      setRutAdicionalError('RUT inválido')
+      return
+    }
+    const cleaned = cleanRut(v)
+    if (form.ruts_adicionales.includes(cleaned)) {
+      setRutAdicionalError('RUT ya agregado')
+      return
+    }
+    setForm(f => ({ ...f, ruts_adicionales: [...f.ruts_adicionales, cleaned] }))
+    setRutAdicionalInput('')
+    setRutAdicionalError(null)
+  }, [rutAdicionalInput, form.ruts_adicionales])
 
   function cerrarModal() {
     setModalOpen(false)
     setEditando(null)
     setError(null)
+    setRutError(null)
+    setRutAdicionalInput('')
+    setRutAdicionalError(null)
     setSedes([])
     setSedeAdding(false)
     setSedeEditId(null)
@@ -173,6 +201,7 @@ export default function Empresas() {
         Object.entries(data).map(([k, v]) => [k, v || null])
       )
       payload.rut_no_oficial = data.rut_no_oficial
+      payload.ruts_adicionales = data.ruts_adicionales
       if (data.linea_credito) payload.linea_credito = parseFloat(data.linea_credito)
       else payload.linea_credito = null
       if (editando) return api.patch(`/api/empresas/${editando.id}`, payload).then(r => r.data)
@@ -435,7 +464,18 @@ export default function Empresas() {
           <ModalHeader>
             <ModalTitle>{editando ? 'Editar empresa' : 'Nueva empresa'}</ModalTitle>
           </ModalHeader>
-          <form onSubmit={ev => { ev.preventDefault(); guardar.mutate(form) }} className="flex flex-col flex-1 min-h-0">
+          <form
+            onSubmit={ev => {
+              ev.preventDefault()
+              if (form.rut && !form.rut_no_oficial && !validateRut(form.rut)) {
+                setRutError('RUT inválido')
+                return
+              }
+              setRutError(null)
+              guardar.mutate(form)
+            }}
+            className="flex flex-col flex-1 min-h-0"
+          >
             <ModalBody>
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Nombre" required className="col-span-2">
@@ -454,11 +494,21 @@ export default function Empresas() {
                     required
                     placeholder="76.123.456-7"
                     value={form.rut}
-                    onChange={e => setForm(f => ({ ...f, rut: e.target.value }))}
+                    onChange={e => { setForm(f => ({ ...f, rut: e.target.value })); setRutError(null) }}
+                    onBlur={() => {
+                      if (form.rut && !form.rut_no_oficial) {
+                        setRutError(validateRut(form.rut) ? null : 'RUT inválido')
+                      } else {
+                        setRutError(null)
+                      }
+                    }}
                     disabled={!!editando}
                   />
                   {editando && (
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">El RUT no puede modificarse una vez creada la empresa</p>
+                  )}
+                  {!editando && rutError && (
+                    <p className="text-xs text-danger-500 mt-1">{rutError}</p>
                   )}
                 </FormField>
 
@@ -467,12 +517,65 @@ export default function Empresas() {
                     <input
                       type="checkbox"
                       checked={form.rut_no_oficial}
-                      onChange={e => setForm(f => ({ ...f, rut_no_oficial: e.target.checked }))}
+                      onChange={e => {
+                        setForm(f => ({ ...f, rut_no_oficial: e.target.checked }))
+                        if (e.target.checked) setRutError(null)
+                      }}
                       className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500"
                     />
                     <span>RUT no oficial (informativo)</span>
                   </label>
                 </FormField>
+
+                <div className="col-span-2">
+                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">RUTs adicionales</div>
+                  {form.ruts_adicionales.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {form.ruts_adicionales.map((r, i) => (
+                        <span
+                          key={r}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
+                        >
+                          {r}
+                          <button
+                            type="button"
+                            onClick={() => setForm(f => ({ ...f, ruts_adicionales: f.ruts_adicionales.filter((_, j) => j !== i) }))}
+                            className="text-gray-400 hover:text-danger-500 leading-none"
+                            aria-label="Quitar RUT"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="76.123.456-7"
+                      value={rutAdicionalInput}
+                      onChange={e => { setRutAdicionalInput(e.target.value); setRutAdicionalError(null) }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          agregarRutAdicional()
+                        }
+                      }}
+                      size="sm"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={agregarRutAdicional}
+                    >
+                      Agregar
+                    </Button>
+                  </div>
+                  {rutAdicionalError && (
+                    <p className="text-xs text-danger-500 mt-1">{rutAdicionalError}</p>
+                  )}
+                </div>
 
                 <FormField label="Sector">
                   <Input value={form.sector} onChange={e => setForm(f => ({ ...f, sector: e.target.value }))} />

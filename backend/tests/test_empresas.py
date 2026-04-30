@@ -36,20 +36,20 @@ def test_listar_empresas_sin_auth(client):
 def test_crear_empresa(client, admin_token):
     r = client.post(
         "/api/empresas/",
-        json={"nombre": "Empresa A", "rut": "76.123.456-7", "razon_social": "Empresa A Ltda."},
+        json={"nombre": "Empresa A", "rut": "76.123.456-0", "razon_social": "Empresa A Ltda."},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 201
     data = r.json()
     assert data["nombre"] == "Empresa A"
-    assert data["rut"] == "76.123.456-7"
+    assert data["rut"] == "76.123.456-0"
     assert data["razon_social"] == "Empresa A Ltda."
     assert "id" in data
 
 
 def test_crear_empresa_rut_duplicado(client, admin_token):
-    client.post("/api/empresas/", json={"nombre": "Emp A", "rut": "76.000.001-1"}, headers={"Authorization": f"Bearer {admin_token}"})
-    r = client.post("/api/empresas/", json={"nombre": "Emp B", "rut": "76.000.001-1"}, headers={"Authorization": f"Bearer {admin_token}"})
+    client.post("/api/empresas/", json={"nombre": "Emp A", "rut": "76.000.001-9"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.post("/api/empresas/", json={"nombre": "Emp B", "rut": "76.000.001-9"}, headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 409
 
 
@@ -124,10 +124,10 @@ def test_vendedor_no_puede_crear_empresa(client, vendedor_token):
 
 
 def test_actualizar_rut_duplicado(client, admin_token):
-    client.post("/api/empresas/", json={"nombre": "Emp 1", "rut": "76.111.111-1"}, headers={"Authorization": f"Bearer {admin_token}"})
-    r2 = client.post("/api/empresas/", json={"nombre": "Emp 2", "rut": "76.222.222-2"}, headers={"Authorization": f"Bearer {admin_token}"})
+    client.post("/api/empresas/", json={"nombre": "Emp 1", "rut": "76.111.111-6"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r2 = client.post("/api/empresas/", json={"nombre": "Emp 2", "rut": "76.222.222-1"}, headers={"Authorization": f"Bearer {admin_token}"})
     eid = r2.json()["id"]
-    r3 = client.patch(f"/api/empresas/{eid}", json={"rut": "76.111.111-1"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r3 = client.patch(f"/api/empresas/{eid}", json={"rut": "76.111.111-6"}, headers={"Authorization": f"Bearer {admin_token}"})
     assert r3.status_code == 422  # RUT is immutable after creation
 
 
@@ -241,7 +241,7 @@ def _setup_empresa_con_factura(client, admin_token):
     """Create empresa + cliente + factura with one line item. Returns (empresa_id, factura_id)."""
     emp = client.post(
         "/api/empresas/",
-        json={"nombre": "Emp Export", "rut": "76.555.555-5"},
+        json={"nombre": "Emp Export", "rut": "76.555.555-8"},
         headers={"Authorization": f"Bearer {admin_token}"},
     ).json()
     cid = _create_cliente_bulk(client, admin_token, emp["id"])

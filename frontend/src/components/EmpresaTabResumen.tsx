@@ -123,6 +123,21 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
               RUT no oficial
             </span>
           )}
+          {empresa.ruts_adicionales && empresa.ruts_adicionales.length > 0 && (
+            <div className="mt-2">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">RUTs adicionales</div>
+              <div className="flex flex-wrap gap-1">
+                {empresa.ruts_adicionales.map(r => (
+                  <span
+                    key={r}
+                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
+                  >
+                    {r}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <Field label="Razón Social" value={empresa.razon_social ?? '—'} />
         <Field label="Sector" value={empresa.sector ?? '—'} />

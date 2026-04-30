@@ -15,9 +15,10 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_permission
 from app.models.cliente import Cliente as ClienteModel
 from app.models.contacto_empresa import ContactoEmpresa
-from app.models.empresa import Empresa
+from app.models.empresa import Empresa, EmpresaRutAdicional
 from app.models.factura import Factura, FacturaLinea
 from app.models.user import User
+from app.utils.rut import validate_rut, clean_rut
 from app.schemas.empresa import (
     EmpresaCreate, EmpresaDeudaOut, EmpresaCreditoOut, EmpresaOut, EmpresaUpdate,
     FacturaResumen, EmpresaDeudaBulkItem, EmpresaListItem,
@@ -136,7 +137,16 @@ def listar_empresas(
 
     if q:
         like = f"%{q}%"
-        query = query.filter(unaccent_ilike(Empresa.nombre, like) | Empresa.rut.ilike(like))
+        rut_adicional_subq = (
+            sa_select(EmpresaRutAdicional.empresa_id)
+            .where(EmpresaRutAdicional.rut.ilike(like))
+            .subquery()
+        )
+        query = query.filter(
+            unaccent_ilike(Empresa.nombre, like)
+            | Empresa.rut.ilike(like)
+            | Empresa.id.in_(sa_select(rut_adicional_subq.c.empresa_id))
+        )
     if sector:
         query = query.filter(Empresa.sector == sector)
     if producto_ids:
@@ -246,13 +256,27 @@ def crear_empresa(
     perms: tuple[User, Session] = require_permission("empresas", "create"),
 ):
     _, db = perms
-    empresa = Empresa(**body.model_dump())
+    if body.rut and not body.rut_no_oficial and not validate_rut(body.rut):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="RUT inválido")
+    ruts_adicionales = body.ruts_adicionales or []
+    for r in ruts_adicionales:
+        if not validate_rut(r):
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"RUT adicional inválido: {r}")
+    data = body.model_dump(exclude={"ruts_adicionales"})
+    empresa = Empresa(**data)
     db.add(empresa)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="RUT ya registrado")
+    for r in ruts_adicionales:
+        db.add(EmpresaRutAdicional(empresa_id=empresa.id, rut=clean_rut(r)))
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="RUT ya registrado")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="RUT adicional ya registrado en otra empresa")
     db.refresh(empresa)
     return empresa
 
@@ -583,13 +607,22 @@ def actualizar_empresa(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="El RUT no puede modificarse después de creada la empresa")
     if "linea_credito" in datos and user.role == "vendedor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores pueden modificar la línea de crédito")
+    nuevos_ruts = datos.pop("ruts_adicionales", None)
+    if nuevos_ruts is not None:
+        for r in nuevos_ruts:
+            if not validate_rut(r):
+                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"RUT adicional inválido: {r}")
     for field, value in datos.items():
         setattr(e, field, value)
+    if nuevos_ruts is not None:
+        db.query(EmpresaRutAdicional).filter(EmpresaRutAdicional.empresa_id == empresa_id).delete()
+        for r in nuevos_ruts:
+            db.add(EmpresaRutAdicional(empresa_id=empresa_id, rut=clean_rut(r)))
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="RUT ya registrado")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="RUT adicional ya registrado en otra empresa")
     db.refresh(e)
     return e
 

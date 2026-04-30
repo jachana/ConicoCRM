@@ -39,6 +39,7 @@ class EmpresaBase(BaseModel):
     email: str | None = None
     nota_cobranza: str | None = None
     ubicacion: str | None = None
+    ruts_adicionales: list[str] = []
 
 
 class EmpresaCreate(EmpresaBase):
@@ -56,6 +57,7 @@ class EmpresaUpdate(BaseModel):
     email: str | None = None
     nota_cobranza: str | None = None
     ubicacion: str | None = None
+    ruts_adicionales: list[str] | None = None
 
 
 class EmpresaRef(BaseModel):
