@@ -447,3 +447,51 @@ def test_obtener_notas_cliente_monto_field_optional(client, admin_token, cliente
     montos = {note["contenido"]: note["monto"] for note in data}
     assert montos["Note without amount"] is None
     assert montos["Note with amount"] is not None
+
+
+def test_obtener_notas_cliente_vendedor_ve_solo_sus_notas(client, vendedor_token, cliente, db, vendedor_user, admin_user):
+    """Vendedor sees only notes from their own quotations, not admin's."""
+    # Create two quotations: one for admin, one for vendedor
+    cot_admin = Cotizacion(
+        numero=60001,
+        cliente_id=cliente.id,
+        vendedor_id=admin_user.id,  # Admin's quotation
+        fecha=date(2026, 5, 1),
+        estado="no_definido",
+    )
+    cot_vendedor = Cotizacion(
+        numero=60002,
+        cliente_id=cliente.id,
+        vendedor_id=vendedor_user.id,  # Vendedor's own quotation
+        fecha=date(2026, 5, 1),
+        estado="no_definido",
+    )
+    db.add(cot_admin)
+    db.add(cot_vendedor)
+    db.flush()
+
+    # Create notes on both quotations
+    nota_admin = NotaAlerta(
+        cotizacion_id=cot_admin.id,
+        contenido="Admin's note",
+        tipo="cobranza",
+    )
+    nota_vendedor = NotaAlerta(
+        cotizacion_id=cot_vendedor.id,
+        contenido="Vendedor's note",
+        tipo="cobranza",
+    )
+    db.add(nota_admin)
+    db.add(nota_vendedor)
+    db.commit()
+
+    # Fetch as vendedor
+    resp = client.get(
+        f"/api/clientes/{cliente.id}/notes",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    # Vendedor should see only their note
+    assert len(data) == 1
+    assert data[0]["contenido"] == "Vendedor's note"

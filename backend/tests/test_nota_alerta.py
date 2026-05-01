@@ -170,7 +170,9 @@ def test_actualizar_alerta_estado_invalido(client, admin_token, cotizacion, db):
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert resp.status_code == 422
-    assert "Estado inválido" in resp.json()["detail"]
+    # Pydantic validation now provides detailed enum error messages
+    error_detail = resp.json()["detail"]
+    assert any("pendiente" in str(e) for e in error_detail) or "Input should be" in str(error_detail)
 
 
 def test_actualizar_alerta_inexistente(client, admin_token, cotizacion):

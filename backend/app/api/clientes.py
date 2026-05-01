@@ -218,20 +218,14 @@ def notas_cliente(
     if not c:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
 
-    # Get all quotations for this customer
-    query_cot = db.query(Cotizacion).filter(Cotizacion.cliente_id == cliente_id)
+    # Get quotation IDs for this customer using a subquery (avoid N+1 query)
+    cot_subquery = db.query(Cotizacion.id).filter(Cotizacion.cliente_id == cliente_id)
     if current_user.role == "vendedor":
-        query_cot = query_cot.filter(Cotizacion.vendedor_id == current_user.id)
+        cot_subquery = cot_subquery.filter(Cotizacion.vendedor_id == current_user.id)
 
-    cotizacion_ids = [cot.id for cot in query_cot.all()]
-
-    # Query notes for those quotations
+    # Query notes for those quotations using subquery
     query = db.query(NotaAlerta)
-    if cotizacion_ids:
-        query = query.filter(NotaAlerta.cotizacion_id.in_(cotizacion_ids))
-    else:
-        # No quotations for this customer — return empty list
-        return []
+    query = query.filter(NotaAlerta.cotizacion_id.in_(cot_subquery))
 
     # Filter by tipo (cobranza, crédito, custom)
     if tipo:

@@ -35,8 +35,18 @@ def upgrade() -> None:
         sa.Column('expires_at', sa.DateTime(timezone=True), nullable=True)
     )
 
+    # Create indexes for improved query performance
+    op.create_index('ix_notas_alertas_tipo', 'notas_alertas', ['tipo'])
+    op.create_index('ix_notas_alertas_expires_at', 'notas_alertas', ['expires_at'])
+    op.create_index('ix_notas_alertas_cotizacion_id', 'notas_alertas', ['cotizacion_id'])
+
 
 def downgrade() -> None:
+    # Drop indexes first
+    op.drop_index('ix_notas_alertas_cotizacion_id')
+    op.drop_index('ix_notas_alertas_expires_at')
+    op.drop_index('ix_notas_alertas_tipo')
+
     op.drop_column('notas_alertas', 'expires_at')
     op.drop_column('notas_alertas', 'monto')
     op.drop_column('notas_alertas', 'tipo')
