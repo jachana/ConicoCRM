@@ -155,14 +155,21 @@ def client():
 @pytest.fixture
 def admin_user(setup_test_db):  # noqa: F811 — ensure DB is ready before inserting seed user
     from app.models.user import User
+    from app.models.empresa import Empresa
     from app.core.security import get_password_hash
 
     db = TestingSession()
+    # Create default empresa for admin
+    empresa = Empresa(nombre="Admin Default Empresa")
+    db.add(empresa)
+    db.flush()
+
     user = User(
         email="admin@conico.cl",
         name="Admin",
         hashed_password=get_password_hash("secret123"),
         role="admin",
+        empresa_id=empresa.id,
     )
     db.add(user)
     db.commit()

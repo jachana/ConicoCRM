@@ -3,15 +3,90 @@ import pytest
 from datetime import datetime, timezone
 
 from app.models.libro import LibroVentas, LibroCompras
+from app.models.empresa import Empresa
+from app.models.user import User
+from app.core.security import get_password_hash
 
 
 @pytest.fixture
-def sample_libros_ventas(db, setup_test_db):
-    """Create sample LibroVentas records"""
+def empresa1(db, setup_test_db):
+    """Create a test empresa"""
+    empresa = Empresa(nombre="Empresa Test 1")
+    db.add(empresa)
+    db.commit()
+    db.refresh(empresa)
+    return empresa
+
+
+@pytest.fixture
+def empresa2(db, setup_test_db):
+    """Create a second test empresa"""
+    empresa = Empresa(nombre="Empresa Test 2")
+    db.add(empresa)
+    db.commit()
+    db.refresh(empresa)
+    return empresa
+
+
+@pytest.fixture
+def user_empresa1(db, empresa1):
+    """Create a user assigned to empresa1"""
+    from tests.conftest import TestingSession
+    session = TestingSession()
+    user = User(
+        email="user_empresa1@test.cl",
+        name="User Empresa 1",
+        hashed_password=get_password_hash("secret123"),
+        role="subadmin",
+        empresa_id=empresa1.id,
+    )
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    session.close()
+    return user
+
+
+@pytest.fixture
+def user_empresa2(db, empresa2):
+    """Create a user assigned to empresa2"""
+    from tests.conftest import TestingSession
+    session = TestingSession()
+    user = User(
+        email="user_empresa2@test.cl",
+        name="User Empresa 2",
+        hashed_password=get_password_hash("secret123"),
+        role="subadmin",
+        empresa_id=empresa2.id,
+    )
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    session.close()
+    return user
+
+
+@pytest.fixture
+def token_empresa1(client, user_empresa1):
+    """Get auth token for user_empresa1"""
+    resp = client.post("/api/auth/login", data={"username": "user_empresa1@test.cl", "password": "secret123"})
+    return resp.json()["access_token"]
+
+
+@pytest.fixture
+def token_empresa2(client, user_empresa2):
+    """Get auth token for user_empresa2"""
+    resp = client.post("/api/auth/login", data={"username": "user_empresa2@test.cl", "password": "secret123"})
+    return resp.json()["access_token"]
+
+
+@pytest.fixture
+def sample_libros_ventas(db, setup_test_db, admin_user):
+    """Create sample LibroVentas records for admin user's empresa"""
     libros = [
         LibroVentas(
             periodo="2026-01",
-            empresa_id=1,
+            empresa_id=admin_user.empresa_id,
             folio_inicio=1,
             folio_fin=100,
             total_registros=50,
@@ -20,7 +95,7 @@ def sample_libros_ventas(db, setup_test_db):
         ),
         LibroVentas(
             periodo="2026-02",
-            empresa_id=1,
+            empresa_id=admin_user.empresa_id,
             folio_inicio=101,
             folio_fin=200,
             total_registros=75,
@@ -29,7 +104,7 @@ def sample_libros_ventas(db, setup_test_db):
         ),
         LibroVentas(
             periodo="2026-03",
-            empresa_id=2,
+            empresa_id=admin_user.empresa_id,
             folio_inicio=1,
             folio_fin=50,
             total_registros=25,
@@ -43,37 +118,229 @@ def sample_libros_ventas(db, setup_test_db):
 
 
 @pytest.fixture
-def sample_libros_compras(db, setup_test_db):
-    """Create sample LibroCompras records"""
+def sample_libros_compras(db, setup_test_db, admin_user, empresa2):
+    """Create sample LibroCompras records for admin user's empresa and empresa2"""
     libros = [
         LibroCompras(
             periodo="2026-01",
-            empresa_id=1,
+            empresa_id=admin_user.empresa_id,
             rut_proveedor=None,
             total_registros=30,
             monto_total=300000,
             estado="borrador",
         ),
         LibroCompras(
+            periodo="2026-01",
+            empresa_id=empresa2.id,
+            rut_proveedor="12.345.678-9",
+            total_registros=15,
+            monto_total=150000,
+            estado="enviado",
+        ),
+        LibroCompras(
             periodo="2026-02",
-            empresa_id=1,
+            empresa_id=admin_user.empresa_id,
             rut_proveedor="12.345.678-9",
             total_registros=40,
             monto_total=400000,
             estado="borrador",
         ),
-        LibroCompras(
-            periodo="2026-01",
-            empresa_id=2,
-            rut_proveedor=None,
-            total_registros=15,
-            monto_total=150000,
-            estado="enviado",
-        ),
     ]
     db.add_all(libros)
     db.commit()
     return libros
+
+
+class TestLibrosAuthorizationVentas:
+    """Tests for authorization checks on Libros de Ventas endpoints"""
+
+    def test_get_libro_ventas_forbidden_different_empresa(self, client, token_empresa1, token_empresa2, db, empresa1, empresa2):
+        """Test that user from empresa2 cannot access libro from empresa1"""
+        # Create libro for empresa1
+        libro = LibroVentas(
+            periodo="2026-01",
+            empresa_id=empresa1.id,
+            folio_inicio=1,
+            folio_fin=100,
+            total_registros=50,
+            monto_total=500000,
+            estado="borrador",
+        )
+        db.add(libro)
+        db.commit()
+        db.refresh(libro)
+
+        # Try to access with token from empresa2 user
+        response = client.get(
+            f"/api/libros/ventas/{libro.id}",
+            headers={"Authorization": f"Bearer {token_empresa2}"}
+        )
+        assert response.status_code == 403
+        assert "Not authorized" in response.json()["detail"]
+
+    def test_list_libros_ventas_filtered_by_empresa(self, client, token_empresa1, token_empresa2, db, empresa1, empresa2):
+        """Test that list endpoint filters libros by user's empresa"""
+        # Create libros for both empresas
+        libro_e1 = LibroVentas(
+            periodo="2026-01",
+            empresa_id=empresa1.id,
+            folio_inicio=1,
+            folio_fin=100,
+            total_registros=50,
+            monto_total=500000,
+            estado="borrador",
+        )
+        libro_e2 = LibroVentas(
+            periodo="2026-01",
+            empresa_id=empresa2.id,
+            folio_inicio=1,
+            folio_fin=50,
+            total_registros=25,
+            monto_total=250000,
+            estado="borrador",
+        )
+        db.add_all([libro_e1, libro_e2])
+        db.commit()
+
+        # empresa1 user should see only empresa1 libro
+        response = client.get(
+            "/api/libros/ventas",
+            headers={"Authorization": f"Bearer {token_empresa1}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["data"]) == 1
+        assert data["data"][0]["empresa_id"] == empresa1.id
+
+        # empresa2 user should see only empresa2 libro
+        response = client.get(
+            "/api/libros/ventas",
+            headers={"Authorization": f"Bearer {token_empresa2}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["data"]) == 1
+        assert data["data"][0]["empresa_id"] == empresa2.id
+
+    def test_get_libro_ventas_allowed_same_empresa(self, client, token_empresa1, db, empresa1):
+        """Test that user can access libro from their own empresa"""
+        # Create libro for empresa1
+        libro = LibroVentas(
+            periodo="2026-01",
+            empresa_id=empresa1.id,
+            folio_inicio=1,
+            folio_fin=100,
+            total_registros=50,
+            monto_total=500000,
+            estado="borrador",
+        )
+        db.add(libro)
+        db.commit()
+        db.refresh(libro)
+
+        # Access with token from empresa1 user should succeed
+        response = client.get(
+            f"/api/libros/ventas/{libro.id}",
+            headers={"Authorization": f"Bearer {token_empresa1}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == libro.id
+        assert data["empresa_id"] == empresa1.id
+
+
+class TestLibrosAuthorizationCompras:
+    """Tests for authorization checks on Libros de Compras endpoints"""
+
+    def test_get_libro_compras_forbidden_different_empresa(self, client, token_empresa1, token_empresa2, db, empresa1, empresa2):
+        """Test that user from empresa2 cannot access libro from empresa1"""
+        # Create libro for empresa1
+        libro = LibroCompras(
+            periodo="2026-01",
+            empresa_id=empresa1.id,
+            rut_proveedor=None,
+            total_registros=30,
+            monto_total=300000,
+            estado="borrador",
+        )
+        db.add(libro)
+        db.commit()
+        db.refresh(libro)
+
+        # Try to access with token from empresa2 user
+        response = client.get(
+            f"/api/libros/compras/{libro.id}",
+            headers={"Authorization": f"Bearer {token_empresa2}"}
+        )
+        assert response.status_code == 403
+        assert "Not authorized" in response.json()["detail"]
+
+    def test_list_libros_compras_filtered_by_empresa(self, client, token_empresa1, token_empresa2, db, empresa1, empresa2):
+        """Test that list endpoint filters libros by user's empresa"""
+        # Create libros for both empresas
+        libro_e1 = LibroCompras(
+            periodo="2026-01",
+            empresa_id=empresa1.id,
+            rut_proveedor=None,
+            total_registros=30,
+            monto_total=300000,
+            estado="borrador",
+        )
+        libro_e2 = LibroCompras(
+            periodo="2026-01",
+            empresa_id=empresa2.id,
+            rut_proveedor=None,
+            total_registros=15,
+            monto_total=150000,
+            estado="borrador",
+        )
+        db.add_all([libro_e1, libro_e2])
+        db.commit()
+
+        # empresa1 user should see only empresa1 libro
+        response = client.get(
+            "/api/libros/compras",
+            headers={"Authorization": f"Bearer {token_empresa1}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["data"]) == 1
+        assert data["data"][0]["empresa_id"] == empresa1.id
+
+        # empresa2 user should see only empresa2 libro
+        response = client.get(
+            "/api/libros/compras",
+            headers={"Authorization": f"Bearer {token_empresa2}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["data"]) == 1
+        assert data["data"][0]["empresa_id"] == empresa2.id
+
+    def test_get_libro_compras_allowed_same_empresa(self, client, token_empresa1, db, empresa1):
+        """Test that user can access libro from their own empresa"""
+        # Create libro for empresa1
+        libro = LibroCompras(
+            periodo="2026-01",
+            empresa_id=empresa1.id,
+            rut_proveedor=None,
+            total_registros=30,
+            monto_total=300000,
+            estado="borrador",
+        )
+        db.add(libro)
+        db.commit()
+        db.refresh(libro)
+
+        # Access with token from empresa1 user should succeed
+        response = client.get(
+            f"/api/libros/compras/{libro.id}",
+            headers={"Authorization": f"Bearer {token_empresa1}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == libro.id
+        assert data["empresa_id"] == empresa1.id
 
 
 class TestLibrosVentasList:
@@ -268,8 +535,9 @@ class TestLibrosComprasList:
         data = response.json()
         assert "data" in data
         assert "pagination" in data
-        assert len(data["data"]) == 3
-        assert data["pagination"]["total"] == 3
+        # Admin user should see only their empresa's records (2 out of 3 total)
+        assert len(data["data"]) == 2
+        assert data["pagination"]["total"] == 2
 
     def test_list_libros_compras_with_periodo_filter(self, client, admin_token, sample_libros_compras):
         """Test filtering libros compras by periodo"""
@@ -280,7 +548,8 @@ class TestLibrosComprasList:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["pagination"]["total"] == 2
+        # Admin user should see only their empresa's record for 2026-01 (the other is from empresa2)
+        assert data["pagination"]["total"] == 1
         assert all(item["periodo"] == "2026-01" for item in data["data"])
 
     def test_list_libros_compras_with_pagination(self, client, admin_token, sample_libros_compras):
@@ -293,7 +562,8 @@ class TestLibrosComprasList:
         assert response.status_code == 200
         data = response.json()
         assert len(data["data"]) == 2
-        assert data["pagination"]["total"] == 3
+        # Admin user sees 2 total records from their empresa
+        assert data["pagination"]["total"] == 2
 
     def test_list_libros_compras_invalid_periodo_format(self, client, admin_token):
         """Test invalid periodo format returns 400"""

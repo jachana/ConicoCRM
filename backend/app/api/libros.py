@@ -81,17 +81,15 @@ def listar_libros_ventas(
     _validate_pagination(limit, offset)
     _validate_periodo(periodo)
 
-    # Build query - all users can see their empresa's libros
-    # For now, we filter by empresa_id from the user's current context
-    # In a multi-tenant system, this would come from user.empresa_id or similar
-    # Since the requirement says "empresa_id (required header/token)", we get it from the query
-    # but in practice, this should be restricted by the auth system
+    # Ensure user has an empresa_id for authorization
+    if not current_user.empresa_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not assigned to an empresa"
+        )
 
-    query = db.query(LibroVentas)
-
-    # For now, accept empresa_id as a query parameter (can be authenticated separately)
-    # In production, this should come from the token payload
-    empresa_id_param = Query(None, description="Empresa ID (if not in token)")
+    # Build query filtered by current user's empresa
+    query = db.query(LibroVentas).filter(LibroVentas.empresa_id == current_user.empresa_id)
 
     # Apply filters
     if periodo:
@@ -138,6 +136,13 @@ def obtener_libro_ventas(
             detail="Libro de Ventas not found"
         )
 
+    # Authorization check: ensure user can only access libros from their empresa
+    if libro.empresa_id != current_user.empresa_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this libro"
+        )
+
     return LibroVentasRead.model_validate(libro)
 
 
@@ -166,8 +171,15 @@ def listar_libros_compras(
     _validate_pagination(limit, offset)
     _validate_periodo(periodo)
 
-    # Build query
-    query = db.query(LibroCompras)
+    # Ensure user has an empresa_id for authorization
+    if not current_user.empresa_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not assigned to an empresa"
+        )
+
+    # Build query filtered by current user's empresa
+    query = db.query(LibroCompras).filter(LibroCompras.empresa_id == current_user.empresa_id)
 
     # Apply filters
     if periodo:
@@ -212,6 +224,13 @@ def obtener_libro_compras(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Libro de Compras not found"
+        )
+
+    # Authorization check: ensure user can only access libros from their empresa
+    if libro.empresa_id != current_user.empresa_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this libro"
         )
 
     return LibroComprasRead.model_validate(libro)
