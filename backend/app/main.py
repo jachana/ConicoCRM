@@ -53,6 +53,7 @@ from app.api import onboarding_payments
 from app.api import onboarding_clientes_empresas
 from app.api import libros as libros_api
 from app.api import dte_recepcion as dte_recepcion_api
+from app.api import nota_alerta as nota_alerta_api
 from app.middleware.audit_context import AuditContextMiddleware
 from app.services.auditoria import register_listeners as register_audit_listeners
 from app.utils.search import set_unaccent_available
@@ -122,6 +123,7 @@ app.include_router(empresas.router, prefix="/api/empresas", tags=["empresas"])
 app.include_router(config.router, prefix="/api/config", tags=["config"])
 app.include_router(config_logo.router, prefix="/api/config", tags=["config"])
 app.include_router(cotizaciones.router, prefix="/api/cotizaciones", tags=["cotizaciones"])
+app.include_router(nota_alerta_api.router, prefix="/api/cotizaciones", tags=["cotizaciones"])
 app.include_router(nota_ventas.router, prefix="/api/nota_ventas", tags=["nota_ventas"])
 app.include_router(facturas.router, prefix="/api/facturas", tags=["facturas"])
 app.include_router(boletas.router, prefix="/api/boletas", tags=["boletas"])
