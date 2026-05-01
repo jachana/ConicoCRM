@@ -1,0 +1,65 @@
+# Payment Import Feature Plan
+
+**Feature:** [Onboarding] Import Pagos / cartola / cobranzas históricas
+
+**Goal:** Allow admins to import historical payment data (payments, collections) from legacy system during onboarding. Payments are matched to invoices/boletas, reducing pending balances and enabling accurate collections tracking.
+
+**Scope:** Backend (xlsx parser, validation, transactional import, idempotency) + Frontend (migration tab UI, template download, preview, reporting)
+
+## Tasks
+
+### Task 1: Database model for payment imports
+Create Payment model and migration to track imported payments with reconciliation support.
+- Model: Payment with fields (fecha_pago, rut_cliente, monto, medio_pago, referencia, folio_documento, tipo_documento, estado)
+- Migration: Alembic migration to add payments table
+- Tests: Model validation, relationships to Invoice/Boleta/Customer
+
+### Task 2: Excel parser and validation layer
+Implement xlsx parsing with comprehensive validation and error reporting.
+- Parse xlsx with openpyxl
+- Validate columns (fecha_pago, rut_cliente, monto, medio_pago, referencia, folio_documento, tipo_documento)
+- Type validation and error collection
+- Preview data structures
+
+### Task 3: Payment matching and application logic
+Implement business logic to match payments to documents and apply them.
+- Match by folio_documento + tipo_documento
+- Apply payment amount to invoice/boleta, reducing pending_amount
+- Handle payment without document reference (pago a cuenta)
+- Validate sum(pagos) <= total_documento (detect overpayment)
+- Idempotency: prevent duplicate imports of same Excel
+
+### Task 4: Transactional import backend
+Create API endpoint for transactional import with rollback and per-row error reporting.
+- GET /api/onboarding/payments/template - download template xlsx
+- POST /api/onboarding/payments/preview - validate and preview
+- POST /api/onboarding/payments/import - execute transactional import
+- Error handling: rollback on fatal, report per-row for recoverable
+- Generate import report (created/updated/pending/error count + details)
+
+### Task 5: Frontend migration tab UI
+Add payment import section to admin onboarding migration tab.
+- Section: "Historial de Pagos"
+- Template download button
+- File upload with validation feedback
+- Preview table (rows valid/invalid)
+- Progress feedback during import
+- Report display (downloadable, sortable by status)
+
+## Acceptance Criteria
+- [ ] Payments can be imported from Excel template with all specified columns
+- [ ] Invalid rows are reported with specific error reasons
+- [ ] Valid payments are applied to invoices/boletas, reducing pending balance
+- [ ] Import is transactional (all succeed or all rollback)
+- [ ] Re-running same Excel doesn't duplicate payments (idempotent)
+- [ ] Payments without referenced document are recorded as "pago a cuenta"
+- [ ] Overpayment validation detects and reports when sum(pagos) > document total
+- [ ] Import report is downloadable
+- [ ] Frontend UI matches existing design system (Modal, danger colors where needed)
+- [ ] Tests: 80%+ coverage for parser, matching, API endpoints
+
+## Context
+- Use existing Payment model (if exists) or create new
+- Integrates with Invoice/Boleta/Customer models
+- Onboarding flow is admin-only (role check)
+- Must maintain idempotency (same file, same result)

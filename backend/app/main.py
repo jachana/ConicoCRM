@@ -49,6 +49,7 @@ from app.api import auditoria as auditoria_api
 from app.api import timeline as timeline_api
 from app.api import notifications as notifications_api
 from app.api import oportunidades as oportunidades_api
+from app.api import onboarding_payments
 from app.middleware.audit_context import AuditContextMiddleware
 from app.services.auditoria import register_listeners as register_audit_listeners
 from app.utils.search import set_unaccent_available
@@ -154,3 +155,4 @@ app.include_router(auditoria_api.router, prefix="/api/auditoria", tags=["auditor
 app.include_router(timeline_api.router, prefix="/api", tags=["timeline"])
 app.include_router(notifications_api.router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(oportunidades_api.router, prefix="/api/oportunidades", tags=["oportunidades"])
+app.include_router(onboarding_payments.router, prefix="/api/onboarding/payments", tags=["onboarding"])
