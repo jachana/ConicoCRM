@@ -161,19 +161,26 @@ class PaymentMatcher:
 
         return True
 
-    def check_idempotency(self, hash_key: str) -> None:
+    def check_idempotency(self, hash_key: str, exclude_pago_id: Optional[int] = None) -> None:
         """
         Check if payment with same hash_key already exists.
 
         Args:
             hash_key: SHA256 hash of payment data
+            exclude_pago_id: Optional ID of current pago to exclude from check
 
         Raises:
             IdempotencyError: If payment with same hash_key already imported
         """
-        existing = self.db.query(PagoImportado).filter(
+        q = self.db.query(PagoImportado).filter(
             PagoImportado.hash_key == hash_key
-        ).first()
+        )
+
+        # Exclude the current pago if it's already in the DB
+        if exclude_pago_id is not None:
+            q = q.filter(PagoImportado.id != exclude_pago_id)
+
+        existing = q.first()
 
         if existing:
             raise IdempotencyError(
@@ -309,8 +316,8 @@ class PaymentMatcher:
             or rollback the transaction appropriately.
         """
         try:
-            # Step 1: Check idempotency
-            self.check_idempotency(pago_importado.hash_key)
+            # Step 1: Check idempotency (exclude current pago if it has an ID)
+            self.check_idempotency(pago_importado.hash_key, exclude_pago_id=pago_importado.id)
 
             # Step 2: Try to match document if folio is provided
             if pago_importado.folio_documento and pago_importado.tipo_documento:
