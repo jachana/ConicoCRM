@@ -23,26 +23,32 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Onboarding] Import Pagos / cartola / cobranzas históricas",
+      "list": "In progress",
+      "name": "[Onboarding] Pestaña Migración inicial — import Clientes + Empresas (Excel)",
       "labels": [
         "Core"
       ],
-      "desc": "Pagos recibidos ya aplicados a facturas/boletas. Necesario para que la cobranza/saldo pendiente arranque correcto.",
+      "desc": "Pestaña dedicada de **Migración inicial** (settings/onboarding) con herramientas one-shot para cargar data legacy. Primer proceso: import de Clientes y Empresas desde Excel.\n\nReglas de import:\n- Validar preexistencia por RUT y, si existe, preferir los datos del Excel (update sobre la fila existente — sin perder relaciones / id).\n- Cliente que apunta a un rut_empresa inexistente → crear cliente igual, dejar vínculo pendiente y reportarlo. Nunca descartar la fila por un link colgante.\n- Reporte final por fila: creado / actualizado / vínculo pendiente / error.\n\nLa pestaña queda como contenedor para futuros procesos de iniciación (productos, precios, OC históricas, etc.) — ver checklist.\n\nCada proceso de iniciación tiene su propia card con prefijo `[Onboarding]`.",
       "checklist": [
-        "UI dentro de pestaña 'Migración inicial' (solo admin)",
-        "Plantilla .xlsx descargable con columnas documentadas",
-        "Backend: parser xlsx con validación de columnas/tipos",
-        "Validación previa con preview + conteo de filas válidas/inválidas",
-        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
-        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
-        "Idempotente: re-correr el mismo Excel no duplica",
-        "--- Específico ---",
-        "Columnas: fecha_pago, rut_cliente, monto, medio_pago, referencia, folio_documento, tipo_documento",
-        "Aplicar pago a la factura/boleta importada (reduce saldo pendiente)",
-        "Pago sin documento referenciado → registrar como pago a cuenta (no descartar)",
-        "Documento inexistente → reportar pendiente, dejar pago colgado para reconciliación manual",
-        "Validar que sum(pagos) <= total_documento (o reportar sobrepago)"
+        "Nueva pestaña 'Migración inicial' visible solo a admin (settings o sección aparte)",
+        "Diseño extensible: cada proceso de iniciación es una card/wizard dentro de la pestaña",
+        "--- Proceso 1: Clientes + Empresas (Excel) ---",
+        "UI: upload .xlsx + preview de las primeras filas + plantilla descargable",
+        "Plantilla con hojas separadas (Empresas / Clientes) y columnas documentadas",
+        "Backend: parser xlsx con validación de columnas y tipos",
+        "Match por RUT normalizado (sin puntos, con guión, dv en mayúscula)",
+        "Empresa existente → UPDATE con datos del Excel (preferir nuevos), preservar id/relaciones",
+        "Empresa nueva → CREATE",
+        "Cliente con rut_empresa inexistente → crear cliente sin empresa + marcar 'vínculo pendiente' (no fallar la fila)",
+        "Cliente con rut_empresa existente → asociar correctamente",
+        "Validar RUTs (módulo 11) y reportar inválidos sin abortar el batch",
+        "Import transaccional por lote: rollback si error fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import: creado / actualizado / vínculo pendiente / error + motivo",
+        "Tests: empresa nueva, empresa existente (update), cliente con empresa válida, cliente con rut_empresa inexistente, RUT inválido, duplicados dentro del mismo Excel",
+        "--- Backlog futuro de la pestaña ---",
+        "Import de Productos desde Excel",
+        "Import de Lista de precios / descuentos por cliente",
+        "Import de OC / Facturas históricas (solo registro, sin emisión SII)"
       ]
     }
   ]
