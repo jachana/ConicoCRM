@@ -1,10 +1,12 @@
 """Service layer for Libro generation (sales and purchase books)"""
 import re
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, extract, or_
 
 from app.models.libro import LibroVentas, LibroCompras, DteRecepcion
 from app.models.dte_emision import DteEmision
+from app.models.factura import Factura
+from app.models.boleta import Boleta
 
 
 class LibroService:
@@ -28,6 +30,10 @@ class LibroService:
         (outgoing DTEs issued by this empresa) and matches the given period.
         Aggregates total_registros and monto_total.
 
+        Filters by:
+        1. periodo (YYYY-MM format) - via EXTRACT(YEAR-MONTH from created_at)
+        2. empresa_id - by joining to Factura/Boleta tables
+
         Idempotent: if a book already exists for (empresa_id, periodo), returns it.
 
         Args:
@@ -50,21 +56,33 @@ class LibroService:
         if existing:
             return existing
 
+        # Parse periodo to YYYY and MM
+        year, month = periodo.split('-')
+        year = int(year)
+        month = int(month)
+
         # Query DteEmision for issued DTEs (factura or boleta issued)
-        # Extract YYYY-MM from created_at timestamp
-        subquery = db.query(
+        # Join to Factura and Boleta to filter by empresa_id and period
+        result = db.query(
             func.count(DteEmision.id).label("total"),
             func.sum(DteEmision.monto_total).label("monto")
+        ).outerjoin(
+            Factura, DteEmision.factura_id == Factura.id
+        ).outerjoin(
+            Boleta, DteEmision.boleta_id == Boleta.id
         ).filter(
-            DteEmision.factura_id.isnot(None) | DteEmision.boleta_id.isnot(None)
-        )
+            # Must have either factura_id or boleta_id
+            or_(DteEmision.factura_id.isnot(None), DteEmision.boleta_id.isnot(None)),
+            # Filter by empresa_id: (factura and empresa_id match) OR (boleta and empresa_id match)
+            or_(
+                (DteEmision.factura_id.isnot(None)) & (Factura.empresa_id == empresa_id),
+                (DteEmision.boleta_id.isnot(None)) & (Boleta.empresa_id == empresa_id),
+            ),
+            # Filter by period using created_at from DteEmision
+            extract('year', DteEmision.created_at) == year,
+            extract('month', DteEmision.created_at) == month,
+        ).first()
 
-        # Filter by empresa_id via foreign key (factura/boleta -> empresa)
-        # For now, we assume monto_total and period filtering happens at query level
-        # This is a simplified aggregation; in production, you'd join to Factura/Boleta
-        # to filter by empresa_id properly. For MVP, we'll aggregate all and note the limitation.
-
-        result = subquery.first()
         total_registros = result.total or 0 if result else 0
         monto_total = result.monto or 0 if result else 0
 

@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.models.libro import LibroVentas, LibroCompras, DteRecepcion
 from app.models.dte_emision import DteEmision
 from app.models.empresa import Empresa
+from app.models.factura import Factura
+from app.models.boleta import Boleta
 from app.services.libro_service import LibroService
 
 
@@ -345,6 +347,158 @@ class TestLibroVentasIntegration:
         assert libro1.id != libro2.id
         assert libro1.periodo == "2026-05"
         assert libro2.periodo == "2026-06"
+
+    def test_generar_libro_ventas_filters_by_periodo(self, db: Session):
+        """Verify generar_libro_ventas only includes DTEs from specified period"""
+        empresa = Empresa(nombre="Test Empresa")
+        db.add(empresa)
+        db.commit()
+
+        # Create 2 facturas in May with DTEs
+        factura_may_1 = Factura(
+            numero=1001,
+            empresa_id=empresa.id,
+            created_at=datetime(2026, 5, 15, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        factura_may_2 = Factura(
+            numero=1002,
+            empresa_id=empresa.id,
+            created_at=datetime(2026, 5, 20, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        db.add(factura_may_1)
+        db.add(factura_may_2)
+        db.commit()
+
+        dte_may_1 = DteEmision(
+            tipo="033",
+            factura_id=factura_may_1.id,
+            monto_neto=100000,
+            monto_iva=19000,
+            monto_total=119000,
+            created_at=datetime(2026, 5, 15, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        dte_may_2 = DteEmision(
+            tipo="033",
+            factura_id=factura_may_2.id,
+            monto_neto=50000,
+            monto_iva=9500,
+            monto_total=59500,
+            created_at=datetime(2026, 5, 20, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        db.add(dte_may_1)
+        db.add(dte_may_2)
+        db.commit()
+
+        # Create 2 facturas in June with DTEs
+        factura_june_1 = Factura(
+            numero=2001,
+            empresa_id=empresa.id,
+            created_at=datetime(2026, 6, 10, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        factura_june_2 = Factura(
+            numero=2002,
+            empresa_id=empresa.id,
+            created_at=datetime(2026, 6, 25, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        db.add(factura_june_1)
+        db.add(factura_june_2)
+        db.commit()
+
+        dte_june_1 = DteEmision(
+            tipo="033",
+            factura_id=factura_june_1.id,
+            monto_neto=200000,
+            monto_iva=38000,
+            monto_total=238000,
+            created_at=datetime(2026, 6, 10, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        dte_june_2 = DteEmision(
+            tipo="033",
+            factura_id=factura_june_2.id,
+            monto_neto=75000,
+            monto_iva=14250,
+            monto_total=89250,
+            created_at=datetime(2026, 6, 25, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        db.add(dte_june_1)
+        db.add(dte_june_2)
+        db.commit()
+
+        # Generate libro for May: should only have 2 DTEs
+        libro_may = LibroService.generar_libro_ventas(db, empresa.id, "2026-05")
+        assert libro_may.total_registros == 2
+        assert libro_may.monto_total == 119000 + 59500
+
+        # Generate libro for June: should only have 2 DTEs
+        libro_june = LibroService.generar_libro_ventas(db, empresa.id, "2026-06")
+        assert libro_june.total_registros == 2
+        assert libro_june.monto_total == 238000 + 89250
+
+        # Verify May and June are NOT cross-contaminated
+        assert libro_may.total_registros != 4
+        assert libro_june.total_registros != 4
+
+    def test_generar_libro_ventas_filters_by_empresa(self, db: Session):
+        """Verify generar_libro_ventas only includes DTEs for specified empresa"""
+        empresa1 = Empresa(nombre="Empresa 1")
+        empresa2 = Empresa(nombre="Empresa 2")
+        db.add(empresa1)
+        db.add(empresa2)
+        db.commit()
+
+        # Create factura for empresa1 with DTE
+        factura1 = Factura(
+            numero=3001,
+            empresa_id=empresa1.id,
+            created_at=datetime(2026, 5, 15, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        db.add(factura1)
+        db.commit()
+
+        dte1 = DteEmision(
+            tipo="033",
+            factura_id=factura1.id,
+            monto_neto=100000,
+            monto_iva=19000,
+            monto_total=119000,
+            created_at=datetime(2026, 5, 15, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        db.add(dte1)
+        db.commit()
+
+        # Create factura for empresa2 with DTE
+        factura2 = Factura(
+            numero=3002,
+            empresa_id=empresa2.id,
+            created_at=datetime(2026, 5, 20, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        db.add(factura2)
+        db.commit()
+
+        dte2 = DteEmision(
+            tipo="033",
+            factura_id=factura2.id,
+            monto_neto=200000,
+            monto_iva=38000,
+            monto_total=238000,
+            created_at=datetime(2026, 5, 20, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        db.add(dte2)
+        db.commit()
+
+        # Generate libro for empresa1: should only have 1 DTE
+        libro1 = LibroService.generar_libro_ventas(db, empresa1.id, "2026-05")
+        assert libro1.total_registros == 1
+        assert libro1.monto_total == 119000
+
+        # Generate libro for empresa2: should only have 1 DTE
+        libro2 = LibroService.generar_libro_ventas(db, empresa2.id, "2026-05")
+        assert libro2.total_registros == 1
+        assert libro2.monto_total == 238000
+
+        # Verify empresa1 and empresa2 are NOT cross-contaminated
+        assert libro1.monto_total != 238000
+        assert libro2.monto_total != 119000
 
 
 class TestLibroComprasIntegration:
