@@ -1,65 +1,88 @@
-# Payment Import Feature Plan
+# DTE Libros + Intercambio Feature Plan
 
-**Feature:** [Onboarding] Import Pagos / cartola / cobranzas históricas
+**Feature:** [DTE] Libros + intercambio DTE recepción
 
-**Goal:** Allow admins to import historical payment data (payments, collections) from legacy system during onboarding. Payments are matched to invoices/boletas, reducing pending balances and enabling accurate collections tracking.
+**Goal:** Implement SII compliance features:
+1. Libro de Ventas (LV) - sales register report
+2. Libro de Compras (LC) - purchase register report
+3. Recepción DTE entrantes - receive and process supplier DTEs
+4. Intercambio - acknowledge/accept/reject DTEs with SII
 
-**Scope:** Backend (xlsx parser, validation, transactional import, idempotency) + Frontend (migration tab UI, template download, preview, reporting)
+**Scope - Phase 1 (Backend Foundation):**
+- Models: LibroVentas, LibroCompras, DteRecepcion, IntercambioLog
+- Schemas for API validation
+- Service layer to generate libros from existing DTEs
+- Basic API endpoints (GET reports, POST recepción)
+
+**Out of Scope (Phase 2+):**
+- Frontend UI
+- SII API integration (Lioren)
+- Actual XML generation/signing (uses xml_dte.py service)
+- Advanced filtering/pagination on reports
 
 ## Tasks
 
-### Task 1: Database model for payment imports
-Create Payment model and migration to track imported payments with reconciliation support.
-- Model: Payment with fields (fecha_pago, rut_cliente, monto, medio_pago, referencia, folio_documento, tipo_documento, estado)
-- Migration: Alembic migration to add payments table
-- Tests: Model validation, relationships to Invoice/Boleta/Customer
+### Task 1: Database models for Libros and Recepción
+Create SQLAlchemy models to track sales/purchase books and DTE receipions.
+- Model LibroVentas: tracks generated sales register (tipo=033,39,41, etc)
+  - Fields: periodo (YYYY-MM), empresa_id, folio_inicio, folio_fin, total_registros, monto_total, estado (borrador/enviado), created_at
+- Model LibroCompras: tracks purchase register (tipo=46, incoming)
+  - Fields: periodo, empresa_id, rut_proveedor, total_registros, monto_total, estado, created_at
+- Model DteRecepcion: incoming DTEs from suppliers
+  - Fields: empresa_id, tipo, folio, rut_emisor, monto, xml_raw, estado (recibido/aceptado/rechazado), respuesta_sii, created_at
+- Migrations: Alembic migrations for all three tables
+- Constraints: Unique (empresa_id, periodo) for Libros; FK to empresa
 
-### Task 2: Excel parser and validation layer
-Implement xlsx parsing with comprehensive validation and error reporting.
-- Parse xlsx with openpyxl
-- Validate columns (fecha_pago, rut_cliente, monto, medio_pago, referencia, folio_documento, tipo_documento)
-- Type validation and error collection
-- Preview data structures
+### Task 2: Schemas and service layer for Libro generation
+Implement business logic to generate libros from existing DTE emissions.
+- Schema LibroVentasRead/Create for API
+- Service LibroService.generar_libro_ventas(empresa_id, periodo) → LibroVentas
+  - Query DteEmision where doctype in (033,39,41) for periodo
+  - Aggregate totales, count registros
+  - Create LibroVentas record
+  - Return summary
+- Service LibroService.generar_libro_compras(empresa_id, periodo) → LibroCompras
+  - Similar but for incoming documents (tipo=46)
+- Unit tests: test generation, aggregation, edge cases (empty periodo, no DTEs)
 
-### Task 3: Payment matching and application logic
-Implement business logic to match payments to documents and apply them.
-- Match by folio_documento + tipo_documento
-- Apply payment amount to invoice/boleta, reducing pending_amount
-- Handle payment without document reference (pago a cuenta)
-- Validate sum(pagos) <= total_documento (detect overpayment)
-- Idempotency: prevent duplicate imports of same Excel
+### Task 3: API endpoints for Libros (read)
+Create REST endpoints to retrieve generated libros.
+- GET /api/libros/ventas - list all sales registers for empresa (filterable by periodo)
+- GET /api/libros/ventas/{id} - get details of specific sales register
+- GET /api/libros/compras - list all purchase registers
+- GET /api/libros/compras/{id} - get details
+- Response includes: periodo, total_registros, monto_total, estado, created_at
+- Error handling: 404 if not found, 400 if invalid periodo format
+- Tests: CRUD coverage, 403 for unauthorized empresa
 
-### Task 4: Transactional import backend
-Create API endpoint for transactional import with rollback and per-row error reporting.
-- GET /api/onboarding/payments/template - download template xlsx
-- POST /api/onboarding/payments/preview - validate and preview
-- POST /api/onboarding/payments/import - execute transactional import
-- Error handling: rollback on fatal, report per-row for recoverable
-- Generate import report (created/updated/pending/error count + details)
-
-### Task 5: Frontend migration tab UI
-Add payment import section to admin onboarding migration tab.
-- Section: "Historial de Pagos"
-- Template download button
-- File upload with validation feedback
-- Preview table (rows valid/invalid)
-- Progress feedback during import
-- Report display (downloadable, sortable by status)
+### Task 4: API endpoints for Recepción and basic intercambio
+Create endpoints to receive DTEs and track SII responses.
+- POST /api/dte/recepcion - receive incoming DTE
+  - Input: tipo, folio, rut_emisor, monto, xml_raw (optional)
+  - Create DteRecepcion record with estado=recibido
+  - Return id, estado
+- GET /api/dte/recepcion - list received DTEs (filterable by estado, rut_emisor)
+- POST /api/dte/recepcion/{id}/aceptar - mark as accepted
+  - Update estado to aceptado
+  - Log respuesta_sii (future: call SII API)
+- POST /api/dte/recepcion/{id}/rechazar - mark as rejected with reason
+  - Update estado to rechazado
+  - Store rechazo_motivo
+- Tests: CRUD, state transitions, error cases
 
 ## Acceptance Criteria
-- [ ] Payments can be imported from Excel template with all specified columns
-- [ ] Invalid rows are reported with specific error reasons
-- [ ] Valid payments are applied to invoices/boletas, reducing pending balance
-- [ ] Import is transactional (all succeed or all rollback)
-- [ ] Re-running same Excel doesn't duplicate payments (idempotent)
-- [ ] Payments without referenced document are recorded as "pago a cuenta"
-- [ ] Overpayment validation detects and reports when sum(pagos) > document total
-- [ ] Import report is downloadable
-- [ ] Frontend UI matches existing design system (Modal, danger colors where needed)
-- [ ] Tests: 80%+ coverage for parser, matching, API endpoints
+- [ ] Libros can be generated for any empresa+periodo
+- [ ] Generated libros show correct totales and documento counts
+- [ ] API endpoints return proper JSON with expected fields
+- [ ] DTEs can be received and tracked with estado transitions
+- [ ] Unauthorized access returns 403
+- [ ] Tests cover happy path + edge cases (empty libros, invalid periodo)
+- [ ] Database migrations are clean (alembic heads)
+- [ ] Code follows existing patterns (services layer, pydantic schemas, error handling)
 
 ## Context
-- Use existing Payment model (if exists) or create new
-- Integrates with Invoice/Boleta/Customer models
-- Onboarding flow is admin-only (role check)
-- Must maintain idempotency (same file, same result)
+- DTE emission already tracked in DteEmision model (see backend/app/models/dte_emision.py)
+- Existing services: dte_service.py, xml_dte.py for XML generation
+- Use empresa_id for multi-tenant isolation
+- SII integration (Lioren API) deferred to Phase 2
+- Frontend deferred to Phase 2
