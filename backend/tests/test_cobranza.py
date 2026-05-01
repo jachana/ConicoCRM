@@ -195,3 +195,84 @@ class TestEnviarRecordatorios:
         db_session.commit()
         enviar_recordatorios_automaticos()
         mock_email.assert_not_called()
+
+    @patch("app.tasks.cobranza.enviar_recordatorio")
+    def test_integration_full_reminder_flow(self, mock_email, db_session, empresa, cobranza_config, cliente):
+        """
+        Comprehensive integration test for automatic invoice reminder flow.
+        Tests the complete lifecycle: setup, first trigger, re-trigger same day,
+        toggle exclude, and re-trigger next day.
+        """
+        # ===== STEP A: Setup =====
+        # Create factura vencida 8 days ago (vencida_by_diasfrecuencia)
+        # dias_frecuencia=7, so 8 days = past the threshold
+        factura = Factura(
+            numero=5000,
+            empresa_id=empresa.id,
+            cliente_id=cliente.id,
+            estado="emitida",
+            fecha=date.today() - timedelta(days=16),
+            fecha_vencimiento=date.today() - timedelta(days=8),
+            total=150000,
+            exclude_recordatorio=False,
+            ultimo_recordatorio=None,
+        )
+        db_session.add(factura)
+        db_session.commit()
+
+        # Verify initial state
+        db_session.refresh(factura)
+        assert factura.exclude_recordatorio is False
+        assert factura.ultimo_recordatorio is None
+
+        # ===== STEP B: First trigger (day 1) =====
+        mock_email.reset_mock()
+        enviar_recordatorios_automaticos()
+
+        # Verify email sent
+        mock_email.assert_called_once()
+        call_args = mock_email.call_args
+        assert call_args[0][0] == cliente.email
+        assert "Recordatorio de Pago" in call_args[0][1]
+        assert "5000" in call_args[0][2]  # Factura number in body
+
+        # Verify ultimo_recordatorio updated
+        db_session.refresh(factura)
+        assert factura.ultimo_recordatorio == date.today()
+        assert factura.exclude_recordatorio is False
+
+        # ===== STEP C: Re-trigger same day (day 1 again) =====
+        mock_email.reset_mock()
+        enviar_recordatorios_automaticos()
+
+        # Verify email NOT sent (already reminded today)
+        mock_email.assert_not_called()
+
+        # Verify ultimo_recordatorio unchanged
+        db_session.refresh(factura)
+        assert factura.ultimo_recordatorio == date.today()
+
+        # ===== STEP D: Toggle exclude via API-like operation =====
+        # Simulate the PATCH /api/facturas/{id}/toggle-recordatorio endpoint
+        factura.exclude_recordatorio = True
+        db_session.add(factura)
+        db_session.commit()
+
+        db_session.refresh(factura)
+        assert factura.exclude_recordatorio is True
+
+        # ===== STEP E: Re-trigger next day (day 2) =====
+        # Manually advance the reminder date to simulate "next day"
+        factura.ultimo_recordatorio = date.today() - timedelta(days=1)
+        db_session.add(factura)
+        db_session.commit()
+
+        mock_email.reset_mock()
+        enviar_recordatorios_automaticos()
+
+        # Verify email NOT sent (excluded)
+        mock_email.assert_not_called()
+
+        # Verify ultimo_recordatorio unchanged
+        db_session.refresh(factura)
+        assert factura.ultimo_recordatorio == date.today() - timedelta(days=1)
