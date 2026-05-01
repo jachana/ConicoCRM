@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from io import BytesIO
 
@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_
 
 from app.api.deps import require_permission
 from app.models.cliente import Cliente
@@ -197,7 +198,7 @@ def facturas_cliente(
 @router.get("/{cliente_id}/notes", response_model=list[NotaAlertaOut])
 def notas_cliente(
     cliente_id: int,
-    estado: list[str] = Query(default=[]),
+    tipo: list[str] = Query(default=[]),
     sort_by: str = Query("created_at"),
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     perms: tuple[User, Session] = require_permission("clientes", "view"),
@@ -208,7 +209,8 @@ def notas_cliente(
     filtered and sorted as specified.
 
     - Vendedor scope: sees only notes from their own quotations (vendedor_id == current_user.id).
-    - Filters: estado (pendiente/completada/cancelada)
+    - Filters: tipo (cobranza/crédito/custom)
+    - Only vigentes (non-expired) notes: expires_at IS NULL OR expires_at > now()
     - Sort: by created_at (DESC default) or updated_at
     """
     current_user, db = perms
@@ -231,9 +233,18 @@ def notas_cliente(
         # No quotations for this customer — return empty list
         return []
 
-    # Filter by estado
-    if estado:
-        query = query.filter(NotaAlerta.estado.in_(estado))
+    # Filter by tipo (cobranza, crédito, custom)
+    if tipo:
+        query = query.filter(NotaAlerta.tipo.in_(tipo))
+
+    # Filter only non-expired notes (expires_at IS NULL OR expires_at > now())
+    now = datetime.now(timezone.utc)
+    query = query.filter(
+        or_(
+            NotaAlerta.expires_at.is_(None),
+            NotaAlerta.expires_at > now
+        )
+    )
 
     # Sort
     sort_col = {

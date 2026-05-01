@@ -1,6 +1,6 @@
 """Tests for GET /api/customers/{id}/notes endpoint"""
 import pytest
-from datetime import date
+from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal
 from app.models.cliente import Cliente
 from app.models.cotizacion import Cotizacion, CotizacionLinea
@@ -181,46 +181,46 @@ def test_obtener_notas_cliente_ordena_por_created_at_desc(client, admin_token, c
     assert data[1]["contenido"] == "First"
 
 
-def test_obtener_notas_cliente_filtro_por_estado(client, admin_token, cliente, cotizacion, db):
-    """Test filtering notes by estado."""
-    nota1 = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Pending", estado="pendiente")
-    nota2 = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Completed", estado="completada")
+def test_obtener_notas_cliente_filtro_por_tipo_cobranza(client, admin_token, cliente, cotizacion, db):
+    """Test filtering notes by tipo=cobranza."""
+    nota1 = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Cobranza note", tipo="cobranza")
+    nota2 = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Custom note", tipo="custom")
     db.add(nota1)
     db.add(nota2)
     db.commit()
 
-    # Filter by pendiente
+    # Filter by cobranza
     resp = client.get(
-        f"/api/clientes/{cliente.id}/notes?estado=pendiente",
+        f"/api/clientes/{cliente.id}/notes?tipo=cobranza",
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
-    assert data[0]["contenido"] == "Pending"
-    assert data[0]["estado"] == "pendiente"
+    assert data[0]["contenido"] == "Cobranza note"
+    assert data[0]["tipo"] == "cobranza"
 
 
-def test_obtener_notas_cliente_filtro_multiple_estados(client, admin_token, cliente, cotizacion, db):
-    """Test filtering notes by multiple estados."""
-    nota1 = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Pending", estado="pendiente")
-    nota2 = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Completed", estado="completada")
-    nota3 = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Cancelled", estado="cancelada")
+def test_obtener_notas_cliente_filtro_multiple_tipos(client, admin_token, cliente, cotizacion, db):
+    """Test filtering notes by multiple tipos."""
+    nota1 = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Cobranza", tipo="cobranza")
+    nota2 = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Crédito", tipo="crédito")
+    nota3 = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Custom", tipo="custom")
     db.add(nota1)
     db.add(nota2)
     db.add(nota3)
     db.commit()
 
-    # Filter by pendiente and completada
+    # Filter by cobranza and crédito
     resp = client.get(
-        f"/api/clientes/{cliente.id}/notes?estado=pendiente&estado=completada",
+        f"/api/clientes/{cliente.id}/notes?tipo=cobranza&tipo=crédito",
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 2
-    estados = {note["estado"] for note in data}
-    assert estados == {"pendiente", "completada"}
+    tipos = {note["tipo"] for note in data}
+    assert tipos == {"cobranza", "crédito"}
 
 
 def test_obtener_notas_cliente_sort_asc(client, admin_token, cliente, cotizacion, db):
@@ -264,20 +264,20 @@ def test_obtener_notas_cliente_sin_autenticacion(client, cliente):
     assert resp.status_code == 401
 
 
-def test_obtener_notas_cliente_filtro_por_estado_cancelada(client, admin_token, cliente, cotizacion, db):
-    """Test filtering notes by cancelled estado specifically."""
-    nota = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Cancelled note", estado="cancelada")
+def test_obtener_notas_cliente_filtro_por_tipo_credito(client, admin_token, cliente, cotizacion, db):
+    """Test filtering notes by tipo=crédito specifically."""
+    nota = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Crédito note", tipo="crédito")
     db.add(nota)
     db.commit()
 
     resp = client.get(
-        f"/api/clientes/{cliente.id}/notes?estado=cancelada",
+        f"/api/clientes/{cliente.id}/notes?tipo=crédito",
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
-    assert data[0]["estado"] == "cancelada"
+    assert data[0]["tipo"] == "crédito"
 
 
 def test_obtener_notas_cliente_admin_ve_todas(client, admin_token, cliente, cotizacion, cotizacion_vendedor, db):
@@ -300,7 +300,7 @@ def test_obtener_notas_cliente_admin_ve_todas(client, admin_token, cliente, coti
 
 def test_obtener_notas_cliente_respuesta_contiene_campos_requeridos(client, admin_token, cliente, cotizacion, db):
     """Test that the response contains all required fields."""
-    nota = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Test note")
+    nota = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Test note", tipo="cobranza", monto=Decimal("150.00"))
     db.add(nota)
     db.commit()
 
@@ -317,7 +317,10 @@ def test_obtener_notas_cliente_respuesta_contiene_campos_requeridos(client, admi
     assert "id" in note
     assert "cotizacion_id" in note
     assert "contenido" in note
+    assert "tipo" in note
+    assert "monto" in note
     assert "estado" in note
+    assert "expires_at" in note
     assert "created_at" in note
     assert "updated_at" in note
 
@@ -325,7 +328,10 @@ def test_obtener_notas_cliente_respuesta_contiene_campos_requeridos(client, admi
     assert isinstance(note["id"], int)
     assert isinstance(note["cotizacion_id"], int)
     assert isinstance(note["contenido"], str)
+    assert note["tipo"] in ["cobranza", "crédito", "custom"]
+    assert note["monto"] is None or isinstance(note["monto"], (int, float, str))
     assert note["estado"] in ["pendiente", "completada", "cancelada"]
+    assert note["expires_at"] is None or isinstance(note["expires_at"], str)
     assert isinstance(note["created_at"], str)
     assert isinstance(note["updated_at"], str)
 
@@ -343,3 +349,101 @@ def test_obtener_notas_cliente_sort_by_updated_at(client, admin_token, cliente, 
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
+
+
+def test_obtener_notas_cliente_filtro_tipo_custom(client, admin_token, cliente, cotizacion, db):
+    """Test filtering notes by tipo=custom."""
+    nota1 = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Custom note", tipo="custom")
+    nota2 = NotaAlerta(cotizacion_id=cotizacion.id, contenido="Cobranza note", tipo="cobranza")
+    db.add(nota1)
+    db.add(nota2)
+    db.commit()
+
+    # Filter by custom
+    resp = client.get(
+        f"/api/clientes/{cliente.id}/notes?tipo=custom",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["contenido"] == "Custom note"
+    assert data[0]["tipo"] == "custom"
+
+
+def test_obtener_notas_cliente_excluye_notas_expiradas(client, admin_token, cliente, cotizacion, db):
+    """Test that expired notes are excluded from results."""
+    now = datetime.now(timezone.utc)
+
+    # Create a non-expired note (no expires_at)
+    nota_vigente = NotaAlerta(
+        cotizacion_id=cotizacion.id,
+        contenido="Vigente note",
+        tipo="cobranza"
+    )
+
+    # Create an expired note (expires_at in the past)
+    nota_expirada = NotaAlerta(
+        cotizacion_id=cotizacion.id,
+        contenido="Expired note",
+        tipo="cobranza",
+        expires_at=now - timedelta(days=1)
+    )
+
+    # Create a not-yet-expired note (expires_at in the future)
+    nota_futura = NotaAlerta(
+        cotizacion_id=cotizacion.id,
+        contenido="Future expiry note",
+        tipo="cobranza",
+        expires_at=now + timedelta(days=1)
+    )
+
+    db.add(nota_vigente)
+    db.add(nota_expirada)
+    db.add(nota_futura)
+    db.commit()
+
+    resp = client.get(
+        f"/api/clientes/{cliente.id}/notes",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    # Should return 2 notes: vigente (no expires_at) and future expiry
+    assert len(data) == 2
+
+    contenidos = {note["contenido"] for note in data}
+    assert "Vigente note" in contenidos
+    assert "Future expiry note" in contenidos
+    assert "Expired note" not in contenidos
+
+
+def test_obtener_notas_cliente_monto_field_optional(client, admin_token, cliente, cotizacion, db):
+    """Test that monto field is optional and can be null."""
+    nota_sin_monto = NotaAlerta(
+        cotizacion_id=cotizacion.id,
+        contenido="Note without amount",
+        tipo="custom"
+    )
+    nota_con_monto = NotaAlerta(
+        cotizacion_id=cotizacion.id,
+        contenido="Note with amount",
+        tipo="cobranza",
+        monto=Decimal("500.50")
+    )
+    db.add(nota_sin_monto)
+    db.add(nota_con_monto)
+    db.commit()
+
+    resp = client.get(
+        f"/api/clientes/{cliente.id}/notes",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 2
+
+    # Check monto fields
+    montos = {note["contenido"]: note["monto"] for note in data}
+    assert montos["Note without amount"] is None
+    assert montos["Note with amount"] is not None
