@@ -35,8 +35,8 @@ describe('usePaymentImport', () => {
     ;(apiModule.api.get as any).mockResolvedValue({ data: mockBlob })
 
     // Mock URL.createObjectURL
-    global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
-    global.URL.revokeObjectURL = vi.fn()
+    globalThis.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+    globalThis.URL.revokeObjectURL = vi.fn()
 
     const { result } = renderHook(() => usePaymentImport())
 
@@ -170,8 +170,8 @@ describe('usePaymentImport', () => {
     ;(apiModule.api.get as any).mockResolvedValue({ data: mockBlob })
 
     // Mock URL.createObjectURL
-    global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
-    global.URL.revokeObjectURL = vi.fn()
+    globalThis.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+    globalThis.URL.revokeObjectURL = vi.fn()
 
     const { result } = renderHook(() => usePaymentImport())
 

@@ -17,8 +17,6 @@ export function PaymentImportSection() {
 
   function handleFileSelect(f: File) {
     setFile(f)
-    setPreview(null)
-    setResult(null)
     setStep('idle')
   }
 
