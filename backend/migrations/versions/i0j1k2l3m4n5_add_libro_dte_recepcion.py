@@ -1,7 +1,7 @@
 """Add Libro and DteRecepcion models
 
 Revision ID: i0j1k2l3m4n5
-Revises: h9i0j1k2l3m4
+Revises: b18e782cc8db
 Create Date: 2026-05-01 12:20:00.000000
 
 Phase 1 DTE Libros feature: add tables for LibroVentas, LibroCompras, and DteRecepcion.
@@ -17,7 +17,7 @@ from alembic import op
 
 
 revision: str = "i0j1k2l3m4n5"
-down_revision: Union[str, Sequence[str], None] = "h9i0j1k2l3m4"
+down_revision: Union[str, Sequence[str], None] = "b18e782cc8db"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
