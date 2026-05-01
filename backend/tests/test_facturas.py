@@ -598,3 +598,93 @@ def test_import_xml_bulk_empresa_not_found_returns_empresa_data(client, admin_to
     assert error["empresa_data"]["rut"] == "99999999-9"
     assert error["empresa_data"]["nombre"] == "Empresa Fantasma S.A."
     assert error["empresa_data"]["email"] == "fantasma@test.cl"
+
+
+# --- toggle-recordatorio endpoint ---
+
+def test_toggle_recordatorio_exclude_true(client, admin_token):
+    """PATCH /toggle-recordatorio with exclude=true sets exclude_recordatorio to true."""
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+    assert f["exclude_recordatorio"] is False
+
+    r = client.patch(
+        f"/api/facturas/{f['id']}/toggle-recordatorio",
+        json={"exclude": True},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert r.json()["exclude_recordatorio"] is True
+
+
+def test_toggle_recordatorio_exclude_false(client, admin_token):
+    """PATCH /toggle-recordatorio with exclude=false sets exclude_recordatorio to false."""
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+
+    # First set to true
+    client.patch(
+        f"/api/facturas/{f['id']}/toggle-recordatorio",
+        json={"exclude": True},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    # Then toggle back to false
+    r = client.patch(
+        f"/api/facturas/{f['id']}/toggle-recordatorio",
+        json={"exclude": False},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    assert r.json()["exclude_recordatorio"] is False
+
+
+def test_toggle_recordatorio_missing_exclude_422(client, admin_token):
+    """PATCH /toggle-recordatorio without 'exclude' field returns 422."""
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+
+    r = client.patch(
+        f"/api/facturas/{f['id']}/toggle-recordatorio",
+        json={},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 422
+
+
+def test_toggle_recordatorio_factura_not_found_404(client, admin_token):
+    """PATCH /toggle-recordatorio on non-existent factura returns 404."""
+    r = client.patch(
+        "/api/facturas/99999/toggle-recordatorio",
+        json={"exclude": True},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 404
+
+
+def test_toggle_recordatorio_requires_edit_permission(client, vendedor_token):
+    """PATCH /toggle-recordatorio requires 'facturas/edit' permission."""
+    # Vendedor only has 'view' permission, not 'edit'
+    from app.database import SessionLocal
+    from app.models.factura import Factura
+    from app.models.cliente import Cliente
+
+    # Create a factura as admin via direct DB
+    db = SessionLocal()
+    try:
+        cli = Cliente(nombre="Test", rut="99.999.999-9")
+        db.add(cli)
+        db.flush()
+        fac = Factura(numero=99999, cliente_id=cli.id, estado="emitida")
+        db.add(fac)
+        db.commit()
+        factura_id = fac.id
+    finally:
+        db.close()
+
+    r = client.patch(
+        f"/api/facturas/{factura_id}/toggle-recordatorio",
+        json={"exclude": True},
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert r.status_code == 403

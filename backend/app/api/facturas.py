@@ -704,6 +704,26 @@ def enviar_recordatorio(
     return {"detail": "Recordatorio enviado"}
 
 
+@router.patch("/{factura_id}/toggle-recordatorio", response_model=FacturaOut)
+def toggle_recordatorio(
+    factura_id: int,
+    body: dict,
+    perms: tuple[User, Session] = require_permission("facturas", "edit"),
+):
+    _, db = perms
+    factura = db.get(Factura, factura_id)
+    if not factura:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Factura no encontrada")
+
+    exclude = body.get("exclude")
+    if exclude is None:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Campo 'exclude' requerido")
+
+    factura.exclude_recordatorio = bool(exclude)
+    db.commit()
+    return _load_factura(db, factura_id)
+
+
 @router.post("/{factura_id}/recotizar", response_model=RecotizarOut, status_code=status.HTTP_201_CREATED)
 def recotizar_factura(
     factura_id: int,
