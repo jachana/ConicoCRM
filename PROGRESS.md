@@ -282,6 +282,20 @@ Ver `docs/state-of-product.html` para snapshot ejecutivo y `docs/backlog.md` par
   - `scripts/restore.sh`: list/restore con confirmación, target-db parametrizado, dry-run, idempotente
   - Runbook `docs/runbooks/backup-restore.md` con flujos local + offsite, smoke checks y rollback
   - `.env.prod.example` extendido con placeholders de retención y S3
+- [x] **Onboarding — Importación de datos masivos**
+  - **Productos / Catálogo (Excel)** (completed 2026-05-01)
+    - Backend: modelos `Producto.unidad` (string, nullable) y `Producto.iva_porcentaje` (int, default 19)
+    - Servicio `producto_parser.py` con validación de SKU normalizado (uppercase, sin espacios), rangos numéricos (precio >= 0, iva en {0,19}), detección duplicados
+    - 4 API endpoints: `GET /api/productos/import/template` (descarga Excel template), `POST /import/preview` (valida y muestra stats), `POST /import` (transactional upsert by SKU), `POST /import/report` (descarga Excel con resultados)
+    - Autocrear `TipoProducto` (familia) si no existe; soporte nullable `descripcion`, `unidad`, `afecto`
+    - Idempotente: re-correr el mismo archivo no duplica
+    - Frontend: componente `ProductosImportSection.tsx` integrado en `MigracionInicial.tsx` tab "Productos" siguiendo patrón ProveedoresImport
+    - Tests: 20 pytest (template auth, preview valid/mixed/duplicates/IVA/precios, import create/update/idempotent/familia/case-insensitive SKU, report) — all pass
+    - Commits: `e75c325` (backend), `5b8ef23` (frontend)
+  - **Proveedores** (completed, import via template + preview + transactional upsert)
+  - **Pagos históricos** (via PaymentImportSection)
+  - **Clientes + Empresas** (via ClientesEmpresasImport)
+  - **CAF / Folios SII** (carga en pestaña CAF, `CAFUploadSection`)
 - [ ] CI (lint + tests + build Docker)
 - [ ] Boleta electrónica 39/41
 - [x] **W1-05 — Guía de despacho electrónica 52** — Phase 1 backend + Phase 2 frontend completas
