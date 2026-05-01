@@ -174,7 +174,8 @@ class TestGenerarLibroCompras:
             folio=1001,
             rut_emisor="11.111.111-1",
             monto=100000,
-            estado="aceptado"
+            estado="aceptado",
+            created_at=datetime(2026, 9, 15, 10, 0, 0, tzinfo=timezone.utc)
         )
         dte_recibido = DteRecepcion(
             empresa_id=empresa.id,
@@ -182,7 +183,8 @@ class TestGenerarLibroCompras:
             folio=1002,
             rut_emisor="11.111.111-1",
             monto=50000,
-            estado="recibido"  # Should NOT be counted
+            estado="recibido",  # Should NOT be counted
+            created_at=datetime(2026, 9, 15, 10, 0, 0, tzinfo=timezone.utc)
         )
         dte_rechazado = DteRecepcion(
             empresa_id=empresa.id,
@@ -190,7 +192,8 @@ class TestGenerarLibroCompras:
             folio=1003,
             rut_emisor="11.111.111-1",
             monto=75000,
-            estado="rechazado"  # Should NOT be counted
+            estado="rechazado",  # Should NOT be counted
+            created_at=datetime(2026, 9, 15, 10, 0, 0, tzinfo=timezone.utc)
         )
 
         db.add(dte_aceptado)
@@ -217,7 +220,8 @@ class TestGenerarLibroCompras:
                 folio=2000 + i,
                 rut_emisor=f"11.111.111-{i}",
                 monto=100000,
-                estado="aceptado"
+                estado="aceptado",
+                created_at=datetime(2026, 10, 15, 10, 0, 0, tzinfo=timezone.utc)
             )
             db.add(dte)
         db.commit()
@@ -503,6 +507,72 @@ class TestLibroVentasIntegration:
 
 class TestLibroComprasIntegration:
     """Integration tests for LibroCompras"""
+
+    def test_generar_libro_compras_filters_by_periodo(self, db: Session):
+        """Verify only receipts from specified period are included"""
+        empresa = Empresa(nombre="Test Empresa")
+        db.add(empresa)
+        db.commit()
+
+        # Create 2 DteRecepcion in May with estado='aceptado'
+        dte_may_1 = DteRecepcion(
+            empresa_id=empresa.id,
+            tipo="46",
+            folio=1001,
+            rut_emisor="11.111.111-1",
+            monto=100000,
+            estado="aceptado",
+            created_at=datetime(2026, 5, 15, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        dte_may_2 = DteRecepcion(
+            empresa_id=empresa.id,
+            tipo="46",
+            folio=1002,
+            rut_emisor="11.111.111-1",
+            monto=50000,
+            estado="aceptado",
+            created_at=datetime(2026, 5, 20, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        db.add(dte_may_1)
+        db.add(dte_may_2)
+        db.commit()
+
+        # Create 2 DteRecepcion in June with estado='aceptado'
+        dte_june_1 = DteRecepcion(
+            empresa_id=empresa.id,
+            tipo="46",
+            folio=2001,
+            rut_emisor="22.222.222-2",
+            monto=200000,
+            estado="aceptado",
+            created_at=datetime(2026, 6, 10, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        dte_june_2 = DteRecepcion(
+            empresa_id=empresa.id,
+            tipo="46",
+            folio=2002,
+            rut_emisor="22.222.222-2",
+            monto=75000,
+            estado="aceptado",
+            created_at=datetime(2026, 6, 25, 10, 0, 0, tzinfo=timezone.utc)
+        )
+        db.add(dte_june_1)
+        db.add(dte_june_2)
+        db.commit()
+
+        # Generate libro for May: should only have 2 receipts
+        libro_may = LibroService.generar_libro_compras(db, empresa.id, "2026-05")
+        assert libro_may.total_registros == 2
+        assert libro_may.monto_total == 150000  # 100000 + 50000
+
+        # Generate libro for June: should only have 2 receipts
+        libro_june = LibroService.generar_libro_compras(db, empresa.id, "2026-06")
+        assert libro_june.total_registros == 2
+        assert libro_june.monto_total == 275000  # 200000 + 75000
+
+        # Verify May and June are NOT cross-contaminated
+        assert libro_may.total_registros != 4
+        assert libro_june.total_registros != 4
 
     def test_multiple_empresas_separate_libros(self, db: Session):
         """Test that different empresas get separate libros"""

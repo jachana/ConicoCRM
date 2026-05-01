@@ -110,6 +110,11 @@ class LibroService:
         where estado='aceptado' and matches the given period.
         Aggregates total_registros and monto_total.
 
+        Filters by:
+        1. periodo (YYYY-MM format) - via EXTRACT(YEAR-MONTH from created_at)
+        2. empresa_id
+        3. estado='aceptado'
+
         Idempotent: if a book already exists for (empresa_id, periodo), returns it.
 
         Args:
@@ -132,13 +137,21 @@ class LibroService:
         if existing:
             return existing
 
+        # Parse periodo to YYYY and MM
+        year, month = periodo.split('-')
+        year = int(year)
+        month = int(month)
+
         # Query DteRecepcion for accepted incoming DTEs
         result = db.query(
             func.count(DteRecepcion.id).label("total"),
             func.sum(DteRecepcion.monto).label("monto")
         ).filter(
             DteRecepcion.empresa_id == empresa_id,
-            DteRecepcion.estado == "aceptado"
+            DteRecepcion.estado == "aceptado",
+            # Filter by period using created_at from DteRecepcion
+            extract('year', DteRecepcion.created_at) == year,
+            extract('month', DteRecepcion.created_at) == month,
         ).first()
 
         total_registros = result.total or 0 if result else 0
