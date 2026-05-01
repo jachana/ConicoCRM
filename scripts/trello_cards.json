@@ -23,18 +23,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Cotizaciones] Alertas de cliente — API endpoint",
+      "list": "In progress",
+      "name": "[Onboarding] Carga de CAFs SII (folios)",
       "labels": [
-        "Core"
+        "DTE/SII"
       ],
-      "desc": "Crear endpoint GET /api/customers/{id}/notes que retorna notas activas del cliente.\n\nFiltros:\n- Por tipo (cobranza, crédito, custom)\n- Solo notas vigentes (created_at reciente, no expiradas)\n- Respuesta: lista con tipo, contenido, monto si aplica\n\nSeguiridad: solo vendedor/admin puede ver notas de sus clientes.",
+      "desc": "Sube los archivos CAF (XML firmados por SII) por tipo de DTE para que Conico pueda emitir folios. Distinto formato (XML, no Excel).",
       "checklist": [
-        "Crear ruta GET /customers/{id}/notes en blueprints",
-        "Query builder: filtrar por customer_id, ordenar por created_at desc",
-        "Validar permisos (solo si es vendedor/admin)",
-        "Tests: endpoint exists, retorna notas, filtra por tipo",
-        "Documentation: swagger/openapi"
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Upload .xml CAF (uno por archivo, multi-upload OK)",
+        "Validar firma SII y rango de folios (desde/hasta)",
+        "Reconocer tipo DTE (33/34/39/41/52/56/61) automáticamente del XML",
+        "Detectar solapamiento con CAF ya cargado → rechazar",
+        "Mostrar consumo actual + folios restantes por tipo",
+        "Alerta de folios bajos (umbral configurable)"
       ]
     }
   ]
