@@ -14,12 +14,14 @@ import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '..
 import UnsavedChangesModal from '../components/UnsavedChangesModal'
 import ClienteSelectModal from '../components/ClienteSelectModal'
 import TareasRelacionadas from '../components/TareasRelacionadas'
+import AlertasTab from '../components/AlertasTab'
 import {
   Button, Input, Textarea, FormField, Card, CardContent,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter,
   Table, THead, TBody, TR, TH, TD,
   Tooltip,
+  Tabs, TabsList, TabsTrigger, TabsContent,
 } from '../components/ui'
 
 type LineaLocal = Omit<CotizacionLinea, 'id'> & { id?: number; _key: string; _stock?: number | null; _costo?: number | null; descuento: number }
@@ -1440,7 +1442,18 @@ export default function CotizacionDetalle() {
 
       {!isNew && cotizacion && (
         <div className="mt-5">
-          <TareasRelacionadas tipo="cotizacion" id={cotizacion.id} />
+          <Tabs defaultValue="tareas">
+            <TabsList variant="underline">
+              <TabsTrigger value="tareas">Tareas</TabsTrigger>
+              <TabsTrigger value="alertas">Alertas</TabsTrigger>
+            </TabsList>
+            <TabsContent value="tareas">
+              <TareasRelacionadas tipo="cotizacion" id={cotizacion.id} />
+            </TabsContent>
+            <TabsContent value="alertas">
+              <AlertasTab cotizacionId={cotizacion.id} />
+            </TabsContent>
+          </Tabs>
         </div>
       )}
 

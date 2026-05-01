@@ -254,6 +254,15 @@ export interface Cotizacion {
   nv_id?: number | null
 }
 
+export interface NotaAlerta {
+  id: number
+  cotizacion_id: number
+  contenido: string
+  estado: 'pendiente' | 'completada' | 'cancelada'
+  created_at: string
+  updated_at: string
+}
+
 export interface Empleado {
   id: number
   nombre: string
