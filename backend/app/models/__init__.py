@@ -39,3 +39,4 @@ from app.models.import_report import ImportReport  # noqa: F401
 from app.models.boleta import Boleta  # noqa: F401
 from app.models.libro import LibroVentas, LibroCompras, DteRecepcion  # noqa: F401
 from app.models.nota_alerta import NotaAlerta  # noqa: F401
+from app.models.caf import CAF  # noqa: F401
