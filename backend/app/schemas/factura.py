@@ -61,6 +61,7 @@ class FacturaUpdate(BaseModel):
     metodo_pago: str | None = None
     plazo_dias: int | None = None
     referencias_docs: list | None = None
+    exclude_recordatorio: bool | None = None
 
     @model_validator(mode="after")
     def check_plazo_metodo(self) -> Self:
@@ -128,6 +129,7 @@ class FacturaOut(BaseModel):
     metodo_pago: str | None = None
     plazo_dias: int = 0
     origen: str = "manual"
+    exclude_recordatorio: bool = False
     created_at: datetime
     updated_at: datetime
     cliente: ClienteMinOut | None = None
@@ -164,6 +166,7 @@ class FacturaListOut(BaseModel):
     monto_pagado: Decimal | None = None
     metodo_pago: str | None = None
     plazo_dias: int = 0
+    exclude_recordatorio: bool = False
     created_at: datetime
     updated_at: datetime
     cliente: ClienteMinOut | None = None
