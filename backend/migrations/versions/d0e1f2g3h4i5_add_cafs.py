@@ -1,7 +1,7 @@
 """add_cafs
 
-Revision ID: b8c9d0e1f2a3
-Revises: 57449dcd3ca9
+Revision ID: d0e1f2g3h4i5
+Revises: b8c9d0e1f2a3
 Create Date: 2026-05-01 20:00:00.000000
 
 Creates cafs table to store CAF (Authorization Folio) records from SII.
@@ -15,8 +15,8 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = 'b8c9d0e1f2a3'
-down_revision: Union[str, Sequence[str], None] = '57449dcd3ca9'
+revision: str = 'd0e1f2g3h4i5'
+down_revision: Union[str, Sequence[str], None] = 'b8c9d0e1f2a3'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
