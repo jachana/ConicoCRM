@@ -1,11 +1,12 @@
 from celery import Celery
+from celery.schedules import crontab
 from app.config import settings
 
 celery_app = Celery(
     "conico",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["app.tasks.dte", "app.tasks.tareas"],
+    include=["app.tasks.dte", "app.tasks.tareas", "app.tasks.cobranza"],
 )
 
 celery_app.conf.update(
@@ -22,6 +23,10 @@ celery_app.conf.update(
         "generar-tareas-automaticas": {
             "task": "app.tasks.tareas.generar_tareas_automaticas",
             "schedule": 3600.0,
+        },
+        "enviar-recordatorios": {
+            "task": "app.tasks.cobranza.enviar_recordatorios_automaticos",
+            "schedule": crontab(hour=8, minute=0),
         },
     },
 )
