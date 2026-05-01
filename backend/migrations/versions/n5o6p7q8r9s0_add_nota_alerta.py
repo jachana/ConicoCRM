@@ -1,6 +1,6 @@
 """add_nota_alerta
 
-Revision ID: a6b7c8d9e0f1
+Revision ID: n5o6p7q8r9s0
 Revises: z5a6b7c8d9e0
 Create Date: 2026-05-01 15:00:00.000000
 
@@ -17,7 +17,7 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = 'a6b7c8d9e0f1'
+revision: str = 'n5o6p7q8r9s0'
 down_revision: Union[str, Sequence[str], None] = 'z5a6b7c8d9e0'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -41,3 +41,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_index(op.f('ix_notas_alertas_cotizacion_id'), table_name='notas_alertas')
     op.drop_table('notas_alertas')
+
