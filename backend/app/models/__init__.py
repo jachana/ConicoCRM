@@ -36,3 +36,5 @@ from app.models.audit_log import AuditLog  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.models.oportunidad import Oportunidad, OportunidadEtapa  # noqa: F401
 from app.models.import_report import ImportReport  # noqa: F401
+from app.models.boleta import Boleta  # noqa: F401
+from app.models.libro import LibroVentas, LibroCompras, DteRecepcion  # noqa: F401
