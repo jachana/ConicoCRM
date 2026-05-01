@@ -91,6 +91,7 @@ export default function FacturaDetalle() {
   const [pagoMonto, setPagoMonto] = useState('')
   const [pagoMetodo, setPagoMetodo] = useState('transferencia')
   const [pagoNota, setPagoNota] = useState('')
+  const [excludeRecordatorio, setExcludeRecordatorio] = useState(false)
 
   // Form fields
   const [clienteId, setClienteId] = useState<number | ''>('')
@@ -126,6 +127,7 @@ export default function FacturaDetalle() {
       setBancoReceptorId(factura.banco_receptor_id ?? null)
       setMetodoPago(factura.metodo_pago ?? '')
       setPlazoDias(factura.plazo_dias ?? 0)
+      setExcludeRecordatorio(factura.exclude_recordatorio ?? false)
       setLineas(
         (factura.lineas ?? []).map((l, i) => ({
           ...l,
@@ -287,6 +289,19 @@ export default function FacturaDetalle() {
     mutationFn: () => api.post(`/api/facturas/${id}/email`),
     onSuccess: () => toast.success('Email enviado correctamente'),
     onError: (err: any) => toast.error(err?.response?.data?.detail || 'Error al enviar email'),
+  })
+
+  const toggleRecordatorioMut = useMutation({
+    mutationFn: (exclude: boolean) =>
+      api.patch(`/api/facturas/${id}/toggle-recordatorio`, { exclude }),
+    onSuccess: () => {
+      toast.success('Cambio guardado')
+      qc.invalidateQueries({ queryKey: ['factura', id] })
+      qc.invalidateQueries({ queryKey: ['facturas'] })
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.detail || 'Error al guardar cambio')
+    },
   })
 
   const deleteMut = useMutation({
@@ -741,6 +756,22 @@ export default function FacturaDetalle() {
                   <span className="text-sm text-gray-900 dark:text-white whitespace-pre-line">{factura.nota}</span>
                 </div>
               )}
+              <div className="sm:col-span-2 lg:col-span-3 pt-2 border-t border-gray-200 dark:border-gray-800">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={excludeRecordatorio}
+                    onChange={(e) => {
+                      const newValue = e.target.checked
+                      setExcludeRecordatorio(newValue)
+                      toggleRecordatorioMut.mutate(newValue)
+                    }}
+                    disabled={toggleRecordatorioMut.isPending}
+                    className="size-4 accent-brand-500 rounded cursor-pointer disabled:opacity-50"
+                  />
+                  <span>Excluir de recordatorios automáticos</span>
+                </label>
+              </div>
             </div>
           )}
         </CardContent>

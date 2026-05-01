@@ -389,6 +389,7 @@ export interface Factura {
   origen: string;
   xml_raw: string | null;
   ultimo_recordatorio: string | null;
+  exclude_recordatorio: boolean;
   nota: string | null;
   correo: string | null;
   total_neto: number;
