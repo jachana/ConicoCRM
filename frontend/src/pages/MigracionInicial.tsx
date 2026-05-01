@@ -6,6 +6,7 @@ import { api } from '../lib/api'
 import { Button, Card, Tabs, TabsList, TabsTrigger, TabsContent, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Skeleton } from '../components/ui'
 import { PaymentImportSection } from '../components/onboarding/PaymentImportSection'
 import { CAFUploadSection } from '../components/onboarding/CAFUploadSection'
+import { ProductosImportSection } from '../components/onboarding/ProductosImportSection'
 import type { Empresa } from '../types'
 
 type Estado = 'creada' | 'actualizada' | 'sin_cambio' | 'error'
@@ -113,12 +114,16 @@ export default function MigracionInicial() {
       <Tabs defaultValue="proveedores">
         <TabsList variant="underline">
           <TabsTrigger value="proveedores">Proveedores</TabsTrigger>
+          <TabsTrigger value="productos">Productos</TabsTrigger>
           <TabsTrigger value="pagos">Historial de Pagos</TabsTrigger>
           <TabsTrigger value="clientes_empresas">Clientes + Empresas</TabsTrigger>
           <TabsTrigger value="cafs">CAF</TabsTrigger>
         </TabsList>
         <TabsContent value="proveedores">
           <ProveedoresImport />
+        </TabsContent>
+        <TabsContent value="productos">
+          <ProductosImportSection />
         </TabsContent>
         <TabsContent value="pagos">
           <PaymentImportSection />
