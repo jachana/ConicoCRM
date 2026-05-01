@@ -333,3 +333,86 @@ def test_bulk_precios_vendedor_no_puede(client, vendedor_token, admin_token):
         headers={"Authorization": f"Bearer {vendedor_token}"},
     )
     assert r.status_code == 403
+
+
+# Specs (technical specifications) tests ------------------------------------
+
+
+def test_crear_producto_con_specs(client, admin_token):
+    r = client.post(
+        "/api/productos/",
+        json={"nombre": "Aceite Motor", "precio_venta": "50.00", "specs": ["ISO 46", "ACEA C3", "SAE 80"]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201
+    data = r.json()
+    assert data["nombre"] == "Aceite Motor"
+    assert data["specs"] == ["ISO 46", "ACEA C3", "SAE 80"]
+
+
+def test_crear_producto_sin_specs_por_defecto(client, admin_token):
+    r = client.post(
+        "/api/productos/",
+        json={"nombre": "Tornillo", "precio_venta": "10.00"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201
+    data = r.json()
+    assert data["specs"] == []
+
+
+def test_actualizar_producto_specs(client, admin_token):
+    # Crear producto sin specs
+    r = client.post(
+        "/api/productos/",
+        json={"nombre": "Producto Original", "precio_venta": "30.00"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    pid = r.json()["id"]
+
+    # Actualizar con specs
+    r2 = client.patch(
+        f"/api/productos/{pid}",
+        json={"specs": ["DIN 451", "ISO 100"]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r2.status_code == 200
+    assert r2.json()["specs"] == ["DIN 451", "ISO 100"]
+
+    # Verificar que se guardó
+    r3 = client.get(f"/api/productos/{pid}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r3.json()["specs"] == ["DIN 451", "ISO 100"]
+
+
+def test_actualizar_producto_limpiar_specs(client, admin_token):
+    # Crear producto con specs
+    r = client.post(
+        "/api/productos/",
+        json={"nombre": "Con Specs", "precio_venta": "40.00", "specs": ["ISO 46"]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    pid = r.json()["id"]
+    assert r.json()["specs"] == ["ISO 46"]
+
+    # Limpiar specs
+    r2 = client.patch(
+        f"/api/productos/{pid}",
+        json={"specs": []},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r2.status_code == 200
+    assert r2.json()["specs"] == []
+
+
+def test_specs_incluido_en_busqueda(client, admin_token):
+    client.post(
+        "/api/productos/",
+        json={"nombre": "Hidraulico Premium", "precio_venta": "75.00", "specs": ["ISO 46", "ACEA C3"]},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    r = client.get("/api/productos/buscar?q=hidraulico", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    resultados = r.json()
+    assert len(resultados) >= 1
+    assert any(p["nombre"] == "Hidraulico Premium" for p in resultados)
+    assert any(p["specs"] == ["ISO 46", "ACEA C3"] for p in resultados)

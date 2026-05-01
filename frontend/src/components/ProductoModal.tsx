@@ -23,12 +23,13 @@ type FormData = {
   marca_id: string
   volumen: string
   tipos: number[]
+  specs: string
 }
 
 const EMPTY_FORM: FormData = {
   nombre: '', descripcion: '', precio_venta: '0',
   margen: '0', stock_minimo: '0', proveedor_id: '', marca_id: '', volumen: '',
-  tipos: [],
+  tipos: [], specs: '',
 }
 
 function calcMargen(costo: number, venta: string): string {
@@ -60,6 +61,7 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
       marca_id: editando.marca_id ? String(editando.marca_id) : '',
       volumen: editando.volumen !== null ? String(editando.volumen) : '',
       tipos: (editando.tipos ?? []).map(t => t.id),
+      specs: (editando.specs ?? []).join(', '),
     }
   })
   const [nuevoTipo, setNuevoTipo] = useState('')
@@ -95,6 +97,10 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
 
   const guardar = useMutation({
     mutationFn: (data: FormData) => {
+      const specs = data.specs
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
       const payload = {
         nombre: data.nombre,
         descripcion: data.descripcion || null,
@@ -104,6 +110,7 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
         marca_id: data.marca_id ? parseInt(data.marca_id) : null,
         volumen: data.volumen ? parseFloat(data.volumen) : null,
         tipos: data.tipos,
+        specs: specs,
       }
       if (editando) return api.patch(`/api/productos/${editando.id}`, payload).then(r => r.data)
       return api.post('/api/productos/', payload).then(r => r.data)
@@ -154,6 +161,14 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
           rows={2}
           value={form.descripcion}
           onChange={e => { setFormDirty(true); setForm(f => ({ ...f, descripcion: e.target.value })) }}
+        />
+      </FormField>
+
+      <FormField label="Normas/Especificaciones Técnicas" className="col-span-2" hint="Ej: ISO 46, ACEA C3, SAE 80, DIN 451 (separadas por comas)">
+        <Input
+          placeholder="Ej: ISO 46, ACEA C3, SAE 80"
+          value={form.specs}
+          onChange={e => { setFormDirty(true); setForm(f => ({ ...f, specs: e.target.value })) }}
         />
       </FormField>
 

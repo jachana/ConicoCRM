@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
-from sqlalchemy import String, Text, Numeric, Integer, ForeignKey, DateTime, text
+from sqlalchemy import String, Text, Numeric, Integer, ForeignKey, DateTime, text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -32,6 +32,7 @@ class Producto(Base):
     precio_costo_actualizado_en: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    specs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
 
     proveedor: Mapped["Proveedor | None"] = relationship("Proveedor", back_populates="productos")
     marca: Mapped["Marca | None"] = relationship("Marca")
