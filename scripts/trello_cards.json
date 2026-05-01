@@ -23,34 +23,26 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Productos] Características técnicas / normas (ISO 46, SAE 80, DIN 451, ACEA C3...)",
+      "list": "In progress",
+      "name": "[Onboarding] Import Pagos / cartola / cobranzas históricas",
       "labels": [
         "Core"
       ],
-      "desc": "Los productos (lubricantes, grasas, aditivos) cumplen con normas y especificaciones técnicas de la industria. Los clientes los buscan así: 'necesito algo ISO 46', '¿tienes algo ACEA C3?'. Hoy esa info vive en la descripción libre — no se puede filtrar, no se puede sugerir equivalentes, y no aparece estructurada en cotizaciones.\n\nEsto es distinto del card existente '[Productos] Tags de tipo' (hidráulico/motor/transmisión = uso). Características = especificación técnica que cumple.\n\nEjemplos por familia:\n- ISO VG: ISO 22, ISO 32, ISO 46, ISO 68, ISO 100, ISO 150, ISO 220, ISO 320, ISO 460\n- SAE motor: SAE 5W-30, 10W-40, 15W-40, 20W-50\n- SAE engranaje: SAE 80, 80W-90, 85W-140, 140\n- DIN: DIN 51524 HLP, DIN 51517 CLP, DIN 51825 KP\n- ACEA: A3/B4, C3, E7, E9\n- API motor: API SN, SP, CK-4, CJ-4, CI-4\n- API engranaje: API GL-4, GL-5\n- NLGI grasas: NLGI 00, 0, 1, 2, 3\n- Otros: AGMA, Cummins, MB-Approval, Volvo VDS, Caterpillar TO-4, Allison TES-295\n\nModelo: cada característica tiene una **familia/norma** (ISO, SAE, DIN, ACEA, API, NLGI, OEM...) y un **valor** (46, 80W-90, C3, GL-5...). Multi-valor por producto.",
+      "desc": "Pagos recibidos ya aplicados a facturas/boletas. Necesario para que la cobranza/saldo pendiente arranque correcto.",
       "checklist": [
-        "Modelo: NormaTecnica (id, familia, valor, descripcion_opcional)",
-        "Familias seed: ISO_VG, SAE_MOTOR, SAE_ENGRANAJE, DIN, ACEA, API_MOTOR, API_ENGRANAJE, NLGI, OEM",
-        "Tabla M2M ProductoNorma (producto_id, norma_id)",
-        "Seed inicial con valores comunes de cada familia (ver desc)",
-        "CRUD /api/normas-tecnicas (admin agrega valores nuevos; familias semi-fijas)",
-        "Validación: valor único por familia (no permitir duplicar 'ISO 46' dos veces)",
-        "ProductoModal UI: sección 'Características técnicas' con selector agrupado por familia (acordeón o tabs)",
-        "Chip por norma seleccionada con formato 'ISO 46', 'ACEA C3', etc.",
-        "Listado productos: columna 'Características' con chips (max 3 visibles + '+N')",
-        "Filtro avanzado: multi-select por familia + valor (ej: 'ISO VG = 46 OR 68')",
-        "**Buscador global: todas las normas son tokens buscables** — typing 'ISO 46', 'ACEA C3', 'GL-5', 'NLGI 2', '15W-40' encuentra productos que las cumplen",
-        "Indexar normas en el índice de búsqueda global (mismo donde están SKU, nombre, categoría)",
-        "Match parcial y case-insensitive: 'iso46', 'iso 46', 'ISO46' → todos matchean",
-        "Aplicar mismo principio a las tags de tipo existentes (hidráulico, motor, transmisión) — buscables en la barra global",
-        "Autocompletar en el buscador: al tipear 'ISO' sugerir 'ISO 22, ISO 32, ISO 46...' como chips",
-        "Producto detail: bloque 'Cumple con' agrupado por familia",
-        "Cotización/Factura/NV: mostrar características bajo el nombre del producto (opcional, toggle)",
-        "PDF cotización: incluir características (los técnicos del cliente las verifican)",
-        "Sugerencias 'producto similar': priorizar productos con normas en común (Wave 4 backlog)",
-        "Import productos (Excel onboarding): columna opcional 'normas' (formato 'ISO 46;SAE 10W-40;ACEA C3')",
-        "Tests: crear/asociar/quitar normas, filtro retorna correcto, búsqueda por norma matchea"
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: fecha_pago, rut_cliente, monto, medio_pago, referencia, folio_documento, tipo_documento",
+        "Aplicar pago a la factura/boleta importada (reduce saldo pendiente)",
+        "Pago sin documento referenciado → registrar como pago a cuenta (no descartar)",
+        "Documento inexistente → reportar pendiente, dejar pago colgado para reconciliación manual",
+        "Validar que sum(pagos) <= total_documento (o reportar sobrepago)"
       ]
     }
   ]
