@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { Download, Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Info } from 'lucide-react'
 import { api } from '../lib/api'
 import { Button, Card, Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui'
+import { PaymentImportSection } from '../components/onboarding/PaymentImportSection'
 
 type Estado = 'creada' | 'actualizada' | 'sin_cambio' | 'error'
 
@@ -46,9 +47,13 @@ export default function MigracionInicial() {
       <Tabs defaultValue="proveedores">
         <TabsList variant="underline">
           <TabsTrigger value="proveedores">Proveedores</TabsTrigger>
+          <TabsTrigger value="pagos">Historial de Pagos</TabsTrigger>
         </TabsList>
         <TabsContent value="proveedores">
           <ProveedoresImport />
+        </TabsContent>
+        <TabsContent value="pagos">
+          <PaymentImportSection />
         </TabsContent>
       </Tabs>
     </div>
