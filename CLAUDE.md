@@ -29,6 +29,7 @@ Conflict rule: **online wins**. If local JSON disagrees with the board, `--pull`
 
 - Task started → card → `In progress` (before work begins; multi-agent claim signal).
 - Feature shipped → card → `In review` (PR open) or `Friendly Beta 0.1` / `Live Beta 0.2` / `Live 1.0` per stage. User promotes between live lists manually.
+- **Deferred/Phase work** → Create new card(s) in `Feature requests` for each deferred phase/subtask. Link to parent card, describe scope clearly. Push to board same cycle (--apply).
 - New TODO / bug / client request discovered → add card to `Feature requests`, `Bugs`, `Client feedback`, or `Ideas`. Push to board same cycle (--apply), don't accumulate locally.
 - Checklist sub-item completed → tick it on the card (or move the whole card if the card itself is done).
 - Sub-task added → append to that card's `checklist` array, --apply.
