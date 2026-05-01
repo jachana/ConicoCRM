@@ -1,25 +1,15 @@
 """API endpoints for retrieving Libros (sales and purchase books)"""
+import re
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.auth import get_current_user
+from app.api.deps import require_permission
 from app.database import get_db
 from app.models.libro import LibroVentas, LibroCompras
 from app.models.user import User
 from app.schemas.libro import LibroVentasRead, LibroComprasRead
 
 router = APIRouter()
-
-
-class PaginationResponse:
-    """Base pagination response wrapper"""
-    def __init__(self, data: list, limit: int, offset: int, total: int):
-        self.data = data
-        self.pagination = {
-            "limit": limit,
-            "offset": offset,
-            "total": total
-        }
 
 
 def _validate_pagination(limit: int, offset: int) -> None:
@@ -48,7 +38,6 @@ def _validate_periodo(periodo: str | None) -> None:
     """
     if periodo is None:
         return
-    import re
     if not re.match(r'^\d{4}-\d{2}$', periodo):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -63,8 +52,7 @@ def listar_libros_ventas(
     periodo: str | None = Query(None, description="Filter by YYYY-MM period"),
     limit: int = Query(50, ge=1, le=500, description="Pagination limit"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    perms: tuple[User, Session] = require_permission("libros", "view"),
 ):
     """Get list of sales books (Libros de Ventas) for current user's empresa.
 
@@ -77,6 +65,8 @@ def listar_libros_ventas(
     - data: List of LibroVentasRead
     - pagination: {limit, offset, total}
     """
+    current_user, db = perms
+
     # Validate parameters
     _validate_pagination(limit, offset)
     _validate_periodo(periodo)
@@ -117,8 +107,7 @@ def listar_libros_ventas(
 @router.get("/ventas/{id}", response_model=LibroVentasRead)
 def obtener_libro_ventas(
     id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    perms: tuple[User, Session] = require_permission("libros", "view"),
 ):
     """Get a specific sales book by ID.
 
@@ -128,6 +117,8 @@ def obtener_libro_ventas(
     Returns:
     - LibroVentasRead
     """
+    current_user, db = perms
+
     libro = db.query(LibroVentas).filter_by(id=id).first()
 
     if not libro:
@@ -153,8 +144,7 @@ def listar_libros_compras(
     periodo: str | None = Query(None, description="Filter by YYYY-MM period"),
     limit: int = Query(50, ge=1, le=500, description="Pagination limit"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    perms: tuple[User, Session] = require_permission("libros", "view"),
 ):
     """Get list of purchase books (Libros de Compras) for current user's empresa.
 
@@ -167,6 +157,8 @@ def listar_libros_compras(
     - data: List of LibroComprasRead
     - pagination: {limit, offset, total}
     """
+    current_user, db = perms
+
     # Validate parameters
     _validate_pagination(limit, offset)
     _validate_periodo(periodo)
@@ -207,8 +199,7 @@ def listar_libros_compras(
 @router.get("/compras/{id}", response_model=LibroComprasRead)
 def obtener_libro_compras(
     id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    perms: tuple[User, Session] = require_permission("libros", "view"),
 ):
     """Get a specific purchase book by ID.
 
@@ -218,6 +209,8 @@ def obtener_libro_compras(
     Returns:
     - LibroComprasRead
     """
+    current_user, db = perms
+
     libro = db.query(LibroCompras).filter_by(id=id).first()
 
     if not libro:
