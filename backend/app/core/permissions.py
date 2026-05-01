@@ -4,7 +4,7 @@ from app.models.permission import PermissionOverride
 
 MODULES = [
     "catalogo", "clientes", "proveedores", "empresas", "cotizaciones", "nota_venta",
-    "facturas", "boletas", "guias_despacho", "libros",
+    "facturas", "boletas", "guias_despacho", "libros", "dte_recepcion",
     "ordenes_compra", "inventario", "rrhh", "dashboard", "usuarios", "tareas",
 ]
 ACTIONS = ["view", "create", "edit", "delete", "view_all", "admin"]
@@ -22,6 +22,7 @@ _DEFAULT: dict[str, dict[str, dict[str, bool]]] = {
         "boletas":        {"view": True,  "create": True,  "edit": True,  "delete": True},
         "guias_despacho": {"view": True,  "create": True,  "edit": True,  "delete": True},
         "libros":         {"view": True,  "create": False, "edit": False, "delete": False},
+        "dte_recepcion":  {"view": True,  "create": True,  "edit": True,  "delete": False},
         "ordenes_compra": {"view": True,  "create": True,  "edit": True,  "delete": True},
         "inventario":     {"view": True,  "create": True,  "edit": True,  "delete": True},
         "dashboard":      {"view": True,  "create": False, "edit": False, "delete": False},
@@ -40,6 +41,7 @@ _DEFAULT: dict[str, dict[str, dict[str, bool]]] = {
         "boletas":        {"view": True,  "create": True,  "edit": True,  "delete": False},
         "guias_despacho": {"view": True,  "create": True,  "edit": True,  "delete": False},
         "libros":         {"view": True,  "create": False, "edit": False, "delete": False},
+        "dte_recepcion":  {"view": True,  "create": True,  "edit": True,  "delete": False},
         "ordenes_compra": {"view": False, "create": False, "edit": False, "delete": False},
         "inventario":     {"view": False, "create": False, "edit": False, "delete": False},
         "dashboard":      {"view": True,  "create": False, "edit": False, "delete": False},

@@ -52,6 +52,7 @@ from app.api import oportunidades as oportunidades_api
 from app.api import onboarding_payments
 from app.api import onboarding_clientes_empresas
 from app.api import libros as libros_api
+from app.api import dte_recepcion as dte_recepcion_api
 from app.middleware.audit_context import AuditContextMiddleware
 from app.services.auditoria import register_listeners as register_audit_listeners
 from app.utils.search import set_unaccent_available
@@ -160,3 +161,4 @@ app.include_router(oportunidades_api.router, prefix="/api/oportunidades", tags=[
 app.include_router(onboarding_payments.router, prefix="/api/onboarding/payments", tags=["onboarding"])
 app.include_router(onboarding_clientes_empresas.router, prefix="/api/onboarding/clientes_empresas", tags=["onboarding"])
 app.include_router(libros_api.router, prefix="/api/libros", tags=["libros"])
+app.include_router(dte_recepcion_api.router, prefix="/api/dte/recepcion", tags=["dte_recepcion"])
