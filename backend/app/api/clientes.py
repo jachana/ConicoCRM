@@ -10,12 +10,15 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_permission
 from app.models.cliente import Cliente
+from app.models.cotizacion import Cotizacion
 from app.models.empresa import Empresa
+from app.models.nota_alerta import NotaAlerta
 from app.utils.search import unaccent_ilike
 from app.models.factura import Factura
 from app.models.user import User
 from app.schemas.cliente import ClienteCreate, ClienteOut, ClienteUpdate
 from app.schemas.empresa import EmpresaFacturaDetailItem
+from app.schemas.nota_alerta import NotaAlertaOut
 
 router = APIRouter()
 
@@ -189,3 +192,55 @@ def facturas_cliente(
         )
         for f in facturas
     ]
+
+
+@router.get("/{cliente_id}/notes", response_model=list[NotaAlertaOut])
+def notas_cliente(
+    cliente_id: int,
+    estado: list[str] = Query(default=[]),
+    sort_by: str = Query("created_at"),
+    sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
+    perms: tuple[User, Session] = require_permission("clientes", "view"),
+):
+    """Retrieve active notes/alerts for a customer.
+
+    Returns all alert notes associated with the customer's quotations,
+    filtered and sorted as specified.
+
+    - Vendedor scope: sees only notes from their own quotations (vendedor_id == current_user.id).
+    - Filters: estado (pendiente/completada/cancelada)
+    - Sort: by created_at (DESC default) or updated_at
+    """
+    current_user, db = perms
+    c = db.get(Cliente, cliente_id)
+    if not c:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
+
+    # Get all quotations for this customer
+    query_cot = db.query(Cotizacion).filter(Cotizacion.cliente_id == cliente_id)
+    if current_user.role == "vendedor":
+        query_cot = query_cot.filter(Cotizacion.vendedor_id == current_user.id)
+
+    cotizacion_ids = [cot.id for cot in query_cot.all()]
+
+    # Query notes for those quotations
+    query = db.query(NotaAlerta)
+    if cotizacion_ids:
+        query = query.filter(NotaAlerta.cotizacion_id.in_(cotizacion_ids))
+    else:
+        # No quotations for this customer — return empty list
+        return []
+
+    # Filter by estado
+    if estado:
+        query = query.filter(NotaAlerta.estado.in_(estado))
+
+    # Sort
+    sort_col = {
+        "created_at": NotaAlerta.created_at,
+        "updated_at": NotaAlerta.updated_at,
+    }.get(sort_by, NotaAlerta.created_at)
+    query = query.order_by(sort_col.desc() if sort_dir == "desc" else sort_col.asc())
+
+    notas = query.all()
+    return notas
