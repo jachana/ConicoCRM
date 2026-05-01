@@ -1,12 +1,14 @@
 import csv
 import io as _io
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 from io import BytesIO
 
 import openpyxl
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.config import require_admin
@@ -29,6 +31,12 @@ from app.schemas.producto import (
     ProductoOutAdmin,
     ProductoOutPublic,
     ProductoUpdate,
+)
+from app.services.producto_parser import (
+    ALL_COLUMNS,
+    ParseError,
+    build_template_xlsx,
+    parse_productos_xlsx,
 )
 from app.utils.search import unaccent_ilike
 from app.schemas.movimiento_inventario import MovimientoListOut
@@ -403,3 +411,213 @@ def historial_costos(
         )
         for lp, item in rows
     ]
+
+
+# ============================================================================
+# Import endpoints for product catalog
+# ============================================================================
+
+
+@router.get("/import/template")
+def descargar_template_import(
+    perms: tuple[User, Session] = Depends(require_admin),
+):
+    return StreamingResponse(
+        BytesIO(build_template_xlsx()),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=plantilla_productos.xlsx"},
+    )
+
+
+def _resumen_preview(content: bytes, db: Session) -> dict:
+    parsed = parse_productos_xlsx(content)
+    skus_archivo = [p.sku_normalizado for p in parsed.validas]
+    # Case-insensitive SKU lookup: find all productos with matching normalized SKU
+    existentes = set()
+    if skus_archivo:
+        # Query all productos and filter by normalized SKU
+        all_produtos = db.query(Producto).all()
+        existentes = {
+            (p.sku.upper() if p.sku else "")
+            for p in all_produtos
+            if p.sku and p.sku.upper() in skus_archivo
+        }
+
+    filas = []
+    for p in parsed.validas:
+        accion = "actualizar" if p.sku_normalizado in existentes else "crear"
+        filas.append({
+            "fila": p.fila,
+            "sku": p.sku_normalizado,
+            "nombre": p.nombre,
+            "accion": accion,
+        })
+    errores = [
+        {"fila": r.fila, "sku": r.sku_raw, "nombre": r.nombre_raw, "motivo": r.motivo}
+        for r in parsed.invalidas
+    ]
+    return {
+        "total_filas": len(parsed.validas) + len(parsed.invalidas),
+        "filas_validas": len(parsed.validas),
+        "filas_invalidas": len(parsed.invalidas),
+        "a_crear": sum(1 for f in filas if f["accion"] == "crear"),
+        "a_actualizar": sum(1 for f in filas if f["accion"] == "actualizar"),
+        "filas": filas,
+        "errores": errores,
+    }
+
+
+@router.post("/import/preview")
+async def previsualizar_import(
+    archivo: UploadFile = File(...),
+    perms: tuple[User, Session] = Depends(require_admin),
+):
+    _, db = perms
+    content = await archivo.read()
+    try:
+        return _resumen_preview(content, db)
+    except ParseError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/import")
+async def importar_productos(
+    archivo: UploadFile = File(...),
+    perms: tuple[User, Session] = Depends(require_admin),
+):
+    _, db = perms
+    content = await archivo.read()
+    try:
+        parsed = parse_productos_xlsx(content)
+    except ParseError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    skus_archivo = [p.sku_normalizado for p in parsed.validas]
+    # Case-insensitive SKU lookup: build a map of normalized SKU -> producto
+    existentes_productos = (
+        db.query(Producto).filter(func.upper(Producto.sku).in_(skus_archivo)).all()
+        if skus_archivo
+        else []
+    )
+    existentes = {
+        (p.sku.upper() if p.sku else ""): p
+        for p in existentes_productos
+    }
+
+    detalles: list[dict] = []
+    creadas = actualizadas = sin_cambio = errores = 0
+
+    try:
+        for p in parsed.validas:
+            existente = existentes.get(p.sku_normalizado)
+            if existente is None:
+                # Create new producto
+                producto = Producto(
+                    sku=p.sku_normalizado,
+                    nombre=p.nombre,
+                    descripcion=p.descripcion,
+                    precio_venta=Decimal(str(p.precio_base)),
+                    precio_costo=Decimal(str(p.costo)),
+                    unidad=p.unidad,
+                    iva_porcentaje=p.iva,
+                )
+                db.add(producto)
+                db.flush()
+                # Add tipo if familia specified
+                if p.familia:
+                    tipo = db.query(TipoProducto).filter(TipoProducto.nombre.ilike(p.familia.strip())).first()
+                    if not tipo:
+                        tipo = TipoProducto(nombre=p.familia.strip())
+                        db.add(tipo)
+                        db.flush()
+                    producto.tipos.append(tipo)
+                creadas += 1
+                detalles.append({"fila": p.fila, "sku": p.sku_normalizado, "nombre": p.nombre, "estado": "creada", "motivo": None})
+            else:
+                # Update existing producto
+                cambios = False
+                if existente.nombre != p.nombre:
+                    existente.nombre = p.nombre
+                    cambios = True
+                if p.descripcion is not None and existente.descripcion != p.descripcion:
+                    existente.descripcion = p.descripcion
+                    cambios = True
+                if existente.precio_venta != Decimal(str(p.precio_base)):
+                    existente.precio_venta = Decimal(str(p.precio_base))
+                    cambios = True
+                if existente.precio_costo != Decimal(str(p.costo)):
+                    existente.precio_costo = Decimal(str(p.costo))
+                    cambios = True
+                if p.unidad is not None and existente.unidad != p.unidad:
+                    existente.unidad = p.unidad
+                    cambios = True
+                if existente.iva_porcentaje != p.iva:
+                    existente.iva_porcentaje = p.iva
+                    cambios = True
+                # Update tipo if familia specified
+                if p.familia:
+                    tipo = db.query(TipoProducto).filter(TipoProducto.nombre.ilike(p.familia.strip())).first()
+                    if not tipo:
+                        tipo = TipoProducto(nombre=p.familia.strip())
+                        db.add(tipo)
+                        db.flush()
+                    if tipo not in existente.tipos:
+                        existente.tipos = [tipo]
+                        cambios = True
+                if cambios:
+                    actualizadas += 1
+                    detalles.append({"fila": p.fila, "sku": p.sku_normalizado, "nombre": p.nombre, "estado": "actualizada", "motivo": None})
+                else:
+                    sin_cambio += 1
+                    detalles.append({"fila": p.fila, "sku": p.sku_normalizado, "nombre": p.nombre, "estado": "sin_cambio", "motivo": None})
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Conflicto al guardar: {e.orig}",
+        )
+
+    for r in parsed.invalidas:
+        errores += 1
+        detalles.append({"fila": r.fila, "sku": r.sku_raw, "nombre": r.nombre_raw, "estado": "error", "motivo": r.motivo})
+
+    detalles.sort(key=lambda d: d["fila"])
+
+    return {
+        "creadas": creadas,
+        "actualizadas": actualizadas,
+        "sin_cambio": sin_cambio,
+        "errores": errores,
+        "detalles": detalles,
+    }
+
+
+@router.post("/import/report")
+def descargar_reporte_import(
+    payload: dict,
+    perms: tuple[User, Session] = Depends(require_admin),
+):
+    detalles = payload.get("detalles") or []
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Reporte"
+    ws.append(["fila", "sku", "nombre", "estado", "motivo"])
+    for d in detalles:
+        ws.append([
+            d.get("fila"),
+            d.get("sku") or "",
+            d.get("nombre") or "",
+            d.get("estado") or "",
+            d.get("motivo") or "",
+        ])
+    for i in range(1, 6):
+        ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = 22
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=reporte_import_productos.xlsx"},
+    )

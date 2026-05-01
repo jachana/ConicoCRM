@@ -17,6 +17,8 @@ class Producto(Base):
     stock_actual: Mapped[int] = mapped_column(Integer, default=0)
     sku: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     formato: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    unidad: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    iva_porcentaje: Mapped[int] = mapped_column(Integer, default=19)
     proveedor_id: Mapped[int | None] = mapped_column(
         ForeignKey("proveedores.id", ondelete="SET NULL"), nullable=True
     )

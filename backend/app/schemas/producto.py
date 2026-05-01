@@ -17,6 +17,7 @@ class TipoRef(BaseModel):
 
 class ProductoBase(BaseModel):
     nombre: str
+    sku: str | None = None
     descripcion: str | None = None
     precio_venta: Decimal = Decimal("0")
     stock_minimo: int = 0
@@ -43,6 +44,7 @@ class ProductoCreate(ProductoBase):
 
 class ProductoUpdate(BaseModel):
     nombre: str | None = None
+    sku: str | None = None
     descripcion: str | None = None
     precio_venta: Decimal | None = None
     stock_minimo: int | None = None

@@ -1,0 +1,21 @@
+Name: [Onboarding] Import Productos / Catálogo (Excel)
+List: Feature requests
+Labels: Core
+
+Description:
+Carga inicial del catálogo de productos. Match por SKU; producto existente → UPDATE (preferir datos del Excel), nuevo → CREATE. Soporta familia/categoría, unidad, precio base, costo, IVA, afecto/exento.
+
+Checklist:
+  - UI dentro de pestaña 'Migración inicial' (solo admin)
+  - Plantilla .xlsx descargable con columnas documentadas
+  - Backend: parser xlsx con validación de columnas/tipos
+  - Validación previa con preview + conteo de filas válidas/inválidas
+  - Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable
+  - Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)
+  - Idempotente: re-correr el mismo Excel no duplica
+  - --- Específico ---
+  - Match por SKU normalizado (uppercase, sin espacios)
+  - Columnas: sku, nombre, descripcion, familia, unidad, precio_base, costo, iva, afecto
+  - Crear familia/categoría si no existe (o reportar como pendiente según modo)
+  - Validar tipos numéricos y rangos (precio>=0, iva en {0,19})
+  - SKU duplicado dentro del mismo Excel → reportar y tomar la última fila
