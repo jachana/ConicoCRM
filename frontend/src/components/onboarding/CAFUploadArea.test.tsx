@@ -101,10 +101,13 @@ describe('CAFUploadArea', () => {
     const dropZone = screen.getByText(/Arrastra archivos CAF/).closest('div')!
     const file = new File(['<xml></xml>'], 'test.xml', { type: 'text/xml' })
 
-    // Create a minimal mock dataTransfer object
+    // Create a proper mock dataTransfer object with FileList
     const dataTransfer = {
-      files: [file] as any,
-      dataTransfer: {} as any,
+      files: {
+        0: file,
+        length: 1,
+        item: (i: number) => i === 0 ? file : null,
+      } as any,
     }
 
     fireEvent.dragEnter(dropZone)

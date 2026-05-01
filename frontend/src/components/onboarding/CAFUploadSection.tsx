@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { AxiosError } from 'axios'
 import { Button, Card } from '../ui'
 import { CAFUploadArea } from './CAFUploadArea'
 import { CAFUploadReport } from './CAFUploadReport'
@@ -51,8 +52,10 @@ export function CAFUploadSection({ empresaId, onUploadComplete }: CAFUploadSecti
       if (onUploadComplete) {
         onUploadComplete()
       }
-    } catch (error: any) {
-      toast.error(error?.message || 'Error al subir CAFs')
+    } catch (error) {
+      const axiosError = error as AxiosError<{ detail?: string }>
+      const errorMessage = axiosError?.response?.data?.detail ?? 'Error al subir CAFs'
+      toast.error(errorMessage)
       setStep('idle')
     } finally {
       setLoading(false)

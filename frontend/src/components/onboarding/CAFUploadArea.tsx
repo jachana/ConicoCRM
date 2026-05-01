@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import { Upload, File, X } from 'lucide-react'
 import { Button } from '../ui'
 
@@ -13,7 +13,7 @@ export function CAFUploadArea({ files, onFilesSelect, disabled }: CAFUploadAreaP
   const dropZoneRef = useRef<HTMLDivElement>(null)
   const [isDragActive, setIsDragActive] = useState(false)
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files || [])
     const xmlFiles = newFiles.filter((f) => f.name.toLowerCase().endsWith('.xml'))
 
@@ -28,26 +28,26 @@ export function CAFUploadArea({ files, onFilesSelect, disabled }: CAFUploadAreaP
 
     onFilesSelect([...files, ...filesToAdd])
     e.target.value = ''
-  }
+  }, [files, onFilesSelect])
 
-  function handleDragEnter(e: React.DragEvent) {
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragActive(true)
-  }
+  }, [])
 
-  function handleDragLeave(e: React.DragEvent) {
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragActive(false)
-  }
+  }, [])
 
-  function handleDragOver(e: React.DragEvent) {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-  }
+  }, [])
 
-  function handleDrop(e: React.DragEvent) {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragActive(false)
@@ -64,11 +64,11 @@ export function CAFUploadArea({ files, onFilesSelect, disabled }: CAFUploadAreaP
     const filesToAdd = xmlFiles.filter((f) => !existingNames.has(f.name))
 
     onFilesSelect([...files, ...filesToAdd])
-  }
+  }, [files, onFilesSelect])
 
-  function removeFile(fileName: string) {
+  const removeFile = useCallback((fileName: string) => {
     onFilesSelect(files.filter((f) => f.name !== fileName))
-  }
+  }, [files, onFilesSelect])
 
   return (
     <div className="space-y-4">

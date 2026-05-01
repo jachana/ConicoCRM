@@ -102,7 +102,7 @@ export default function MigracionInicial() {
             <SelectContent>
               {empresas.map((emp) => (
                 <SelectItem key={emp.id} value={emp.id.toString()}>
-                  {emp.nombre_razon_social}
+                  {emp.razon_social || emp.nombre}
                 </SelectItem>
               ))}
             </SelectContent>
