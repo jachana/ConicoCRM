@@ -23,12 +23,12 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Onboarding] Import Facturas / Boletas históricas (registro, sin SII)",
+      "list": "In progress",
+      "name": "[Onboarding] Import Lista de precios + descuentos por cliente",
       "labels": [
         "Core"
       ],
-      "desc": "DTEs ya emitidos en plataforma anterior. Solo registro para histórico de cliente y cobranza — NO se reemiten al SII, no consumen folio CAF, no generan PDF nuevo. Marca origen=externo.",
+      "desc": "Precios especiales y descuentos por (cliente|empresa) × producto. Ej.: cliente X paga $1.200 por SKU Y, o tiene 15% descuento global. Match por (rut, sku).",
       "checklist": [
         "UI dentro de pestaña 'Migración inicial' (solo admin)",
         "Plantilla .xlsx descargable con columnas documentadas",
@@ -38,13 +38,11 @@
         "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
         "Idempotente: re-correr el mismo Excel no duplica",
         "--- Específico ---",
-        "Hojas: Cabecera DTE / Detalle DTE",
-        "Cabecera: tipo_dte, folio, rut_receptor, fecha_emision, neto, iva, total, estado_pago",
-        "Detalle: folio, sku, cantidad, precio_unitario, descuento, exento",
-        "Flag origen=externo → bloquea reenvío SII, anulación, NC posterior (a menos que se decida explícito)",
-        "Permitir adjuntar PDF original opcional",
-        "Cliente inexistente → crear stub + marcar pendiente",
-        "NO descontar stock por estos DTE históricos"
+        "Columnas: rut_cliente_o_empresa, sku, precio_especial, descuento_pct, vigencia_desde, vigencia_hasta",
+        "Cliente/empresa o SKU inexistente → reportar pendiente, no descartar",
+        "Validar mutua exclusión: precio_especial XOR descuento_pct (o ambos OK si modelo lo soporta)",
+        "Rechazar descuento_pct fuera de [0,100]",
+        "Re-import: actualiza vigencia/precio de la combinación existente"
       ]
     }
   ]
