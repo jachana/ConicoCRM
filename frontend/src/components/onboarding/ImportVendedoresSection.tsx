@@ -193,7 +193,7 @@ export function ImportVendedoresSection() {
     navigator.clipboard.writeText(password).then(() => {
       setCopiedRow(rowNum)
       setTimeout(() => setCopiedRow(null), 2000)
-    })
+    }).catch(() => toast.error('No se pudo copiar'))
   }
 
   const hasTempPasswords = result?.rows.some((r) => r.temp_password !== null) ?? false
@@ -418,6 +418,7 @@ export function ImportVendedoresSection() {
                               onClick={() => handleCopyPassword(r.row_num, r.temp_password!)}
                               className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                               title="Copiar contraseña"
+                              aria-label="Copiar contraseña"
                             >
                               <Copy className="w-3 h-3 text-gray-500 dark:text-gray-400" />
                             </button>
