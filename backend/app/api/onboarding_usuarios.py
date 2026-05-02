@@ -197,7 +197,7 @@ async def import_usuarios(
     # Collect existing users (email → User) for update vs create decision
     existing_users: dict[str, User] = {}
     try:
-        for u in db.query(User).all():
+        for u in db.query(User).filter(User.email.isnot(None)).all():
             existing_users[u.email.lower()] = u
     except Exception:
         pass
@@ -308,8 +308,6 @@ async def import_usuarios(
         else:
             overall_status = "error"
 
-        db.commit()
-
         # Build report payload — strip temp_password before caching to avoid re-showing
         cached_rows = []
         for row in report_rows:
@@ -342,6 +340,8 @@ async def import_usuarios(
             report_json=json.dumps(report_payload, ensure_ascii=False),
         )
         db.add(import_report)
+        # Single atomic commit: user rows + ImportReport together so the
+        # idempotency key is never lost on a crash between two commits.
         db.commit()
 
         # Return original report_rows (with temp passwords for created rows)
