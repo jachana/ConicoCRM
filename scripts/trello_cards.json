@@ -23,11 +23,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "En settings debe haber confirmation de Estatus de las integraciones, lioren, mail, WhatsApp",
-      "labels": [],
-      "desc": "",
-      "checklist": []
+      "list": "In progress",
+      "name": "[Onboarding] Import Vendedores / usuarios / roles",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Carga inicial del equipo de ventas y usuarios del sistema. Necesario antes de importar NV/cotizaciones (asignación de vendedor) y comisiones.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: rut, nombre, email, rol, activo, comision_pct, meta_mensual",
+        "Roles válidos: admin, vendedor, cobranza, bodega, contador (lectura)",
+        "Email único; existente → UPDATE (no resetea password)",
+        "Generar password temporal + email de bienvenida (opcional, toggle)",
+        "Match por email (estable) — RUT informativo"
+      ]
     }
   ]
 }
