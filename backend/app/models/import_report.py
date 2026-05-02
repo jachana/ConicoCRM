@@ -19,11 +19,17 @@ class ImportReport(Base):
     # Import session ID (UUID, for linking multiple retries)
     import_id: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, index=True)
 
-    # Summary counts
+    # Summary counts (generic - used by other imports)
     created_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     updated_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     pending_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     error_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # Bodega/SedeDespacho specific counts (for bodegas_sedes imports)
+    created_bodega_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    updated_bodega_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_sede_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    updated_sede_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     # Total rows processed
     total_rows: Mapped[int] = mapped_column(Integer, nullable=False)

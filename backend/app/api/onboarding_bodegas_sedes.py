@@ -424,17 +424,16 @@ async def import_data(
         for parsed_row in parse_result.valid_rows:
             try:
                 clean_rut_empresa = clean_rut(parsed_row.empresa_rut)
-                row_status = None
+                bodega_status = None  # Track bodega: "created", "updated", or None
+                sede_status = None    # Track sede: "created", "updated", or None
                 row_errors = []
 
                 # Get or find empresa
                 empresa = existing_empresas.get(clean_rut_empresa)
                 if not empresa:
                     row_errors.append(f"Empresa con RUT {clean_rut_empresa} no encontrada")
-                    row_status = "error"
-                    error_count += 1
                 else:
-                    # Process bodega
+                    # Process bodega independently
                     try:
                         bodega_key = (empresa.id, parsed_row.bodega_nombre)
                         if bodega_key in existing_bodegas:
@@ -443,7 +442,7 @@ async def import_data(
                             if parsed_row.bodega_direccion:
                                 bodega.direccion = parsed_row.bodega_direccion
                             db.add(bodega)
-                            row_status = "updated"
+                            bodega_status = "updated"
                             updated_bodega_count += 1
                         else:
                             # Create new bodega
@@ -455,44 +454,56 @@ async def import_data(
                             db.add(bodega)
                             db.flush()  # Flush to get the ID
                             existing_bodegas[bodega_key] = bodega
-                            row_status = "created"
+                            bodega_status = "created"
                             created_bodega_count += 1
                     except Exception as e:
                         row_errors.append(f"Error bodega: {str(e)}")
-                        row_status = "error"
-                        error_count += 1
 
-                    # Process sede (only if bodega succeeded)
-                    if not row_errors:
-                        try:
-                            sede_key = (empresa.id, parsed_row.sede_nombre)
-                            if sede_key in existing_sedes:
-                                # Update existing sede
-                                sede = existing_sedes[sede_key]
-                                sede.direccion = parsed_row.sede_direccion
-                                db.add(sede)
-                                if row_status != "created":  # Don't double-count
-                                    updated_sede_count += 1
-                            else:
-                                # Create new sede
-                                sede = SedeDespacho(
-                                    empresa_id=empresa.id,
-                                    nombre=parsed_row.sede_nombre,
-                                    direccion=parsed_row.sede_direccion,
-                                )
-                                db.add(sede)
-                                db.flush()
-                                existing_sedes[sede_key] = sede
-                                if row_status == "created":
-                                    pass  # Already counted in bodegas
-                                else:
-                                    created_sede_count += 1
-                        except Exception as e:
-                            row_errors.append(f"Error sede: {str(e)}")
-                            row_status = "error"
-                            error_count += 1
+                    # Process sede independently (always attempt, regardless of bodega outcome)
+                    try:
+                        sede_key = (empresa.id, parsed_row.sede_nombre)
+                        if sede_key in existing_sedes:
+                            # Update existing sede
+                            sede = existing_sedes[sede_key]
+                            sede.direccion = parsed_row.sede_direccion
+                            db.add(sede)
+                            sede_status = "updated"
+                            updated_sede_count += 1
+                        else:
+                            # Create new sede
+                            sede = SedeDespacho(
+                                empresa_id=empresa.id,
+                                nombre=parsed_row.sede_nombre,
+                                direccion=parsed_row.sede_direccion,
+                            )
+                            db.add(sede)
+                            db.flush()
+                            existing_sedes[sede_key] = sede
+                            sede_status = "created"
+                            created_sede_count += 1
+                    except Exception as e:
+                        row_errors.append(f"Error sede: {str(e)}")
 
-                # Build row report
+                # Build row report - determine overall row status
+                if row_errors:
+                    row_status = "error"
+                    error_count += 1
+                elif bodega_status and sede_status:
+                    # Both succeeded - use the most informative status
+                    # If both created, or both updated, use that
+                    # If mixed (one created, one updated), report as "updated"
+                    if bodega_status == "created" and sede_status == "created":
+                        row_status = "created"
+                    else:
+                        row_status = "updated"
+                elif bodega_status or sede_status:
+                    # Only one succeeded (the other is None)
+                    row_status = "updated"
+                else:
+                    # Neither succeeded
+                    row_status = "error"
+                    error_count += 1
+
                 report_rows.append(CombinedRowOut(
                     row_num=parsed_row.row_num,
                     empresa_rut=parsed_row.empresa_rut,
@@ -500,7 +511,7 @@ async def import_data(
                     bodega_direccion=parsed_row.bodega_direccion,
                     sede_nombre=parsed_row.sede_nombre,
                     sede_direccion=parsed_row.sede_direccion,
-                    status=row_status or "error",
+                    status=row_status,
                     errors=row_errors,
                 ).to_dict())
 
@@ -547,8 +558,10 @@ async def import_data(
         import_report = ImportReport(
             import_id=import_id,
             status=overall_status,
-            created_count=created_bodega_count + created_sede_count,
-            updated_count=updated_bodega_count + updated_sede_count,
+            created_bodega_count=created_bodega_count,
+            updated_bodega_count=updated_bodega_count,
+            created_sede_count=created_sede_count,
+            updated_sede_count=updated_sede_count,
             error_count=error_count,
             total_rows=len(report_rows),
             filename=file.filename,
@@ -617,34 +630,15 @@ def get_import_report(
 
     report_data = json.loads(report.report_json or "{}")
 
-    # Extract bodega and sede counts from report rows
-    # Each successful row creates/updates both a bodega AND a sede together
-    created_bodega_count = 0
-    updated_bodega_count = 0
-    created_sede_count = 0
-    updated_sede_count = 0
-
-    for row in report_data:
-        status_val = row.get("status")
-        if status_val == "created":
-            # Row created both bodega and sede
-            created_bodega_count += 1
-            created_sede_count += 1
-        elif status_val == "updated":
-            # Row updated both bodega and sede
-            updated_bodega_count += 1
-            updated_sede_count += 1
-        # "error" status rows are not counted in any create/update totals
-
     return {
         "status": report.status,
         "import_id": report.import_id,
         "timestamp": report.created_at.isoformat(),
         "report": {
-            "created_bodega_count": created_bodega_count,
-            "updated_bodega_count": updated_bodega_count,
-            "created_sede_count": created_sede_count,
-            "updated_sede_count": updated_sede_count,
+            "created_bodega_count": report.created_bodega_count,
+            "updated_bodega_count": report.updated_bodega_count,
+            "created_sede_count": report.created_sede_count,
+            "updated_sede_count": report.updated_sede_count,
             "error_count": report.error_count,
             "total_rows": report.total_rows,
             "rows": report_data,

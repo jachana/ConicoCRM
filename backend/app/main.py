@@ -51,6 +51,7 @@ from app.api import notifications as notifications_api
 from app.api import oportunidades as oportunidades_api
 from app.api import onboarding_payments
 from app.api import onboarding_clientes_empresas
+from app.api import onboarding_bodegas_sedes
 from app.api import onboarding_cafs
 from app.api import libros as libros_api
 from app.api import dte_recepcion as dte_recepcion_api
@@ -163,6 +164,7 @@ app.include_router(notifications_api.router, prefix="/api/notifications", tags=[
 app.include_router(oportunidades_api.router, prefix="/api/oportunidades", tags=["oportunidades"])
 app.include_router(onboarding_payments.router, prefix="/api/onboarding/payments", tags=["onboarding"])
 app.include_router(onboarding_clientes_empresas.router, prefix="/api/onboarding/clientes_empresas", tags=["onboarding"])
+app.include_router(onboarding_bodegas_sedes.router, prefix="/api/onboarding/bodegas-sedes", tags=["onboarding"])
 app.include_router(onboarding_cafs.router, prefix="/api/onboarding/cafs", tags=["onboarding"])
 app.include_router(libros_api.router, prefix="/api/libros", tags=["libros"])
 app.include_router(dte_recepcion_api.router, prefix="/api/dte/recepcion", tags=["dte_recepcion"])
