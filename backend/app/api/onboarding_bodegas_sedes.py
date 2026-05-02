@@ -16,7 +16,7 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.auth import get_current_user
@@ -149,10 +149,10 @@ def get_template(
     try:
         template = BodegasSedesParser.generate_template()
 
-        return FileResponse(
+        return StreamingResponse(
             io.BytesIO(template),
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            filename="plantilla_bodegas_sedes.xlsx",
+            headers={"Content-Disposition": "attachment; filename=plantilla_bodegas_sedes.xlsx"},
         )
     except Exception as e:
         raise HTTPException(
