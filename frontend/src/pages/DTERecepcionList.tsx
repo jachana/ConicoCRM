@@ -11,6 +11,7 @@ import {
   type DteRecepcionEstado,
 } from '../api/dte_recepcion'
 import DteRecepcionRechazarModal from '../components/DteRecepcionRechazarModal'
+import DTERecepcionModal from '../components/DTERecepcionModal'
 import {
   Button,
   Input,
@@ -68,6 +69,7 @@ export default function DTERecepcionList() {
 
   const [rechazarTarget, setRechazarTarget] = useState<DteRecepcionRead | null>(null)
   const [aceptarTarget, setAceptarTarget] = useState<DteRecepcionRead | null>(null)
+  const [detalleTarget, setDetalleTarget] = useState<DteRecepcionRead | null>(null)
 
   const filters: DteRecepcionFilters = useMemo(
     () => ({
@@ -264,7 +266,12 @@ export default function DTERecepcionList() {
                             </Button>
                           </Tooltip>
                           <Tooltip label="Ver">
-                            <Button size="icon-xs" variant="ghost" className="text-gray-500">
+                            <Button
+                              size="icon-xs"
+                              variant="ghost"
+                              className="text-gray-500"
+                              onClick={() => setDetalleTarget(dte)}
+                            >
                               <Eye />
                             </Button>
                           </Tooltip>
@@ -310,6 +317,14 @@ export default function DTERecepcionList() {
           onConfirm={handleRechazarConfirm}
           isPending={rechazarMut.isPending}
           error={rechazarMut.error ? 'No se pudo rechazar' : null}
+        />
+      )}
+
+      {/* Detalle modal */}
+      {detalleTarget && (
+        <DTERecepcionModal
+          dteRecepcion={detalleTarget}
+          onClose={() => setDetalleTarget(null)}
         />
       )}
     </div>

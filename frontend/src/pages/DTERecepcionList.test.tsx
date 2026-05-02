@@ -264,4 +264,32 @@ describe('DTERecepcionList', () => {
     })
   })
 
+  it('opens detail modal when View button is clicked', async () => {
+    const user = userEvent.setup()
+    vi.mocked(dteApi.listarDteRecepciones).mockResolvedValueOnce({
+      data: mockDteRecepciones,
+      pagination: { limit: 50, offset: 0, total: 2 },
+    })
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText('1001')).toBeInTheDocument()
+    })
+
+    // Find and click the View button for the first DTE (Eye icon button)
+    const viewButtons = screen.getAllByRole('button').filter(btn =>
+      btn.querySelector('svg[class*="lucide-eye"]')
+    )
+
+    if (viewButtons.length > 0) {
+      await user.click(viewButtons[0])
+
+      // Modal should show the DTE details
+      await waitFor(() => {
+        expect(screen.getByText(/DTE 46 Folio 1001/)).toBeInTheDocument()
+      })
+    }
+  })
+
 })

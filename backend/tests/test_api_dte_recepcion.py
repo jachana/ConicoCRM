@@ -366,6 +366,82 @@ class TestListarDteRecepciones:
         assert resp.status_code == 401
 
 
+# ── GET /dte/recepcion/{id} ───────────────────────────
+
+class TestObtenerDteRecepcion:
+    """Tests for getting a single DTE recepción record"""
+
+    def test_obtener_dte_recepcion_success(self, client, token_empresa1, sample_dte_recepciones):
+        """Test successful retrieval of a DTE recepción"""
+        dte = sample_dte_recepciones[0]
+        dte_id = dte.id
+
+        resp = client.get(
+            f"/api/dte/recepcion/{dte_id}",
+            headers={"Authorization": f"Bearer {token_empresa1}"}
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["id"] == dte_id
+        assert data["tipo"] == dte.tipo
+        assert data["folio"] == dte.folio
+        assert data["estado"] == "recibido"
+
+    def test_obtener_dte_recepcion_no_existe(self, client, token_empresa1):
+        """Test retrieval of non-existent DTE recepción"""
+        resp = client.get(
+            "/api/dte/recepcion/99999",
+            headers={"Authorization": f"Bearer {token_empresa1}"}
+        )
+
+        assert resp.status_code == 404
+        assert "not found" in resp.json()["detail"].lower()
+
+    def test_obtener_dte_recepcion_unauthorized_empresa(self, client, token_empresa1, sample_dte_recepciones, token_empresa2):
+        """Test that users cannot access DTEs from other empresas"""
+        dte_id = sample_dte_recepciones[0].id
+
+        # Try to access with token_empresa2 (different empresa)
+        resp = client.get(
+            f"/api/dte/recepcion/{dte_id}",
+            headers={"Authorization": f"Bearer {token_empresa2}"}
+        )
+
+        assert resp.status_code == 403
+        assert "not authorized" in resp.json()["detail"].lower()
+
+    def test_obtener_dte_recepcion_with_respuesta_sii(self, client, token_empresa1, db, empresa1):
+        """Test retrieval of DTE with respuesta_sii"""
+        dte = DteRecepcion(
+            empresa_id=empresa1.id,
+            tipo="46",
+            folio=54321,
+            rut_emisor="99.999.999-9",
+            monto=2500000,
+            estado="aceptado",
+            respuesta_sii={"estado": "aceptado", "timestamp": "2026-04-01T10:35:00Z"}
+        )
+        db.add(dte)
+        db.commit()
+        db.refresh(dte)
+
+        resp = client.get(
+            f"/api/dte/recepcion/{dte.id}",
+            headers={"Authorization": f"Bearer {token_empresa1}"}
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["estado"] == "aceptado"
+        assert data["respuesta_sii"]["estado"] == "aceptado"
+
+    def test_obtener_dte_recepcion_unauthorized(self, client):
+        """Test retrieval without authorization"""
+        resp = client.get("/api/dte/recepcion/1")
+        assert resp.status_code == 401
+
+
 # ── POST /dte/recepcion/{id}/aceptar ───────────────────────────
 
 class TestAceptarDteRecepcion:

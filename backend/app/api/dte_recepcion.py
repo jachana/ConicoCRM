@@ -90,6 +90,44 @@ def crear_dte_recepcion(
     return DteRecepcionRead.model_validate(dte_recepcion)
 
 
+@router.get("/{id}", response_model=DteRecepcionRead)
+def obtener_dte_recepcion(
+    id: int,
+    perms: tuple[User, Session] = require_permission("dte_recepcion", "view"),
+):
+    """Get a single DTE recepción by ID.
+
+    Parameters:
+    - id: DteRecepcion ID
+
+    Returns:
+    - DteRecepcionRead
+
+    Raises:
+    - 404: DTE recepción not found
+    - 403: User not authorized for this empresa
+    """
+    current_user, db = perms
+
+    # Fetch the DTE recepción
+    dte_recepcion = db.query(DteRecepcion).filter_by(id=id).first()
+
+    if not dte_recepcion:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="DTE recepción not found"
+        )
+
+    # Authorization check: ensure user can only access DTEs from their empresa
+    if dte_recepcion.empresa_id != current_user.empresa_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this DTE recepción"
+        )
+
+    return DteRecepcionRead.model_validate(dte_recepcion)
+
+
 @router.get("", response_model=dict)
 def listar_dte_recepciones(
     estado: str | None = Query(None, description="Filter by estado: recibido/aceptado/rechazado"),

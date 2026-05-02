@@ -61,3 +61,8 @@ export async function rechazarDteRecepcion(id: number, motivo: string): Promise<
   const { data } = await api.post<DteRecepcionRead>(`/api/dte_recepcion/${id}/rechazar`, { motivo })
   return data
 }
+
+export async function obtenerDteRecepcion(id: number): Promise<DteRecepcionRead> {
+  const { data } = await api.get<DteRecepcionRead>(`/api/dte_recepcion/${id}`)
+  return data
+}
