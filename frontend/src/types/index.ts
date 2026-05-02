@@ -258,7 +258,10 @@ export interface NotaAlerta {
   id: number
   cotizacion_id: number
   contenido: string
+  tipo?: 'cobranza' | 'crédito' | 'custom'
+  monto?: number | null
   estado: 'pendiente' | 'completada' | 'cancelada'
+  expires_at?: string | null
   created_at: string
   updated_at: string
 }

@@ -9,7 +9,8 @@ import { api } from '../lib/api'
 import { METODOS_PAGO, METODO_PAGO_LABELS, PLAZO_OPTIONS, isPlazoForzadoCero, formatMetodoPlazo } from '../lib/metodo_pago'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
-import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta } from '../types'
+import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta, NotaAlerta } from '../types'
+import AlertNotesModal from '../components/AlertNotesModal'
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 import UnsavedChangesModal from '../components/UnsavedChangesModal'
 import ClienteSelectModal from '../components/ClienteSelectModal'
@@ -154,6 +155,9 @@ export default function CotizacionDetalle() {
 
   const [revokeDialog, setRevokeDialog] = useState<{ pendingChange: () => void } | null>(null)
   const [revoking, setRevoking] = useState(false)
+
+  const [alertNotes, setAlertNotes] = useState<NotaAlerta[]>([])
+  const [alertNotesOpen, setAlertNotesOpen] = useState(false)
 
   const [unsavedModal, setUnsavedModal] = useState(false)
   const [clienteModalOpen, setClienteModalOpen] = useState(false)
@@ -313,6 +317,14 @@ export default function CotizacionDetalle() {
             setTerminosPago(sinCredito ? 'al_contado' : (emp?.plazo_credito ?? 'al_contado'))
           }
         }
+        api.get<NotaAlerta[]>(`/api/clientes/${cid}/notes`)
+          .then(r => {
+            if (r.data.length > 0) {
+              setAlertNotes(r.data)
+              setAlertNotesOpen(true)
+            }
+          })
+          .catch(() => {})
       }
     })
   }
@@ -1484,6 +1496,12 @@ export default function CotizacionDetalle() {
           onCancel={() => setCreditModal(null)}
         />
       )}
+
+      <AlertNotesModal
+        isOpen={alertNotesOpen}
+        notes={alertNotes}
+        onClose={() => setAlertNotesOpen(false)}
+      />
 
       <ClienteSelectModal
         open={clienteModalOpen}
