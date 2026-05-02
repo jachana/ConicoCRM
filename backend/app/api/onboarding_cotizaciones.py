@@ -25,8 +25,8 @@ from app.models.cotizacion import Cotizacion, CotizacionLinea
 from app.models.empresa import Empresa
 from app.models.import_report import ImportReport
 from app.models.producto import Producto
-from app.models.system_config import SystemConfig
 from app.models.user import User
+from app.services.cotizacion_helpers import asignar_numero as _asignar_numero
 from app.services.cotizaciones_parser import CotizacionesParser, ParseError
 
 router = APIRouter()
@@ -64,23 +64,6 @@ def _get_existing_numeros(db: Session) -> set[int]:
     """Return set of existing Cotizacion.numero (integer) values."""
     rows = db.query(Cotizacion.numero).filter(Cotizacion.numero.isnot(None)).all()
     return {r[0] for r in rows if r[0] is not None}
-
-
-def _asignar_numero(db: Session) -> int:
-    """Assign the next Cotizacion numero using SystemConfig (same as cotizaciones.py)."""
-    config = (
-        db.query(SystemConfig)
-        .filter_by(key="cotizacion_last_id")
-        .with_for_update()
-        .first()
-    )
-    if not config:
-        config = SystemConfig(key="cotizacion_last_id", value="12250")
-        db.add(config)
-        db.flush()
-    numero = int(config.value) + 1
-    config.value = str(numero)
-    return numero
 
 
 def _cot_group_to_dict(group) -> dict:
@@ -279,14 +262,20 @@ async def import_cotizaciones(
                     pass
 
             # Build Cotizacion
+            # Compute validez_dias from vigencia_hasta if provided
+            validez_dias = 5
+            if group.vigencia_hasta and group.fecha:
+                days = (group.vigencia_hasta - group.fecha).days
+                validez_dias = max(0, days)
+
             cot = Cotizacion(
                 cliente_id=clientes_by_rut[group.rut_cliente],
-                vendedor_id=vendedores_by_email[group.vendedor_email],
+                vendedor_id=vendedores_by_email[group.vendedor_email],  # parser guarantees presence
                 empresa_id=empresas_by_rut.get(group.rut_empresa) if group.rut_empresa else None,
                 fecha=group.fecha,
                 estado=group.estado,
                 nota=group.nota,
-                validez_dias=5,
+                validez_dias=validez_dias,
                 total_neto=group.total_neto,
                 total_iva=group.total_iva,
                 total=group.total,

@@ -36,6 +36,7 @@ from app.schemas.cotizacion import (
     CotizacionLineaCreate,
     RecotizarOut,
 )
+from app.services.cotizacion_helpers import asignar_numero as _asignar_numero
 from app.services.email import EmailNotConfiguredError, enviar_cotizacion
 from app.services.pdf import generar_pdf_cotizacion
 from app.utils.logo import apply_config_logo
@@ -129,22 +130,6 @@ def _recalcular_totales(cotizacion: Cotizacion) -> None:
     cotizacion.total_neto = sum(l.total_neto for l in cotizacion.lineas)
     cotizacion.total_iva = sum(l.iva for l in cotizacion.lineas)
     cotizacion.total = sum(l.total for l in cotizacion.lineas)
-
-
-def _asignar_numero(db: Session) -> int:
-    config = (
-        db.query(SystemConfig)
-        .filter_by(key="cotizacion_last_id")
-        .with_for_update()
-        .first()
-    )
-    if not config:
-        config = SystemConfig(key="cotizacion_last_id", value="12250")
-        db.add(config)
-        db.flush()
-    numero = int(config.value) + 1
-    config.value = str(numero)
-    return numero
 
 
 def _can_edit(current_user: User, cotizacion: Cotizacion) -> bool:
