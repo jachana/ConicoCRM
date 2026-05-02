@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Upload, Trash2 } from 'lucide-react'
+import { Plus, Upload, Trash2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import { useViewAsStore } from '../stores/viewAs'
@@ -170,6 +170,8 @@ export default function Configuracion() {
               {saveMut.isPending ? 'Guardando...' : 'Guardar configuración'}
             </Button>
           </div>
+
+          <IntegracionesSection />
 
           <Card padded>
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
@@ -423,6 +425,54 @@ function SidebarSection() {
           )
         })}
       </div>
+    </Card>
+  )
+}
+
+type IntegrationStatus = { name: string; configurada: boolean; mensaje: string }
+
+const INTEGRATION_LABELS: Record<string, string> = {
+  lioren: 'Lioren / SII',
+  mail: 'Correo (SMTP)',
+  whatsapp: 'WhatsApp',
+}
+
+function IntegracionesSection() {
+  const { data: integrations = [], isLoading } = useQuery<IntegrationStatus[]>({
+    queryKey: ['integration-status'],
+    queryFn: () => api.get('/api/config/integration-status').then(r => r.data),
+  })
+
+  return (
+    <Card padded>
+      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Estado de integraciones</h2>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+        Muestra si las integraciones externas están configuradas en el servidor.
+      </p>
+      {isLoading ? (
+        <div className="space-y-2">
+          {[0, 1, 2].map(i => <Skeleton key={i} className="h-8 w-full" />)}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {integrations.map(int => {
+            const label = INTEGRATION_LABELS[int.name] ?? int.name
+            const Icon = int.configurada ? CheckCircle2 : int.name === 'whatsapp' ? AlertCircle : XCircle
+            const color = int.configurada
+              ? 'text-success-600 dark:text-success-400'
+              : int.name === 'whatsapp'
+              ? 'text-gray-400 dark:text-gray-500'
+              : 'text-danger-600 dark:text-danger-400'
+            return (
+              <div key={int.name} className="flex items-center gap-3 text-sm py-1">
+                <Icon className={`w-4 h-4 flex-shrink-0 ${color}`} />
+                <span className="font-medium text-gray-800 dark:text-gray-200 w-36">{label}</span>
+                <span className="text-gray-500 dark:text-gray-400">{int.mensaje}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </Card>
   )
 }

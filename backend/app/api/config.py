@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.auth import get_current_user
+from app.config import settings
 from app.database import get_db
 from app.models.system_config import SystemConfig
 from app.models.user import User
@@ -46,6 +48,35 @@ def listar_config(perms: tuple[User, Session] = Depends(require_admin)):
     _, db = perms
     _ensure_config(db)
     return db.query(SystemConfig).all()
+
+
+class IntegrationStatus(BaseModel):
+    name: str
+    configurada: bool
+    mensaje: str
+
+
+@router.get("/integration-status", response_model=list[IntegrationStatus])
+def integration_status(perms: tuple[User, Session] = Depends(require_admin)):
+    lioren_ok = bool(settings.lioren_api_key)
+    smtp_ok = bool(settings.smtp_host and settings.smtp_user and settings.smtp_password)
+    return [
+        IntegrationStatus(
+            name="lioren",
+            configurada=lioren_ok,
+            mensaje="API key configurada" if lioren_ok else "API key no configurada",
+        ),
+        IntegrationStatus(
+            name="mail",
+            configurada=smtp_ok,
+            mensaje="SMTP configurado" if smtp_ok else "SMTP no configurado",
+        ),
+        IntegrationStatus(
+            name="whatsapp",
+            configurada=False,
+            mensaje="No implementado aún",
+        ),
+    ]
 
 
 @router.patch("/", response_model=list[SystemConfigOut])
