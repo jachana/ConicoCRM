@@ -264,10 +264,10 @@ class CotizacionesParser:
             if not vendedor_email_raw:
                 errors.append("vendedor_email es requerido")
             else:
-                for k in vendedores_by_email:
-                    if k.lower() == vendedor_email_raw.lower():
-                        vendedor_email_norm = k
-                        break
+                vendedor_email_norm = next(
+                    (k for k in vendedores_by_email if k.lower() == vendedor_email_raw.lower()),
+                    None,
+                )
                 if vendedor_email_norm is None:
                     errors.append(f"Vendedor con email '{vendedor_email_raw}' no encontrado")
 
@@ -340,13 +340,11 @@ class CotizacionesParser:
                 ))
             else:
                 # Calculate line total with discount applied
-                total_neto_linea = Decimal("0")
-                if parsed_cantidad is not None and parsed_precio is not None:
-                    total_neto_linea = (
-                        Decimal(str(parsed_cantidad))
-                        * parsed_precio
-                        * (Decimal("1") - parsed_descuento / Decimal("100"))
-                    )
+                total_neto_linea = (
+                    Decimal(str(parsed_cantidad))
+                    * parsed_precio
+                    * (Decimal("1") - parsed_descuento / Decimal("100"))
+                )
 
                 raw_groups[group_key]["valid_rows"].append({
                     "row_num": row_num,
@@ -403,6 +401,14 @@ class CotizacionesParser:
                     group_errors.append(
                         f"fila {vr['row_num']}: vendedor_email inconsistente con fila {first['row_num']}"
                     )
+                if vr["estado"] != first["estado"]:
+                    group_errors.append(
+                        f"fila {vr['row_num']}: estado inconsistente con fila {first['row_num']}"
+                    )
+                if vr["vigencia_hasta"] != first["vigencia_hasta"]:
+                    group_errors.append(
+                        f"fila {vr['row_num']}: vigencia_hasta inconsistente con fila {first['row_num']}"
+                    )
 
             if group_errors:
                 for vr in valid_rows:
@@ -427,7 +433,7 @@ class CotizacionesParser:
                     total_neto_linea=vr["total_neto_linea"],
                 ))
 
-            total_neto = sum(line_item.total_neto_linea for line_item in lines)
+            total_neto = sum((line_item.total_neto_linea for line_item in lines), Decimal("0"))
             total_iva = (total_neto * Decimal("0.19")).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
             total = total_neto + total_iva
 
