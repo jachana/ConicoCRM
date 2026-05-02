@@ -233,7 +233,11 @@ async def import_oc(
                 report_ocs.append({**_oc_group_to_dict(group), "import_status": "omitir"})
                 continue
 
-            proveedor_id = proveedores_by_rut[group.rut_proveedor]
+            proveedor_id = proveedores_by_rut.get(group.rut_proveedor)
+            if proveedor_id is None:
+                error_count += 1
+                report_ocs.append({**_oc_group_to_dict(group), "import_status": "error", "motivo": f"Proveedor {group.rut_proveedor} no encontrado"})
+                continue
 
             # Create OrdenCompra with historico=True
             oc = OrdenCompra(
