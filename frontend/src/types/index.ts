@@ -10,7 +10,7 @@ export interface User {
 export type Module =
   | 'catalogo' | 'clientes' | 'empresas' | 'proveedores' | 'cotizaciones'
   | 'nota_venta' | 'facturas' | 'boletas' | 'ordenes_compra' | 'inventario'
-  | 'rrhh' | 'dashboard' | 'usuarios' | 'guias_despacho' | 'tareas'
+  | 'rrhh' | 'dashboard' | 'usuarios' | 'guias_despacho' | 'tareas' | 'libros'
 
 export type Action = 'view' | 'create' | 'edit' | 'delete'
 

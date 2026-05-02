@@ -32,6 +32,7 @@ import NotaCreditoNueva from './pages/NotaCreditoNueva';
 import BoletaNueva from './pages/BoletaNueva';
 import BoletaDetalle from './pages/BoletaDetalle';
 import BoletasList from './pages/BoletasList';
+import LibrosList from './pages/LibrosList';
 import GuiasDespachoList from './pages/GuiasDespachoList';
 import GuiaDespachoNueva from './pages/GuiaDespachoNueva';
 import GuiaDespachoDetalle from './pages/GuiaDespachoDetalle';
@@ -102,6 +103,7 @@ export const router = createBrowserRouter([
             { path: 'boletas', element: _jsx(BoletasList, {}) },
             { path: 'boletas/nueva', element: _jsx(BoletaNueva, {}) },
             { path: 'boletas/:id', element: _jsx(BoletaDetalle, {}) },
+            { path: 'libros', element: _jsx(LibrosList, {}) },
             { path: 'guias-despacho', element: _jsx(GuiasDespachoList, {}) },
             { path: 'guias-despacho/nueva', element: _jsx(GuiaDespachoNueva, {}) },
             { path: 'guias-despacho/:id', element: _jsx(GuiaDespachoDetalle, {}) },
