@@ -1,6 +1,9 @@
 """API endpoints for retrieving Libros (sales and purchase books)"""
 import re
+import csv
+from io import StringIO
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
@@ -329,3 +332,174 @@ def obtener_libro_compras(
         )
 
     return LibroComprasRead.model_validate(libro)
+
+
+# ── CSV Export Endpoints ──────────────────────────────────────────────────
+
+@router.get("/ventas/export/csv")
+def export_libros_ventas_csv(
+    periodo: str | None = Query(None, description="Filter by exact YYYY-MM period"),
+    periodo_from: str | None = Query(None, description="Filter by YYYY-MM period from (inclusive)"),
+    periodo_to: str | None = Query(None, description="Filter by YYYY-MM period to (inclusive)"),
+    estado: str | None = Query(None, description="Filter by estado (borrador, enviado, etc)"),
+    sort_by: str | None = Query(None, description=f"Sort by field: {', '.join(sorted(VALID_SORT_FIELDS))}"),
+    sort_order: str | None = Query(None, description="Sort order: asc or desc"),
+    limit: int = Query(None, ge=1, le=500, description="Ignored for CSV export (returns all records)"),
+    offset: int = Query(None, ge=0, description="Ignored for CSV export (returns all records)"),
+    perms: tuple[User, Session] = require_permission("libros", "view"),
+):
+    """Export sales books (Libros de Ventas) as CSV.
+
+    Parameters are the same as list endpoint, but pagination is ignored.
+    Returns all matching records.
+
+    Returns:
+    - CSV file with columns: Período, Total Registros, Monto Total, Estado, Folio Inicio, Folio Fin
+    """
+    current_user, db = perms
+
+    # Validate parameters
+    _validate_periodo(periodo)
+    _validate_periodo(periodo_from)
+    _validate_periodo(periodo_to)
+    _validate_sort_params(sort_by, sort_order)
+
+    # Ensure user has an empresa_id for authorization
+    if not current_user.empresa_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not assigned to an empresa"
+        )
+
+    # Build query filtered by current user's empresa
+    query = db.query(LibroVentas).filter(LibroVentas.empresa_id == current_user.empresa_id)
+
+    # Apply filters
+    if periodo:
+        query = query.filter(LibroVentas.periodo == periodo)
+    else:
+        if periodo_from:
+            query = query.filter(LibroVentas.periodo >= periodo_from)
+        if periodo_to:
+            query = query.filter(LibroVentas.periodo <= periodo_to)
+
+    if estado:
+        query = query.filter(LibroVentas.estado == estado)
+
+    # Apply sorting
+    query = _apply_sort(query, LibroVentas, sort_by, sort_order)
+
+    # Get all records (no pagination)
+    libros = query.all()
+
+    # Create CSV in memory
+    output = StringIO()
+    writer = csv.DictWriter(
+        output,
+        fieldnames=["Período", "Total Registros", "Monto Total", "Estado", "Folio Inicio", "Folio Fin"],
+        lineterminator="\n"
+    )
+    writer.writeheader()
+
+    for libro in libros:
+        writer.writerow({
+            "Período": libro.periodo,
+            "Total Registros": libro.total_registros,
+            "Monto Total": libro.monto_total,
+            "Estado": libro.estado,
+            "Folio Inicio": libro.folio_inicio if libro.folio_inicio is not None else "",
+            "Folio Fin": libro.folio_fin if libro.folio_fin is not None else "",
+        })
+
+    csv_content = output.getvalue()
+    output.close()
+
+    return StreamingResponse(
+        iter([csv_content.encode("utf-8")]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=libros_ventas.csv"}
+    )
+
+
+@router.get("/compras/export/csv")
+def export_libros_compras_csv(
+    periodo: str | None = Query(None, description="Filter by exact YYYY-MM period"),
+    periodo_from: str | None = Query(None, description="Filter by YYYY-MM period from (inclusive)"),
+    periodo_to: str | None = Query(None, description="Filter by YYYY-MM period to (inclusive)"),
+    estado: str | None = Query(None, description="Filter by estado (borrador, enviado, etc)"),
+    sort_by: str | None = Query(None, description=f"Sort by field: {', '.join(sorted(VALID_SORT_FIELDS))}"),
+    sort_order: str | None = Query(None, description="Sort order: asc or desc"),
+    limit: int = Query(None, ge=1, le=500, description="Ignored for CSV export (returns all records)"),
+    offset: int = Query(None, ge=0, description="Ignored for CSV export (returns all records)"),
+    perms: tuple[User, Session] = require_permission("libros", "view"),
+):
+    """Export purchase books (Libros de Compras) as CSV.
+
+    Parameters are the same as list endpoint, but pagination is ignored.
+    Returns all matching records.
+
+    Returns:
+    - CSV file with columns: Período, Total Registros, Monto Total, Estado, RUT Proveedor
+    """
+    current_user, db = perms
+
+    # Validate parameters
+    _validate_periodo(periodo)
+    _validate_periodo(periodo_from)
+    _validate_periodo(periodo_to)
+    _validate_sort_params(sort_by, sort_order)
+
+    # Ensure user has an empresa_id for authorization
+    if not current_user.empresa_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not assigned to an empresa"
+        )
+
+    # Build query filtered by current user's empresa
+    query = db.query(LibroCompras).filter(LibroCompras.empresa_id == current_user.empresa_id)
+
+    # Apply filters
+    if periodo:
+        query = query.filter(LibroCompras.periodo == periodo)
+    else:
+        if periodo_from:
+            query = query.filter(LibroCompras.periodo >= periodo_from)
+        if periodo_to:
+            query = query.filter(LibroCompras.periodo <= periodo_to)
+
+    if estado:
+        query = query.filter(LibroCompras.estado == estado)
+
+    # Apply sorting
+    query = _apply_sort(query, LibroCompras, sort_by, sort_order)
+
+    # Get all records (no pagination)
+    libros = query.all()
+
+    # Create CSV in memory
+    output = StringIO()
+    writer = csv.DictWriter(
+        output,
+        fieldnames=["Período", "Total Registros", "Monto Total", "Estado", "RUT Proveedor"],
+        lineterminator="\n"
+    )
+    writer.writeheader()
+
+    for libro in libros:
+        writer.writerow({
+            "Período": libro.periodo,
+            "Total Registros": libro.total_registros,
+            "Monto Total": libro.monto_total,
+            "Estado": libro.estado,
+            "RUT Proveedor": libro.rut_proveedor if libro.rut_proveedor is not None else "",
+        })
+
+    csv_content = output.getvalue()
+    output.close()
+
+    return StreamingResponse(
+        iter([csv_content.encode("utf-8")]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=libros_compras.csv"}
+    )

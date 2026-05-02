@@ -1,6 +1,8 @@
 """Tests for Libros API endpoints"""
 import pytest
 from datetime import datetime, timezone
+import csv
+from io import StringIO
 
 from app.models.libro import LibroVentas, LibroCompras
 from app.models.empresa import Empresa
@@ -1071,3 +1073,354 @@ class TestComplexFilterCombinations:
         data = response.json()
         assert len(data["data"]) == 1
         assert data["pagination"]["total"] == 2
+
+
+class TestLibrosVentasExportCsv:
+    """Tests for GET /api/libros/ventas/export/csv"""
+
+    def test_export_ventas_csv_without_auth(self, client):
+        """Test that CSV export requires authentication"""
+        response = client.get("/api/libros/ventas/export/csv")
+        assert response.status_code == 401
+
+    def test_export_ventas_csv_success(self, client, admin_token, sample_libros_ventas):
+        """Test successful CSV export of libros ventas"""
+        response = client.get(
+            "/api/libros/ventas/export/csv",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        assert response.headers["Content-Type"] == "text/csv; charset=utf-8"
+        assert "attachment" in response.headers["Content-Disposition"]
+
+        # Parse CSV content
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        # Should have all 3 records
+        assert len(rows) == 3
+
+        # Check headers exist
+        assert "Período" in reader.fieldnames
+        assert "Total Registros" in reader.fieldnames
+        assert "Monto Total" in reader.fieldnames
+        assert "Estado" in reader.fieldnames
+        assert "Folio Inicio" in reader.fieldnames
+        assert "Folio Fin" in reader.fieldnames
+
+    def test_export_ventas_csv_headers_only_empty_result(self, client, admin_token):
+        """Test CSV export with no matching records returns headers only"""
+        response = client.get(
+            "/api/libros/ventas/export/csv",
+            params={"periodo": "2099-12"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        # Should have headers but no data rows
+        assert len(rows) == 0
+        assert "Período" in reader.fieldnames
+
+    def test_export_ventas_csv_with_filters(self, client, admin_token, sample_libros_ventas):
+        """Test CSV export respects filters"""
+        response = client.get(
+            "/api/libros/ventas/export/csv",
+            params={"estado": "borrador"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        # Should have 2 borrador records
+        assert len(rows) == 2
+        assert all(row["Estado"] == "borrador" for row in rows)
+
+    def test_export_ventas_csv_with_periodo_range(self, client, admin_token, sample_libros_ventas):
+        """Test CSV export with periodo range filter"""
+        response = client.get(
+            "/api/libros/ventas/export/csv",
+            params={"periodo_from": "2026-02", "periodo_to": "2026-03"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        # Should have 2 records in the range
+        assert len(rows) == 2
+        assert all("2026-02" <= row["Período"] <= "2026-03" for row in rows)
+
+    def test_export_ventas_csv_with_sort(self, client, admin_token, sample_libros_ventas):
+        """Test CSV export respects sort parameters"""
+        response = client.get(
+            "/api/libros/ventas/export/csv",
+            params={"sort_by": "periodo", "sort_order": "desc"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        periodos = [row["Período"] for row in rows]
+        assert periodos == sorted(periodos, reverse=True)
+
+    def test_export_ventas_csv_no_pagination_limit(self, client, admin_token, sample_libros_ventas):
+        """Test that CSV export ignores pagination and returns all records"""
+        # Even though we set limit=1, CSV should return all records
+        response = client.get(
+            "/api/libros/ventas/export/csv",
+            params={"limit": 1},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        # Should return all 3 records, not just 1
+        assert len(rows) == 3
+
+    def test_export_ventas_csv_monto_numeric(self, client, admin_token, sample_libros_ventas):
+        """Test that monto_total is numeric in CSV, not string"""
+        response = client.get(
+            "/api/libros/ventas/export/csv",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        # Check montos are numbers
+        for row in rows:
+            monto = int(row["Monto Total"])
+            assert isinstance(monto, int)
+            assert monto > 0
+
+    def test_export_ventas_csv_utf8_encoding(self, client, admin_token, db, admin_user):
+        """Test UTF-8 encoding with Spanish characters"""
+        # Create a libro with special characters in a related campo if any
+        libro = LibroVentas(
+            periodo="2026-01",
+            empresa_id=admin_user.empresa_id,
+            folio_inicio=1,
+            folio_fin=50,
+            total_registros=10,
+            monto_total=100000,
+            estado="borrador",
+        )
+        db.add(libro)
+        db.commit()
+
+        response = client.get(
+            "/api/libros/ventas/export/csv",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        assert response.headers.get("Content-Type", "").startswith("text/csv")
+        # Should not raise encoding errors
+        csv_content = response.text
+        assert len(csv_content) > 0
+
+    def test_export_ventas_csv_all_columns(self, client, admin_token, sample_libros_ventas):
+        """Test that CSV includes all required columns"""
+        response = client.get(
+            "/api/libros/ventas/export/csv",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+
+        required_columns = {
+            "Período", "Total Registros", "Monto Total", "Estado",
+            "Folio Inicio", "Folio Fin"
+        }
+        assert required_columns.issubset(set(reader.fieldnames))
+
+
+class TestLibrosComprasExportCsv:
+    """Tests for GET /api/libros/compras/export/csv"""
+
+    def test_export_compras_csv_without_auth(self, client):
+        """Test that CSV export requires authentication"""
+        response = client.get("/api/libros/compras/export/csv")
+        assert response.status_code == 401
+
+    def test_export_compras_csv_success(self, client, admin_token, sample_libros_compras):
+        """Test successful CSV export of libros compras"""
+        response = client.get(
+            "/api/libros/compras/export/csv",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        assert response.headers["Content-Type"] == "text/csv; charset=utf-8"
+        assert "attachment" in response.headers["Content-Disposition"]
+
+        # Parse CSV content
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        # Should have 2 records (admin user's empresa only, not empresa2's)
+        assert len(rows) == 2
+
+        # Check headers exist
+        assert "Período" in reader.fieldnames
+        assert "Total Registros" in reader.fieldnames
+        assert "Monto Total" in reader.fieldnames
+        assert "Estado" in reader.fieldnames
+        assert "RUT Proveedor" in reader.fieldnames
+
+    def test_export_compras_csv_headers_only_empty_result(self, client, admin_token):
+        """Test CSV export with no matching records returns headers only"""
+        response = client.get(
+            "/api/libros/compras/export/csv",
+            params={"periodo": "2099-12"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        # Should have headers but no data rows
+        assert len(rows) == 0
+        assert "Período" in reader.fieldnames
+
+    def test_export_compras_csv_with_filters(self, client, admin_token, sample_libros_compras):
+        """Test CSV export respects filters"""
+        response = client.get(
+            "/api/libros/compras/export/csv",
+            params={"estado": "borrador"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        # Should have 2 borrador records from admin's empresa
+        assert len(rows) == 2
+        assert all(row["Estado"] == "borrador" for row in rows)
+
+    def test_export_compras_csv_with_periodo_range(self, client, admin_token, sample_libros_compras):
+        """Test CSV export with periodo range filter"""
+        response = client.get(
+            "/api/libros/compras/export/csv",
+            params={"periodo_from": "2026-01", "periodo_to": "2026-02"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        # Should have 2 records from admin's empresa in the range
+        assert len(rows) == 2
+
+    def test_export_compras_csv_with_sort(self, client, admin_token, sample_libros_compras):
+        """Test CSV export respects sort parameters"""
+        response = client.get(
+            "/api/libros/compras/export/csv",
+            params={"sort_by": "monto_total", "sort_order": "asc"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        montos = [int(row["Monto Total"]) for row in rows]
+        assert montos == sorted(montos)
+
+    def test_export_compras_csv_no_pagination_limit(self, client, admin_token, sample_libros_compras):
+        """Test that CSV export ignores pagination and returns all records"""
+        response = client.get(
+            "/api/libros/compras/export/csv",
+            params={"limit": 1},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        # Should return all 2 records from admin's empresa, not just 1
+        assert len(rows) == 2
+
+    def test_export_compras_csv_rut_field(self, client, admin_token, sample_libros_compras):
+        """Test that RUT proveedor field is included"""
+        response = client.get(
+            "/api/libros/compras/export/csv",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        # Should have RUT column
+        assert "RUT Proveedor" in reader.fieldnames
+        # Some rows may have RUT, some may have None
+        assert len(rows) == 2
+
+    def test_export_compras_csv_authorization(self, client, token_empresa1, token_empresa2, db, empresa1, empresa2):
+        """Test that users can only export their own empresa's data"""
+        # Create compras for both empresas
+        libro_e1 = LibroCompras(
+            periodo="2026-01",
+            empresa_id=empresa1.id,
+            rut_proveedor="12.345.678-9",
+            total_registros=30,
+            monto_total=300000,
+            estado="borrador",
+        )
+        libro_e2 = LibroCompras(
+            periodo="2026-01",
+            empresa_id=empresa2.id,
+            rut_proveedor="98.765.432-1",
+            total_registros=15,
+            monto_total=150000,
+            estado="borrador",
+        )
+        db.add_all([libro_e1, libro_e2])
+        db.commit()
+
+        # empresa1 user exports
+        response = client.get(
+            "/api/libros/compras/export/csv",
+            headers={"Authorization": f"Bearer {token_empresa1}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        rows = list(reader)
+
+        # Should only see their own empresa's data
+        assert len(rows) == 1
+        assert rows[0]["RUT Proveedor"] == "12.345.678-9"
+
+    def test_export_compras_csv_all_columns(self, client, admin_token, sample_libros_compras):
+        """Test that CSV includes all required columns"""
+        response = client.get(
+            "/api/libros/compras/export/csv",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+
+        required_columns = {
+            "Período", "Total Registros", "Monto Total", "Estado",
+            "RUT Proveedor"
+        }
+        assert required_columns.issubset(set(reader.fieldnames))
