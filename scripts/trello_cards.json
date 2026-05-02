@@ -23,12 +23,12 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Onboarding] Import Categorías / familias de productos",
+      "list": "In progress",
+      "name": "[Onboarding] Import Notas de venta abiertas (pendientes)",
       "labels": [
         "Core"
       ],
-      "desc": "Estructura de catálogo (familia → subfamilia → producto). Pre-requisito recomendado antes de import productos para que el match de familia no genere stubs.",
+      "desc": "NV en estado pendiente/parcial al momento del corte de migración. Estas SÍ son operativas en Conico (se pueden facturar/despachar).",
       "checklist": [
         "UI dentro de pestaña 'Migración inicial' (solo admin)",
         "Plantilla .xlsx descargable con columnas documentadas",
@@ -38,11 +38,12 @@
         "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
         "Idempotente: re-correr el mismo Excel no duplica",
         "--- Específico ---",
-        "Columnas: codigo, nombre, parent_codigo (opcional para árbol)",
-        "Soporta jerarquía (parent_codigo apunta a otra fila del mismo Excel)",
-        "Validar ciclos en el árbol",
-        "Re-import actualiza nombre/parent (no borra hijos)",
-        "[auto-attempt failed] fix attempt produced no commits"
+        "Hojas: Cabecera NV / Detalle NV",
+        "Cabecera: numero_nv, rut_cliente, fecha, vendedor, condicion_pago, estado, observaciones",
+        "Detalle: numero_nv, sku, cantidad, cantidad_facturada, cantidad_despachada, precio, descuento",
+        "Recalcular saldos pendientes (cantidad - facturada / despachada)",
+        "Cliente o SKU inexistente → reportar y bloquear (NV operativa no puede tener huecos)",
+        "Vendedor inexistente → asignar a admin con flag de revisión"
       ]
     }
   ]
