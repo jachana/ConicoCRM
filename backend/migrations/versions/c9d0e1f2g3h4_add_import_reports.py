@@ -1,7 +1,7 @@
 """Add import reports table.
 
 Revision ID: c9d0e1f2g3h4
-Revises: None
+Revises: b18e782cc8db
 Create Date: 2026-05-01 12:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'c9d0e1f2g3h4'
-down_revision = None
+down_revision = 'b18e782cc8db'
 branch_labels = None
 depends_on = None
 
