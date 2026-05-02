@@ -23,12 +23,12 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Onboarding] Import Cotizaciones abiertas",
+      "list": "In progress",
+      "name": "[Onboarding] Import Facturas / Boletas históricas (registro, sin SII)",
       "labels": [
         "Core"
       ],
-      "desc": "Cotizaciones vigentes / con seguimiento activo en CRM legacy. Permite continuar el funnel sin perder oportunidades.",
+      "desc": "DTEs ya emitidos en plataforma anterior. Solo registro para histórico de cliente y cobranza — NO se reemiten al SII, no consumen folio CAF, no generan PDF nuevo. Marca origen=externo.",
       "checklist": [
         "UI dentro de pestaña 'Migración inicial' (solo admin)",
         "Plantilla .xlsx descargable con columnas documentadas",
@@ -38,11 +38,13 @@
         "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
         "Idempotente: re-correr el mismo Excel no duplica",
         "--- Específico ---",
-        "Cabecera: numero_cot, rut_cliente, fecha, vigencia_hasta, vendedor, estado, total",
-        "Detalle: numero_cot, sku, cantidad, precio, descuento",
-        "Estado mapeable a borrador/enviada/aceptada/rechazada/vencida",
-        "Cotizaciones con vigencia vencida → import opcional con flag archivada",
-        "Cliente nuevo (no existe) → crear con datos mínimos"
+        "Hojas: Cabecera DTE / Detalle DTE",
+        "Cabecera: tipo_dte, folio, rut_receptor, fecha_emision, neto, iva, total, estado_pago",
+        "Detalle: folio, sku, cantidad, precio_unitario, descuento, exento",
+        "Flag origen=externo → bloquea reenvío SII, anulación, NC posterior (a menos que se decida explícito)",
+        "Permitir adjuntar PDF original opcional",
+        "Cliente inexistente → crear stub + marcar pendiente",
+        "NO descontar stock por estos DTE históricos"
       ]
     }
   ]

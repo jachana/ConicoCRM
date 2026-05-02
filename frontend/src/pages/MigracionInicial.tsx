@@ -12,6 +12,7 @@ import { ImportVendedoresSection } from '../components/onboarding/ImportVendedor
 import { ImportStockSection } from '../components/onboarding/ImportStockSection'
 import { ImportNVSection } from '../components/onboarding/ImportNVSection'
 import { ImportCotizacionesSection } from '../components/onboarding/ImportCotizacionesSection'
+import { ImportFacturasSection } from '../components/onboarding/ImportFacturasSection'
 import { Stat } from '../components/onboarding/StatCard'
 import type { Empresa } from '../types'
 
@@ -128,6 +129,7 @@ export default function MigracionInicial() {
           <TabsTrigger value="stock">Stock inicial</TabsTrigger>
           <TabsTrigger value="nv_abiertas">NV Abiertas</TabsTrigger>
           <TabsTrigger value="cotizaciones_abiertas">Cotizaciones Abiertas</TabsTrigger>
+          <TabsTrigger value="facturas_historicas">Facturas Históricas</TabsTrigger>
           <TabsTrigger value="cafs">CAF</TabsTrigger>
         </TabsList>
         <TabsContent value="proveedores">
@@ -156,6 +158,9 @@ export default function MigracionInicial() {
         </TabsContent>
         <TabsContent value="cotizaciones_abiertas">
           <ImportCotizacionesSection />
+        </TabsContent>
+        <TabsContent value="facturas_historicas">
+          <ImportFacturasSection />
         </TabsContent>
         <TabsContent value="cafs">
           {selectedEmpresaId ? (
