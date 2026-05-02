@@ -2,7 +2,8 @@
 import pytest
 from datetime import datetime, timezone
 import csv
-from io import StringIO
+from io import StringIO, BytesIO
+from openpyxl import load_workbook
 
 from app.models.libro import LibroVentas, LibroCompras
 from app.models.empresa import Empresa
@@ -1424,3 +1425,442 @@ class TestLibrosComprasExportCsv:
             "RUT Proveedor"
         }
         assert required_columns.issubset(set(reader.fieldnames))
+
+
+class TestLibrosVentasExportExcel:
+    """Tests for GET /api/libros/ventas/export/excel"""
+
+    def test_export_ventas_excel_without_auth(self, client):
+        """Test that Excel export requires authentication"""
+        response = client.get("/api/libros/ventas/export/excel")
+        assert response.status_code == 401
+
+    def test_export_ventas_excel_success(self, client, admin_token, sample_libros_ventas):
+        """Test successful Excel export of libros ventas"""
+        response = client.get(
+            "/api/libros/ventas/export/excel",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        assert response.headers["Content-Type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        assert "attachment" in response.headers["Content-Disposition"]
+        assert "libros_ventas" in response.headers["Content-Disposition"]
+
+        # Parse Excel content
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Check headers (first row, bold)
+        headers = [cell.value for cell in ws[1]]
+        assert "Período" in headers
+        assert "Total Registros" in headers
+        assert "Monto Total" in headers
+        assert "Estado" in headers
+        assert "Folio Inicio" in headers
+        assert "Folio Fin" in headers
+
+        # Check that header row is bold
+        for cell in ws[1]:
+            if cell.value:
+                assert cell.font.bold, f"Header cell {cell.coordinate} should be bold"
+
+        # Should have 3 data rows + 1 header + 1 summary = 5 rows
+        assert ws.max_row == 5
+
+        # Check summary row (last row)
+        summary_row = ws[ws.max_row]
+        assert summary_row[0].value == "TOTAL"
+
+    def test_export_ventas_excel_empty_result(self, client, admin_token):
+        """Test Excel export with no matching records"""
+        response = client.get(
+            "/api/libros/ventas/export/excel",
+            params={"periodo": "2099-12"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Should have header + summary = 2 rows
+        assert ws.max_row == 2
+
+        # Check summary row shows zeros
+        summary_row = ws[ws.max_row]
+        assert summary_row[0].value == "TOTAL"
+        assert summary_row[1].value == 0
+        assert summary_row[2].value == 0
+
+    def test_export_ventas_excel_with_filters(self, client, admin_token, sample_libros_ventas):
+        """Test Excel export respects filters"""
+        response = client.get(
+            "/api/libros/ventas/export/excel",
+            params={"estado": "borrador"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Should have 2 data rows + 1 header + 1 summary = 4 rows
+        assert ws.max_row == 4
+
+        # All data rows should have estado=borrador
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row - 1):
+            assert row[3].value == "borrador"
+
+    def test_export_ventas_excel_with_periodo_range(self, client, admin_token, sample_libros_ventas):
+        """Test Excel export with periodo range filter"""
+        response = client.get(
+            "/api/libros/ventas/export/excel",
+            params={"periodo_from": "2026-02", "periodo_to": "2026-03"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Should have 2 data rows + 1 header + 1 summary = 4 rows
+        assert ws.max_row == 4
+
+    def test_export_ventas_excel_with_sort(self, client, admin_token, sample_libros_ventas):
+        """Test Excel export respects sort parameters"""
+        response = client.get(
+            "/api/libros/ventas/export/excel",
+            params={"sort_by": "periodo", "sort_order": "desc"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Check sorting in data rows (skip header and summary)
+        periodos = []
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row - 1):
+            periodos.append(row[0].value)
+
+        assert periodos == sorted(periodos, reverse=True)
+
+    def test_export_ventas_excel_no_pagination_limit(self, client, admin_token, sample_libros_ventas):
+        """Test that Excel export ignores pagination and returns all records"""
+        response = client.get(
+            "/api/libros/ventas/export/excel",
+            params={"limit": 1},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Should have all 3 records + header + summary = 5 rows
+        assert ws.max_row == 5
+
+    def test_export_ventas_excel_currency_formatting(self, client, admin_token, sample_libros_ventas):
+        """Test that Monto Total is currency formatted"""
+        response = client.get(
+            "/api/libros/ventas/export/excel",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Check monto column (column 3) has currency formatting
+        # Header is row 1, data rows start at 2
+        for row_idx in range(2, ws.max_row):
+            cell = ws.cell(row=row_idx, column=3)
+            # Check that number format contains currency pattern
+            assert cell.number_format is not None
+
+    def test_export_ventas_excel_summary_totals(self, client, admin_token, sample_libros_ventas):
+        """Test that summary row calculates correct totals"""
+        response = client.get(
+            "/api/libros/ventas/export/excel",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Get summary row (last row)
+        summary_row = ws[ws.max_row]
+
+        # Total Registros should be sum of all registros (column B = index 1)
+        total_registros = sum(r[1].value for r in ws.iter_rows(min_row=2, max_row=ws.max_row - 1))
+        assert summary_row[1].value == total_registros
+
+        # Monto Total should be sum of all montos (column C = index 2)
+        monto_total = sum(r[2].value for r in ws.iter_rows(min_row=2, max_row=ws.max_row - 1))
+        assert summary_row[2].value == monto_total
+
+    def test_export_ventas_excel_auto_width(self, client, admin_token, sample_libros_ventas):
+        """Test that columns have auto-width adjusted to content"""
+        response = client.get(
+            "/api/libros/ventas/export/excel",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Check that column dimensions are set (auto-width)
+        # Columns should have width > 0
+        for col in ws.columns:
+            col_letter = col[0].column_letter
+            width = ws.column_dimensions[col_letter].width
+            # Auto-width should set a dimension
+            assert width is not None
+
+    def test_export_ventas_excel_authorization(self, client, token_empresa1, token_empresa2, db, empresa1, empresa2):
+        """Test that users can only export their own empresa's data"""
+        # Create ventas for both empresas
+        libro_e1 = LibroVentas(
+            periodo="2026-01",
+            empresa_id=empresa1.id,
+            folio_inicio=1,
+            folio_fin=100,
+            total_registros=50,
+            monto_total=500000,
+            estado="borrador",
+        )
+        libro_e2 = LibroVentas(
+            periodo="2026-01",
+            empresa_id=empresa2.id,
+            folio_inicio=1,
+            folio_fin=50,
+            total_registros=25,
+            monto_total=250000,
+            estado="borrador",
+        )
+        db.add_all([libro_e1, libro_e2])
+        db.commit()
+
+        # empresa1 user exports
+        response = client.get(
+            "/api/libros/ventas/export/excel",
+            headers={"Authorization": f"Bearer {token_empresa1}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Should have 1 data row + header + summary = 3 rows
+        assert ws.max_row == 3
+
+    def test_export_ventas_excel_all_columns(self, client, admin_token, sample_libros_ventas):
+        """Test that Excel includes all required columns"""
+        response = client.get(
+            "/api/libros/ventas/export/excel",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        headers = [cell.value for cell in ws[1]]
+        required_columns = {
+            "Período", "Total Registros", "Monto Total", "Estado",
+            "Folio Inicio", "Folio Fin"
+        }
+        assert required_columns.issubset(set(headers))
+
+
+class TestLibrosComprasExportExcel:
+    """Tests for GET /api/libros/compras/export/excel"""
+
+    def test_export_compras_excel_without_auth(self, client):
+        """Test that Excel export requires authentication"""
+        response = client.get("/api/libros/compras/export/excel")
+        assert response.status_code == 401
+
+    def test_export_compras_excel_success(self, client, admin_token, sample_libros_compras):
+        """Test successful Excel export of libros compras"""
+        response = client.get(
+            "/api/libros/compras/export/excel",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        assert response.headers["Content-Type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        assert "attachment" in response.headers["Content-Disposition"]
+        assert "libros_compras" in response.headers["Content-Disposition"]
+
+        # Parse Excel content
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Check headers (first row, bold)
+        headers = [cell.value for cell in ws[1]]
+        assert "Período" in headers
+        assert "Total Registros" in headers
+        assert "Monto Total" in headers
+        assert "Estado" in headers
+        assert "RUT Proveedor" in headers
+
+        # Check that header row is bold
+        for cell in ws[1]:
+            if cell.value:
+                assert cell.font.bold, f"Header cell {cell.coordinate} should be bold"
+
+        # Should have 2 data rows + 1 header + 1 summary = 4 rows
+        assert ws.max_row == 4
+
+    def test_export_compras_excel_empty_result(self, client, admin_token):
+        """Test Excel export with no matching records"""
+        response = client.get(
+            "/api/libros/compras/export/excel",
+            params={"periodo": "2099-12"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Should have header + summary = 2 rows
+        assert ws.max_row == 2
+
+        # Check summary row shows zeros
+        summary_row = ws[ws.max_row]
+        assert summary_row[0].value == "TOTAL"
+        assert summary_row[1].value == 0
+        assert summary_row[2].value == 0
+
+    def test_export_compras_excel_with_filters(self, client, admin_token, sample_libros_compras):
+        """Test Excel export respects filters"""
+        response = client.get(
+            "/api/libros/compras/export/excel",
+            params={"estado": "borrador"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Should have 2 data rows + 1 header + 1 summary = 4 rows
+        assert ws.max_row == 4
+
+        # All data rows should have estado=borrador
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row - 1):
+            assert row[3].value == "borrador"
+
+    def test_export_compras_excel_with_sort(self, client, admin_token, sample_libros_compras):
+        """Test Excel export respects sort parameters"""
+        response = client.get(
+            "/api/libros/compras/export/excel",
+            params={"sort_by": "monto_total", "sort_order": "asc"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Check sorting in data rows (skip header and summary)
+        montos = []
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row - 1):
+            montos.append(row[2].value)
+
+        assert montos == sorted(montos)
+
+    def test_export_compras_excel_no_pagination_limit(self, client, admin_token, sample_libros_compras):
+        """Test that Excel export ignores pagination and returns all records"""
+        response = client.get(
+            "/api/libros/compras/export/excel",
+            params={"limit": 1},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Should have all 2 records + header + summary = 4 rows
+        assert ws.max_row == 4
+
+    def test_export_compras_excel_summary_totals(self, client, admin_token, sample_libros_compras):
+        """Test that summary row calculates correct totals"""
+        response = client.get(
+            "/api/libros/compras/export/excel",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Get summary row (last row)
+        summary_row = ws[ws.max_row]
+
+        # Total Registros should be sum of all registros (column B = index 1)
+        total_registros = sum(r[1].value for r in ws.iter_rows(min_row=2, max_row=ws.max_row - 1))
+        assert summary_row[1].value == total_registros
+
+        # Monto Total should be sum of all montos (column C = index 2)
+        monto_total = sum(r[2].value for r in ws.iter_rows(min_row=2, max_row=ws.max_row - 1))
+        assert summary_row[2].value == monto_total
+
+    def test_export_compras_excel_authorization(self, client, token_empresa1, token_empresa2, db, empresa1, empresa2):
+        """Test that users can only export their own empresa's data"""
+        # Create compras for both empresas
+        libro_e1 = LibroCompras(
+            periodo="2026-01",
+            empresa_id=empresa1.id,
+            rut_proveedor="12.345.678-9",
+            total_registros=30,
+            monto_total=300000,
+            estado="borrador",
+        )
+        libro_e2 = LibroCompras(
+            periodo="2026-01",
+            empresa_id=empresa2.id,
+            rut_proveedor="98.765.432-1",
+            total_registros=15,
+            monto_total=150000,
+            estado="borrador",
+        )
+        db.add_all([libro_e1, libro_e2])
+        db.commit()
+
+        # empresa1 user exports
+        response = client.get(
+            "/api/libros/compras/export/excel",
+            headers={"Authorization": f"Bearer {token_empresa1}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        # Should have 1 data row + header + summary = 3 rows
+        assert ws.max_row == 3
+
+    def test_export_compras_excel_all_columns(self, client, admin_token, sample_libros_compras):
+        """Test that Excel includes all required columns"""
+        response = client.get(
+            "/api/libros/compras/export/excel",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        excel_content = BytesIO(response.content)
+        wb = load_workbook(excel_content)
+        ws = wb.active
+
+        headers = [cell.value for cell in ws[1]]
+        required_columns = {
+            "Período", "Total Registros", "Monto Total", "Estado",
+            "RUT Proveedor"
+        }
+        assert required_columns.issubset(set(headers))

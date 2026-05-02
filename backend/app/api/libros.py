@@ -1,11 +1,13 @@
 """API endpoints for retrieving Libros (sales and purchase books)"""
 import re
 import csv
-from io import StringIO
+from io import StringIO, BytesIO
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, numbers
 
 from app.api.deps import require_permission
 from app.database import get_db
@@ -502,4 +504,283 @@ def export_libros_compras_csv(
         iter([csv_content.encode("utf-8")]),
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": "attachment; filename=libros_compras.csv"}
+    )
+
+
+# ── Excel Export Endpoints ────────────────────────────────────────────────────
+
+def _create_excel_workbook_ventas(libros: list) -> BytesIO:
+    """Create an Excel workbook for Libros de Ventas with formatting.
+
+    Args:
+        libros: List of LibroVentas objects
+
+    Returns:
+        BytesIO object containing the Excel file
+    """
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Libros de Ventas"
+
+    # Define headers
+    headers = ["Período", "Total Registros", "Monto Total", "Estado", "Folio Inicio", "Folio Fin"]
+    ws.append(headers)
+
+    # Format header row (bold)
+    bold_font = Font(bold=True)
+    for cell in ws[1]:
+        cell.font = bold_font
+
+    # Add data rows
+    for libro in libros:
+        ws.append([
+            libro.periodo,
+            libro.total_registros,
+            libro.monto_total,
+            libro.estado,
+            libro.folio_inicio if libro.folio_inicio is not None else "",
+            libro.folio_fin if libro.folio_fin is not None else "",
+        ])
+
+    # Format monto_total column (column 3) as currency
+    for row_idx in range(2, len(libros) + 2):
+        cell = ws.cell(row=row_idx, column=3)
+        cell.number_format = '$#,##0'
+
+    # Calculate totals
+    total_registros = sum(libro.total_registros for libro in libros)
+    total_monto = sum(libro.monto_total for libro in libros)
+
+    # Add summary row (row index for last row after appending all data)
+    summary_row_idx = len(libros) + 2
+    ws.cell(row=summary_row_idx, column=1).value = "TOTAL"
+    ws.cell(row=summary_row_idx, column=2).value = total_registros
+    ws.cell(row=summary_row_idx, column=3).value = total_monto
+
+    # Format summary row currency (column 3 = Monto Total)
+    summary_cell = ws.cell(row=summary_row_idx, column=3)
+    summary_cell.number_format = '$#,##0'
+
+    # Auto-width columns
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            except (TypeError, ValueError):
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Return as BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
+
+def _create_excel_workbook_compras(libros: list) -> BytesIO:
+    """Create an Excel workbook for Libros de Compras with formatting.
+
+    Args:
+        libros: List of LibroCompras objects
+
+    Returns:
+        BytesIO object containing the Excel file
+    """
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Libros de Compras"
+
+    # Define headers
+    headers = ["Período", "Total Registros", "Monto Total", "Estado", "RUT Proveedor"]
+    ws.append(headers)
+
+    # Format header row (bold)
+    bold_font = Font(bold=True)
+    for cell in ws[1]:
+        cell.font = bold_font
+
+    # Add data rows
+    for libro in libros:
+        ws.append([
+            libro.periodo,
+            libro.total_registros,
+            libro.monto_total,
+            libro.estado,
+            libro.rut_proveedor if libro.rut_proveedor is not None else "",
+        ])
+
+    # Format monto_total column (column 3) as currency
+    for row_idx in range(2, len(libros) + 2):
+        cell = ws.cell(row=row_idx, column=3)
+        cell.number_format = '$#,##0'
+
+    # Calculate totals
+    total_registros = sum(libro.total_registros for libro in libros)
+    total_monto = sum(libro.monto_total for libro in libros)
+
+    # Add summary row (row index for last row after appending all data)
+    summary_row_idx = len(libros) + 2
+    ws.cell(row=summary_row_idx, column=1).value = "TOTAL"
+    ws.cell(row=summary_row_idx, column=2).value = total_registros
+    ws.cell(row=summary_row_idx, column=3).value = total_monto
+
+    # Format summary row currency (column 3 = Monto Total)
+    summary_cell = ws.cell(row=summary_row_idx, column=3)
+    summary_cell.number_format = '$#,##0'
+
+    # Auto-width columns
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            except (TypeError, ValueError):
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Return as BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
+
+@router.get("/ventas/export/excel")
+def export_libros_ventas_excel(
+    periodo: str | None = Query(None, description="Filter by exact YYYY-MM period"),
+    periodo_from: str | None = Query(None, description="Filter by YYYY-MM period from (inclusive)"),
+    periodo_to: str | None = Query(None, description="Filter by YYYY-MM period to (inclusive)"),
+    estado: str | None = Query(None, description="Filter by estado (borrador, enviado, etc)"),
+    sort_by: str | None = Query(None, description=f"Sort by field: {', '.join(sorted(VALID_SORT_FIELDS))}"),
+    sort_order: str | None = Query(None, description="Sort order: asc or desc"),
+    limit: int = Query(None, ge=1, le=500, description="Ignored for Excel export (returns all records)"),
+    offset: int = Query(None, ge=0, description="Ignored for Excel export (returns all records)"),
+    perms: tuple[User, Session] = require_permission("libros", "view"),
+):
+    """Export sales books (Libros de Ventas) as Excel.
+
+    Parameters are the same as list endpoint, but pagination is ignored.
+    Returns all matching records with formatting.
+
+    Returns:
+    - Excel file with columns: Período, Total Registros, Monto Total, Estado, Folio Inicio, Folio Fin
+    - Includes summary row with totals
+    """
+    current_user, db = perms
+
+    # Validate parameters
+    _validate_periodo(periodo)
+    _validate_periodo(periodo_from)
+    _validate_periodo(periodo_to)
+    _validate_sort_params(sort_by, sort_order)
+
+    # Ensure user has an empresa_id for authorization
+    if not current_user.empresa_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not assigned to an empresa"
+        )
+
+    # Build query filtered by current user's empresa
+    query = db.query(LibroVentas).filter(LibroVentas.empresa_id == current_user.empresa_id)
+
+    # Apply filters
+    if periodo:
+        query = query.filter(LibroVentas.periodo == periodo)
+    else:
+        if periodo_from:
+            query = query.filter(LibroVentas.periodo >= periodo_from)
+        if periodo_to:
+            query = query.filter(LibroVentas.periodo <= periodo_to)
+
+    if estado:
+        query = query.filter(LibroVentas.estado == estado)
+
+    # Apply sorting
+    query = _apply_sort(query, LibroVentas, sort_by, sort_order)
+
+    # Get all records (no pagination)
+    libros = query.all()
+
+    # Create Excel workbook
+    excel_content = _create_excel_workbook_ventas(libros)
+
+    return StreamingResponse(
+        iter([excel_content.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=libros_ventas.xlsx"}
+    )
+
+
+@router.get("/compras/export/excel")
+def export_libros_compras_excel(
+    periodo: str | None = Query(None, description="Filter by exact YYYY-MM period"),
+    periodo_from: str | None = Query(None, description="Filter by YYYY-MM period from (inclusive)"),
+    periodo_to: str | None = Query(None, description="Filter by YYYY-MM period to (inclusive)"),
+    estado: str | None = Query(None, description="Filter by estado (borrador, enviado, etc)"),
+    sort_by: str | None = Query(None, description=f"Sort by field: {', '.join(sorted(VALID_SORT_FIELDS))}"),
+    sort_order: str | None = Query(None, description="Sort order: asc or desc"),
+    limit: int = Query(None, ge=1, le=500, description="Ignored for Excel export (returns all records)"),
+    offset: int = Query(None, ge=0, description="Ignored for Excel export (returns all records)"),
+    perms: tuple[User, Session] = require_permission("libros", "view"),
+):
+    """Export purchase books (Libros de Compras) as Excel.
+
+    Parameters are the same as list endpoint, but pagination is ignored.
+    Returns all matching records with formatting.
+
+    Returns:
+    - Excel file with columns: Período, Total Registros, Monto Total, Estado, RUT Proveedor
+    - Includes summary row with totals
+    """
+    current_user, db = perms
+
+    # Validate parameters
+    _validate_periodo(periodo)
+    _validate_periodo(periodo_from)
+    _validate_periodo(periodo_to)
+    _validate_sort_params(sort_by, sort_order)
+
+    # Ensure user has an empresa_id for authorization
+    if not current_user.empresa_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not assigned to an empresa"
+        )
+
+    # Build query filtered by current user's empresa
+    query = db.query(LibroCompras).filter(LibroCompras.empresa_id == current_user.empresa_id)
+
+    # Apply filters
+    if periodo:
+        query = query.filter(LibroCompras.periodo == periodo)
+    else:
+        if periodo_from:
+            query = query.filter(LibroCompras.periodo >= periodo_from)
+        if periodo_to:
+            query = query.filter(LibroCompras.periodo <= periodo_to)
+
+    if estado:
+        query = query.filter(LibroCompras.estado == estado)
+
+    # Apply sorting
+    query = _apply_sort(query, LibroCompras, sort_by, sort_order)
+
+    # Get all records (no pagination)
+    libros = query.all()
+
+    # Create Excel workbook
+    excel_content = _create_excel_workbook_compras(libros)
+
+    return StreamingResponse(
+        iter([excel_content.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=libros_compras.xlsx"}
     )
