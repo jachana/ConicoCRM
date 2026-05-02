@@ -23,52 +23,11 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Cotizaciones] Alertas de cliente — componente modal",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Crear componente React AlertNotesModal que muestra notas de cliente con estilo warning/danger.\n\nDiseño:\n- Modal con ícono warning\n- Lista de notas (tipo + contenido en rojo)\n- Botón para cerrar y continuar cotización\n- Estilos: fondo rojo suave, bordes rojos, texto oscuro\n\nPropiedad: isOpen, notes[], onClose.",
-      "checklist": [
-        "Crear archivo src/components/AlertNotesModal.tsx",
-        "Implementar con Modal/Dialog existente",
-        "Styling: colores warning (rojo/naranja)",
-        "Manejar isOpen y onClose",
-        "Props: notes array con type + content",
-        "Tests: renders correctly, close button works"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Cotizaciones] Alertas de cliente — integración en formulario",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Integrar llamada a endpoint /customers/{id}/notes en QuotationForm.\n\nUX:\n1. Usuario selecciona cliente en dropdown → useCustomerNotes hook hace fetch\n2. Si hay notas → modal aparece automáticamente\n3. Usuario puede cerrar modal y continuar (o cancelar)\n4. Modal no bloquea guardar, solo alerta\n\nManejo de estado: loading, error, notas.",
-      "checklist": [
-        "Crear hook useCustomerNotes(customerId) con useFetch",
-        "Integrar en QuotationForm.tsx",
-        "Trigger: cuando customer_id cambia",
-        "Mostrar AlertNotesModal si notes.length > 0",
-        "Manejar loading state (spinner en customer field)",
-        "Tests: hook, modal appears, can close and continue"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "[Cotizaciones] Alertas de cliente — QA y validación",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Testing end-to-end y validación de feature completa.\n\nScenarios:\n1. Cliente sin notas → no aparece modal\n2. Cliente con nota de cobranza → modal muestra monto y vence\n3. Cliente con crédito bloqueado → modal destaca en rojo\n4. Cliente con múltiples notas → lista todas\n5. Vendedor ve notas, cierra modal, guarda cotización → funciona\n\nTarget: backend + frontend tests passing, manual QA en staging.",
-      "checklist": [
-        "Backend tests: endpoint con/sin notas, permisos",
-        "Frontend tests: modal renders, displays correct notes, closes",
-        "Integration tests: crear cotización de cliente con notas",
-        "Manual QA: crear cliente con notas, citar, verificar modal",
-        "Edge cases: cliente con 10+ notas, unicode en contenido",
-        "Performance: fetch rápido (cache si aplica)"
-      ]
+      "list": "In progress",
+      "name": "En settings debe haber confirmation de Estatus de las integraciones, lioren, mail, WhatsApp",
+      "labels": [],
+      "desc": "",
+      "checklist": []
     }
   ]
 }
