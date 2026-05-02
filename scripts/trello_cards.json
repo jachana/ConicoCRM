@@ -23,17 +23,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Phase E] Visual QA route-by-route + Storybook opcional",
+      "list": "In progress",
+      "name": "[Onboarding] Import OC históricas (registro)",
       "labels": [
-        "Design System"
+        "Core"
       ],
-      "desc": "Phase E cerrada parcial (sweep + a11y aplicados). Storybook setup completado para components/ui/*. Falta visual QA manual light+dark / mobile+desktop por ruta.",
+      "desc": "Órdenes de compra ya emitidas en sistema legacy. Solo registro histórico — no se reemiten ni se envían a proveedor. Pre-requisito: proveedores y productos cargados.",
       "checklist": [
-        "Visual QA route-by-route en light + dark",
-        "Visual QA mobile + desktop",
-        "Storybook setup opcional para components/ui/*",
-        "Documentar gaps que aparezcan"
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Hojas: Cabecera OC / Detalle OC (linkeadas por numero_oc)",
+        "Cabecera: numero_oc, rut_proveedor, fecha, estado, total_neto, iva, total",
+        "Detalle: numero_oc, sku, cantidad, precio_unitario, descuento",
+        "Marcar registros con flag historico=true → bloquear edición/emisión",
+        "Proveedor o SKU inexistente → reportar fila como error",
+        "Validar totales (suma detalle = cabecera, tolerancia $1)"
       ]
     }
   ]
