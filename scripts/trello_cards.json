@@ -23,22 +23,26 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Onboarding] Refactor payment_parser to match test spec",
+      "list": "In progress",
+      "name": "[Onboarding] Import Categorías / familias de productos",
       "labels": [
         "Core"
       ],
-      "desc": "test_payment_parser.py specifies a new API that the current PaymentParser implementation does not satisfy. Tests are skipped until this is implemented.\n\nRequired changes:\n- Module-level parse_pagos_xlsx(content: bytes) function\n- result.validas / result.invalidas (rename valid_rows / invalid_rows)\n- row.fila (rename row_num), row.rut_cliente_raw (new field)\n- RUT normalization (remove dots/spaces) and check-digit validation\n- referencia, folio_documento, tipo_documento become REQUIRED fields\n- VALID_PAYMENT_METHODS validation (efectivo/transferencia/cheque/tarjeta/otro)\n- VALID_DOCUMENT_TYPES validation (factura/boleta/nota_credito/nota_debito/guia_despacho)\n- error.motivo (joined error string), error.valores_raw (dict of raw values)\n- Blank row skipping\n- Remove documentation-row skip (row[1]) — template no longer needs it\n- Update onboarding_payments.py to use new API\n- Unskip test_payment_parser.py once implementation is done",
+      "desc": "Estructura de catálogo (familia → subfamilia → producto). Pre-requisito recomendado antes de import productos para que el match de familia no genere stubs.",
       "checklist": [
-        "Rewrite payment_parser.py dataclasses (validas/invalidas/fila/motivo/valores_raw)",
-        "Add RUT normalization + check-digit validation",
-        "Make referencia, folio_documento, tipo_documento required",
-        "Add VALID_PAYMENT_METHODS and VALID_DOCUMENT_TYPES validation",
-        "Add blank row skipping",
-        "Remove documentation-row skip from parse logic",
-        "Update onboarding_payments.py to use new API names",
-        "Remove pytestmark skip from test_payment_parser.py",
-        "Run full test suite, confirm all pass"
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: codigo, nombre, parent_codigo (opcional para árbol)",
+        "Soporta jerarquía (parent_codigo apunta a otra fila del mismo Excel)",
+        "Validar ciclos en el árbol",
+        "Re-import actualiza nombre/parent (no borra hijos)",
+        "[auto-attempt failed] fix attempt produced no commits"
       ]
     }
   ]
