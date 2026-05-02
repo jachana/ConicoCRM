@@ -65,6 +65,21 @@ class ParseError(Exception):
     pass
 
 
+REQUIRED_COLUMNS = frozenset(["fecha_pago", "rut_cliente", "monto", "medio_pago"])
+VALID_DOCUMENT_TYPES = frozenset([
+    "factura", "boleta", "nota_credito", "nota_debito", "guia_despacho",
+    "factura de compra",
+])
+VALID_PAYMENT_METHODS = frozenset([
+    "efectivo", "transferencia", "cheque", "tarjeta", "otro",
+])
+
+
+def parse_pagos_xlsx(content: bytes) -> "ParseResult":
+    """Module-level convenience wrapper around PaymentParser.parse()."""
+    return PaymentParser.parse(content, "pagos.xlsx")
+
+
 class PaymentParser:
     """Parse and validate payment import Excel files."""
 

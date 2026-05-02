@@ -140,7 +140,9 @@ def test_exportar_excel(client, admin_token):
 def test_deuda_bulk_lista_vacia(client, admin_token):
     r = client.get("/api/empresas/deuda-bulk", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
-    assert r.json() == []
+    # admin_user fixture creates a default empresa (no facturas, no credit terms).
+    # The endpoint returns all empresas; verify none have outstanding debt.
+    assert all(float(item["deuda_total"]) == 0 for item in r.json())
 
 
 def test_deuda_bulk_empresa_sin_facturas(client, admin_token):

@@ -45,6 +45,21 @@ def _register_sqlite_unaccent(dbapi_connection, connection_record):
 
 
 @pytest.fixture(autouse=True)
+def _reset_dependency_overrides():
+    """Clear ALL app.dependency_overrides after every test.
+
+    Tests that override get_current_user (or other deps) directly on app
+    would otherwise leak those overrides into subsequent tests, causing
+    auth failures (403/200 instead of expected 401/201/200).
+    The conftest client fixture re-applies get_db per test, so clearing
+    all overrides here is safe.
+    """
+    from app.main import app
+    yield
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
 def _audit_disabled_by_default():
     """Disable global audit listeners for all tests by default.
 
