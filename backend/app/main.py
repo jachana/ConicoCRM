@@ -54,6 +54,7 @@ from app.api import onboarding_clientes_empresas
 from app.api import onboarding_bodegas_sedes
 from app.api import onboarding_cafs
 from app.api import onboarding_usuarios
+from app.api import onboarding_stock
 from app.api import libros as libros_api
 from app.api import dte_recepcion as dte_recepcion_api
 from app.api import nota_alerta as nota_alerta_api
@@ -168,5 +169,6 @@ app.include_router(onboarding_clientes_empresas.router, prefix="/api/onboarding/
 app.include_router(onboarding_bodegas_sedes.router, prefix="/api/onboarding/bodegas-sedes", tags=["onboarding"])
 app.include_router(onboarding_cafs.router, prefix="/api/onboarding/cafs", tags=["onboarding"])
 app.include_router(onboarding_usuarios.router, prefix="/api/onboarding/usuarios", tags=["onboarding"])
+app.include_router(onboarding_stock.router, prefix="/api/onboarding/stock", tags=["onboarding"])
 app.include_router(libros_api.router, prefix="/api/libros", tags=["libros"])
 app.include_router(dte_recepcion_api.router, prefix="/api/dte/recepcion", tags=["dte_recepcion"])

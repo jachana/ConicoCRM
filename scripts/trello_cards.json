@@ -23,12 +23,12 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Onboarding] Import Vendedores / usuarios / roles",
+      "list": "In progress",
+      "name": "[Onboarding] Import Stock inicial por bodega",
       "labels": [
         "Core"
       ],
-      "desc": "Carga inicial del equipo de ventas y usuarios del sistema. Necesario antes de importar NV/cotizaciones (asignación de vendedor) y comisiones.",
+      "desc": "Carga el stock físico inicial de cada SKU por bodega. Pre-requisito: productos y bodegas ya cargados. Genera movimiento de inventario tipo 'carga inicial' para auditoría.",
       "checklist": [
         "UI dentro de pestaña 'Migración inicial' (solo admin)",
         "Plantilla .xlsx descargable con columnas documentadas",
@@ -38,11 +38,12 @@
         "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
         "Idempotente: re-correr el mismo Excel no duplica",
         "--- Específico ---",
-        "Columnas: rut, nombre, email, rol, activo, comision_pct, meta_mensual",
-        "Roles válidos: admin, vendedor, cobranza, bodega, contador (lectura)",
-        "Email único; existente → UPDATE (no resetea password)",
-        "Generar password temporal + email de bienvenida (opcional, toggle)",
-        "Match por email (estable) — RUT informativo"
+        "Pre-check: productos y bodegas existen",
+        "Columnas: sku, codigo_bodega, cantidad, costo_unitario (opcional)",
+        "SKU o bodega inexistente → reportar fila como error (no crear silencioso)",
+        "Generar Movimiento de Inventario tipo CARGA_INICIAL con fecha de import",
+        "Permitir re-correr: si ya hay carga inicial para SKU+bodega, confirmar antes de sobrescribir",
+        "Cantidades negativas → rechazar"
       ]
     }
   ]
