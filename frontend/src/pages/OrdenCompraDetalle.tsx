@@ -103,7 +103,7 @@ export default function OrdenCompraDetalle() {
 
   async function handleProductoSearch(idx: number, term: string) {
     if (!term || term.length < 2) { setAutocompleteResults([]); setAutocompleteIdx(null); return }
-    const r = await api.get(`/api/productos/?search=${encodeURIComponent(term)}`)
+    const r = await api.get(`/api/productos/buscar?q=${encodeURIComponent(term)}`)
     setAutocompleteResults(r.data)
     setAutocompleteIdx(idx)
   }

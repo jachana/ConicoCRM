@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from io import BytesIO
 
@@ -334,6 +334,9 @@ def recepcionar(
                         detail=f"La línea {linea.id} no tiene valor_neto; no se puede recepcionar sin costo unitario",
                     )
                 producto.stock_actual += delta
+                if linea.valor_neto and linea.valor_neto > producto.precio_costo:
+                    producto.precio_costo = linea.valor_neto
+                    producto.precio_costo_actualizado_en = datetime.now(timezone.utc)
                 db.add(MovimientoInventario(
                     producto_id=linea.producto_id,
                     tipo="entrada",
