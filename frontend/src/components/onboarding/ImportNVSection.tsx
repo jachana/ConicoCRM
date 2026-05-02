@@ -45,7 +45,7 @@ interface PreviewResp {
 }
 
 interface NVGroupResult extends NVGroup {
-  import_status: string
+  import_status: 'crear' | 'omitir' | 'error'
   nv_id?: number
 }
 
@@ -152,7 +152,9 @@ export function ImportNVSection() {
       const a = document.createElement('a')
       a.href = url
       a.download = 'plantilla_nv_abiertas.xlsx'
+      document.body.appendChild(a)
       a.click()
+      document.body.removeChild(a)
       URL.revokeObjectURL(url)
     } catch {
       toast.error('Error al descargar plantilla')
@@ -292,7 +294,7 @@ export function ImportNVSection() {
                 </THead>
                 <TBody>
                   {preview.nvs.map((nv, idx) => (
-                    <TR key={nv.numero_nv ?? idx}>
+                    <TR key={`${nv.numero_nv ?? ''}-${idx}`}>
                       <TD className="font-mono text-xs">{nv.numero_nv ?? '—'}</TD>
                       <TD className="text-xs">{nv.fecha}</TD>
                       <TD className="text-xs font-medium">{nv.rut_cliente}</TD>
@@ -359,20 +361,20 @@ export function ImportNVSection() {
               </THead>
               <TBody>
                 {result.nvs.map((nv, idx) => (
-                  <TR key={nv.numero_nv ?? idx}>
+                  <TR key={`${nv.numero_nv ?? ''}-${idx}`}>
                     <TD className="font-mono text-xs">{nv.numero_nv ?? '—'}</TD>
                     <TD className="text-xs">{nv.fecha}</TD>
                     <TD className="text-xs font-medium">{nv.rut_cliente}</TD>
                     <TD className="text-xs text-right font-mono">{formatCLP(nv.total)}</TD>
                     <TD>
                       <span className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded ${
-                        nv.import_status === 'created'
+                        nv.import_status === 'crear'
                           ? 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
                           : nv.import_status === 'error'
                           ? 'text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
                           : 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800'
                       }`}>
-                        {nv.import_status === 'created' ? 'Creada' : nv.import_status === 'error' ? 'Error' : 'Omitida'}
+                        {nv.import_status === 'crear' ? 'Creada' : nv.import_status === 'error' ? 'Error' : 'Omitida'}
                       </span>
                     </TD>
                   </TR>
