@@ -97,9 +97,10 @@ class CategoriasParser:
         ]
 
         # Find required column indices
-        if "nombre" not in headers:
+        missing = CategoriasParser.REQUIRED_COLUMNS - set(headers)
+        if missing:
             raise ParseError(
-                f"Columna requerida faltante: 'nombre'. "
+                f"Columna(s) requerida(s) faltante(s): {sorted(missing)}. "
                 f"Columnas encontradas: {[h for h in headers if h]}"
             )
         nombre_col_idx = headers.index("nombre")
@@ -121,7 +122,7 @@ class CategoriasParser:
                 val_str = str(nombre_val).strip()
                 # Heuristic: if the value contains typical doc words or is very long, skip
                 doc_keywords = ("nombre", "ej:", "ejemplo", "requerido", "categoría", "categoria")
-                if any(kw in val_str.lower() for kw in doc_keywords) or len(val_str) > 60:
+                if any(kw in val_str.lower() for kw in doc_keywords) or len(val_str) > 100:
                     data_rows = raw_rows[2:]
 
         if not data_rows:
@@ -200,16 +201,11 @@ class CategoriasParser:
         ws = wb.active
         ws.title = "Categorías"
 
-        headers = ["nombre", "familia_padre"]
+        headers = ["nombre"]
         documentation = [
             "Nombre de la categoría (requerido, máx. 100 chars)",
-            "Familia padre (opcional, solo referencia — no se importa)",
         ]
-        examples = [
-            ["Frutas", "Alimentos"],
-            ["Verduras", "Alimentos"],
-            ["Lácteos", "Alimentos"],
-        ]
+        examples = ["Frutas", "Verduras", "Lácteos"]
 
         # Row 1: headers — bold + gray background
         for col_num, header in enumerate(headers, 1):
@@ -229,12 +225,10 @@ class CategoriasParser:
 
         # Rows 3-5: example data
         for row_idx, example in enumerate(examples, 3):
-            for col_idx, value in enumerate(example, 1):
-                ws.cell(row=row_idx, column=col_idx, value=value)
+            ws.cell(row=row_idx, column=1, value=example)
 
         # Column widths
         ws.column_dimensions["A"].width = 30
-        ws.column_dimensions["B"].width = 30
 
         output = io.BytesIO()
         wb.save(output)

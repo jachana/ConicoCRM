@@ -1,6 +1,8 @@
 """
 Tests for categorias (TipoProducto) onboarding import API.
 
+Also includes direct unit tests for CategoriasParser (TestCategoriasParserUnit).
+
 Covers:
 1. Template download returns bytes with xlsx content-type
 2. Preview with valid file returns correct counts
@@ -54,7 +56,7 @@ BASE = "/api/onboarding/categorias"
 # ---------------------------------------------------------------------------
 
 def test_template_returns_xlsx(client, admin_token):
-    """Template endpoint returns xlsx bytes."""
+    """Template endpoint returns xlsx bytes with single-column template."""
     r = client.get(f"{BASE}/template", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
     assert "spreadsheetml" in r.headers["content-type"]
@@ -62,9 +64,9 @@ def test_template_returns_xlsx(client, admin_token):
     # Verify it is valid xlsx
     wb = openpyxl.load_workbook(io.BytesIO(r.content))
     ws = wb.active
-    # Row 1 headers
-    header_names = [ws.cell(row=1, column=c).value for c in range(1, 3)]
-    assert "nombre" in header_names
+    # Row 1 header — single column only
+    assert ws.cell(row=1, column=1).value == "nombre"
+    assert ws.cell(row=1, column=2).value is None
 
 
 # ---------------------------------------------------------------------------
@@ -101,7 +103,7 @@ def test_preview_missing_nombre_column(client, admin_token):
 # 4. Preview marks existing categories as "omitir"
 # ---------------------------------------------------------------------------
 
-def test_preview_marks_existing_as_omitir(client, admin_token):
+def test_preview_marks_existing_as_omitir(client, admin_token, setup_test_db):
     """Categories already in DB are marked 'omitir' during preview."""
     from app.models.tipo_producto import TipoProducto
 
@@ -154,7 +156,7 @@ def test_import_creates_tipos(client, admin_token):
 # 6. Import skips (omits) existing categories
 # ---------------------------------------------------------------------------
 
-def test_import_skips_existing(client, admin_token):
+def test_import_skips_existing(client, admin_token, setup_test_db):
     """Import skips categories that already exist (case-insensitive)."""
     from app.models.tipo_producto import TipoProducto
 
@@ -186,7 +188,7 @@ def test_import_skips_existing(client, admin_token):
 # 7. Import is idempotent
 # ---------------------------------------------------------------------------
 
-def test_import_idempotent(client, admin_token):
+def test_import_idempotent(client, admin_token, setup_test_db):
     """Same idempotency_key returns cached result without duplicate inserts."""
     content = _xlsx([["Panadería"]])
     key = "test-idem-key-001"
@@ -274,3 +276,47 @@ def test_preview_empty_file(client, admin_token):
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Direct parser unit tests
+# ---------------------------------------------------------------------------
+
+class TestCategoriasParserUnit:
+    """Unit tests for CategoriasParser — no HTTP, no DB."""
+
+    def test_valid_single_row(self, setup_test_db):
+        """Single valid row → a_crear=1, a_omitir=0."""
+        from app.services.categorias_parser import CategoriasParser
+
+        content = _xlsx([["Frutas"]])
+        result = CategoriasParser.parse(content, "test.xlsx")
+        assert result.a_crear == 1
+        assert result.a_omitir == 0
+        assert len(result.valid_rows) == 1
+        assert len(result.invalid_rows) == 0
+        assert result.valid_rows[0].nombre == "Frutas"
+        assert result.valid_rows[0].status == "crear"
+
+    def test_within_file_duplicate(self, setup_test_db):
+        """Second occurrence of same nombre → InvalidRow with 'duplicado' in motivo."""
+        from app.services.categorias_parser import CategoriasParser
+
+        content = _xlsx([["Verduras"], ["Verduras"]])
+        result = CategoriasParser.parse(content, "test.xlsx")
+        assert result.a_crear == 1
+        assert len(result.valid_rows) == 1
+        assert len(result.invalid_rows) == 1
+        assert "duplicado" in result.invalid_rows[0].motivo.lower()
+
+    def test_existing_nombres_marks_omitir(self, setup_test_db):
+        """Row matching existing_nombres → status 'omitir'."""
+        from app.services.categorias_parser import CategoriasParser
+
+        existing = {"lácteos"}
+        content = _xlsx([["Lácteos"], ["Bebidas"]])
+        result = CategoriasParser.parse(content, "test.xlsx", existing_nombres=existing)
+        assert result.a_omitir == 1
+        assert result.a_crear == 1
+        omit_row = next(r for r in result.valid_rows if r.status == "omitir")
+        assert omit_row.nombre == "Lácteos"

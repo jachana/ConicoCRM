@@ -14,9 +14,8 @@ import json
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api.config import require_admin
@@ -30,8 +29,8 @@ router = APIRouter()
 
 def _get_existing_nombres(db: Session) -> set[str]:
     """Return set of lowercased TipoProducto.nombre values from DB."""
-    rows = db.query(func.lower(TipoProducto.nombre)).all()
-    return {r[0] for r in rows}
+    rows = db.query(TipoProducto.nombre).all()
+    return {r[0].lower() for r in rows}
 
 
 # ============================================================================
@@ -116,7 +115,7 @@ async def preview_categorias(
 @router.post("/import")
 async def import_categorias(
     file: UploadFile,
-    idempotency_key: Optional[str] = Query(default=None),
+    idempotency_key: Optional[str] = None,
     perms: tuple[User, Session] = Depends(require_admin),
 ):
     current_user, db = perms
@@ -182,40 +181,25 @@ async def import_categorias(
                 })
                 continue
 
-            # status == "crear"
-            try:
-                # Case-insensitive check before creating (race-condition guard)
-                existing = (
-                    db.query(TipoProducto)
-                    .filter(func.lower(TipoProducto.nombre) == row.nombre.lower())
-                    .first()
-                )
-                if existing:
-                    omitted_count += 1
-                    report_rows.append({
-                        "row_num": row.row_num,
-                        "nombre": row.nombre,
-                        "status": "omitir",
-                        "errors": [],
-                    })
-                else:
-                    nuevo = TipoProducto(nombre=row.nombre)
-                    db.add(nuevo)
-                    db.flush()
-                    created_count += 1
-                    report_rows.append({
-                        "row_num": row.row_num,
-                        "nombre": row.nombre,
-                        "status": "crear",
-                        "errors": [],
-                    })
-            except Exception as e:
-                error_count += 1
+            # status == "crear" — Python-side race-condition guard
+            if row.nombre.lower() in existing_nombres:
+                omitted_count += 1
                 report_rows.append({
                     "row_num": row.row_num,
                     "nombre": row.nombre,
-                    "status": "error",
-                    "errors": [str(e)],
+                    "status": "omitir",
+                    "errors": [],
+                })
+            else:
+                nuevo = TipoProducto(nombre=row.nombre)
+                db.add(nuevo)
+                existing_nombres.add(row.nombre.lower())
+                created_count += 1
+                report_rows.append({
+                    "row_num": row.row_num,
+                    "nombre": row.nombre,
+                    "status": "crear",
+                    "errors": [],
                 })
 
         for row in parse_result.invalid_rows:
