@@ -361,7 +361,7 @@ export function ImportOCSection() {
         <div className="flex justify-between items-center">
           <Button variant="ghost" size="sm" onClick={reset}>Cancelar</Button>
           <Button onClick={handleImport} disabled={busy}>
-            {busy ? 'Importando...' : `Importar ${preview.a_crear} OC históricas`}
+            {busy ? 'Importando...' : `Importar ${preview.a_crear} OC histórica${preview.a_crear !== 1 ? 's' : ''}`}
           </Button>
         </div>
       )}
