@@ -1,11 +1,15 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Eye, Inbox, Plus } from 'lucide-react'
+import { Eye, Inbox, Plus, ArrowUp, ArrowDown, Download, Printer } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   listarLibrosVentas,
   listarLibrosCompras,
+  exportLibrosVentasCSV,
+  exportLibrosComprasCSV,
+  exportLibrosVentasExcel,
+  exportLibrosComprasExcel,
   type LibroVentasRead,
   type LibroComprasRead,
   type LibroVentasFilters,
@@ -57,28 +61,38 @@ export default function LibrosList() {
   const navigate = useNavigate()
 
   const [tipo, setTipo] = useState<'ventas' | 'compras'>('ventas')
-  const [periodo, setPeriodo] = useState('')
+  const [periodoFrom, setPeriodoFrom] = useState('')
+  const [periodoTo, setPeriodoTo] = useState('')
   const [estado, setEstado] = useState<'borrador' | 'enviado' | ''>('')
+  const [sortBy, setSortBy] = useState<'periodo' | 'monto_total' | 'created_at' | ''>('')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [page, setPage] = useState(1)
+  const [isExporting, setIsExporting] = useState(false)
 
   const ventasFilters: LibroVentasFilters = useMemo(
     () => ({
-      periodo: periodo || undefined,
+      periodo_from: periodoFrom || undefined,
+      periodo_to: periodoTo || undefined,
       estado: (estado as 'borrador' | 'enviado') || undefined,
+      sort_by: (sortBy as 'periodo' | 'monto_total' | 'created_at') || undefined,
+      sort_order: sortBy ? sortOrder : undefined,
       limit: PAGE_SIZE,
       offset: (page - 1) * PAGE_SIZE,
     }),
-    [periodo, estado, page],
+    [periodoFrom, periodoTo, estado, sortBy, sortOrder, page],
   )
 
   const comprasFilters: LibroComprasFilters = useMemo(
     () => ({
-      periodo: periodo || undefined,
+      periodo_from: periodoFrom || undefined,
+      periodo_to: periodoTo || undefined,
       estado: (estado as 'borrador' | 'enviado') || undefined,
+      sort_by: (sortBy as 'periodo' | 'monto_total' | 'created_at') || undefined,
+      sort_order: sortBy ? sortOrder : undefined,
       limit: PAGE_SIZE,
       offset: (page - 1) * PAGE_SIZE,
     }),
-    [periodo, estado, page],
+    [periodoFrom, periodoTo, estado, sortBy, sortOrder, page],
   )
 
   const { data: ventasData, isLoading: ventasLoading } = useQuery<
@@ -102,20 +116,41 @@ export default function LibrosList() {
   const libros = data?.data ?? []
   const pagination = data?.pagination
 
-  const hasFilters = !!(periodo || estado)
+  const hasFilters = !!(periodoFrom || periodoTo || estado || sortBy)
   const hasNextPage = libros.length === PAGE_SIZE
 
   function clearFilters() {
-    setPeriodo('')
+    setPeriodoFrom('')
+    setPeriodoTo('')
     setEstado('')
+    setSortBy('')
+    setSortOrder('asc')
     setPage(1)
   }
 
   function handleTipoChange(newTipo: 'ventas' | 'compras') {
     setTipo(newTipo)
-    setPeriodo('')
+    setPeriodoFrom('')
+    setPeriodoTo('')
     setEstado('')
+    setSortBy('')
+    setSortOrder('asc')
     setPage(1)
+  }
+
+  function handleSortByChange(column: 'periodo' | 'monto_total' | 'created_at') {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(column)
+      setSortOrder('asc')
+    }
+    setPage(1)
+  }
+
+  function getSortIcon(column: 'periodo' | 'monto_total' | 'created_at') {
+    if (sortBy !== column) return null
+    return sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
   }
 
   function navigateToDetail(libroId: number) {
@@ -126,12 +161,245 @@ export default function LibrosList() {
     }
   }
 
+  function getExportFilters() {
+    return {
+      periodo_from: periodoFrom || undefined,
+      periodo_to: periodoTo || undefined,
+      estado: (estado as 'borrador' | 'enviado') || undefined,
+      sort_by: (sortBy as 'periodo' | 'monto_total' | 'created_at') || undefined,
+      sort_order: sortBy ? sortOrder : undefined,
+    }
+  }
+
+  function formatDateForFilename(date: Date): string {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}${month}${day}`
+  }
+
+  function downloadBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  async function handleExportCSV() {
+    try {
+      setIsExporting(true)
+      const filters = getExportFilters()
+      const date = formatDateForFilename(new Date())
+      let blob: Blob
+
+      if (tipo === 'ventas') {
+        blob = await exportLibrosVentasCSV(filters)
+      } else {
+        blob = await exportLibrosComprasCSV(filters)
+      }
+
+      downloadBlob(blob, `libros-${tipo}-${date}.csv`)
+      toast.success('Archivo descargado')
+    } catch (error) {
+      console.error('Export error:', error)
+      toast.error('Error al descargar el archivo')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  async function handleExportExcel() {
+    try {
+      setIsExporting(true)
+      const filters = getExportFilters()
+      const date = formatDateForFilename(new Date())
+      let blob: Blob
+
+      if (tipo === 'ventas') {
+        blob = await exportLibrosVentasExcel(filters)
+      } else {
+        blob = await exportLibrosComprasExcel(filters)
+      }
+
+      downloadBlob(blob, `libros-${tipo}-${date}.xlsx`)
+      toast.success('Archivo descargado')
+    } catch (error) {
+      console.error('Export error:', error)
+      toast.error('Error al descargar el archivo')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  function getFilterSummary() {
+    const parts: string[] = []
+
+    if (periodoFrom || periodoTo) {
+      const from = periodoFrom || '—'
+      const to = periodoTo || '—'
+      parts.push(`Período: ${from} a ${to}`)
+    }
+
+    if (estado) {
+      parts.push(`Estado: ${estado}`)
+    }
+
+    if (sortBy) {
+      const sortLabel =
+        sortBy === 'periodo'
+          ? 'Período'
+          : sortBy === 'monto_total'
+            ? 'Monto Total'
+            : 'Fecha Creación'
+      parts.push(`Ordenar por: ${sortLabel} ${sortOrder}`)
+    }
+
+    return parts.length > 0 ? parts.join(', ') : 'Sin filtros'
+  }
+
+  function handlePrint() {
+    window.print()
+  }
+
   return (
-    <div className="p-4 md:p-6 max-w-7xl">
-      {/* Header */}
+    <>
+      <style>{`
+        /* Hide print header by default */
+        .print-header {
+          display: none;
+        }
+
+        @media print {
+          /* Show print header when printing */
+          .print-header {
+            display: block !important;
+            page-break-after: avoid;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 12px;
+          }
+
+          .print-header h2 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 0 0 8px 0;
+          }
+
+          .print-header .print-filters {
+            font-size: 9pt;
+            color: #333;
+            margin: 6px 0;
+            line-height: 1.4;
+          }
+
+          .print-header .print-date {
+            font-size: 8pt;
+            color: #666;
+            margin-top: 6px;
+          }
+
+          /* Hide navigation and UI elements */
+          button, [role="button"], .no-print { display: none !important; }
+
+          /* Hide pagination */
+          [class*="pagination"] { display: none !important; }
+
+          /* Simplify borders and shadows */
+          box-shadow, .shadow-elev-1, [class*="shadow"] { display: none !important; }
+
+          /* Table optimization */
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt;
+          }
+
+          th, td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: left;
+          }
+
+          th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            font-size: 9pt;
+          }
+
+          td {
+            font-size: 9pt;
+            word-break: break-word;
+          }
+
+          /* Page break control */
+          tr { page-break-inside: avoid; }
+          thead { display: table-header-group; }
+
+          /* Remove action column on print */
+          td:last-child, th:last-child { display: none !important; }
+
+          /* Adjust colors for print */
+          color: #000;
+          background-color: white;
+
+          /* Margins for standard paper */
+          body { margin: 0.5in; }
+
+          /* Preserve text alignment */
+          .text-right { text-align: right; }
+          .font-num { font-family: 'Courier New', monospace; }
+
+          /* Remove dark mode for printing */
+          .dark { background: white; color: black; }
+          .dark * { background: inherit; color: inherit; }
+        }
+      `}</style>
+      <div className="p-4 md:p-6 max-w-7xl">
+        {/* Print header - only visible in print preview */}
+        <div className="print-header">
+          <h2>Libros {tipo === 'ventas' ? 'de Ventas' : 'de Compras'}</h2>
+          <div className="print-filters">{getFilterSummary()}</div>
+          <div className="print-date">
+            Imprimido el {new Date().toLocaleDateString('es-CL', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </div>
+        </div>
+
+        {/* Header */}
       <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Libros</h1>
         <div className="flex gap-2">
+          <Button
+            leftIcon={<Printer />}
+            variant="outline"
+            onClick={handlePrint}
+          >
+            Imprimir
+          </Button>
+          <Button
+            leftIcon={<Download />}
+            variant="outline"
+            disabled={isExporting}
+            onClick={handleExportCSV}
+          >
+            {isExporting ? '...' : 'CSV'}
+          </Button>
+          <Button
+            leftIcon={<Download />}
+            variant="outline"
+            disabled={isExporting}
+            onClick={handleExportExcel}
+          >
+            {isExporting ? '...' : 'Excel'}
+          </Button>
           <Button leftIcon={<Plus />} onClick={() => navigate(`/libros/${tipo}/nueva`)}>
             Nuevo
           </Button>
@@ -164,13 +432,25 @@ export default function LibrosList() {
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap gap-3 items-end bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-200 dark:border-gray-800 shadow-elev-1">
-        <FormField label="Período (YYYY-MM)">
+        <FormField label="Desde">
           <Input
             type="month"
             size="sm"
-            value={periodo}
+            value={periodoFrom}
             onChange={(e) => {
-              setPeriodo(e.target.value)
+              setPeriodoFrom(e.target.value)
+              setPage(1)
+            }}
+            className="w-40"
+          />
+        </FormField>
+        <FormField label="Hasta">
+          <Input
+            type="month"
+            size="sm"
+            value={periodoTo}
+            onChange={(e) => {
+              setPeriodoTo(e.target.value)
               setPage(1)
             }}
             className="w-40"
@@ -194,6 +474,50 @@ export default function LibrosList() {
             </SelectContent>
           </Select>
         </FormField>
+        <FormField label="Ordenar por">
+          <Select
+            value={sortBy || 'none'}
+            onValueChange={(v) => {
+              if (v === 'none') {
+                setSortBy('')
+                setSortOrder('asc')
+              } else {
+                setSortBy(v as 'periodo' | 'monto_total' | 'created_at')
+                setSortOrder('asc')
+              }
+              setPage(1)
+            }}
+          >
+            <SelectTrigger size="sm" className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Sin ordenar</SelectItem>
+              <SelectItem value="periodo">Período</SelectItem>
+              <SelectItem value="monto_total">Monto Total</SelectItem>
+              <SelectItem value="created_at">Fecha Creación</SelectItem>
+            </SelectContent>
+          </Select>
+        </FormField>
+        {sortBy && (
+          <FormField label="Orden">
+            <Select
+              value={sortOrder}
+              onValueChange={(v) => {
+                setSortOrder(v as 'asc' | 'desc')
+                setPage(1)
+              }}
+            >
+              <SelectTrigger size="sm" className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="asc">Ascendente</SelectItem>
+                <SelectItem value="desc">Descendente</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormField>
+        )}
         {hasFilters && (
           <Button size="xs" variant="ghost" onClick={clearFilters}>
             Limpiar
@@ -220,13 +544,37 @@ export default function LibrosList() {
             <Table>
               <THead>
                 <TR>
-                  <TH>Período</TH>
+                  <TH>
+                    <button
+                      onClick={() => handleSortByChange('periodo')}
+                      className="flex items-center gap-2 hover:text-brand-600 dark:hover:text-brand-400 transition"
+                    >
+                      Período
+                      {getSortIcon('periodo')}
+                    </button>
+                  </TH>
                   <TH>Total Registros</TH>
-                  <TH className="text-right">Monto Total</TH>
+                  <TH className="text-right">
+                    <button
+                      onClick={() => handleSortByChange('monto_total')}
+                      className="flex items-center justify-end gap-2 hover:text-brand-600 dark:hover:text-brand-400 transition"
+                    >
+                      Monto Total
+                      {getSortIcon('monto_total')}
+                    </button>
+                  </TH>
                   {tipo === 'ventas' && <TH>Folio Inicio - Fin</TH>}
                   {tipo === 'compras' && <TH>RUT Proveedor</TH>}
                   <TH>Estado</TH>
-                  <TH>Fecha Creación</TH>
+                  <TH>
+                    <button
+                      onClick={() => handleSortByChange('created_at')}
+                      className="flex items-center gap-2 hover:text-brand-600 dark:hover:text-brand-400 transition"
+                    >
+                      Fecha Creación
+                      {getSortIcon('created_at')}
+                    </button>
+                  </TH>
                   <TH className="text-right">Acciones</TH>
                 </TR>
               </THead>
@@ -314,6 +662,7 @@ export default function LibrosList() {
           </Button>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

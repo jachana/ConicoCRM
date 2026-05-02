@@ -83,7 +83,29 @@ describe('LibrosList', () => {
 
   it('renderiza filtros correctamente', async () => {
     renderPage()
-    expect(screen.getByText('Período (YYYY-MM)')).toBeInTheDocument()
+    expect(screen.getByText('Desde')).toBeInTheDocument()
+    expect(screen.getByText('Hasta')).toBeInTheDocument()
     expect(screen.getByText('Estado')).toBeInTheDocument()
+    expect(screen.getByText('Ordenar por')).toBeInTheDocument()
+  })
+
+  it('tiene botón Imprimir', async () => {
+    renderPage()
+    await waitFor(() => {
+      const printBtn = screen.getByText('Imprimir')
+      expect(printBtn).toBeInTheDocument()
+    })
+  })
+
+  it('abre diálogo de impresión al hacer click en botón Imprimir', async () => {
+    const windowPrintSpy = vi.spyOn(window, 'print').mockImplementation(() => {})
+    renderPage()
+    await waitFor(() => {
+      const printBtn = screen.getByText('Imprimir')
+      expect(printBtn).toBeInTheDocument()
+      fireEvent.click(printBtn)
+      expect(windowPrintSpy).toHaveBeenCalled()
+    })
+    windowPrintSpy.mockRestore()
   })
 })
