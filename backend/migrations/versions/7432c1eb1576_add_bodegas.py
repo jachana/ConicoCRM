@@ -1,7 +1,7 @@
 """add_bodegas
 
-Revision ID: a6b7c8d9e0f1
-Revises: z5a6b7c8d9e0
+Revision ID: 7432c1eb1576
+Revises: a6b7c8d9e0f1
 Create Date: 2026-05-01 00:00:00.000000
 
 Adds Bodega (warehouse) model with minimal schema:
@@ -15,8 +15,8 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = 'a6b7c8d9e0f1'
-down_revision: Union[str, Sequence[str], None] = 'z5a6b7c8d9e0'
+revision: str = '7432c1eb1576'
+down_revision: Union[str, Sequence[str], None] = 'a6b7c8d9e0f1'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
