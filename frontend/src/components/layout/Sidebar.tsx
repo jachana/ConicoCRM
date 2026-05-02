@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, Users, Package, ShoppingCart,
   Warehouse, Truck, UserCog, Building2, CreditCard,
   ChevronLeft, ChevronRight, LogOut, Sun, Moon, X, ClipboardList, Settings, Banknote, BarChart2, CheckSquare, AlarmClock, ShieldCheck,
-  Receipt, ScrollText, FileMinus, FilePlus, Contact, Download, Target, BookOpen,
+  Receipt, ScrollText, FileMinus, FilePlus, Contact, Download, Target, BookOpen, Mail,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth'
 import { useTheme } from './ThemeProvider'
@@ -69,6 +69,7 @@ const SECTIONS: NavSection[] = [
       { to: '/facturas',       icon: Receipt,    label: 'Facturas',           module: 'facturas' },
       { to: '/boletas',        icon: ScrollText, label: 'Boletas',            module: 'boletas' },
       { to: '/libros',         icon: BookOpen,   label: 'Libros',             module: 'libros' },
+      { to: '/dte-recepcion',  icon: Mail,       label: 'DTE Recepción',      module: 'dte_recepcion' },
       { to: '/guias-despacho', icon: Truck,      label: 'Guías de Despacho',  module: 'guias_despacho' },
       { to: '/notas-credito',  icon: FileMinus,  label: 'Notas de Crédito',   adminOnly: true },
       { to: '/notas-debito',   icon: FilePlus,   label: 'Notas de Débito',    adminOnly: true },

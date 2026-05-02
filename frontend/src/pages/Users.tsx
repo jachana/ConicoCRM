@@ -14,7 +14,7 @@ import {
 
 const MODULES: Module[] = [
   'catalogo','clientes','empresas','proveedores','cotizaciones','nota_venta',
-  'facturas','boletas','ordenes_compra','inventario','rrhh','dashboard','usuarios','guias_despacho','tareas','libros',
+  'facturas','boletas','ordenes_compra','inventario','rrhh','dashboard','usuarios','guias_despacho','tareas','libros','dte_recepcion',
 ]
 const ACTIONS: Action[] = ['view','create','edit','delete']
 
@@ -23,7 +23,7 @@ const MODULE_LABELS: Record<Module, string> = {
   cotizaciones: 'Cotizaciones', nota_venta: 'Nota de Venta', facturas: 'Facturas',
   boletas: 'Boletas', ordenes_compra: 'Órdenes de Compra', inventario: 'Inventario',
   rrhh: 'RRHH', dashboard: 'Dashboard', usuarios: 'Usuarios', guias_despacho: 'Guías de Despacho',
-  tareas: 'Tareas', libros: 'Libros',
+  tareas: 'Tareas', libros: 'Libros', dte_recepcion: 'DTE Recepción',
 }
 
 const ACTION_LABELS: Record<Action, string> = {

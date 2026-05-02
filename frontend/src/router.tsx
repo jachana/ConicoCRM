@@ -31,6 +31,7 @@ import NotaCreditoNueva from './pages/NotaCreditoNueva'
 import BoletaNueva from './pages/BoletaNueva'
 import BoletaDetalle from './pages/BoletaDetalle'
 import BoletasList from './pages/BoletasList'
+import DTERecepcionList from './pages/DTERecepcionList'
 import LibrosList from './pages/LibrosList'
 import LibroDetalle from './pages/LibroDetalle'
 import GuiasDespachoList from './pages/GuiasDespachoList'
@@ -104,6 +105,7 @@ export const router = createBrowserRouter([
       { path: 'boletas', element: <BoletasList /> },
       { path: 'boletas/nueva', element: <BoletaNueva /> },
       { path: 'boletas/:id', element: <BoletaDetalle /> },
+      { path: 'dte-recepcion', element: <DTERecepcionList /> },
       { path: 'libros', element: <LibrosList /> },
       { path: 'libros/:tipo/:id', element: <LibroDetalle /> },
       { path: 'guias-despacho', element: <GuiasDespachoList /> },
