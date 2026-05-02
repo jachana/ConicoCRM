@@ -1,6 +1,6 @@
 """add_bodega_sede_counts_to_import_report
 
-Revision ID: a6b7c8d9e0f1
+Revision ID: b7c8d9e0f1a2
 Revises: z5a6b7c8d9e0
 Create Date: 2026-05-01 12:00:00.000000
 
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = 'a6b7c8d9e0f1'
+revision: str = 'b7c8d9e0f1a2'
 down_revision: Union[str, Sequence[str], None] = 'z5a6b7c8d9e0'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

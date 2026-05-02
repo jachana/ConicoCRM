@@ -1,7 +1,7 @@
 """add_tipo_monto_expires_at_nota_alerta
 
 Revision ID: 57449dcd3ca9
-Revises: a6b7c8d9e0f1
+Revises: b7c8d9e0f1a2
 Create Date: 2026-05-01 18:00:00.000000
 
 Adds three new fields to notas_alertas table:
@@ -16,7 +16,7 @@ from alembic import op
 
 
 revision: str = '57449dcd3ca9'
-down_revision: Union[str, Sequence[str], None] = 'a6b7c8d9e0f1'
+down_revision: Union[str, Sequence[str], None] = 'b7c8d9e0f1a2'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
