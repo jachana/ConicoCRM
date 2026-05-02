@@ -24,15 +24,25 @@
   "cards": [
     {
       "list": "In progress",
-      "name": "[Roadmap] OC enhancements + Empresa Cliente actualización",
+      "name": "[Onboarding] Import Bodegas + Sedes de despacho",
       "labels": [
-        "Roadmap"
+        "Core"
       ],
-      "desc": "Fases pendientes según roadmap memory.",
+      "desc": "Carga inicial de bodegas (almacenes físicos para stock) y sedes de despacho asociadas a empresas. Pre-requisito para import de stock inicial y para asignar despachos por sede.",
       "checklist": [
-        "Fase 6 — OC enhancements (no iniciada)",
-        "Fase 4a — Empresa + Cliente actualización (no iniciada)",
-        "Decidir alcance específico"
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Hojas separadas: Bodegas / Sedes",
+        "Bodegas: codigo, nombre, direccion, comuna, activa",
+        "Sedes: rut_empresa, alias, direccion, comuna, contacto, telefono",
+        "Sede con rut_empresa inexistente → crear sede 'pendiente' + reportar (no descartar)",
+        "Match bodega por código; sede por (rut_empresa + alias)"
       ]
     }
   ]
