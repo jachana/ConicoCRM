@@ -719,3 +719,355 @@ class TestPeriodoValidation:
         )
         assert response.status_code == 200
         assert len(response.json()["data"]) == 1
+
+
+class TestEstadoFilter:
+    """Tests for estado filter on both ventas and compras"""
+
+    def test_filter_ventas_by_estado_borrador(self, client, admin_token, sample_libros_ventas):
+        """Test filtering libros ventas by estado=borrador"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"estado": "borrador"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 2
+        assert all(item["estado"] == "borrador" for item in data["data"])
+
+    def test_filter_ventas_by_estado_enviado(self, client, admin_token, sample_libros_ventas):
+        """Test filtering libros ventas by estado=enviado"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"estado": "enviado"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 1
+        assert all(item["estado"] == "enviado" for item in data["data"])
+
+    def test_filter_compras_by_estado_borrador(self, client, admin_token, sample_libros_compras):
+        """Test filtering libros compras by estado=borrador"""
+        response = client.get(
+            "/api/libros/compras",
+            params={"estado": "borrador"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        # Admin user should see 2 borrador records from their empresa
+        assert data["pagination"]["total"] == 2
+        assert all(item["estado"] == "borrador" for item in data["data"])
+
+    def test_filter_compras_by_estado_enviado(self, client, admin_token, sample_libros_compras):
+        """Test filtering libros compras by estado=enviado"""
+        response = client.get(
+            "/api/libros/compras",
+            params={"estado": "enviado"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        # Admin user should see 0 enviado records from their empresa
+        assert data["pagination"]["total"] == 0
+
+    def test_filter_estado_no_match(self, client, admin_token, sample_libros_ventas):
+        """Test filtering with estado that doesn't match any records"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"estado": "nonexistent"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 0
+
+    def test_filter_estado_with_periodo(self, client, admin_token, sample_libros_ventas):
+        """Test combining estado and periodo filters"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"estado": "borrador", "periodo": "2026-01"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 1
+        assert data["data"][0]["estado"] == "borrador"
+        assert data["data"][0]["periodo"] == "2026-01"
+
+
+class TestPeriodoRangeFilter:
+    """Tests for periodo_from and periodo_to filters"""
+
+    def test_filter_ventas_by_periodo_from(self, client, admin_token, sample_libros_ventas):
+        """Test filtering libros ventas by periodo_from"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"periodo_from": "2026-02"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 2
+        assert all(item["periodo"] >= "2026-02" for item in data["data"])
+
+    def test_filter_ventas_by_periodo_to(self, client, admin_token, sample_libros_ventas):
+        """Test filtering libros ventas by periodo_to"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"periodo_to": "2026-02"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 2
+        assert all(item["periodo"] <= "2026-02" for item in data["data"])
+
+    def test_filter_ventas_by_periodo_range(self, client, admin_token, sample_libros_ventas):
+        """Test filtering libros ventas by periodo range"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"periodo_from": "2026-01", "periodo_to": "2026-02"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 2
+        assert all("2026-01" <= item["periodo"] <= "2026-02" for item in data["data"])
+
+    def test_filter_compras_by_periodo_range(self, client, admin_token, sample_libros_compras):
+        """Test filtering libros compras by periodo range"""
+        response = client.get(
+            "/api/libros/compras",
+            params={"periodo_from": "2026-01", "periodo_to": "2026-02"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        # Admin user should see 2 records from their empresa in this range
+        assert data["pagination"]["total"] == 2
+
+    def test_filter_periodo_range_single_month(self, client, admin_token, sample_libros_ventas):
+        """Test periodo range with same from and to (single month)"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"periodo_from": "2026-01", "periodo_to": "2026-01"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 1
+        assert all(item["periodo"] == "2026-01" for item in data["data"])
+
+    def test_filter_periodo_range_backwards(self, client, admin_token, sample_libros_ventas):
+        """Test periodo range with from > to (should return no results)"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"periodo_from": "2026-03", "periodo_to": "2026-01"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 0
+
+    def test_filter_periodo_from_invalid_format(self, client, admin_token):
+        """Test invalid periodo_from format returns 400"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"periodo_from": "2026/01"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 400
+
+    def test_filter_periodo_to_invalid_format(self, client, admin_token):
+        """Test invalid periodo_to format returns 400"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"periodo_to": "invalid"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 400
+
+
+class TestSortingFilters:
+    """Tests for sort_by and sort_order parameters"""
+
+    def test_sort_by_periodo_asc(self, client, admin_token, sample_libros_ventas):
+        """Test sorting by periodo ascending"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"sort_by": "periodo", "sort_order": "asc"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        periodos = [item["periodo"] for item in data["data"]]
+        assert periodos == sorted(periodos)
+
+    def test_sort_by_periodo_desc(self, client, admin_token, sample_libros_ventas):
+        """Test sorting by periodo descending"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"sort_by": "periodo", "sort_order": "desc"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        periodos = [item["periodo"] for item in data["data"]]
+        assert periodos == sorted(periodos, reverse=True)
+
+    def test_sort_by_monto_total_asc(self, client, admin_token, sample_libros_ventas):
+        """Test sorting by monto_total ascending"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"sort_by": "monto_total", "sort_order": "asc"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        montos = [item["monto_total"] for item in data["data"]]
+        assert montos == sorted(montos)
+
+    def test_sort_by_created_at_desc(self, client, admin_token, sample_libros_ventas):
+        """Test sorting by created_at descending (default)"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"sort_by": "created_at", "sort_order": "desc"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        timestamps = [item["created_at"] for item in data["data"]]
+        assert timestamps == sorted(timestamps, reverse=True)
+
+    def test_sort_by_estado_asc(self, client, admin_token, sample_libros_ventas):
+        """Test sorting by estado ascending"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"sort_by": "estado", "sort_order": "asc"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        estados = [item["estado"] for item in data["data"]]
+        assert estados == sorted(estados)
+
+    def test_sort_by_invalid_field(self, client, admin_token, sample_libros_ventas):
+        """Test invalid sort_by field returns 400"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"sort_by": "invalid_field"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 400
+
+    def test_sort_order_invalid_value(self, client, admin_token, sample_libros_ventas):
+        """Test invalid sort_order value returns 400"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"sort_by": "periodo", "sort_order": "invalid"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 400
+
+    def test_sort_without_sort_order_defaults_asc(self, client, admin_token, sample_libros_ventas):
+        """Test that sort_by without sort_order defaults to asc"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"sort_by": "periodo"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        periodos = [item["periodo"] for item in data["data"]]
+        assert periodos == sorted(periodos)
+
+    def test_sort_compras_by_estado(self, client, admin_token, sample_libros_compras):
+        """Test sorting libros compras by estado"""
+        response = client.get(
+            "/api/libros/compras",
+            params={"sort_by": "estado", "sort_order": "desc"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        estados = [item["estado"] for item in data["data"]]
+        assert estados == sorted(estados, reverse=True)
+
+    def test_sort_by_total_registros(self, client, admin_token, sample_libros_ventas):
+        """Test sorting by total_registros"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={"sort_by": "total_registros", "sort_order": "desc"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        registros = [item["total_registros"] for item in data["data"]]
+        assert registros == sorted(registros, reverse=True)
+
+
+class TestComplexFilterCombinations:
+    """Tests for combining multiple filters"""
+
+    def test_estado_and_periodo_range_and_sort(self, client, admin_token, sample_libros_ventas):
+        """Test combining estado, periodo range, and sorting"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={
+                "estado": "borrador",
+                "periodo_from": "2026-01",
+                "periodo_to": "2026-02",
+                "sort_by": "periodo",
+                "sort_order": "asc"
+            },
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 2
+        assert all(item["estado"] == "borrador" for item in data["data"])
+        periodos = [item["periodo"] for item in data["data"]]
+        assert periodos == sorted(periodos)
+
+    def test_all_filters_combined(self, client, admin_token, sample_libros_ventas):
+        """Test all filters: estado, periodo_from, periodo_to, sort_by, sort_order"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={
+                "estado": "borrador",
+                "periodo_from": "2026-01",
+                "periodo_to": "2026-03",
+                "sort_by": "monto_total",
+                "sort_order": "desc",
+                "limit": 10,
+                "offset": 0
+            },
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert all(item["estado"] == "borrador" for item in data["data"])
+        assert all("2026-01" <= item["periodo"] <= "2026-03" for item in data["data"])
+        montos = [item["monto_total"] for item in data["data"]]
+        assert montos == sorted(montos, reverse=True)
+
+    def test_filters_with_pagination(self, client, admin_token, sample_libros_ventas):
+        """Test filters work correctly with pagination"""
+        response = client.get(
+            "/api/libros/ventas",
+            params={
+                "estado": "borrador",
+                "sort_by": "periodo",
+                "sort_order": "asc",
+                "limit": 1,
+                "offset": 0
+            },
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["data"]) == 1
+        assert data["pagination"]["total"] == 2

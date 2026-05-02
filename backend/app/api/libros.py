@@ -1,6 +1,7 @@
 """API endpoints for retrieving Libros (sales and purchase books)"""
 import re
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_permission
@@ -10,6 +11,10 @@ from app.models.user import User
 from app.schemas.libro import LibroVentasRead, LibroComprasRead
 
 router = APIRouter()
+
+# Valid sort fields for libros endpoints
+VALID_SORT_FIELDS = {"id", "periodo", "estado", "monto_total", "total_registros", "created_at"}
+VALID_SORT_ORDERS = {"asc", "desc"}
 
 
 def _validate_pagination(limit: int, offset: int) -> None:
@@ -45,11 +50,63 @@ def _validate_periodo(periodo: str | None) -> None:
         )
 
 
+def _validate_sort_params(sort_by: str | None, sort_order: str | None) -> None:
+    """Validate sort parameters.
+
+    Raises:
+        HTTPException: If sort_by or sort_order are invalid
+    """
+    if sort_by is None:
+        return
+
+    if sort_by not in VALID_SORT_FIELDS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"sort_by must be one of: {', '.join(sorted(VALID_SORT_FIELDS))}"
+        )
+
+    if sort_order and sort_order not in VALID_SORT_ORDERS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"sort_order must be one of: {', '.join(VALID_SORT_ORDERS)}"
+        )
+
+
+def _apply_sort(query, model, sort_by: str | None, sort_order: str | None):
+    """Apply sorting to a query.
+
+    Args:
+        query: SQLAlchemy query object
+        model: The model class (LibroVentas or LibroCompras)
+        sort_by: Field name to sort by
+        sort_order: 'asc' or 'desc'
+
+    Returns:
+        Sorted query
+    """
+    if sort_by is None:
+        # Default: sort by created_at descending
+        return query.order_by(desc(model.created_at))
+
+    sort_order = sort_order or "asc"
+    sort_column = getattr(model, sort_by)
+
+    if sort_order == "asc":
+        return query.order_by(asc(sort_column))
+    else:
+        return query.order_by(desc(sort_column))
+
+
 # ── Libros de Ventas ──────────────────────────────────────────────────
 
 @router.get("/ventas", response_model=dict)
 def listar_libros_ventas(
-    periodo: str | None = Query(None, description="Filter by YYYY-MM period"),
+    periodo: str | None = Query(None, description="Filter by exact YYYY-MM period"),
+    periodo_from: str | None = Query(None, description="Filter by YYYY-MM period from (inclusive)"),
+    periodo_to: str | None = Query(None, description="Filter by YYYY-MM period to (inclusive)"),
+    estado: str | None = Query(None, description="Filter by estado (borrador, enviado, etc)"),
+    sort_by: str | None = Query(None, description=f"Sort by field: {', '.join(sorted(VALID_SORT_FIELDS))}"),
+    sort_order: str | None = Query(None, description="Sort order: asc or desc"),
     limit: int = Query(50, ge=1, le=500, description="Pagination limit"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     perms: tuple[User, Session] = require_permission("libros", "view"),
@@ -57,7 +114,12 @@ def listar_libros_ventas(
     """Get list of sales books (Libros de Ventas) for current user's empresa.
 
     Parameters:
-    - periodo: Optional filter by YYYY-MM period
+    - periodo: Optional filter by exact YYYY-MM period
+    - periodo_from: Optional filter by YYYY-MM period from (inclusive)
+    - periodo_to: Optional filter by YYYY-MM period to (inclusive)
+    - estado: Optional filter by estado (borrador, enviado, etc)
+    - sort_by: Optional sort field
+    - sort_order: Optional sort order (asc or desc, default asc)
     - limit: Number of records per page (default 50, max 500)
     - offset: Number of records to skip (default 0)
 
@@ -70,6 +132,9 @@ def listar_libros_ventas(
     # Validate parameters
     _validate_pagination(limit, offset)
     _validate_periodo(periodo)
+    _validate_periodo(periodo_from)
+    _validate_periodo(periodo_to)
+    _validate_sort_params(sort_by, sort_order)
 
     # Ensure user has an empresa_id for authorization
     if not current_user.empresa_id:
@@ -84,12 +149,24 @@ def listar_libros_ventas(
     # Apply filters
     if periodo:
         query = query.filter(LibroVentas.periodo == periodo)
+    else:
+        # Only apply periodo range if periodo is not specified
+        if periodo_from:
+            query = query.filter(LibroVentas.periodo >= periodo_from)
+        if periodo_to:
+            query = query.filter(LibroVentas.periodo <= periodo_to)
 
-    # Count total before applying pagination
+    if estado:
+        query = query.filter(LibroVentas.estado == estado)
+
+    # Count total before applying pagination and sorting
     total = query.count()
 
+    # Apply sorting
+    query = _apply_sort(query, LibroVentas, sort_by, sort_order)
+
     # Apply pagination
-    libros = query.order_by(LibroVentas.created_at.desc()).offset(offset).limit(limit).all()
+    libros = query.offset(offset).limit(limit).all()
 
     # Convert to response schema
     data = [LibroVentasRead.model_validate(libro) for libro in libros]
@@ -141,7 +218,12 @@ def obtener_libro_ventas(
 
 @router.get("/compras", response_model=dict)
 def listar_libros_compras(
-    periodo: str | None = Query(None, description="Filter by YYYY-MM period"),
+    periodo: str | None = Query(None, description="Filter by exact YYYY-MM period"),
+    periodo_from: str | None = Query(None, description="Filter by YYYY-MM period from (inclusive)"),
+    periodo_to: str | None = Query(None, description="Filter by YYYY-MM period to (inclusive)"),
+    estado: str | None = Query(None, description="Filter by estado (borrador, enviado, etc)"),
+    sort_by: str | None = Query(None, description=f"Sort by field: {', '.join(sorted(VALID_SORT_FIELDS))}"),
+    sort_order: str | None = Query(None, description="Sort order: asc or desc"),
     limit: int = Query(50, ge=1, le=500, description="Pagination limit"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     perms: tuple[User, Session] = require_permission("libros", "view"),
@@ -149,7 +231,12 @@ def listar_libros_compras(
     """Get list of purchase books (Libros de Compras) for current user's empresa.
 
     Parameters:
-    - periodo: Optional filter by YYYY-MM period
+    - periodo: Optional filter by exact YYYY-MM period
+    - periodo_from: Optional filter by YYYY-MM period from (inclusive)
+    - periodo_to: Optional filter by YYYY-MM period to (inclusive)
+    - estado: Optional filter by estado (borrador, enviado, etc)
+    - sort_by: Optional sort field
+    - sort_order: Optional sort order (asc or desc, default asc)
     - limit: Number of records per page (default 50, max 500)
     - offset: Number of records to skip (default 0)
 
@@ -162,6 +249,9 @@ def listar_libros_compras(
     # Validate parameters
     _validate_pagination(limit, offset)
     _validate_periodo(periodo)
+    _validate_periodo(periodo_from)
+    _validate_periodo(periodo_to)
+    _validate_sort_params(sort_by, sort_order)
 
     # Ensure user has an empresa_id for authorization
     if not current_user.empresa_id:
@@ -176,12 +266,24 @@ def listar_libros_compras(
     # Apply filters
     if periodo:
         query = query.filter(LibroCompras.periodo == periodo)
+    else:
+        # Only apply periodo range if periodo is not specified
+        if periodo_from:
+            query = query.filter(LibroCompras.periodo >= periodo_from)
+        if periodo_to:
+            query = query.filter(LibroCompras.periodo <= periodo_to)
 
-    # Count total before applying pagination
+    if estado:
+        query = query.filter(LibroCompras.estado == estado)
+
+    # Count total before applying pagination and sorting
     total = query.count()
 
+    # Apply sorting
+    query = _apply_sort(query, LibroCompras, sort_by, sort_order)
+
     # Apply pagination
-    libros = query.order_by(LibroCompras.created_at.desc()).offset(offset).limit(limit).all()
+    libros = query.offset(offset).limit(limit).all()
 
     # Convert to response schema
     data = [LibroComprasRead.model_validate(libro) for libro in libros]
