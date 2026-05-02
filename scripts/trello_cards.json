@@ -23,7 +23,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Cotizaciones] Alertas de cliente — componente modal",
       "labels": [
         "Core"
@@ -39,7 +39,7 @@
       ]
     },
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Cotizaciones] Alertas de cliente — integración en formulario",
       "labels": [
         "Core"
@@ -55,7 +55,7 @@
       ]
     },
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Cotizaciones] Alertas de cliente — QA y validación",
       "labels": [
         "Core"
