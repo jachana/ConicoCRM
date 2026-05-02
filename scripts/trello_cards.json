@@ -23,7 +23,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Onboarding] Refactor payment_parser to match test spec",
       "labels": [
         "Core"
