@@ -10,6 +10,7 @@ import { ProductosImportSection } from '../components/onboarding/ProductosImport
 import { ImportBodegasSedesSection } from '../components/onboarding/ImportBodegasSedesSection'
 import { ImportVendedoresSection } from '../components/onboarding/ImportVendedoresSection'
 import { ImportStockSection } from '../components/onboarding/ImportStockSection'
+import { ImportNVSection } from '../components/onboarding/ImportNVSection'
 import { Stat } from '../components/onboarding/StatCard'
 import type { Empresa } from '../types'
 
@@ -124,6 +125,7 @@ export default function MigracionInicial() {
           <TabsTrigger value="bodegas_sedes">Bodegas + Sedes</TabsTrigger>
           <TabsTrigger value="vendedores">Vendedores</TabsTrigger>
           <TabsTrigger value="stock">Stock inicial</TabsTrigger>
+          <TabsTrigger value="nv_abiertas">NV Abiertas</TabsTrigger>
           <TabsTrigger value="cafs">CAF</TabsTrigger>
         </TabsList>
         <TabsContent value="proveedores">
@@ -146,6 +148,9 @@ export default function MigracionInicial() {
         </TabsContent>
         <TabsContent value="stock">
           <ImportStockSection />
+        </TabsContent>
+        <TabsContent value="nv_abiertas">
+          <ImportNVSection />
         </TabsContent>
         <TabsContent value="cafs">
           {selectedEmpresaId ? (
