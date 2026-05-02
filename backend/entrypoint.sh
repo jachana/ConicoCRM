@@ -2,7 +2,7 @@
 set -e
 
 echo "Running migrations..."
-alembic upgrade z9a0b1c2d3e4
+alembic upgrade heads
 
 echo "Running seed..."
 python scripts/seed_all.py || echo "Seed warning: non-fatal errors (see above)"
