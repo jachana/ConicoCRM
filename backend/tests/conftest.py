@@ -251,7 +251,7 @@ def cliente_demo(setup_test_db):
 def empresa_demo(setup_test_db):
     from app.models.empresa import Empresa
     session = TestingSession()
-    e = Empresa(nombre="Empresa Demo")
+    e = Empresa(nombre="Empresa Demo", rut="11.111.111-1")
     session.add(e)
     session.commit()
     session.refresh(e)

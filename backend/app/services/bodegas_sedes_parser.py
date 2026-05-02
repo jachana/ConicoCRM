@@ -204,10 +204,10 @@ class BodegasSedesParser:
         if not raw_rows:
             raise ParseError("El archivo está vacío")
 
-        if len(raw_rows) < 3:
+        if len(raw_rows) < 2:
             raise ParseError("El archivo debe tener encabezados y al menos una fila de datos")
 
-        # Row 0: headers, Row 1: documentation, Row 2+: data
+        # Row 0: headers
         header_row = raw_rows[0]
         headers = [
             str(h).strip().lower() if h is not None else ""
@@ -227,7 +227,26 @@ class BodegasSedesParser:
                     )
                 col_indices[col_name] = None
 
-        # Parse data rows (skip header row 0 and documentation row 1)
+        # Auto-detect if row 1 is documentation or data:
+        # If row 1 contains a value that looks like a RUT in the empresa_rut column, it's data.
+        # Otherwise it's likely a documentation row (generated from template).
+        data_rows = raw_rows[1:]
+        rut_col_idx = col_indices.get("empresa_rut")
+        if rut_col_idx is not None and len(raw_rows) > 1:
+            potential_first_data_row = raw_rows[1]
+            if rut_col_idx < len(potential_first_data_row):
+                first_col_value = potential_first_data_row[rut_col_idx]
+                # If first column is empty or looks like documentation text, skip this row
+                if first_col_value is None or str(first_col_value).strip() == "":
+                    data_rows = raw_rows[2:]
+                elif not any(c.isdigit() for c in str(first_col_value)):
+                    # No digits in first column -> probably documentation
+                    data_rows = raw_rows[2:]
+
+        if not data_rows:
+            raise ParseError("El archivo no contiene filas de datos")
+
+        # Parse data rows
         valid_rows = []
         invalid_rows = []
         bodegas_a_crear = 0
@@ -240,7 +259,7 @@ class BodegasSedesParser:
         seen_bodegas = {}  # (empresa_id, bodega_nombre) -> row_num
         seen_sedes = {}    # (empresa_id, sede_nombre) -> row_num
 
-        for row_num, raw_row in enumerate(raw_rows[2:], start=3):
+        for row_num, raw_row in enumerate(data_rows, start=len(raw_rows) - len(data_rows) + 1):
             result = self._parse_row(
                 row_num=row_num,
                 raw_row=raw_row,

@@ -120,9 +120,10 @@ def test_preview_marca_actualizar_si_existe(client, admin_token, empresa_demo):
     # Create bodega/sede via API
     from app.models.bodega import Bodega
     from app.models.sede_despacho import SedeDespacho
-    from app.database import get_db_context
+    import pytest
+    from tests.conftest import TestingSession
 
-    db = next(get_db_context())
+    db = TestingSession()
     try:
         bodega = Bodega(empresa_id=empresa_demo.id, nombre="Bodega Existente", direccion="Av Old")
         sede = SedeDespacho(empresa_id=empresa_demo.id, nombre="Sede Existente", direccion="Piso Old")
@@ -207,9 +208,9 @@ def test_import_actualiza_campos_modificados(client, admin_token, empresa_demo):
 
     # Verify data updated
     from app.models.bodega import Bodega
-    from app.database import get_db_context
+    from tests.conftest import TestingSession
 
-    db = next(get_db_context())
+    db = TestingSession()
     try:
         bodega = db.query(Bodega).filter(
             Bodega.empresa_id == empresa_demo.id,
