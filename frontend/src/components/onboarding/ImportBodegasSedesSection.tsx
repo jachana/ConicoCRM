@@ -6,36 +6,41 @@ import { Button, Card, Badge, Table, THead, TBody, TR, TH, TD, EmptyState } from
 
 type StatusType = 'crear' | 'actualizar' | 'error'
 
-interface PreviewFila {
-  fila: number
+interface PreviewRow {
+  row_num: number
   empresa_rut: string
   bodega_nombre: string
-  bodega_direccion: string
+  bodega_direccion: string | null
   sede_nombre: string
   sede_direccion: string
-  accion: 'crear' | 'actualizar'
-}
-
-interface PreviewError {
-  fila: number
-  empresa_rut: string | null
-  bodega_nombre: string | null
-  motivos: string[]
+  status: 'valid' | 'invalid'
+  errors: string[]
 }
 
 interface PreviewResp {
   total_filas: number
   filas_validas: number
   filas_invalidas: number
-  filas: PreviewFila[]
-  errores: PreviewError[]
+  a_crear: { bodegas: number; sedes: number }
+  a_actualizar: { bodegas: number; sedes: number }
+  rows: PreviewRow[]
 }
 
-interface ImportResp {
+interface ImportReport {
   created_bodega_count: number
   updated_bodega_count: number
   created_sede_count: number
   updated_sede_count: number
+  error_count: number
+  total_rows: number
+  rows: any[]
+}
+
+interface ImportResp {
+  status: 'success' | 'partial' | 'error'
+  import_id: string
+  timestamp: string
+  report: ImportReport
 }
 
 const STATUS_VARIANT: Record<StatusType, 'success' | 'info' | 'danger'> = {
@@ -55,7 +60,7 @@ export function ImportBodegasSedesSection() {
   const [file, setFile] = useState<File | null>(null)
   const [step, setStep] = useState<'idle' | 'preview' | 'importing' | 'done'>('idle')
   const [preview, setPreview] = useState<PreviewResp | null>(null)
-  const [result, setResult] = useState<ImportResp | null>(null)
+  const [result, setResult] = useState<ImportReport | null>(null)
   const [busy, setBusy] = useState(false)
   const [expandedErrors, setExpandedErrors] = useState<Set<number>>(new Set())
   const [dragActive, setDragActive] = useState(false)
@@ -131,9 +136,9 @@ export function ImportBodegasSedesSection() {
       const resp = await api.post<ImportResp>('/api/onboarding/bodegas-sedes/import', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
-      setResult(resp.data)
+      setResult(resp.data.report)
       setStep('done')
-      const { created_bodega_count, updated_bodega_count, created_sede_count, updated_sede_count } = resp.data
+      const { created_bodega_count, updated_bodega_count, created_sede_count, updated_sede_count } = resp.data.report
       toast.success(
         `Importación completada — Bodegas: ${created_bodega_count} creadas, ${updated_bodega_count} actualizadas | Sedes: ${created_sede_count} creadas, ${updated_sede_count} actualizadas`
       )
@@ -242,46 +247,50 @@ export function ImportBodegasSedesSection() {
           <div className="flex gap-4 mb-4 flex-wrap">
             <Stat label="Total filas" value={preview.total_filas} />
             <Stat label="Válidas" value={preview.filas_validas} color="green" />
+            <Stat label="Bodegas a crear" value={preview.a_crear.bodegas} color="green" />
+            <Stat label="Sedes a crear" value={preview.a_crear.sedes} color="green" />
             <Stat label="Con error" value={preview.filas_invalidas} color={preview.filas_invalidas > 0 ? 'red' : 'gray'} />
           </div>
 
-          {preview.errores.length > 0 && (
+          {preview.filas_invalidas > 0 && (
             <div className="space-y-2 mb-4">
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Filas con errores ({preview.errores.length}):</p>
-              {preview.errores.map((e) => (
-                <div key={e.fila} className="border border-red-200 dark:border-red-800 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => toggleErrorExpanded(e.fila)}
-                    className="w-full flex items-center justify-between px-3 py-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <XCircle className="w-3.5 h-3.5 text-red-700 dark:text-red-400 shrink-0" />
-                      <span className="text-xs text-red-700 dark:text-red-400 font-medium">
-                        Fila {e.fila}
-                        {e.empresa_rut && <span className="ml-2">({e.empresa_rut})</span>}
-                        {e.bodega_nombre && <span className="ml-2">{e.bodega_nombre}</span>}
-                      </span>
-                    </div>
-                    {expandedErrors.has(e.fila) ? (
-                      <ChevronUp className="w-3.5 h-3.5 text-red-700 dark:text-red-400 shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5 text-red-700 dark:text-red-400 shrink-0" />
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Filas con errores ({preview.filas_invalidas}):</p>
+              {preview.rows
+                .filter((r) => r.status === 'invalid')
+                .map((r) => (
+                  <div key={r.row_num} className="border border-red-200 dark:border-red-800 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => toggleErrorExpanded(r.row_num)}
+                      className="w-full flex items-center justify-between px-3 py-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <XCircle className="w-3.5 h-3.5 text-red-700 dark:text-red-400 shrink-0" />
+                        <span className="text-xs text-red-700 dark:text-red-400 font-medium">
+                          Fila {r.row_num}
+                          {r.empresa_rut && <span className="ml-2">({r.empresa_rut})</span>}
+                          {r.bodega_nombre && <span className="ml-2">{r.bodega_nombre}</span>}
+                        </span>
+                      </div>
+                      {expandedErrors.has(r.row_num) ? (
+                        <ChevronUp className="w-3.5 h-3.5 text-red-700 dark:text-red-400 shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-red-700 dark:text-red-400 shrink-0" />
+                      )}
+                    </button>
+                    {expandedErrors.has(r.row_num) && (
+                      <div className="px-3 py-2 border-t border-red-200 dark:border-red-800 bg-red-25 dark:bg-red-900/10">
+                        <ul className="space-y-1">
+                          {r.errors.map((error, i) => (
+                            <li key={i} className="text-xs text-red-700 dark:text-red-400 flex gap-2">
+                              <span className="shrink-0">•</span>
+                              <span>{error}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
-                  </button>
-                  {expandedErrors.has(e.fila) && (
-                    <div className="px-3 py-2 border-t border-red-200 dark:border-red-800 bg-red-25 dark:bg-red-900/10">
-                      <ul className="space-y-1">
-                        {e.motivos.map((motivo, i) => (
-                          <li key={i} className="text-xs text-red-700 dark:text-red-400 flex gap-2">
-                            <span className="shrink-0">•</span>
-                            <span>{motivo}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))}
             </div>
           )}
 
@@ -296,25 +305,21 @@ export function ImportBodegasSedesSection() {
                     <TH>Dirección</TH>
                     <TH>Sede</TH>
                     <TH>Dirección</TH>
-                    <TH>Acción</TH>
                   </TR>
                 </THead>
                 <TBody>
-                  {preview.filas.map((f) => (
-                    <TR key={f.fila}>
-                      <TD className="font-mono text-xs">{f.fila}</TD>
-                      <TD className="text-xs">{f.empresa_rut}</TD>
-                      <TD className="text-xs font-medium">{f.bodega_nombre}</TD>
-                      <TD className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-xs">{f.bodega_direccion}</TD>
-                      <TD className="text-xs font-medium">{f.sede_nombre}</TD>
-                      <TD className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-xs">{f.sede_direccion}</TD>
-                      <TD>
-                        <Badge variant={STATUS_VARIANT[f.accion]} size="sm">
-                          {STATUS_LABEL[f.accion]}
-                        </Badge>
-                      </TD>
-                    </TR>
-                  ))}
+                  {preview.rows
+                    .filter((r) => r.status === 'valid')
+                    .map((r) => (
+                      <TR key={r.row_num}>
+                        <TD className="font-mono text-xs">{r.row_num}</TD>
+                        <TD className="text-xs">{r.empresa_rut}</TD>
+                        <TD className="text-xs font-medium">{r.bodega_nombre}</TD>
+                        <TD className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-xs">{r.bodega_direccion}</TD>
+                        <TD className="text-xs font-medium">{r.sede_nombre}</TD>
+                        <TD className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-xs">{r.sede_direccion}</TD>
+                      </TR>
+                    ))}
                 </TBody>
               </Table>
             </div>
