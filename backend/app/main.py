@@ -59,6 +59,7 @@ from app.api import onboarding_categorias
 from app.api import onboarding_nv
 from app.api import onboarding_cotizaciones
 from app.api import onboarding_facturas
+from app.api import onboarding_precios_especiales
 from app.api import libros as libros_api
 from app.api import dte_recepcion as dte_recepcion_api
 from app.api import nota_alerta as nota_alerta_api
@@ -178,5 +179,6 @@ app.include_router(onboarding_categorias.router, prefix="/api/onboarding/categor
 app.include_router(onboarding_nv.router, prefix="/api/onboarding/nv-abiertas", tags=["onboarding"])
 app.include_router(onboarding_cotizaciones.router, prefix="/api/onboarding/cotizaciones-abiertas", tags=["onboarding"])
 app.include_router(onboarding_facturas.router, prefix="/api/onboarding/facturas-historicas", tags=["onboarding"])
+app.include_router(onboarding_precios_especiales.router, prefix="/api/onboarding/precios-especiales", tags=["onboarding"])
 app.include_router(libros_api.router, prefix="/api/libros", tags=["libros"])
 app.include_router(dte_recepcion_api.router, prefix="/api/dte/recepcion", tags=["dte_recepcion"])

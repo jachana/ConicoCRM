@@ -41,3 +41,4 @@ from app.models.libro import LibroVentas, LibroCompras, DteRecepcion  # noqa: F4
 from app.models.nota_alerta import NotaAlerta  # noqa: F401
 from app.models.caf import CAF  # noqa: F401
 from app.models.bodega import Bodega  # noqa: F401
+from app.models.precio_especial_cliente import PrecioEspecialCliente  # noqa: F401
