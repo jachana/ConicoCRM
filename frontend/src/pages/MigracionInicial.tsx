@@ -7,6 +7,7 @@ import { Button, Card, Tabs, TabsList, TabsTrigger, TabsContent, Select, SelectT
 import { PaymentImportSection } from '../components/onboarding/PaymentImportSection'
 import { CAFUploadSection } from '../components/onboarding/CAFUploadSection'
 import { ProductosImportSection } from '../components/onboarding/ProductosImportSection'
+import { ImportBodegasSedesSection } from '../components/onboarding/ImportBodegasSedesSection'
 import type { Empresa } from '../types'
 
 type Estado = 'creada' | 'actualizada' | 'sin_cambio' | 'error'
@@ -117,6 +118,7 @@ export default function MigracionInicial() {
           <TabsTrigger value="productos">Productos</TabsTrigger>
           <TabsTrigger value="pagos">Historial de Pagos</TabsTrigger>
           <TabsTrigger value="clientes_empresas">Clientes + Empresas</TabsTrigger>
+          <TabsTrigger value="bodegas_sedes">Bodegas + Sedes</TabsTrigger>
           <TabsTrigger value="cafs">CAF</TabsTrigger>
         </TabsList>
         <TabsContent value="proveedores">
@@ -130,6 +132,9 @@ export default function MigracionInicial() {
         </TabsContent>
         <TabsContent value="clientes_empresas">
           <ClientesEmpresasImport />
+        </TabsContent>
+        <TabsContent value="bodegas_sedes">
+          <ImportBodegasSedesSection />
         </TabsContent>
         <TabsContent value="cafs">
           {selectedEmpresaId ? (
