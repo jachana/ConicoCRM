@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { Download, Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Info } from 'lucide-react'
+import { Download, Upload, FileSpreadsheet, CheckCircle2, XCircle, Info } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { Button, Card, Tabs, TabsList, TabsTrigger, TabsContent, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Skeleton } from '../components/ui'
@@ -8,6 +8,7 @@ import { PaymentImportSection } from '../components/onboarding/PaymentImportSect
 import { CAFUploadSection } from '../components/onboarding/CAFUploadSection'
 import { ProductosImportSection } from '../components/onboarding/ProductosImportSection'
 import { ImportBodegasSedesSection } from '../components/onboarding/ImportBodegasSedesSection'
+import { Stat } from '../components/onboarding/StatCard'
 import type { Empresa } from '../types'
 
 type Estado = 'creada' | 'actualizada' | 'sin_cambio' | 'error'
@@ -564,18 +565,3 @@ function ClientesEmpresasImport() {
   )
 }
 
-function Stat({ label, value, color = 'gray' }: { label: string; value: number; color?: 'green' | 'yellow' | 'red' | 'gray' | 'blue' }) {
-  const colorCls: Record<string, string> = {
-    green: 'text-green-700 dark:text-green-400',
-    yellow: 'text-yellow-700 dark:text-yellow-400',
-    blue: 'text-blue-700 dark:text-blue-400',
-    red: 'text-red-700 dark:text-red-400',
-    gray: 'text-gray-700 dark:text-gray-300',
-  }
-  return (
-    <div className="text-center">
-      <div className={`text-2xl font-bold ${colorCls[color] ?? colorCls.gray}`}>{value}</div>
-      <div className="text-xs text-gray-500 dark:text-gray-400">{label}</div>
-    </div>
-  )
-}

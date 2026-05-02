@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { Download, Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { Download, Upload, FileSpreadsheet, CheckCircle2, XCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { api } from '../../lib/api'
-import { Button, Card, Badge, Table, THead, TBody, TR, TH, TD, EmptyState } from '../ui'
+import { Button, Card, Table, THead, TBody, TR, TH, TD, EmptyState } from '../ui'
+import { Stat } from './StatCard'
 
 type StatusType = 'crear' | 'actualizar' | 'error'
 
@@ -26,6 +27,17 @@ interface PreviewResp {
   rows: PreviewRow[]
 }
 
+interface CombinedRowOut {
+  row_num: number
+  empresa_rut: string
+  bodega_nombre: string
+  bodega_direccion: string | null
+  sede_nombre: string
+  sede_direccion: string
+  status: 'crear' | 'actualizar' | 'error'
+  errors: string[]
+}
+
 interface ImportReport {
   created_bodega_count: number
   updated_bodega_count: number
@@ -33,7 +45,7 @@ interface ImportReport {
   updated_sede_count: number
   error_count: number
   total_rows: number
-  rows: any[]
+  rows: CombinedRowOut[]
 }
 
 interface ImportResp {
@@ -112,7 +124,7 @@ export function ImportBodegasSedesSection() {
     setBusy(true)
     try {
       const fd = new FormData()
-      fd.append('archivo', file)
+      fd.append('file', file)
       const resp = await api.post('/api/onboarding/bodegas-sedes/preview', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
@@ -132,7 +144,7 @@ export function ImportBodegasSedesSection() {
     setStep('importing')
     try {
       const fd = new FormData()
-      fd.append('archivo', file)
+      fd.append('file', file)
       const resp = await api.post<ImportResp>('/api/onboarding/bodegas-sedes/import', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
@@ -376,17 +388,3 @@ export function ImportBodegasSedesSection() {
   )
 }
 
-function Stat({ label, value, color = 'gray' }: { label: string; value: number; color?: 'green' | 'yellow' | 'red' | 'gray' }) {
-  const colorCls: Record<string, string> = {
-    green: 'text-green-700 dark:text-green-400',
-    yellow: 'text-yellow-700 dark:text-yellow-400',
-    red: 'text-red-700 dark:text-red-400',
-    gray: 'text-gray-700 dark:text-gray-300',
-  }
-  return (
-    <div className="text-center">
-      <div className={`text-2xl font-bold ${colorCls[color] ?? colorCls.gray}`}>{value}</div>
-      <div className="text-xs text-gray-500 dark:text-gray-400">{label}</div>
-    </div>
-  )
-}
