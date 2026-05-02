@@ -79,7 +79,7 @@ def cliente(db, empresa) -> Cliente:
     """Create test cliente."""
     c = Cliente(
         nombre="Test Cliente",
-        rut="98765432-1",
+        rut="98765432-5",
         email="cliente@test.com",
         empresa_id=empresa.id,
     )
@@ -196,20 +196,14 @@ class TestPaymentImportTransaction:
         ws['F1'] = "folio_documento"
         ws['G1'] = "tipo_documento"
 
-        # Documentation row (required by parser)
-        ws['A2'] = "Date of payment"
-        ws['B2'] = "Client RUT"
-        ws['C2'] = "Amount"
-        ws['D2'] = "Payment method"
-
         # Data row
-        ws['A3'] = "2026-05-01"
-        ws['B3'] = cliente.rut
-        ws['C3'] = 50000
-        ws['D3'] = "transferencia"
-        ws['E3'] = "TRX001"
-        ws['F3'] = "1001"
-        ws['G3'] = "factura"
+        ws['A2'] = "2026-05-01"
+        ws['B2'] = cliente.rut
+        ws['C2'] = 50000
+        ws['D2'] = "transferencia"
+        ws['E2'] = "TRX001"
+        ws['F2'] = "1001"
+        ws['G2'] = "factura"
 
         output = BytesIO()
         wb.save(output)
@@ -223,7 +217,7 @@ class TestPaymentImportTransaction:
         assert result.invalid_count == 0
 
         # Verify parsed payment has correct values
-        parsed = result.valid_rows[0]
+        parsed = result.validas[0]
         assert parsed.fecha_pago == date(2026, 5, 1)
         assert parsed.rut_cliente == cliente.rut
         assert parsed.monto == Decimal("50000")
@@ -310,13 +304,13 @@ class TestPaymentParserUnit:
         errors = []
 
         # Valid RUT
-        result = PaymentParser._validate_rut_cliente("12345678-9", errors)
-        assert result == "12345678-9"
+        result, _raw = PaymentParser._validate_rut_cliente("76123456-0", errors)
+        assert result == "76123456-0"
         assert not errors
 
         # Invalid RUT (too short)
         errors = []
-        result = PaymentParser._validate_rut_cliente("123", errors)
+        result, _raw2 = PaymentParser._validate_rut_cliente("123", errors)
         assert result is None
         assert errors
 

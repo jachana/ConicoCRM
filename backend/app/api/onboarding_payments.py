@@ -157,7 +157,7 @@ async def preview_payment_import(
     # Valid rows
     for parsed_payment in result.valid_rows:
         rows.append(PaymentRowOut(
-            row_num=parsed_payment.row_num,
+            row_num=parsed_payment.fila,
             rut_cliente=parsed_payment.rut_cliente,
             monto=parsed_payment.monto,
             status="valid",
@@ -167,11 +167,11 @@ async def preview_payment_import(
     # Invalid rows
     for invalid_row in result.invalid_rows:
         rows.append(PaymentRowOut(
-            row_num=invalid_row.row_num,
-            rut_cliente=invalid_row.rut_cliente or "N/A",
-            monto=invalid_row.monto or Decimal("0"),
+            row_num=invalid_row.fila,
+            rut_cliente=invalid_row.valores_raw.get("rut_cliente", "") or "N/A",
+            monto=Decimal("0"),
             status="invalid",
-            errors=invalid_row.errors,
+            errors=[invalid_row.motivo],
         ).to_dict())
 
     # Estimate impact (quick scan without full matching)
@@ -334,7 +334,7 @@ async def import_payments(
                     error_count += 1
 
                 report_rows.append(PaymentRowOut(
-                    row_num=parsed_payment.row_num,
+                    row_num=parsed_payment.fila,
                     rut_cliente=parsed_payment.rut_cliente,
                     monto=parsed_payment.monto,
                     status=status_str,
@@ -345,7 +345,7 @@ async def import_payments(
                 # Row-level error - record and continue
                 error_count += 1
                 report_rows.append(PaymentRowOut(
-                    row_num=parsed_payment.row_num,
+                    row_num=parsed_payment.fila,
                     rut_cliente=parsed_payment.rut_cliente,
                     monto=parsed_payment.monto,
                     status="error",
@@ -356,11 +356,11 @@ async def import_payments(
         for invalid_row in parse_result.invalid_rows:
             error_count += 1
             report_rows.append(PaymentRowOut(
-                row_num=invalid_row.row_num,
-                rut_cliente=invalid_row.rut_cliente or "N/A",
-                monto=invalid_row.monto or Decimal("0"),
+                row_num=invalid_row.fila,
+                rut_cliente=invalid_row.valores_raw.get("rut_cliente", "") or "N/A",
+                monto=Decimal("0"),
                 status="invalid",
-                errors=invalid_row.errors,
+                errors=[invalid_row.motivo],
             ).to_dict())
 
         # Determine overall status
