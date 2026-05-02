@@ -189,7 +189,8 @@ export function ImportCotizacionesSection() {
           <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">vendedor_email</code>,{' '}
           <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">descripcion</code>,{' '}
           <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">cantidad</code>,{' '}
-          <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">precio</code>.
+          <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">precio</code>,{' '}
+          <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">descuento</code>.
         </p>
 
         <div className="flex flex-wrap gap-2 mb-4">
