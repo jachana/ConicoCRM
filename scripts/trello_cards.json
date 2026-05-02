@@ -23,12 +23,12 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Onboarding] Import Notas de venta abiertas (pendientes)",
+      "list": "In progress",
+      "name": "[Onboarding] Import Cotizaciones abiertas",
       "labels": [
         "Core"
       ],
-      "desc": "NV en estado pendiente/parcial al momento del corte de migración. Estas SÍ son operativas en Conico (se pueden facturar/despachar).",
+      "desc": "Cotizaciones vigentes / con seguimiento activo en CRM legacy. Permite continuar el funnel sin perder oportunidades.",
       "checklist": [
         "UI dentro de pestaña 'Migración inicial' (solo admin)",
         "Plantilla .xlsx descargable con columnas documentadas",
@@ -38,12 +38,11 @@
         "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
         "Idempotente: re-correr el mismo Excel no duplica",
         "--- Específico ---",
-        "Hojas: Cabecera NV / Detalle NV",
-        "Cabecera: numero_nv, rut_cliente, fecha, vendedor, condicion_pago, estado, observaciones",
-        "Detalle: numero_nv, sku, cantidad, cantidad_facturada, cantidad_despachada, precio, descuento",
-        "Recalcular saldos pendientes (cantidad - facturada / despachada)",
-        "Cliente o SKU inexistente → reportar y bloquear (NV operativa no puede tener huecos)",
-        "Vendedor inexistente → asignar a admin con flag de revisión"
+        "Cabecera: numero_cot, rut_cliente, fecha, vigencia_hasta, vendedor, estado, total",
+        "Detalle: numero_cot, sku, cantidad, precio, descuento",
+        "Estado mapeable a borrador/enviada/aceptada/rechazada/vencida",
+        "Cotizaciones con vigencia vencida → import opcional con flag archivada",
+        "Cliente nuevo (no existe) → crear con datos mínimos"
       ]
     }
   ]
