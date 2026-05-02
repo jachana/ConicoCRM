@@ -57,6 +57,7 @@ from app.api import onboarding_usuarios
 from app.api import onboarding_stock
 from app.api import onboarding_categorias
 from app.api import onboarding_nv
+from app.api import onboarding_cotizaciones
 from app.api import libros as libros_api
 from app.api import dte_recepcion as dte_recepcion_api
 from app.api import nota_alerta as nota_alerta_api
@@ -174,5 +175,6 @@ app.include_router(onboarding_usuarios.router, prefix="/api/onboarding/usuarios"
 app.include_router(onboarding_stock.router, prefix="/api/onboarding/stock", tags=["onboarding"])
 app.include_router(onboarding_categorias.router, prefix="/api/onboarding/categorias", tags=["onboarding"])
 app.include_router(onboarding_nv.router, prefix="/api/onboarding/nv-abiertas", tags=["onboarding"])
+app.include_router(onboarding_cotizaciones.router, prefix="/api/onboarding/cotizaciones-abiertas", tags=["onboarding"])
 app.include_router(libros_api.router, prefix="/api/libros", tags=["libros"])
 app.include_router(dte_recepcion_api.router, prefix="/api/dte/recepcion", tags=["dte_recepcion"])
