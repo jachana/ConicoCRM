@@ -195,6 +195,8 @@ def actualizar_orden(
     orden = db.get(OrdenCompra, orden_id)
     if not orden:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
+    if orden.historico:
+        raise HTTPException(status_code=403, detail="Las OC históricas no se pueden editar")
     if orden.estado != "borrador":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Solo se pueden editar órdenes en estado 'borrador'")
     for field, value in body.model_dump(exclude_unset=True).items():
@@ -213,6 +215,8 @@ def reemplazar_lineas(
     orden = db.query(OrdenCompra).options(joinedload(OrdenCompra.lineas)).filter(OrdenCompra.id == orden_id).first()
     if not orden:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
+    if orden.historico:
+        raise HTTPException(status_code=403, detail="Las OC históricas no se pueden editar")
     if orden.estado != "borrador":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Solo se pueden editar líneas en estado 'borrador'")
     for linea in list(orden.lineas):
@@ -238,6 +242,8 @@ def eliminar_orden(
     orden = db.get(OrdenCompra, orden_id)
     if not orden:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
+    if orden.historico:
+        raise HTTPException(status_code=403, detail="Las OC históricas no se pueden editar")
     if orden.estado != "borrador":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Solo se pueden eliminar órdenes en estado 'borrador'")
     db.delete(orden)

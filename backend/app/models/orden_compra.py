@@ -1,6 +1,6 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, String, Text, text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -15,6 +15,7 @@ class OrdenCompra(Base):
     fecha_entrega_esperada: Mapped[date | None] = mapped_column(Date, nullable=True)
     estado: Mapped[str] = mapped_column(String(30), default="borrador")
     nota: Mapped[str | None] = mapped_column(Text, nullable=True)
+    historico: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     total_neto: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     total_iva: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
