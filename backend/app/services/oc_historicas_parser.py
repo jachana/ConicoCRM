@@ -499,6 +499,19 @@ class OCHistoricasParser:
                 ))
                 to_remove.append(numero_oc)
 
+            # Check total_neto + iva ≈ total
+            computed_total = group.total_neto + group.iva
+            total_diff = abs(computed_total - group.total)
+            if total_diff > Decimal("1"):
+                invalid_rows.append(InvalidRow(
+                    row_num=group.row_num,
+                    numero_oc_raw=str(group.numero_oc),
+                    sheet="Cabecera OC",
+                    motivo=f"total_neto + iva ({computed_total}) no coincide con total ({group.total}), diferencia: ${total_diff:.0f}",
+                ))
+                if numero_oc not in to_remove:
+                    to_remove.append(numero_oc)
+
         for numero_oc in to_remove:
             del groups[numero_oc]
 
