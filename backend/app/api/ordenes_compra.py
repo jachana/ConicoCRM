@@ -284,6 +284,8 @@ def enviar_email(
     orden = _get_orden_con_relaciones(db, orden_id)
     if not orden:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
+    if orden.historico:
+        raise HTTPException(status_code=403, detail="Las OC históricas no se pueden editar")
     if orden.estado != "borrador":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Solo se pueden enviar órdenes en estado 'borrador'")
     config = _get_config_dict(db)
@@ -317,6 +319,8 @@ def recepcionar(
     orden = _get_orden_con_relaciones(db, orden_id)
     if not orden:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
+    if orden.historico:
+        raise HTTPException(status_code=403, detail="Las OC históricas no se pueden editar")
     if orden.estado not in ("enviada", "recibida_parcial"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Solo se puede recepcionar una orden enviada o recibida parcialmente")
 

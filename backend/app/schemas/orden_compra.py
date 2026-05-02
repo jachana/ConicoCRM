@@ -57,6 +57,7 @@ class OrdenCompraOut(BaseModel):
     total_neto: Decimal
     total_iva: Decimal
     total: Decimal
+    historico: bool = False
     created_at: datetime
     updated_at: datetime
     proveedor: ProveedorMinOut | None = None
@@ -74,6 +75,7 @@ class OrdenCompraListOut(BaseModel):
     total_neto: Decimal
     total_iva: Decimal
     total: Decimal
+    historico: bool = False
     created_at: datetime
     updated_at: datetime
     proveedor: ProveedorMinOut | None = None
