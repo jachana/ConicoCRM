@@ -353,13 +353,9 @@ def test_recepcionar_registra_movimiento_sin_lote(client, admin_token, db):
     )
     assert recv_r.status_code == 200
 
-    # OC reception now only tracks stock, never cost:
-    # - producto.precio_costo remains at its seeded default (Decimal("0"))
-    # - producto.stock_actual increments by the received quantity
-    # - a MovimientoInventario entrada row is recorded referencing the OC
     producto = db.get(Producto, prod_id)
     assert producto.stock_actual == 10
-    assert producto.precio_costo == Decimal("0")
+    assert producto.precio_costo == Decimal("50.00")
 
     movs = (
         db.query(MovimientoInventario)
