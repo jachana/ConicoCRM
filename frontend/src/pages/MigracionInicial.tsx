@@ -16,6 +16,7 @@ import { ImportFacturasSection } from '../components/onboarding/ImportFacturasSe
 import { ImportPreciosEspecialesSection } from '../components/onboarding/ImportPreciosEspecialesSection'
 import { ImportOCSection } from '../components/onboarding/ImportOCSection'
 import { ImportNCNDSection } from '../components/onboarding/ImportNCNDSection'
+import { ImportGDSection } from '../components/onboarding/ImportGDSection'
 import { Stat } from '../components/onboarding/StatCard'
 
 type Estado = 'creada' | 'actualizada' | 'sin_cambio' | 'error'
@@ -99,6 +100,7 @@ export default function MigracionInicial() {
           <TabsTrigger value="facturas_historicas">Facturas Históricas</TabsTrigger>
           <TabsTrigger value="oc_historicas">OC Históricas</TabsTrigger>
           <TabsTrigger value="nc_nd_historicas">NC/ND Históricas</TabsTrigger>
+          <TabsTrigger value="gd_historicas">GD Históricas</TabsTrigger>
           <TabsTrigger value="precios_especiales">Precios Especiales</TabsTrigger>
           <TabsTrigger value="cafs">CAF</TabsTrigger>
         </TabsList>
@@ -137,6 +139,9 @@ export default function MigracionInicial() {
         </TabsContent>
         <TabsContent value="nc_nd_historicas">
           <ImportNCNDSection />
+        </TabsContent>
+        <TabsContent value="gd_historicas">
+          <ImportGDSection />
         </TabsContent>
         <TabsContent value="precios_especiales">
           <ImportPreciosEspecialesSection />

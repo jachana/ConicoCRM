@@ -23,18 +23,26 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[CAF] Fix CAFListSection frontend tests (Vitest mock binding)",
+      "list": "In progress",
+      "name": "[Onboarding] Import Guías de despacho históricas",
       "labels": [
-        "Bug"
+        "Core"
       ],
-      "desc": "6 tests in CAFListSection.test.tsx fail after removing empresaId prop from listCAFs(). Root cause: Vitest factory mock + React Query v5 setQueryData not propagating to component — the no-arg listCAFs() import binding appears to be a different instance than cafsApi.listCAFs in the test. Tests with empty data pass; tests with CAF items (count>0) timeout. Fix: investigate vi.mock factory vs auto-mock behavior with no-arg async functions in Vitest v2.1, or use a different test pattern (e.g. render with pre-populated QueryClient via a wrapper that passes initialData).",
+      "desc": "Guías de despacho ya emitidas. Registro histórico para trazabilidad de entregas. Pueden o no tener factura asociada.",
       "checklist": [
-        "Reproduce isolation: run single failing test to confirm no cross-test contamination",
-        "Try auto-mock (no factory) + explicit beforeEach mockResolvedValue",
-        "Try vi.spyOn instead of vi.mocked",
-        "Try QueryClient.setQueryData with correct key ['cafs', 0]",
-        "Fix and verify all 8 tests in CAFListSection.test.tsx pass"
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Cabecera: folio_guia, rut_receptor, fecha, sede_destino, tipo_traslado",
+        "Detalle: folio_guia, sku, cantidad",
+        "Flag origen=externo (no reemite SII)",
+        "NO descontar stock por guías históricas",
+        "Link opcional a factura por (folio + tipo) si la factura también fue importada"
       ]
     }
   ]

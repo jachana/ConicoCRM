@@ -40,6 +40,7 @@ class GuiaDespacho(Base):
     total_neto: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     total_iva: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
+    historico: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
