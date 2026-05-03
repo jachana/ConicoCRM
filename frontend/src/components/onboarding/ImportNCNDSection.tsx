@@ -22,8 +22,8 @@ interface NCNDValid {
 
 interface NCNDInvalid {
   row_num: number
-  folio_raw: string | null
-  tipo_raw: string | null
+  folio: string | null
+  tipo: string | null
   motivo: string
 }
 
@@ -43,12 +43,19 @@ interface ImportResult {
   motivo?: string
 }
 
+interface ImportReport {
+  created_count: number
+  omitted_count: number
+  error_count: number
+  total_rows: number
+  rows: ImportResult[]
+}
+
 interface ImportResp {
-  created: number
-  omitted: number
-  pendiente_ref: number
-  errors: number
-  results: ImportResult[]
+  status: string
+  import_id: string
+  timestamp: string
+  report: ImportReport
 }
 
 function formatCLP(value: number): string {
@@ -121,9 +128,9 @@ export function ImportNCNDSection() {
       })
       setResult(resp.data)
       setStep('done')
-      const { created, omitted, errors } = resp.data
+      const { created_count, omitted_count, error_count } = resp.data.report
       toast.success(
-        `NC/ND importadas — ${created} creada${created !== 1 ? 's' : ''}${omitted ? `, ${omitted} omitida${omitted !== 1 ? 's' : ''}` : ''}${errors ? `, ${errors} con error` : ''}`
+        `NC/ND importadas — ${created_count} creada${created_count !== 1 ? 's' : ''}${omitted_count ? `, ${omitted_count} omitida${omitted_count !== 1 ? 's' : ''}` : ''}${error_count ? `, ${error_count} con error` : ''}`
       )
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { detail?: string } } }
@@ -181,6 +188,8 @@ export function ImportNCNDSection() {
           <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">folio</code>,{' '}
           <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">fecha</code>,{' '}
           <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">motivo</code>,{' '}
+          <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">neto</code>,{' '}
+          <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">iva</code>,{' '}
           <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">total</code>.
           Tipo debe ser <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">NC</code> o{' '}
           <code className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">ND</code>.
@@ -256,8 +265,8 @@ export function ImportNCNDSection() {
                       <XCircle className="w-3.5 h-3.5 text-red-700 dark:text-red-400 shrink-0" />
                       <span className="text-xs text-red-700 dark:text-red-400 font-medium">
                         Fila {r.row_num}
-                        {r.folio_raw && <span className="ml-2">(Folio {r.folio_raw})</span>}
-                        {r.tipo_raw && <span className="ml-2">· {r.tipo_raw}</span>}
+                        {r.folio && <span className="ml-2">(Folio {r.folio})</span>}
+                        {r.tipo && <span className="ml-2">· {r.tipo}</span>}
                       </span>
                     </div>
                     {expandedErrors.has(r.row_num) ? (
@@ -371,10 +380,10 @@ export function ImportNCNDSection() {
         <Card padded>
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">3. Resultado</h2>
           <div className="flex flex-wrap gap-4 mb-4">
-            <Stat label="NC/ND creadas" value={result.created} color="green" />
-            <Stat label="NC/ND omitidas" value={result.omitted} color="gray" />
-            <Stat label="Pendientes ref." value={result.pendiente_ref} color={result.pendiente_ref > 0 ? 'yellow' : 'gray'} />
-            <Stat label="Errores" value={result.errors} color={result.errors > 0 ? 'red' : 'gray'} />
+            <Stat label="NC/ND creadas" value={result.report.created_count} color="green" />
+            <Stat label="NC/ND omitidas" value={result.report.omitted_count} color="gray" />
+            <Stat label="Pendientes ref." value={result.report.rows.filter(r => r.import_status === 'creado_pendiente').length} color={result.report.rows.some(r => r.import_status === 'creado_pendiente') ? 'yellow' : 'gray'} />
+            <Stat label="Errores" value={result.report.error_count} color={result.report.error_count > 0 ? 'red' : 'gray'} />
           </div>
           <div className="overflow-x-auto max-h-96 overflow-y-auto">
             <Table density="compact">
@@ -387,7 +396,7 @@ export function ImportNCNDSection() {
                 </TR>
               </THead>
               <TBody>
-                {result.results.map((r, idx) => (
+                {result.report.rows.map((r, idx) => (
                   <TR key={`${r.tipo}-${r.folio}-${idx}`}>
                     <TD className="text-xs font-medium">{r.tipo}</TD>
                     <TD className="font-mono text-xs">{r.folio}</TD>
