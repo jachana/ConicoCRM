@@ -13,7 +13,12 @@ from app.api.deps import require_permission
 from app.database import get_db
 from app.models.libro import LibroVentas, LibroCompras
 from app.models.user import User
-from app.schemas.libro import LibroVentasRead, LibroComprasRead
+from app.schemas.libro import (
+    LibroVentasRead, LibroComprasRead,
+    LibroGenerarRequest, LibroEnviarResponse,
+)
+from app.services.libro_service import LibroService
+from app.services.dte_service import get_dte_service
 
 router = APIRouter()
 
@@ -784,3 +789,101 @@ def export_libros_compras_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=libros_compras.xlsx"}
     )
+
+
+# ── Generate / Submit endpoints ───────────────────────────────────────────────
+
+@router.post("/ventas/generar", response_model=LibroVentasRead, status_code=status.HTTP_201_CREATED)
+def generar_libro_ventas(
+    body: LibroGenerarRequest,
+    perms: tuple[User, Session] = require_permission("libros", "create"),
+):
+    """Generate (or retrieve existing) LibroVentas for the given period."""
+    current_user, db = perms
+    if not current_user.empresa_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no empresa")
+    try:
+        libro = LibroService.generar_libro_ventas(db, current_user.empresa_id, body.periodo)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    return LibroVentasRead.model_validate(libro)
+
+
+@router.post("/compras/generar", response_model=LibroComprasRead, status_code=status.HTTP_201_CREATED)
+def generar_libro_compras(
+    body: LibroGenerarRequest,
+    perms: tuple[User, Session] = require_permission("libros", "create"),
+):
+    """Generate (or retrieve existing) LibroCompras for the given period."""
+    current_user, db = perms
+    if not current_user.empresa_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User has no empresa")
+    try:
+        libro = LibroService.generar_libro_compras(db, current_user.empresa_id, body.periodo)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    return LibroComprasRead.model_validate(libro)
+
+
+@router.post("/ventas/{id}/enviar", response_model=LibroEnviarResponse)
+def enviar_libro_ventas(
+    id: int,
+    perms: tuple[User, Session] = require_permission("libros", "create"),
+):
+    """Submit a LibroVentas to SII via Lioren. Idempotent: already-sent books return 409."""
+    current_user, db = perms
+    libro = db.query(LibroVentas).filter_by(id=id).first()
+    if not libro:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Libro de Ventas not found")
+    if libro.empresa_id != current_user.empresa_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    if libro.estado == "enviado":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Libro ya enviado a SII")
+
+    rut_emisor = LibroService.get_rut_emisor(db)
+    detalles = LibroService.get_detalle_ventas(db, libro.empresa_id, libro.periodo)
+    svc = get_dte_service()
+    payload = svc.build_libro_ventas_payload(rut_emisor, libro.periodo, detalles)
+
+    try:
+        lioren_resp = svc.submit_libro("ventas", payload)
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Lioren error: {exc}")
+
+    libro.estado = "enviado"
+    db.commit()
+    db.refresh(libro)
+
+    return LibroEnviarResponse(id=libro.id, periodo=libro.periodo, estado=libro.estado, lioren_response=lioren_resp)
+
+
+@router.post("/compras/{id}/enviar", response_model=LibroEnviarResponse)
+def enviar_libro_compras(
+    id: int,
+    perms: tuple[User, Session] = require_permission("libros", "create"),
+):
+    """Submit a LibroCompras to SII via Lioren. Idempotent: already-sent books return 409."""
+    current_user, db = perms
+    libro = db.query(LibroCompras).filter_by(id=id).first()
+    if not libro:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Libro de Compras not found")
+    if libro.empresa_id != current_user.empresa_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    if libro.estado == "enviado":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Libro ya enviado a SII")
+
+    rut_emisor = LibroService.get_rut_emisor(db)
+    detalles = LibroService.get_detalle_compras(db, libro.empresa_id, libro.periodo)
+    svc = get_dte_service()
+    payload = svc.build_libro_compras_payload(rut_emisor, libro.periodo, detalles)
+
+    try:
+        lioren_resp = svc.submit_libro("compras", payload)
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Lioren error: {exc}")
+
+    libro.estado = "enviado"
+    db.commit()
+    db.refresh(libro)
+
+    return LibroEnviarResponse(id=libro.id, periodo=libro.periodo, estado=libro.estado, lioren_response=lioren_resp)

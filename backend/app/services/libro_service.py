@@ -7,6 +7,7 @@ from app.models.libro import LibroVentas, LibroCompras, DteRecepcion
 from app.models.dte_emision import DteEmision
 from app.models.factura import Factura
 from app.models.boleta import Boleta
+from app.models.system_config import SystemConfig
 
 
 class LibroService:
@@ -171,3 +172,98 @@ class LibroService:
         db.refresh(libro)
 
         return libro
+
+    @staticmethod
+    def get_rut_emisor(db: Session) -> str:
+        cfg = db.query(SystemConfig).filter_by(key="rut_emisor").first()
+        return cfg.value if cfg else ""
+
+    @staticmethod
+    def get_detalle_ventas(db: Session, empresa_id: int, periodo: str) -> list[dict]:
+        """Return per-document detail rows for a LibroVentas Lioren payload."""
+        from app.models.cliente import Cliente
+
+        year, month = (int(x) for x in periodo.split("-"))
+        detalle: list[dict] = []
+
+        # Facturas
+        factura_rows = (
+            db.query(DteEmision, Factura)
+            .join(Factura, DteEmision.factura_id == Factura.id)
+            .filter(
+                Factura.empresa_id == empresa_id,
+                extract("year", DteEmision.created_at) == year,
+                extract("month", DteEmision.created_at) == month,
+                DteEmision.folio.isnot(None),
+            )
+            .all()
+        )
+        for emision, factura in factura_rows:
+            rut_receptor = ""
+            if factura.cliente_id:
+                cliente = db.get(Cliente, factura.cliente_id)
+                if cliente:
+                    rut_receptor = cliente.rut or ""
+            detalle.append({
+                "tipo_dte": int(emision.tipo),
+                "folio": emision.folio,
+                "fecha_emision": factura.fecha.isoformat() if factura.fecha else "",
+                "rut_receptor": rut_receptor,
+                "monto_neto": emision.monto_neto,
+                "monto_iva": emision.monto_iva,
+                "monto_total": emision.monto_total,
+            })
+
+        # Boletas
+        boleta_rows = (
+            db.query(DteEmision, Boleta)
+            .join(Boleta, DteEmision.boleta_id == Boleta.id)
+            .filter(
+                Boleta.empresa_id == empresa_id,
+                extract("year", DteEmision.created_at) == year,
+                extract("month", DteEmision.created_at) == month,
+                DteEmision.folio.isnot(None),
+            )
+            .all()
+        )
+        for emision, boleta in boleta_rows:
+            rut_receptor = boleta.rut_receptor or ""
+            if not rut_receptor and boleta.cliente_id:
+                cliente = db.get(Cliente, boleta.cliente_id)
+                if cliente:
+                    rut_receptor = cliente.rut or ""
+            detalle.append({
+                "tipo_dte": int(emision.tipo),
+                "folio": emision.folio,
+                "fecha_emision": boleta.fecha.isoformat() if boleta.fecha else "",
+                "rut_receptor": rut_receptor,
+                "monto_neto": emision.monto_neto,
+                "monto_iva": emision.monto_iva,
+                "monto_total": emision.monto_total,
+            })
+
+        return detalle
+
+    @staticmethod
+    def get_detalle_compras(db: Session, empresa_id: int, periodo: str) -> list[dict]:
+        """Return per-document detail rows for a LibroCompras Lioren payload."""
+        year, month = (int(x) for x in periodo.split("-"))
+        rows = (
+            db.query(DteRecepcion)
+            .filter(
+                DteRecepcion.empresa_id == empresa_id,
+                DteRecepcion.estado == "aceptado",
+                extract("year", DteRecepcion.created_at) == year,
+                extract("month", DteRecepcion.created_at) == month,
+            )
+            .all()
+        )
+        return [
+            {
+                "tipo_dte": int(r.tipo),
+                "folio": r.folio,
+                "rut_emisor": r.rut_emisor,
+                "monto_total": r.monto,
+            }
+            for r in rows
+        ]

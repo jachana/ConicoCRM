@@ -47,6 +47,19 @@ class LibroComprasRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class LibroGenerarRequest(BaseModel):
+    """Input schema for generating a libro for a given period"""
+    periodo: str = Field(..., description="Period in YYYY-MM format")
+
+
+class LibroEnviarResponse(BaseModel):
+    """Response after submitting a libro to Lioren/SII"""
+    id: int
+    periodo: str
+    estado: str
+    lioren_response: dict | None = None
+
+
 class DteRecepcionCreate(BaseModel):
     """Input schema for creating DTE reception record"""
     tipo: str = Field(..., description="DTE type code, e.g. '46' for Libro de Recepción")

@@ -305,6 +305,32 @@ class DteService:
             },
         }
 
+    def build_libro_ventas_payload(self, rut_emisor: str, periodo: str, detalles: list[dict]) -> dict:
+        return {
+            "rut_emisor": rut_emisor,
+            "periodo": periodo,
+            "tipo_operacion": "VENTA",
+            "detalles": detalles,
+        }
+
+    def build_libro_compras_payload(self, rut_emisor: str, periodo: str, detalles: list[dict]) -> dict:
+        return {
+            "rut_emisor": rut_emisor,
+            "periodo": periodo,
+            "tipo_operacion": "COMPRA",
+            "detalles": detalles,
+        }
+
+    def submit_libro(self, tipo: str, payload: dict) -> dict:
+        resp = httpx.post(
+            f"{self.api_url}/libros/{tipo}",
+            json=payload,
+            headers=self._headers(),
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
     def emit(self, payload: dict) -> dict:
         resp = httpx.post(
             f"{self.api_url}/documentos",
