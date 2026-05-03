@@ -23,12 +23,12 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Onboarding] Import OC históricas (registro)",
+      "list": "In progress",
+      "name": "[Onboarding] Import Notas de crédito/débito históricas",
       "labels": [
         "Core"
       ],
-      "desc": "Órdenes de compra ya emitidas en sistema legacy. Solo registro histórico — no se reemiten ni se envían a proveedor. Pre-requisito: proveedores y productos cargados.",
+      "desc": "NC/ND ya emitidas. Linkean a factura/boleta histórica por folio + tipo. Mismo principio: solo registro, no se reemite al SII.",
       "checklist": [
         "UI dentro de pestaña 'Migración inicial' (solo admin)",
         "Plantilla .xlsx descargable con columnas documentadas",
@@ -38,12 +38,10 @@
         "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
         "Idempotente: re-correr el mismo Excel no duplica",
         "--- Específico ---",
-        "Hojas: Cabecera OC / Detalle OC (linkeadas por numero_oc)",
-        "Cabecera: numero_oc, rut_proveedor, fecha, estado, total_neto, iva, total",
-        "Detalle: numero_oc, sku, cantidad, precio_unitario, descuento",
-        "Marcar registros con flag historico=true → bloquear edición/emisión",
-        "Proveedor o SKU inexistente → reportar fila como error",
-        "Validar totales (suma detalle = cabecera, tolerancia $1)"
+        "Columnas: tipo (NC/ND), folio, fecha, folio_referencia, tipo_referencia, motivo, neto, iva, total",
+        "Flag origen=externo",
+        "Si folio_referencia no existe → reportar pendiente, dejar NC/ND huérfana (no descartar)",
+        "Aplicar efecto contable solo si la factura referenciada también está cargada"
       ]
     }
   ]
