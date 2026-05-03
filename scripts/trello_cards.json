@@ -19,7 +19,12 @@
     "Core": "blue",
     "Roadmap": "sky",
     "Bug": "pink",
-    "Blocked": "black"
+    "Blocked": "black",
+    "Goal: SaaS-ready": "lime",
+    "Goal: UX Polish": "null",
+    "Goal: Performance": "null",
+    "Goal: Operations": "null",
+    "Goal: Docs": "null"
   },
   "cards": [
     {
@@ -97,7 +102,8 @@
       "list": "Feature requests",
       "name": "[Docs] Architecture overview",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "Technical documentation: system architecture, tech stack (FastAPI, React, PostgreSQL, Redis, Celery), component diagram, data flow between frontend/backend/DTE/Celery workers.",
       "checklist": [
@@ -112,7 +118,8 @@
       "list": "Feature requests",
       "name": "[Docs] Local development setup guide",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "Step-by-step guide to run Conico locally: prerequisites, env vars, Docker Compose, running migrations, seeding test data, starting frontend and backend dev servers.",
       "checklist": [
@@ -129,7 +136,8 @@
       "list": "Feature requests",
       "name": "[Docs] Environment variables reference",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "Complete reference of all environment variables: name, required/optional, default, description, and example values. Covers backend, frontend, Celery, email, Sentry, DTE/Lioren, backup.",
       "checklist": [
@@ -147,7 +155,8 @@
       "name": "[Docs] DTE/Lioren integration deep-dive",
       "labels": [
         "DTE/SII",
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "Developer reference for the DTE emission pipeline: Lioren API auth, document types supported (33/39/41/52/56/61), CAF management, webhook flow, Celery polling with exponential backoff, error handling.",
       "checklist": [
@@ -164,7 +173,8 @@
       "list": "Feature requests",
       "name": "[Docs] Roles and permissions matrix",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "Reference table of all roles (Admin, SubAdmin, Vendedor) and their default permissions per module and action. Include per-user override system and how permission checks work in backend + frontend.",
       "checklist": [
@@ -179,7 +189,8 @@
       "list": "Feature requests",
       "name": "[Docs] Celery background jobs reference",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "Document all Celery tasks: name, trigger, schedule/queue, what it does, retry policy, failure behavior. Covers DTE polling, task rule evaluation, collection reminders.",
       "checklist": [
@@ -194,7 +205,8 @@
       "list": "Feature requests",
       "name": "[Docs] Database schema reference (ERD)",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "Entity-relationship diagram and schema reference for all major models. Key relationships, nullable FKs, indexing strategy, Alembic migration workflow.",
       "checklist": [
@@ -209,7 +221,8 @@
       "list": "Feature requests",
       "name": "[Docs] Audit log system internals",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "How the global audit trail works: SQLAlchemy event listeners, diff format, sensitive field exclusion, ASGI middleware for request context, API querying and CSV export.",
       "checklist": [
@@ -225,7 +238,8 @@
       "list": "Feature requests",
       "name": "[User Guide] Getting started: configuracion inicial",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "First-run guide for new clients: entering company data (RUT, razon social, direccion), uploading logo, configuring bank accounts, uploading CAF folios, creating first users and assigning roles.",
       "checklist": [
@@ -241,7 +255,8 @@
       "list": "Feature requests",
       "name": "[User Guide] Flujo de ventas: Cotizacion -> NV -> Factura",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "End-to-end sales workflow guide: creating a quotation, sending by email, converting to Nota de Venta (full or partial lines), state transitions, generating and emitting Factura DTE 33, registering payments.",
       "checklist": [
@@ -261,7 +276,8 @@
       "name": "[User Guide] Boletas electronicas 39 y 41",
       "labels": [
         "Roadmap",
-        "DTE/SII"
+        "DTE/SII",
+        "Goal: Docs"
       ],
       "desc": "Guide to issuing electronic receipts: type 39 (taxed) vs 41 (exempt), anonymous vs identified receiver, license plate field for automotive, payment methods, DTE emission states, annulment via NC.",
       "checklist": [
@@ -279,7 +295,8 @@
       "name": "[User Guide] Guias de Despacho 52",
       "labels": [
         "Roadmap",
-        "DTE/SII"
+        "DTE/SII",
+        "Goal: Docs"
       ],
       "desc": "Guide to creating and emitting dispatch guides: motives (entrega cliente, devolucion, traslado, etc.), prefilling from NV, draft -> emitida workflow, DTE emission, annulment.",
       "checklist": [
@@ -297,7 +314,8 @@
       "name": "[User Guide] Notas de Credito y Debito",
       "labels": [
         "Roadmap",
-        "DTE/SII"
+        "DTE/SII",
+        "Goal: Docs"
       ],
       "desc": "When and how to issue credit notes (NC 61) and debit notes (ND 56): correcting facturas, annulling boletas/guias, partial corrections, DTE emission.",
       "checklist": [
@@ -312,7 +330,8 @@
       "list": "Feature requests",
       "name": "[User Guide] Gestion de Clientes y Empresas",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "CRM guide: creating clients and companies, linking clients to companies, timeline view (unified document history), credit line management, dispatch sites, Excel import.",
       "checklist": [
@@ -328,7 +347,8 @@
       "list": "Feature requests",
       "name": "[User Guide] Inventario y control de stock",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "Inventory management guide: how stock is tracked (deducted on NV creation), viewing movements, manual adjustments, low-stock alerts and thresholds, stale cost indicator.",
       "checklist": [
@@ -344,7 +364,8 @@
       "list": "Feature requests",
       "name": "[User Guide] Ordenes de Compra y recepcion",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "Purchase orders guide: creating an OC to a supplier, sending PDF by email, receiving goods (partial vs full), stock update on receipt, cancellation.",
       "checklist": [
@@ -360,7 +381,8 @@
       "list": "Feature requests",
       "name": "[User Guide] Reportes y exportaciones",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "Guide to using all reports: sales report (by period/vendor/product/customer), by-brand report, margin analysis, filtering, KPI cards, Excel/CSV export.",
       "checklist": [
@@ -376,7 +398,8 @@
       "list": "Feature requests",
       "name": "[User Guide] Usuarios, roles y permisos",
       "labels": [
-        "Roadmap"
+        "Roadmap",
+        "Goal: Docs"
       ],
       "desc": "User management guide: creating users, role differences (Admin/SubAdmin/Vendedor), per-user permission overrides, activating/deactivating users, 2FA setup.",
       "checklist": [
@@ -386,6 +409,683 @@
         "Activating and deactivating users",
         "Admin View As feature",
         "2FA setup for users"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Replace native window.alert/confirm with toast/Modal",
+      "labels": [
+        "Design System",
+        "Goal: UX Polish"
+      ],
+      "desc": "13 sites across 9 files still use browser-native alert()/window.confirm(). Replace with existing toast (success/error) and Modal (danger variant) components for consistent UX. Files: EmpresaTabResumen.tsx, FacturaAdjuntos.tsx, NotaVentaAdjuntos.tsx, ProductoDocumentos.tsx, FacturaDetalle.tsx, GuiaDespachoDetalle.tsx, GuiasDespachoList.tsx, Pipeline.tsx.",
+      "checklist": [
+        "Inventariar todas las llamadas alert() y window.confirm()",
+        "Reemplazar alert() de error con toast.error()",
+        "Reemplazar window.confirm() destructivos con Modal danger",
+        "Verificar mensajes en espanol",
+        "Smoke test cada flujo afectado"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] BoletaNueva: autocomplete productos + ClienteSelectModal",
+      "labels": [
+        "Core",
+        "Goal: UX Polish"
+      ],
+      "desc": "TODO(W1-04) explicito en BoletaNueva.tsx:11-12. Boleta sigue usando input plano de descripcion y campo numerico cliente_id. Componentes ya existen y se usan en NV/Factura. Solo integrar.",
+      "checklist": [
+        "Reemplazar input descripcion por autocomplete productos (patron NV)",
+        "Reemplazar cliente_id numerico por ClienteSelectModal",
+        "Eliminar TODOs",
+        "Test de smoke en BoletaNueva.test.tsx"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Migrar BoletaAnularModal/BoletaEmailModal a ui/Modal",
+      "labels": [
+        "Design System",
+        "Goal: UX Polish"
+      ],
+      "desc": "TODO en BoletaDetalle.tsx:297. Modales legacy fuera del sistema de diseno. Portar a ui/Modal con variant danger donde aplique para consistencia visual.",
+      "checklist": [
+        "Portar BoletaAnularModal a ui/Modal (variant danger)",
+        "Portar BoletaEmailModal a ui/Modal",
+        "Eliminar componentes legacy si quedan sin uso",
+        "Verificar tests"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Perf] Paginacion en listas de alto volumen",
+      "labels": [
+        "Core",
+        "Goal: Performance"
+      ],
+      "desc": "Solo 3 de 67 paginas paginan (BoletasList, DTERecepcionList, LibrosList). Resto renderiza todo. Aplicar patron existente a paginas con volumen alto. Necesario antes de escalar a mas clientes.",
+      "checklist": [
+        "Facturas list: paginacion + page size selector",
+        "Cotizaciones list: paginacion",
+        "NotaVentas list: paginacion",
+        "GuiasDespachoList: paginacion",
+        "OrdenesCompra list: paginacion",
+        "NotasCredito list: paginacion",
+        "Backend: verificar endpoints aceptan skip/limit"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Perf] Hook useDebounce + aplicar a busquedas en listas",
+      "labels": [
+        "Core",
+        "Goal: Performance"
+      ],
+      "desc": "62 paginas hacen fetch en cada keystroke. Crear hook useDebounce reutilizable y aplicar a top paginas con barra de busqueda. Reduce carga al backend y mejora UX.",
+      "checklist": [
+        "Crear frontend/src/hooks/useDebounce.ts",
+        "Aplicar en Facturas list",
+        "Aplicar en Cotizaciones list",
+        "Aplicar en NotaVentas list",
+        "Aplicar en Productos list",
+        "Aplicar en Clientes list",
+        "Aplicar en Empresas list"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Perf] Cache de Redis para reportes/dashboard",
+      "labels": [
+        "Core",
+        "Goal: Performance"
+      ],
+      "desc": "reportes.py tiene 2068 LOC, 21 endpoints con agregaciones costosas que se recalculan cada request. Cachear con TTL corto (1-5min) e invalidar en writes relevantes. Mejora dramatica en dashboard load time.",
+      "checklist": [
+        "Identificar endpoints mas costosos en reportes.py",
+        "Definir keys de cache por (empresa_id, filtros, periodo)",
+        "Implementar wrapper de cache con TTL configurable",
+        "Invalidacion en eventos de escritura (factura emitida, etc.)",
+        "Metrica de hit rate"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Command palette Cmd+K (busqueda global + acciones)",
+      "labels": [
+        "Design System",
+        "Goal: UX Polish"
+      ],
+      "desc": "Expansion del Cmd+K palette ya shipped en Tier A #7 (cmdk modal, fan-out 8 entidades, permission-aware, atajo configurable). Componente GlobalSearchModal.tsx existente cubre BUSQUEDA de entidades. Falta la capa de ACCIONES: ejecutar comandos desde el palette sin tener que navegar primero. Ej: 'nueva factura', 'nueva NV', 'nueva cotizacion', 'nuevo cliente', 'nueva OC', 'ir a reportes/X', 'cerrar sesion'. Agregar grupo 'Acciones' en el palette existente, antes de Recientes/Entidades.",
+      "checklist": [
+        "Componente CommandPalette con shortcut global Cmd+K / Ctrl+K",
+        "Integracion con endpoint /api/search",
+        "Navegacion con teclado (arrows + enter)",
+        "Acciones rapidas: nueva factura, NV, cotizacion, cliente",
+        "Atajos visibles en placeholder",
+        "Test con userEvent",
+        "Definir registro de acciones (slug, label, icono, ruta o handler, permiso requerido)",
+        "Componente ActionItem en components/search/items/",
+        "Grupo 'Acciones' en GlobalSearchModal antes de Recientes",
+        "Filtro permission-aware (ocultar acciones sin permiso)",
+        "Match por palabra clave en espanol (ej: 'fac', 'nueva', 'ir a')",
+        "Test: ejecutar accion cierra modal y navega/dispara handler",
+        "Documentar en help/onboarding la capa de comandos"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Bulk actions en listas (multi-select)",
+      "labels": [
+        "Core",
+        "Goal: UX Polish"
+      ],
+      "desc": "Listas no permiten seleccion multiple. Agregar checkboxes + barra de acciones bulk: exportar seleccionados, enviar por email, anular en masa (donde aplique). Ahorro de tiempo enorme para usuarios power.",
+      "checklist": [
+        "Componente reusable de checkbox column + select-all",
+        "Barra flotante de acciones cuando hay seleccion",
+        "Bulk export en Facturas",
+        "Bulk export en NotaVentas",
+        "Bulk send email en Facturas/Boletas",
+        "Backend: endpoints bulk donde falten"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Campana de notificaciones en topbar",
+      "labels": [
+        "Core",
+        "Goal: UX Polish"
+      ],
+      "desc": "Backend notifications.py ya emite eventos pero no hay surface en UI. Agregar dropdown de notificaciones en topbar con conteo de no leidas, marcar como leido, link a entidad relacionada.",
+      "checklist": [
+        "Verificar API GET /notifications + PATCH read",
+        "Componente NotificationBell con badge count",
+        "Dropdown con ultimas 10 notificaciones",
+        "Click en notif navega a entidad y marca leida",
+        "Polling o websocket cada 30-60s"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Ops] Banner de alerta CAF: folios bajos / vencimiento proximo",
+      "labels": [
+        "Core",
+        "DTE/SII",
+        "Goal: Operations"
+      ],
+      "desc": "Admins ciegos al consumo de folios CAF. Quedarse sin folios bloquea emision DTE. Agregar banner visible cuando consumido >= 90% o vencimiento < 30 dias. Modelo CAF ya tiene todos los campos.",
+      "checklist": [
+        "Endpoint backend: CAFs en estado de alerta (consumo o vencimiento)",
+        "Componente Banner global persistente",
+        "Mostrar tipo DTE + folios restantes + dias al vencimiento",
+        "Link a configuracion CAF",
+        "Email de aviso a admins (Celery diario)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Ops] Health endpoint expandido (DB + Celery + Lioren)",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "health.py minimo. Expandir a chequeos: DB ping, worker Celery activo, Lioren API alcanzable. Util para uptime monitoring (Coolify, UptimeRobot) y diagnostico rapido en incidentes.",
+      "checklist": [
+        "GET /health/full con subchecks",
+        "DB ping con timeout corto",
+        "Celery: ping a workers via broadcast",
+        "Lioren: ping a endpoint sandbox",
+        "Respuesta estructurada con latencias",
+        "Endpoint /health/live (siempre 200) para liveness"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Ops] Job de retencion/archivo de audit_log",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "audit_log crece sin limite. A largo plazo degrada performance. Job Celery semanal que archiva registros mayores a 180 dias a tabla cold (audit_log_archive) o exporta a S3-like. Periodo configurable.",
+      "checklist": [
+        "Definir politica (180 dias default, configurable)",
+        "Tabla audit_log_archive con misma estructura",
+        "Celery task semanal de archivo",
+        "Metrica de filas archivadas",
+        "Endpoint admin para consultar archivo si se requiere"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Hygiene] Eliminar artefactos .js compilados duplicados",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "Cada .tsx tiene un .js legacy al lado (commit ce9ad58 hizo limpieza parcial para tests). Sweep completo + .gitignore rule + lint o pre-commit check para evitar reaparicion. Reduce ruido en git status y posibles bugs de resolucion de modulos.",
+      "checklist": [
+        "Lista completa de pares .tsx + .js redundantes",
+        "Borrar .js que tienen contraparte .tsx",
+        "Agregar regla a .gitignore",
+        "Pre-commit hook que rechace .js junto a .tsx",
+        "Verificar tests/build pasan"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Dashboard: KPI tiles principales",
+      "labels": [
+        "Core",
+        "Goal: UX Polish"
+      ],
+      "desc": "Dashboard.tsx existe pero falta capa de KPIs ejecutivos. Agregar tiles: ventas mes vs mes anterior (delta %), top 5 clientes, DTE rejection rate, AR aging (deuda por tramos 0-30/30-60/60-90/+90). Modelos ya tienen todo lo necesario.",
+      "checklist": [
+        "Endpoint GET /reportes/kpis con periodo",
+        "Tile: ventas del mes vs anterior",
+        "Tile: top 5 clientes del mes",
+        "Tile: DTE rejection rate (rechazadas / emitidas)",
+        "Tile: AR aging buckets",
+        "Sparklines o mini-charts donde aporte"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Auditoria de print CSS / PDF por tipo DTE",
+      "labels": [
+        "DTE/SII",
+        "Goal: Operations"
+      ],
+      "desc": "pdf.py existe pero cobertura visual desigual entre tipos. Verificar render correcto de factura 33, boleta 39/41, NC 61, ND 56, GD 52. Ajustar print CSS y plantillas. Incluye preview en UI antes de enviar.",
+      "checklist": [
+        "Render de prueba para cada tipo DTE",
+        "Checklist visual: header, lineas, totales, timbre, footer",
+        "Boton 'preview' en cada detalle antes de emitir",
+        "Print CSS: media print rules verificadas",
+        "Test de regresion visual (snapshot PDF si factible)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Core] Modulos habilitables/deshabilitables por empresa",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Distintos clientes usan distintos subsets del producto (ej: Conico no usa boletas). Hoy todo esta siempre activo. Implementacion en 3 fases (cards hijas).\n\nDEPENDENCY GRAPH:\nCORE (no toggleable): empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config.\n\nOPTIONAL con deps:\n- facturas -> pagos, cobranza, nota_credito, nota_debito, libros, aprobaciones_margen\n- boletas -> nota_credito (61 anula boleta)\n- inventario -> guias_despacho\n- guias_despacho -> nota_credito (61 anula GD)\n- nota_credito requires >=1 of {facturas, boletas, guias_despacho}\n- nota_debito requires facturas\n- proveedores -> ordenes_compra, facturas_compra\n- ordenes_compra requires proveedores\n- facturas_compra -> aprobaciones_costo\n- listas_precios -> precios_especiales\n- pagos -> cobranza, bancos_receptores (pagos requires facturas)\n- tareas -> reglas_tareas\n- rrhh_empleados -> rrhh_vacaciones, rrhh_documentos\n- libros requires facturas\n- dte_emission auto-on si cualquiera de {facturas,boletas,GD,NC,ND} on\n- dte_recepcion independent\n- reportes always on, tabs adaptan\n\nREGLAS DE TOGGLE:\n- No se puede activar un modulo con parent off (UI lo previene).\n- Apagar parent prompt: 'Tambien apaga X,Y,Z. Continuar?' cascade atomico.\n- dte_emission y caf_management auto-derivados, no son toggle directo.\n\nPHASES:\n1. Backend foundation (registro, column, gate, API, audit, tests)\n2. Frontend gating (hook, sidebar/routes/CTAs)\n3. Admin UI con cascade prompts",
+      "checklist": [
+        "Definir registro central de modulos (slug, label, dependencias entre modulos)",
+        "Modelo: empresas.modulos_enabled JSONB (default = todos true) o tabla empresa_modulos",
+        "Migracion Alembic + backfill default a empresas existentes",
+        "Dependency FastAPI require_modulo('boletas') que retorna 403 si deshabilitado",
+        "Aplicar dependency a todos los routers de modulos opcionales",
+        "Endpoint GET /empresas/{id}/modulos + PATCH para admin",
+        "Endpoint /me/modulos que devuelve modulos visibles al usuario actual",
+        "Frontend: hook useModulos() + helper isModuloEnabled(slug)",
+        "Frontend: filtrar Sidebar/nav por modulos habilitados",
+        "Frontend: ocultar botones 'nueva X' en dashboard/listas cuando modulo off",
+        "Frontend: route guard que redirige a /404 o /home si modulo off",
+        "UI admin en /configuracion/empresa: toggle por modulo con descripcion",
+        "Auditoria: log de cambios en modulos_enabled (audit_log)",
+        "Tests: backend 403 cuando modulo off; frontend nav hidden",
+        "Documentar matriz de modulos y dependencias",
+        "Phase 1 - backend foundation (card aparte)",
+        "Phase 2 - frontend gating (card aparte)",
+        "Phase 3 - admin UI (card aparte)",
+        "Phase 4 (futuro) - tier presets para SaaS pricing",
+        "Smoke test E2E: Conico con boletas off; otro tenant con boletas on",
+        "Documentacion en docs/architecture/modulos.md publicada"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Core] Modulos toggle - Phase 1: backend foundation",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Phase 1 de '[Core] Modulos habilitables/deshabilitables por empresa'. Backend solamente: registro central de modulos, persistencia per-empresa, dependency de gating, validacion de dependencias, endpoints de admin y de current user, auditoria. Sin cambios de UI todavia. Output esperado: cualquier router opcional retorna 403 cuando su modulo esta off para la empresa del usuario; admin puede toggle via API.\n\nVer card umbrella '[Core] Modulos habilitables/deshabilitables por empresa' para grafo de dependencias completo. CORE (no toggleable): empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config. OPTIONAL con deps: facturas->{pagos,cobranza,NC,ND,libros,aprobaciones_margen}; boletas->{NC}; inventario->{GD}; GD->{NC}; NC requires >=1 of {facturas,boletas,GD}; ND requires facturas; proveedores->{OC,facturas_compra}; OC requires proveedores; facturas_compra->{aprobaciones_costo}; listas_precios->{precios_especiales}; facturas->pagos->{cobranza,bancos_receptores}; tareas->{reglas_tareas}; rrhh_empleados->{vacaciones,documentos}; libros requires facturas; dte_emission auto-on si cualquiera de {facturas,boletas,GD,NC,ND} esta on.\n\nDESGLOSE EN CARDS ATOMICAS (cada una en una sesion o menos): ver checklist.",
+      "checklist": [
+        "Crear backend/app/core/modulos.py con registro {slug, label, categoria, requires:[], dependents:[]} para todos los modulos optional",
+        "Definir set CORE_MODULES (no toggleable) y OPTIONAL_MODULES",
+        "Funcion compute_effective_modulos(stored_dict) que aplica dependencias (auto-on de dte_emission, etc.)",
+        "Funcion validate_toggle(slug, action, current_state) que detecta violaciones de dependencia",
+        "Migracion Alembic: empresas.modulos_enabled JSONB NOT NULL DEFAULT '{}' (interpretado como 'todos on')",
+        "Backfill: empresas existentes mantienen comportamiento actual (todos los flags true explicitos)",
+        "Schema EmpresaModulosUpdate con validacion server-side de dependencias",
+        "Dependency FastAPI require_modulo(slug) que mira current_user.empresa_id y retorna 403 con detail descriptivo",
+        "Aplicar require_modulo a TODOS los routers optional (boletas, facturas, GD, NC, ND, OC, inventario, listas_precios, pagos, cobranza, bancos_receptores, rrhh*, oportunidades, tareas, libros, dte_recepcion, aprobaciones*)",
+        "Endpoint GET /empresas/{id}/modulos (admin only) - efectivo + raw stored",
+        "Endpoint PATCH /empresas/{id}/modulos (admin only) con validacion atomica",
+        "Endpoint GET /me/modulos para current user (lista efectiva)",
+        "Audit log: capturar diff (slug, before, after, actor) en cambios",
+        "Tests: 403 cuando modulo off; toggle con dependencia rota es 400; cascade calculation correcta; auto-on de dte_emission",
+        "Tests: empresas existentes post-migracion siguen funcionando sin regresiones",
+        "Documentar matriz de modulos y dependencias en docs/architecture/modulos.md",
+        "[Modulos P1.1] Registro central de modulos + grafo de dependencias",
+        "[Modulos P1.2] Migracion Alembic + Empresa.modulos_enabled + backfill",
+        "[Modulos P1.3] require_modulo dependency + cascade calculator + unit tests",
+        "[Modulos P1.4] Wire require_modulo a routers de ventas DTE",
+        "[Modulos P1.5] Wire require_modulo a procurement + inventario + finanzas",
+        "[Modulos P1.6] Wire require_modulo a RRHH + CRM + libros + DTE recepcion + aprobaciones",
+        "[Modulos P1.7] Endpoints admin /empresas/{id}/modulos + /me/modulos + audit"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Core] Modulos toggle - Phase 2: frontend gating",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Phase 2 de '[Core] Modulos habilitables/deshabilitables por empresa'. Requiere Phase 1 mergeada. Consume /me/modulos, expone hook + helpers, filtra Sidebar, agrega route guards, oculta CTAs (botones 'nueva X') donde el modulo esta off. Sin admin UI todavia (eso es Phase 3) — solo gating consumiendo el estado existente.\n\nVer card umbrella '[Core] Modulos habilitables/deshabilitables por empresa' para grafo de dependencias completo. CORE (no toggleable): empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config. OPTIONAL con deps: facturas->{pagos,cobranza,NC,ND,libros,aprobaciones_margen}; boletas->{NC}; inventario->{GD}; GD->{NC}; NC requires >=1 of {facturas,boletas,GD}; ND requires facturas; proveedores->{OC,facturas_compra}; OC requires proveedores; facturas_compra->{aprobaciones_costo}; listas_precios->{precios_especiales}; facturas->pagos->{cobranza,bancos_receptores}; tareas->{reglas_tareas}; rrhh_empleados->{vacaciones,documentos}; libros requires facturas; dte_emission auto-on si cualquiera de {facturas,boletas,GD,NC,ND} esta on.\n\nDESGLOSE EN CARDS ATOMICAS: ver checklist.",
+      "checklist": [
+        "Hook useModulos() con react-query (cache 5min, refetch on focus)",
+        "Helper isModuloEnabled(slug) y useModuloEnabled(slug)",
+        "Constante MODULOS en frontend/src/lib/modulos.ts (mirror del backend)",
+        "Filtrar Sidebar.tsx: ocultar items cuyo modulo esta off",
+        "Filtrar topbar/quick-actions y CTAs en Dashboard segun modulos",
+        "Componente <ModuloGuard slug=\"...\"> wrapper para rutas",
+        "Aplicar ModuloGuard en rutas de modulos opcionales (Boletas, Facturas, GD, NC, ND, OC, Inventario, Listas, Pagos, Cobranza, RRHH, Pipeline, Tareas, Libros, DTE recepcion)",
+        "Redirigir a /404 con mensaje 'Modulo no habilitado, contacta admin' cuando off",
+        "Ocultar tabs en Reportes y Dashboard segun modulos",
+        "Filtrar tipos de DTE disponibles (NV detail no muestra 'Crear factura' si facturas off, etc.)",
+        "Loading state mientras /me/modulos esta cargando (skeleton sidebar)",
+        "Tests: sidebar oculta items; route redirige; CTA oculto",
+        "E2E smoke: empresa con boletas off no muestra modulo en sidebar ni rutas",
+        "[Modulos P2.1] Mirror modulos.ts + useModulos hook + helpers",
+        "[Modulos P2.2] Componente <ModuloGuard> + envolver rutas opcionales",
+        "[Modulos P2.3] Filtrar Sidebar por modulos habilitados",
+        "[Modulos P2.4] Ocultar CTAs Dashboard + filtrar tabs Reportes",
+        "[Modulos P2.5] Ocultar acciones cross-module en detalles"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Core] Modulos toggle - Phase 3: admin UI",
+      "labels": [
+        "Core",
+        "Design System",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Phase 3 de '[Core] Modulos habilitables/deshabilitables por empresa'. Requiere Phase 1 (API) y Phase 2 (gating activo). UI admin para toggle de modulos con visualizacion de dependencias y cascade prompts. Vive en /configuracion/empresa como tab nuevo 'Modulos'.\n\nVer card umbrella '[Core] Modulos habilitables/deshabilitables por empresa' para grafo de dependencias completo. CORE (no toggleable): empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config. OPTIONAL con deps: facturas->{pagos,cobranza,NC,ND,libros,aprobaciones_margen}; boletas->{NC}; inventario->{GD}; GD->{NC}; NC requires >=1 of {facturas,boletas,GD}; ND requires facturas; proveedores->{OC,facturas_compra}; OC requires proveedores; facturas_compra->{aprobaciones_costo}; listas_precios->{precios_especiales}; facturas->pagos->{cobranza,bancos_receptores}; tareas->{reglas_tareas}; rrhh_empleados->{vacaciones,documentos}; libros requires facturas; dte_emission auto-on si cualquiera de {facturas,boletas,GD,NC,ND} esta on.\n\nDESGLOSE EN CARDS ATOMICAS: ver checklist.",
+      "checklist": [
+        "Tab 'Modulos' en /configuracion/empresa (admin only)",
+        "Listado agrupado por categoria: Ventas, Compras, Inventario y Precios, Finanzas, DTE/SII, CRM, RRHH, Aprobaciones",
+        "Toggle por modulo con label + descripcion + indicador 'requiere X' o 'habilita X'",
+        "Disable visual de toggles que no se pueden activar (parent off)",
+        "Modal de confirmacion al apagar parent: 'Tambien quedaran inactivos: X, Y, Z. Continuar?'",
+        "Reflejar inmediatamente en sidebar (invalidar query useModulos)",
+        "Mostrar quien y cuando cambio cada modulo (auditoria visible)",
+        "Boton 'Habilitar todos' / 'Apagar todos los opcionales'",
+        "Tests: toggle simple, cascade prompt, validacion de dependencia bloquea toggle",
+        "Diseno consistente con el resto de /configuracion (Modal, danger variant donde aplique)",
+        "[Modulos P3.1] Tab 'Modulos' en /configuracion/empresa (read-only listado)",
+        "[Modulos P3.2] Toggle interactivo + dependency-aware disable visual",
+        "[Modulos P3.3] Modal cascade-confirm al apagar parent con dependents on",
+        "[Modulos P3.4] Audit visible per-modulo + acciones bulk"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.1] Registro central de modulos + grafo de dependencias",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Crear unico modulo Python que define todos los modulos optional, su categoria, label legible, dependencias y reglas auto-on. Sin migracion, sin gating todavia. Output: backend/app/core/modulos.py importable. Solo definiciones + funciones puras.\n\nBloquea: P1.2 P1.3 P2.1.\nEstimado: 2h.",
+      "checklist": [
+        "Crear backend/app/core/modulos.py",
+        "Constante CORE_MODULES (set de slugs no toggleable)",
+        "Constante OPTIONAL_MODULES como dict {slug: ModuloSpec(label, categoria, requires=[], dependents=[])}",
+        "Categorias: 'ventas', 'compras', 'inventario_precios', 'finanzas', 'dte_sii', 'crm', 'rrhh', 'aprobaciones'",
+        "Modulos iniciales: cotizaciones, notas_venta, facturas, boletas, guias_despacho, nota_credito, nota_debito, proveedores, ordenes_compra, facturas_compra, inventario, listas_precios, precios_especiales, pagos, cobranza, bancos_receptores, libros, dte_recepcion, oportunidades, tareas, reglas_tareas, rrhh_empleados, rrhh_vacaciones, rrhh_documentos, aprobaciones_descuento, aprobaciones_costo, aprobaciones_margen",
+        "Funcion all_modulo_slugs() y get_modulo(slug) (raise si no existe)",
+        "Funcion modulos_by_categoria() para UI agrupada",
+        "Tests: registro coherente (cada 'requires' apunta a slug existente), no hay ciclos de dependencia, todos los routers actuales tienen su slug"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.2] Migracion Alembic + Empresa.modulos_enabled + backfill",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Agregar columna JSONB a empresas y backfill que deja todas las empresas existentes con comportamiento actual (todos los modulos optional explicitamente true). Sin endpoints, sin gating todavia.\n\nRequires: P1.1.\nBloquea: P1.3 P1.7.\nEstimado: 1.5h.",
+      "checklist": [
+        "Agregar campo Empresa.modulos_enabled: Mapped[dict] = mapped_column(JSONB, server_default='{}')",
+        "Generar migracion Alembic con autogenerate, revisar a mano",
+        "Backfill en migracion: UPDATE empresas SET modulos_enabled = '<dict con todos los OPTIONAL en true>'",
+        "Verificar single head Alembic post-merge",
+        "Smoke test: arrancar backend, leer empresa existente, asserts modulos_enabled poblado",
+        "Test unitario: nueva empresa creada via API tambien recibe defaults all-on",
+        "Update factory de tests si aplica"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.3] require_modulo dependency + cascade calculator + unit tests",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Logica pura de gating. Implementa compute_effective_modulos (aplica auto-on de dte_emission cuando factura/boleta/GD/NC/ND on, valida required), validate_toggle (detecta violaciones en cambios propuestos), y dependency FastAPI require_modulo(slug) que retorna 403 estructurado. Sin wirear todavia a routers reales.\n\nRequires: P1.1 P1.2.\nBloquea: P1.4 P1.5 P1.6 P1.7.\nEstimado: 3h.",
+      "checklist": [
+        "compute_effective_modulos(stored: dict) -> dict — aplica auto-on de dte_emission/caf si cualquier doc DTE on",
+        "validate_toggle(current: dict, slug: str, target: bool) -> raise si activar sin parent o apagar parent con dependents on",
+        "compute_cascade(current: dict, slug: str, target: bool) -> dict[slug, bool] — devuelve diff resultante con cascade",
+        "FastAPI dependency require_modulo(slug) en backend/app/api/deps.py: lee user.empresa, computa efectivo, 403 con detail estructurado {error: 'modulo_disabled', slug, label}",
+        "Test: efectivo correcto para empresas con todo on / con boletas off / con facturas off (NC/ND/pagos/cobranza/libros tambien off)",
+        "Test: validate_toggle bloquea activar nota_credito sin facturas/boletas/GD",
+        "Test: validate_toggle bloquea apagar facturas si pagos on",
+        "Test: cascade calcula correctamente al apagar facturas (apaga pagos, cobranza, NC, ND, libros, aprobaciones_margen)",
+        "Test: require_modulo retorna 403 cuando user empresa tiene modulo off",
+        "Test: require_modulo permite paso cuando on"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.4] Wire require_modulo a routers de ventas DTE",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Aplicar Depends(require_modulo(...)) a todos los routers de documentos de venta. Cada router obtiene su modulo correspondiente en el include_router del main.py o como dependency a nivel de APIRouter. Tests integrales con cliente de prueba.\n\nRequires: P1.3.\nEstimado: 3h.",
+      "checklist": [
+        "boletas router -> require_modulo('boletas')",
+        "facturas + facturas_adjuntos router -> require_modulo('facturas')",
+        "guias_despacho router -> require_modulo('guias_despacho')",
+        "nota_credito + nota_debito routers -> require_modulo segun corresponda",
+        "cotizaciones router -> require_modulo('cotizaciones')",
+        "nota_ventas + nota_ventas_adjuntos router -> require_modulo('notas_venta')",
+        "Test integral por router: empresa con modulo off recibe 403 en GET/POST",
+        "Test integral por router: empresa con modulo on funciona como antes",
+        "Verificar audit_log y notifications cross-module no se rompen"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.5] Wire require_modulo a procurement + inventario + finanzas",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Segundo batch de routers. Un solo card porque cambios son repetitivos del mismo patron de P1.4.\n\nRequires: P1.3.\nEstimado: 3h.",
+      "checklist": [
+        "proveedores router -> require_modulo('proveedores')",
+        "ordenes_compra router -> require_modulo('ordenes_compra')",
+        "facturas_compra router -> require_modulo('facturas_compra')",
+        "inventario router -> require_modulo('inventario')",
+        "listas_precios router -> require_modulo('listas_precios')",
+        "(precios especiales) listas_precios sub-endpoints o router separado -> require_modulo('precios_especiales')",
+        "pagos router -> require_modulo('pagos')",
+        "cobranza router -> require_modulo('cobranza')",
+        "bancos_receptores router -> require_modulo('bancos_receptores')",
+        "Test integral por router: 403 cuando off, 200 cuando on"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.6] Wire require_modulo a RRHH + CRM + libros + DTE recepcion + aprobaciones",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Tercer batch — el resto. Mismo patron.\n\nRequires: P1.3.\nEstimado: 3h.",
+      "checklist": [
+        "empleados + empleados_documentos + empleados_vacaciones routers -> require_modulo correspondiente",
+        "oportunidades router -> require_modulo('oportunidades')",
+        "tareas + reglas_tarea routers -> require_modulo correspondiente",
+        "libros router -> require_modulo('libros')",
+        "dte_recepcion router -> require_modulo('dte_recepcion')",
+        "aprobaciones + aprobaciones_costo + aprobaciones_margen routers -> require_modulo correspondiente",
+        "solicitudes_descuento -> require_modulo('aprobaciones_descuento')",
+        "Test integral por router",
+        "Verificar reportes.py NO esta gateado (siempre on, tabs adaptan en Phase 2)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.7] Endpoints admin /empresas/{id}/modulos + /me/modulos + audit",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "API publica de gestion. GET admin devuelve {stored, effective, registry-with-deps}. PATCH admin valida cascade y persiste. /me/modulos devuelve solo el efectivo del usuario actual (sin requerir admin). Cada cambio escribe audit_log con diff slug-by-slug.\n\nRequires: P1.3.\nEstimado: 3h.",
+      "checklist": [
+        "Crear backend/app/api/modulos.py router",
+        "GET /empresas/{id}/modulos (require_admin) -> {stored: dict, effective: dict, registry: [...]}",
+        "PATCH /empresas/{id}/modulos (require_admin) body {modulos: {slug: bool}} -> valida con compute_cascade + validate_toggle, persiste atomico",
+        "GET /me/modulos (require_user) -> {effective: dict}",
+        "Audit log entries: action='modulos.toggle', target='empresa:{id}', meta={diff: [{slug, before, after}]}",
+        "Schemas Pydantic: EmpresaModulosResponse, EmpresaModulosUpdate",
+        "Validacion 400 con detail 'dependency_violation' o 'unknown_slug'",
+        "Tests: GET admin solo, GET me funciona para vendedor, PATCH bloquea cambios invalidos, audit registra diff",
+        "Tests: PATCH idempotente cuando no hay cambios reales",
+        "Registrar router en main.py"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P2.1] Mirror modulos.ts + useModulos hook + helpers",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Espejo TypeScript del registro backend con metadata para UI (label, categoria, descripcion). Hook useModulos() consume /me/modulos via react-query. Helpers para uso ergonomico.\n\nRequires: P1.7.\nBloquea: P2.2 P2.3 P2.4 P2.5 P3.*.\nEstimado: 2h.",
+      "checklist": [
+        "frontend/src/lib/modulos.ts: MODULO_SLUGS const tuple + type Modulo + MODULO_META {label, categoria, descripcion}",
+        "frontend/src/api/modulos.ts: fetchMyModulos() -> {effective: Record<Modulo, boolean>}",
+        "frontend/src/hooks/useModulos.ts: useModulos() con react-query (staleTime 5min, refetchOnWindowFocus true)",
+        "Helper isModuloEnabled(state, slug) y hook useModuloEnabled(slug)",
+        "Loading state + error state expuestos por el hook",
+        "Test: hook devuelve effective; isModuloEnabled funciona con loading",
+        "Test: cambio en backend se refleja al refetch"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P2.2] Componente <ModuloGuard> + envolver rutas opcionales",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Wrapper de ruta que muestra skeleton mientras carga, redirige a /modulo-no-disponible (o muestra mensaje inline) cuando el modulo esta off, y renderiza children cuando on. Aplicar a todas las rutas de modulos opcionales en el router.\n\nRequires: P2.1.\nEstimado: 3h.",
+      "checklist": [
+        "frontend/src/components/ModuloGuard.tsx con props {slug, children, fallback?}",
+        "Pagina ModuloNoDisponible.tsx con mensaje 'Este modulo no esta habilitado para tu empresa, contacta al admin'",
+        "Envolver rutas: /boletas/*, /facturas/*, /guias-despacho/*, /notas-credito/*, /notas-debito/*, /ordenes-compra/*, /inventario, /listas-precios, /pagos, /cobranza, /rrhh/*, /pipeline, /tareas, /libros/*, /dte-recepcion",
+        "Skeleton state mientras /me/modulos carga (no redirigir prematuramente)",
+        "Test render: modulo off muestra fallback; modulo on muestra children",
+        "E2E smoke: empresa con boletas off intenta /boletas y ve mensaje"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P2.3] Filtrar Sidebar por modulos habilitados",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Sidebar.tsx filtra items segun estado de modulos. Items core siempre visibles; items opcionales solo si modulo on. Loading: skeleton de items.\n\nRequires: P2.1.\nEstimado: 2h.",
+      "checklist": [
+        "Anotar items del Sidebar con su slug de modulo correspondiente (campo nuevo en config de nav)",
+        "Filtrar items en render usando useModulos",
+        "Skeleton loader por seccion durante loading inicial",
+        "Items sin slug (CRM dashboard, configuracion, perfil) siempre visibles",
+        "Test: render con modulos partial; verificar visibilidad correcta",
+        "Verificar que un usuario sin permiso de admin tampoco ve link a /configuracion/empresa modulos"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P2.4] Ocultar CTAs Dashboard + filtrar tabs Reportes",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Dashboard.tsx tiene quick-action buttons ('Nueva factura', 'Nueva NV', etc.) que deben esconderse si su modulo esta off. Reportes.tsx tiene tabs por tipo de documento — solo mostrar tabs cuyo modulo esta on.\n\nRequires: P2.1.\nEstimado: 2h.",
+      "checklist": [
+        "Dashboard: cada quick-action declarada con su modulo slug; filtrar antes de render",
+        "Dashboard: KPI tiles que dependen de modulo (ej: facturacion mes) se ocultan si modulo off",
+        "Reportes: tabs declaradas con slug; filtrar en render",
+        "Reportes: tab default seleccionada es la primera disponible",
+        "Test: Dashboard con facturas off no muestra 'Nueva Factura' ni tile de facturacion",
+        "Test: Reportes con boletas off no muestra tab boletas"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P2.5] Ocultar acciones cross-module en detalles",
+      "labels": [
+        "Core",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Botones en pantallas de detalle que cruzan modulos: NV detail tiene 'Crear factura'; GD detail tiene 'Crear NC'; Factura tiene 'Anular con NC'; NV puede generar boleta. Cada uno debe esconderse si el modulo target esta off.\n\nRequires: P2.1.\nEstimado: 3h.",
+      "checklist": [
+        "NotaVentaDetalle: gate boton 'Generar Factura' por facturas; 'Generar Boleta' por boletas; 'Generar GD' por guias_despacho",
+        "FacturaDetalle: gate 'Anular con NC' por nota_credito; 'Registrar pago' por pagos",
+        "BoletaDetalle: gate 'Anular con NC' por nota_credito",
+        "GuiaDespachoDetalle: gate 'Anular con NC' por nota_credito",
+        "CotizacionDetalle: gate 'Convertir a NV' por notas_venta; 'Convertir a Factura' por facturas",
+        "OrdenCompraDetalle: gate 'Recibir' por inventario",
+        "Tests por pantalla: botones ocultos cuando target off"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P3.1] Tab 'Modulos' en /configuracion/empresa (read-only listado)",
+      "labels": [
+        "Core",
+        "Design System",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Scaffolding del tab. Render solamente — sin interactividad de toggle todavia. Lista todos los modulos opcionales agrupados por categoria, mostrando estado actual y dependencias.\n\nRequires: P2.1 P1.7.\nBloquea: P3.2.\nEstimado: 2h.",
+      "checklist": [
+        "Pagina/tab Modulos en Configuracion (admin only)",
+        "Fetch GET /empresas/{empresa_id}/modulos (incluye registry y stored y effective)",
+        "Render agrupado por categoria con titulo y descripcion",
+        "Cada modulo muestra: label, descripcion, estado (on/off badge), 'requiere: X' si tiene parent off, 'habilita: Y' si tiene dependents",
+        "Switch visualmente disabled (sin onClick todavia)",
+        "Estado loading + error",
+        "Hide tab para non-admin"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P3.2] Toggle interactivo + dependency-aware disable visual",
+      "labels": [
+        "Core",
+        "Design System",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Activar onClick en switches. Toggles que no se pueden activar (parent off) quedan disabled con tooltip explicativo. Toggles que NO disparan cascade se aplican directo via PATCH. Cascade prompt es separado en P3.3.\n\nRequires: P3.1.\nBloquea: P3.3.\nEstimado: 3h.",
+      "checklist": [
+        "Mutation PATCH /empresas/{empresa_id}/modulos via react-query",
+        "Click en switch on->off: si no apaga ningun dependent, aplicar directo y refetch",
+        "Click en switch off->on: si parent off, no hacer nada (estaba disabled); si parent on, aplicar directo",
+        "Tooltip en toggle disabled: 'Requiere {label-de-parent}'",
+        "Optimistic update con rollback en error",
+        "Toast.success / toast.error en cada mutation",
+        "Invalidar useModulos en exito (sidebar etc. se refrescan)",
+        "Tests: toggle simple aplica; toggle bloqueado por parent muestra tooltip y no envia request"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P3.3] Modal cascade-confirm al apagar parent con dependents on",
+      "labels": [
+        "Core",
+        "Design System",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Cuando off->on de un parent que tiene dependents activos, abrir Modal mostrando la cascade completa antes de aplicar. Confirmar = PATCH atomico con todos los slugs.\n\nRequires: P3.2.\nEstimado: 2h.",
+      "checklist": [
+        "Calcular cascade en frontend usando registry (espejo de compute_cascade backend)",
+        "Modal danger variant: 'Apagar facturas. Esto tambien apagara: pagos, cobranza, nota_credito, nota_debito, libros, aprobaciones_margen. Continuar?'",
+        "Confirmar -> PATCH con todos los slugs en un solo body",
+        "Cancelar cierra modal sin cambios",
+        "Loading state durante mutation",
+        "Tests: apagar facturas dispara modal con lista correcta; confirmar manda body completo; cancelar no envia request"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P3.4] Audit visible per-modulo + acciones bulk",
+      "labels": [
+        "Core",
+        "Design System",
+        "Goal: SaaS-ready"
+      ],
+      "desc": "Mostrar quien y cuando cambio cada modulo (consultando audit_log filtrado). Botones bulk para 'Habilitar todos' y 'Apagar opcionales' (con cascade-confirm).\n\nRequires: P3.3.\nEstimado: 2h.",
+      "checklist": [
+        "Endpoint GET /empresas/{id}/modulos/audit -> ultimas N entradas con (slug, before, after, actor, ts)",
+        "Tooltip o seccion 'historial' por modulo con ultimo cambio",
+        "Boton 'Habilitar todos los opcionales' (admin) -> PATCH all-on",
+        "Boton 'Apagar todos los opcionales' (admin) -> Modal cascade-confirm + PATCH all-off",
+        "Bloquear bulk si hay validacion fallida (improbable en all-on, posible en all-off)",
+        "Test: audit se carga; bulk all-off muestra modal con todos los modulos opcionales"
       ]
     },
     {
@@ -2650,588 +3350,6 @@
         "Phase C6 — Users",
         "Phase D — Login + AppLayout QA",
         "Phase E — Semantic-token sweep + a11y pass (grep gate clean)"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[UX] Replace native window.alert/confirm with toast/Modal",
-      "labels": [
-        "Design System"
-      ],
-      "desc": "13 sites across 9 files still use browser-native alert()/window.confirm(). Replace with existing toast (success/error) and Modal (danger variant) components for consistent UX. Files: EmpresaTabResumen.tsx, FacturaAdjuntos.tsx, NotaVentaAdjuntos.tsx, ProductoDocumentos.tsx, FacturaDetalle.tsx, GuiaDespachoDetalle.tsx, GuiasDespachoList.tsx, Pipeline.tsx.",
-      "checklist": [
-        "Inventariar todas las llamadas alert() y window.confirm()",
-        "Reemplazar alert() de error con toast.error()",
-        "Reemplazar window.confirm() destructivos con Modal danger",
-        "Verificar mensajes en espanol",
-        "Smoke test cada flujo afectado"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[UX] BoletaNueva: autocomplete productos + ClienteSelectModal",
-      "labels": [
-        "Core"
-      ],
-      "desc": "TODO(W1-04) explicito en BoletaNueva.tsx:11-12. Boleta sigue usando input plano de descripcion y campo numerico cliente_id. Componentes ya existen y se usan en NV/Factura. Solo integrar.",
-      "checklist": [
-        "Reemplazar input descripcion por autocomplete productos (patron NV)",
-        "Reemplazar cliente_id numerico por ClienteSelectModal",
-        "Eliminar TODOs",
-        "Test de smoke en BoletaNueva.test.tsx"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[UX] Migrar BoletaAnularModal/BoletaEmailModal a ui/Modal",
-      "labels": [
-        "Design System"
-      ],
-      "desc": "TODO en BoletaDetalle.tsx:297. Modales legacy fuera del sistema de diseno. Portar a ui/Modal con variant danger donde aplique para consistencia visual.",
-      "checklist": [
-        "Portar BoletaAnularModal a ui/Modal (variant danger)",
-        "Portar BoletaEmailModal a ui/Modal",
-        "Eliminar componentes legacy si quedan sin uso",
-        "Verificar tests"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Perf] Paginacion en listas de alto volumen",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Solo 3 de 67 paginas paginan (BoletasList, DTERecepcionList, LibrosList). Resto renderiza todo. Aplicar patron existente a paginas con volumen alto. Necesario antes de escalar a mas clientes.",
-      "checklist": [
-        "Facturas list: paginacion + page size selector",
-        "Cotizaciones list: paginacion",
-        "NotaVentas list: paginacion",
-        "GuiasDespachoList: paginacion",
-        "OrdenesCompra list: paginacion",
-        "NotasCredito list: paginacion",
-        "Backend: verificar endpoints aceptan skip/limit"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Perf] Hook useDebounce + aplicar a busquedas en listas",
-      "labels": [
-        "Core"
-      ],
-      "desc": "62 paginas hacen fetch en cada keystroke. Crear hook useDebounce reutilizable y aplicar a top paginas con barra de busqueda. Reduce carga al backend y mejora UX.",
-      "checklist": [
-        "Crear frontend/src/hooks/useDebounce.ts",
-        "Aplicar en Facturas list",
-        "Aplicar en Cotizaciones list",
-        "Aplicar en NotaVentas list",
-        "Aplicar en Productos list",
-        "Aplicar en Clientes list",
-        "Aplicar en Empresas list"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Perf] Cache de Redis para reportes/dashboard",
-      "labels": [
-        "Core"
-      ],
-      "desc": "reportes.py tiene 2068 LOC, 21 endpoints con agregaciones costosas que se recalculan cada request. Cachear con TTL corto (1-5min) e invalidar en writes relevantes. Mejora dramatica en dashboard load time.",
-      "checklist": [
-        "Identificar endpoints mas costosos en reportes.py",
-        "Definir keys de cache por (empresa_id, filtros, periodo)",
-        "Implementar wrapper de cache con TTL configurable",
-        "Invalidacion en eventos de escritura (factura emitida, etc.)",
-        "Metrica de hit rate"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[UX] Command palette Cmd+K (busqueda global + acciones)",
-      "labels": [
-        "Design System"
-      ],
-      "desc": "Expansion del Cmd+K palette ya shipped en Tier A #7 (cmdk modal, fan-out 8 entidades, permission-aware, atajo configurable). Componente GlobalSearchModal.tsx existente cubre BUSQUEDA de entidades. Falta la capa de ACCIONES: ejecutar comandos desde el palette sin tener que navegar primero. Ej: 'nueva factura', 'nueva NV', 'nueva cotizacion', 'nuevo cliente', 'nueva OC', 'ir a reportes/X', 'cerrar sesion'. Agregar grupo 'Acciones' en el palette existente, antes de Recientes/Entidades.",
-      "checklist": [
-        "Definir registro de acciones (slug, label, icono, ruta o handler, permiso requerido)",
-        "Componente ActionItem en components/search/items/",
-        "Grupo 'Acciones' en GlobalSearchModal antes de Recientes",
-        "Filtro permission-aware (ocultar acciones sin permiso)",
-        "Match por palabra clave en espanol (ej: 'fac', 'nueva', 'ir a')",
-        "Test: ejecutar accion cierra modal y navega/dispara handler",
-        "Documentar en help/onboarding la capa de comandos"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[UX] Bulk actions en listas (multi-select)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Listas no permiten seleccion multiple. Agregar checkboxes + barra de acciones bulk: exportar seleccionados, enviar por email, anular en masa (donde aplique). Ahorro de tiempo enorme para usuarios power.",
-      "checklist": [
-        "Componente reusable de checkbox column + select-all",
-        "Barra flotante de acciones cuando hay seleccion",
-        "Bulk export en Facturas",
-        "Bulk export en NotaVentas",
-        "Bulk send email en Facturas/Boletas",
-        "Backend: endpoints bulk donde falten"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[UX] Campana de notificaciones en topbar",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Backend notifications.py ya emite eventos pero no hay surface en UI. Agregar dropdown de notificaciones en topbar con conteo de no leidas, marcar como leido, link a entidad relacionada.",
-      "checklist": [
-        "Verificar API GET /notifications + PATCH read",
-        "Componente NotificationBell con badge count",
-        "Dropdown con ultimas 10 notificaciones",
-        "Click en notif navega a entidad y marca leida",
-        "Polling o websocket cada 30-60s"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Ops] Banner de alerta CAF: folios bajos / vencimiento proximo",
-      "labels": [
-        "DTE/SII",
-        "Core"
-      ],
-      "desc": "Admins ciegos al consumo de folios CAF. Quedarse sin folios bloquea emision DTE. Agregar banner visible cuando consumido >= 90% o vencimiento < 30 dias. Modelo CAF ya tiene todos los campos.",
-      "checklist": [
-        "Endpoint backend: CAFs en estado de alerta (consumo o vencimiento)",
-        "Componente Banner global persistente",
-        "Mostrar tipo DTE + folios restantes + dias al vencimiento",
-        "Link a configuracion CAF",
-        "Email de aviso a admins (Celery diario)"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Ops] Health endpoint expandido (DB + Celery + Lioren)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "health.py minimo. Expandir a chequeos: DB ping, worker Celery activo, Lioren API alcanzable. Util para uptime monitoring (Coolify, UptimeRobot) y diagnostico rapido en incidentes.",
-      "checklist": [
-        "GET /health/full con subchecks",
-        "DB ping con timeout corto",
-        "Celery: ping a workers via broadcast",
-        "Lioren: ping a endpoint sandbox",
-        "Respuesta estructurada con latencias",
-        "Endpoint /health/live (siempre 200) para liveness"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Ops] Job de retencion/archivo de audit_log",
-      "labels": [
-        "Core"
-      ],
-      "desc": "audit_log crece sin limite. A largo plazo degrada performance. Job Celery semanal que archiva registros mayores a 180 dias a tabla cold (audit_log_archive) o exporta a S3-like. Periodo configurable.",
-      "checklist": [
-        "Definir politica (180 dias default, configurable)",
-        "Tabla audit_log_archive con misma estructura",
-        "Celery task semanal de archivo",
-        "Metrica de filas archivadas",
-        "Endpoint admin para consultar archivo si se requiere"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Hygiene] Eliminar artefactos .js compilados duplicados",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Cada .tsx tiene un .js legacy al lado (commit ce9ad58 hizo limpieza parcial para tests). Sweep completo + .gitignore rule + lint o pre-commit check para evitar reaparicion. Reduce ruido en git status y posibles bugs de resolucion de modulos.",
-      "checklist": [
-        "Lista completa de pares .tsx + .js redundantes",
-        "Borrar .js que tienen contraparte .tsx",
-        "Agregar regla a .gitignore",
-        "Pre-commit hook que rechace .js junto a .tsx",
-        "Verificar tests/build pasan"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[UX] Dashboard: KPI tiles principales",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Dashboard.tsx existe pero falta capa de KPIs ejecutivos. Agregar tiles: ventas mes vs mes anterior (delta %), top 5 clientes, DTE rejection rate, AR aging (deuda por tramos 0-30/30-60/60-90/+90). Modelos ya tienen todo lo necesario.",
-      "checklist": [
-        "Endpoint GET /reportes/kpis con periodo",
-        "Tile: ventas del mes vs anterior",
-        "Tile: top 5 clientes del mes",
-        "Tile: DTE rejection rate (rechazadas / emitidas)",
-        "Tile: AR aging buckets",
-        "Sparklines o mini-charts donde aporte"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[UX] Auditoria de print CSS / PDF por tipo DTE",
-      "labels": [
-        "DTE/SII"
-      ],
-      "desc": "pdf.py existe pero cobertura visual desigual entre tipos. Verificar render correcto de factura 33, boleta 39/41, NC 61, ND 56, GD 52. Ajustar print CSS y plantillas. Incluye preview en UI antes de enviar.",
-      "checklist": [
-        "Render de prueba para cada tipo DTE",
-        "Checklist visual: header, lineas, totales, timbre, footer",
-        "Boton 'preview' en cada detalle antes de emitir",
-        "Print CSS: media print rules verificadas",
-        "Test de regresion visual (snapshot PDF si factible)"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Core] Modulos habilitables/deshabilitables por empresa",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Distintos clientes usan distintos subsets del producto (ej: Conico no usa boletas). Hoy todo esta siempre activo. Implementacion en 3 fases (cards hijas).\n\nDEPENDENCY GRAPH:\nCORE (no toggleable): empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config.\n\nOPTIONAL con deps:\n- facturas -> pagos, cobranza, nota_credito, nota_debito, libros, aprobaciones_margen\n- boletas -> nota_credito (61 anula boleta)\n- inventario -> guias_despacho\n- guias_despacho -> nota_credito (61 anula GD)\n- nota_credito requires >=1 of {facturas, boletas, guias_despacho}\n- nota_debito requires facturas\n- proveedores -> ordenes_compra, facturas_compra\n- ordenes_compra requires proveedores\n- facturas_compra -> aprobaciones_costo\n- listas_precios -> precios_especiales\n- pagos -> cobranza, bancos_receptores (pagos requires facturas)\n- tareas -> reglas_tareas\n- rrhh_empleados -> rrhh_vacaciones, rrhh_documentos\n- libros requires facturas\n- dte_emission auto-on si cualquiera de {facturas,boletas,GD,NC,ND} on\n- dte_recepcion independent\n- reportes always on, tabs adaptan\n\nREGLAS DE TOGGLE:\n- No se puede activar un modulo con parent off (UI lo previene).\n- Apagar parent prompt: 'Tambien apaga X,Y,Z. Continuar?' cascade atomico.\n- dte_emission y caf_management auto-derivados, no son toggle directo.\n\nPHASES:\n1. Backend foundation (registro, column, gate, API, audit, tests)\n2. Frontend gating (hook, sidebar/routes/CTAs)\n3. Admin UI con cascade prompts",
-      "checklist": [
-        "Phase 1 - backend foundation (card aparte)",
-        "Phase 2 - frontend gating (card aparte)",
-        "Phase 3 - admin UI (card aparte)",
-        "Phase 4 (futuro) - tier presets para SaaS pricing",
-        "Smoke test E2E: Conico con boletas off; otro tenant con boletas on",
-        "Documentacion en docs/architecture/modulos.md publicada"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Core] Modulos toggle - Phase 1: backend foundation",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Phase 1 de '[Core] Modulos habilitables/deshabilitables por empresa'. Backend solamente: registro central de modulos, persistencia per-empresa, dependency de gating, validacion de dependencias, endpoints de admin y de current user, auditoria. Sin cambios de UI todavia. Output esperado: cualquier router opcional retorna 403 cuando su modulo esta off para la empresa del usuario; admin puede toggle via API.\n\nVer card umbrella '[Core] Modulos habilitables/deshabilitables por empresa' para grafo de dependencias completo. CORE (no toggleable): empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config. OPTIONAL con deps: facturas->{pagos,cobranza,NC,ND,libros,aprobaciones_margen}; boletas->{NC}; inventario->{GD}; GD->{NC}; NC requires >=1 of {facturas,boletas,GD}; ND requires facturas; proveedores->{OC,facturas_compra}; OC requires proveedores; facturas_compra->{aprobaciones_costo}; listas_precios->{precios_especiales}; facturas->pagos->{cobranza,bancos_receptores}; tareas->{reglas_tareas}; rrhh_empleados->{vacaciones,documentos}; libros requires facturas; dte_emission auto-on si cualquiera de {facturas,boletas,GD,NC,ND} esta on.\n\nDESGLOSE EN CARDS ATOMICAS (cada una en una sesion o menos): ver checklist.",
-      "checklist": [
-        "[Modulos P1.1] Registro central de modulos + grafo de dependencias",
-        "[Modulos P1.2] Migracion Alembic + Empresa.modulos_enabled + backfill",
-        "[Modulos P1.3] require_modulo dependency + cascade calculator + unit tests",
-        "[Modulos P1.4] Wire require_modulo a routers de ventas DTE",
-        "[Modulos P1.5] Wire require_modulo a procurement + inventario + finanzas",
-        "[Modulos P1.6] Wire require_modulo a RRHH + CRM + libros + DTE recepcion + aprobaciones",
-        "[Modulos P1.7] Endpoints admin /empresas/{id}/modulos + /me/modulos + audit"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Core] Modulos toggle - Phase 2: frontend gating",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Phase 2 de '[Core] Modulos habilitables/deshabilitables por empresa'. Requiere Phase 1 mergeada. Consume /me/modulos, expone hook + helpers, filtra Sidebar, agrega route guards, oculta CTAs (botones 'nueva X') donde el modulo esta off. Sin admin UI todavia (eso es Phase 3) — solo gating consumiendo el estado existente.\n\nVer card umbrella '[Core] Modulos habilitables/deshabilitables por empresa' para grafo de dependencias completo. CORE (no toggleable): empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config. OPTIONAL con deps: facturas->{pagos,cobranza,NC,ND,libros,aprobaciones_margen}; boletas->{NC}; inventario->{GD}; GD->{NC}; NC requires >=1 of {facturas,boletas,GD}; ND requires facturas; proveedores->{OC,facturas_compra}; OC requires proveedores; facturas_compra->{aprobaciones_costo}; listas_precios->{precios_especiales}; facturas->pagos->{cobranza,bancos_receptores}; tareas->{reglas_tareas}; rrhh_empleados->{vacaciones,documentos}; libros requires facturas; dte_emission auto-on si cualquiera de {facturas,boletas,GD,NC,ND} esta on.\n\nDESGLOSE EN CARDS ATOMICAS: ver checklist.",
-      "checklist": [
-        "[Modulos P2.1] Mirror modulos.ts + useModulos hook + helpers",
-        "[Modulos P2.2] Componente <ModuloGuard> + envolver rutas opcionales",
-        "[Modulos P2.3] Filtrar Sidebar por modulos habilitados",
-        "[Modulos P2.4] Ocultar CTAs Dashboard + filtrar tabs Reportes",
-        "[Modulos P2.5] Ocultar acciones cross-module en detalles"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Core] Modulos toggle - Phase 3: admin UI",
-      "labels": [
-        "Core",
-        "Design System"
-      ],
-      "desc": "Phase 3 de '[Core] Modulos habilitables/deshabilitables por empresa'. Requiere Phase 1 (API) y Phase 2 (gating activo). UI admin para toggle de modulos con visualizacion de dependencias y cascade prompts. Vive en /configuracion/empresa como tab nuevo 'Modulos'.\n\nVer card umbrella '[Core] Modulos habilitables/deshabilitables por empresa' para grafo de dependencias completo. CORE (no toggleable): empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config. OPTIONAL con deps: facturas->{pagos,cobranza,NC,ND,libros,aprobaciones_margen}; boletas->{NC}; inventario->{GD}; GD->{NC}; NC requires >=1 of {facturas,boletas,GD}; ND requires facturas; proveedores->{OC,facturas_compra}; OC requires proveedores; facturas_compra->{aprobaciones_costo}; listas_precios->{precios_especiales}; facturas->pagos->{cobranza,bancos_receptores}; tareas->{reglas_tareas}; rrhh_empleados->{vacaciones,documentos}; libros requires facturas; dte_emission auto-on si cualquiera de {facturas,boletas,GD,NC,ND} esta on.\n\nDESGLOSE EN CARDS ATOMICAS: ver checklist.",
-      "checklist": [
-        "[Modulos P3.1] Tab 'Modulos' en /configuracion/empresa (read-only listado)",
-        "[Modulos P3.2] Toggle interactivo + dependency-aware disable visual",
-        "[Modulos P3.3] Modal cascade-confirm al apagar parent con dependents on",
-        "[Modulos P3.4] Audit visible per-modulo + acciones bulk"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P1.1] Registro central de modulos + grafo de dependencias",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Crear unico modulo Python que define todos los modulos optional, su categoria, label legible, dependencias y reglas auto-on. Sin migracion, sin gating todavia. Output: backend/app/core/modulos.py importable. Solo definiciones + funciones puras.\n\nBloquea: P1.2 P1.3 P2.1.\nEstimado: 2h.",
-      "checklist": [
-        "Crear backend/app/core/modulos.py",
-        "Constante CORE_MODULES (set de slugs no toggleable)",
-        "Constante OPTIONAL_MODULES como dict {slug: ModuloSpec(label, categoria, requires=[], dependents=[])}",
-        "Categorias: 'ventas', 'compras', 'inventario_precios', 'finanzas', 'dte_sii', 'crm', 'rrhh', 'aprobaciones'",
-        "Modulos iniciales: cotizaciones, notas_venta, facturas, boletas, guias_despacho, nota_credito, nota_debito, proveedores, ordenes_compra, facturas_compra, inventario, listas_precios, precios_especiales, pagos, cobranza, bancos_receptores, libros, dte_recepcion, oportunidades, tareas, reglas_tareas, rrhh_empleados, rrhh_vacaciones, rrhh_documentos, aprobaciones_descuento, aprobaciones_costo, aprobaciones_margen",
-        "Funcion all_modulo_slugs() y get_modulo(slug) (raise si no existe)",
-        "Funcion modulos_by_categoria() para UI agrupada",
-        "Tests: registro coherente (cada 'requires' apunta a slug existente), no hay ciclos de dependencia, todos los routers actuales tienen su slug"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P1.2] Migracion Alembic + Empresa.modulos_enabled + backfill",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Agregar columna JSONB a empresas y backfill que deja todas las empresas existentes con comportamiento actual (todos los modulos optional explicitamente true). Sin endpoints, sin gating todavia.\n\nRequires: P1.1.\nBloquea: P1.3 P1.7.\nEstimado: 1.5h.",
-      "checklist": [
-        "Agregar campo Empresa.modulos_enabled: Mapped[dict] = mapped_column(JSONB, server_default='{}')",
-        "Generar migracion Alembic con autogenerate, revisar a mano",
-        "Backfill en migracion: UPDATE empresas SET modulos_enabled = '<dict con todos los OPTIONAL en true>'",
-        "Verificar single head Alembic post-merge",
-        "Smoke test: arrancar backend, leer empresa existente, asserts modulos_enabled poblado",
-        "Test unitario: nueva empresa creada via API tambien recibe defaults all-on",
-        "Update factory de tests si aplica"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P1.3] require_modulo dependency + cascade calculator + unit tests",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Logica pura de gating. Implementa compute_effective_modulos (aplica auto-on de dte_emission cuando factura/boleta/GD/NC/ND on, valida required), validate_toggle (detecta violaciones en cambios propuestos), y dependency FastAPI require_modulo(slug) que retorna 403 estructurado. Sin wirear todavia a routers reales.\n\nRequires: P1.1 P1.2.\nBloquea: P1.4 P1.5 P1.6 P1.7.\nEstimado: 3h.",
-      "checklist": [
-        "compute_effective_modulos(stored: dict) -> dict — aplica auto-on de dte_emission/caf si cualquier doc DTE on",
-        "validate_toggle(current: dict, slug: str, target: bool) -> raise si activar sin parent o apagar parent con dependents on",
-        "compute_cascade(current: dict, slug: str, target: bool) -> dict[slug, bool] — devuelve diff resultante con cascade",
-        "FastAPI dependency require_modulo(slug) en backend/app/api/deps.py: lee user.empresa, computa efectivo, 403 con detail estructurado {error: 'modulo_disabled', slug, label}",
-        "Test: efectivo correcto para empresas con todo on / con boletas off / con facturas off (NC/ND/pagos/cobranza/libros tambien off)",
-        "Test: validate_toggle bloquea activar nota_credito sin facturas/boletas/GD",
-        "Test: validate_toggle bloquea apagar facturas si pagos on",
-        "Test: cascade calcula correctamente al apagar facturas (apaga pagos, cobranza, NC, ND, libros, aprobaciones_margen)",
-        "Test: require_modulo retorna 403 cuando user empresa tiene modulo off",
-        "Test: require_modulo permite paso cuando on"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P1.4] Wire require_modulo a routers de ventas DTE",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Aplicar Depends(require_modulo(...)) a todos los routers de documentos de venta. Cada router obtiene su modulo correspondiente en el include_router del main.py o como dependency a nivel de APIRouter. Tests integrales con cliente de prueba.\n\nRequires: P1.3.\nEstimado: 3h.",
-      "checklist": [
-        "boletas router -> require_modulo('boletas')",
-        "facturas + facturas_adjuntos router -> require_modulo('facturas')",
-        "guias_despacho router -> require_modulo('guias_despacho')",
-        "nota_credito + nota_debito routers -> require_modulo segun corresponda",
-        "cotizaciones router -> require_modulo('cotizaciones')",
-        "nota_ventas + nota_ventas_adjuntos router -> require_modulo('notas_venta')",
-        "Test integral por router: empresa con modulo off recibe 403 en GET/POST",
-        "Test integral por router: empresa con modulo on funciona como antes",
-        "Verificar audit_log y notifications cross-module no se rompen"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P1.5] Wire require_modulo a procurement + inventario + finanzas",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Segundo batch de routers. Un solo card porque cambios son repetitivos del mismo patron de P1.4.\n\nRequires: P1.3.\nEstimado: 3h.",
-      "checklist": [
-        "proveedores router -> require_modulo('proveedores')",
-        "ordenes_compra router -> require_modulo('ordenes_compra')",
-        "facturas_compra router -> require_modulo('facturas_compra')",
-        "inventario router -> require_modulo('inventario')",
-        "listas_precios router -> require_modulo('listas_precios')",
-        "(precios especiales) listas_precios sub-endpoints o router separado -> require_modulo('precios_especiales')",
-        "pagos router -> require_modulo('pagos')",
-        "cobranza router -> require_modulo('cobranza')",
-        "bancos_receptores router -> require_modulo('bancos_receptores')",
-        "Test integral por router: 403 cuando off, 200 cuando on"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P1.6] Wire require_modulo a RRHH + CRM + libros + DTE recepcion + aprobaciones",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Tercer batch — el resto. Mismo patron.\n\nRequires: P1.3.\nEstimado: 3h.",
-      "checklist": [
-        "empleados + empleados_documentos + empleados_vacaciones routers -> require_modulo correspondiente",
-        "oportunidades router -> require_modulo('oportunidades')",
-        "tareas + reglas_tarea routers -> require_modulo correspondiente",
-        "libros router -> require_modulo('libros')",
-        "dte_recepcion router -> require_modulo('dte_recepcion')",
-        "aprobaciones + aprobaciones_costo + aprobaciones_margen routers -> require_modulo correspondiente",
-        "solicitudes_descuento -> require_modulo('aprobaciones_descuento')",
-        "Test integral por router",
-        "Verificar reportes.py NO esta gateado (siempre on, tabs adaptan en Phase 2)"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P1.7] Endpoints admin /empresas/{id}/modulos + /me/modulos + audit",
-      "labels": [
-        "Core"
-      ],
-      "desc": "API publica de gestion. GET admin devuelve {stored, effective, registry-with-deps}. PATCH admin valida cascade y persiste. /me/modulos devuelve solo el efectivo del usuario actual (sin requerir admin). Cada cambio escribe audit_log con diff slug-by-slug.\n\nRequires: P1.3.\nEstimado: 3h.",
-      "checklist": [
-        "Crear backend/app/api/modulos.py router",
-        "GET /empresas/{id}/modulos (require_admin) -> {stored: dict, effective: dict, registry: [...]}",
-        "PATCH /empresas/{id}/modulos (require_admin) body {modulos: {slug: bool}} -> valida con compute_cascade + validate_toggle, persiste atomico",
-        "GET /me/modulos (require_user) -> {effective: dict}",
-        "Audit log entries: action='modulos.toggle', target='empresa:{id}', meta={diff: [{slug, before, after}]}",
-        "Schemas Pydantic: EmpresaModulosResponse, EmpresaModulosUpdate",
-        "Validacion 400 con detail 'dependency_violation' o 'unknown_slug'",
-        "Tests: GET admin solo, GET me funciona para vendedor, PATCH bloquea cambios invalidos, audit registra diff",
-        "Tests: PATCH idempotente cuando no hay cambios reales",
-        "Registrar router en main.py"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P2.1] Mirror modulos.ts + useModulos hook + helpers",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Espejo TypeScript del registro backend con metadata para UI (label, categoria, descripcion). Hook useModulos() consume /me/modulos via react-query. Helpers para uso ergonomico.\n\nRequires: P1.7.\nBloquea: P2.2 P2.3 P2.4 P2.5 P3.*.\nEstimado: 2h.",
-      "checklist": [
-        "frontend/src/lib/modulos.ts: MODULO_SLUGS const tuple + type Modulo + MODULO_META {label, categoria, descripcion}",
-        "frontend/src/api/modulos.ts: fetchMyModulos() -> {effective: Record<Modulo, boolean>}",
-        "frontend/src/hooks/useModulos.ts: useModulos() con react-query (staleTime 5min, refetchOnWindowFocus true)",
-        "Helper isModuloEnabled(state, slug) y hook useModuloEnabled(slug)",
-        "Loading state + error state expuestos por el hook",
-        "Test: hook devuelve effective; isModuloEnabled funciona con loading",
-        "Test: cambio en backend se refleja al refetch"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P2.2] Componente <ModuloGuard> + envolver rutas opcionales",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Wrapper de ruta que muestra skeleton mientras carga, redirige a /modulo-no-disponible (o muestra mensaje inline) cuando el modulo esta off, y renderiza children cuando on. Aplicar a todas las rutas de modulos opcionales en el router.\n\nRequires: P2.1.\nEstimado: 3h.",
-      "checklist": [
-        "frontend/src/components/ModuloGuard.tsx con props {slug, children, fallback?}",
-        "Pagina ModuloNoDisponible.tsx con mensaje 'Este modulo no esta habilitado para tu empresa, contacta al admin'",
-        "Envolver rutas: /boletas/*, /facturas/*, /guias-despacho/*, /notas-credito/*, /notas-debito/*, /ordenes-compra/*, /inventario, /listas-precios, /pagos, /cobranza, /rrhh/*, /pipeline, /tareas, /libros/*, /dte-recepcion",
-        "Skeleton state mientras /me/modulos carga (no redirigir prematuramente)",
-        "Test render: modulo off muestra fallback; modulo on muestra children",
-        "E2E smoke: empresa con boletas off intenta /boletas y ve mensaje"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P2.3] Filtrar Sidebar por modulos habilitados",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Sidebar.tsx filtra items segun estado de modulos. Items core siempre visibles; items opcionales solo si modulo on. Loading: skeleton de items.\n\nRequires: P2.1.\nEstimado: 2h.",
-      "checklist": [
-        "Anotar items del Sidebar con su slug de modulo correspondiente (campo nuevo en config de nav)",
-        "Filtrar items en render usando useModulos",
-        "Skeleton loader por seccion durante loading inicial",
-        "Items sin slug (CRM dashboard, configuracion, perfil) siempre visibles",
-        "Test: render con modulos partial; verificar visibilidad correcta",
-        "Verificar que un usuario sin permiso de admin tampoco ve link a /configuracion/empresa modulos"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P2.4] Ocultar CTAs Dashboard + filtrar tabs Reportes",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Dashboard.tsx tiene quick-action buttons ('Nueva factura', 'Nueva NV', etc.) que deben esconderse si su modulo esta off. Reportes.tsx tiene tabs por tipo de documento — solo mostrar tabs cuyo modulo esta on.\n\nRequires: P2.1.\nEstimado: 2h.",
-      "checklist": [
-        "Dashboard: cada quick-action declarada con su modulo slug; filtrar antes de render",
-        "Dashboard: KPI tiles que dependen de modulo (ej: facturacion mes) se ocultan si modulo off",
-        "Reportes: tabs declaradas con slug; filtrar en render",
-        "Reportes: tab default seleccionada es la primera disponible",
-        "Test: Dashboard con facturas off no muestra 'Nueva Factura' ni tile de facturacion",
-        "Test: Reportes con boletas off no muestra tab boletas"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P2.5] Ocultar acciones cross-module en detalles",
-      "labels": [
-        "Core"
-      ],
-      "desc": "Botones en pantallas de detalle que cruzan modulos: NV detail tiene 'Crear factura'; GD detail tiene 'Crear NC'; Factura tiene 'Anular con NC'; NV puede generar boleta. Cada uno debe esconderse si el modulo target esta off.\n\nRequires: P2.1.\nEstimado: 3h.",
-      "checklist": [
-        "NotaVentaDetalle: gate boton 'Generar Factura' por facturas; 'Generar Boleta' por boletas; 'Generar GD' por guias_despacho",
-        "FacturaDetalle: gate 'Anular con NC' por nota_credito; 'Registrar pago' por pagos",
-        "BoletaDetalle: gate 'Anular con NC' por nota_credito",
-        "GuiaDespachoDetalle: gate 'Anular con NC' por nota_credito",
-        "CotizacionDetalle: gate 'Convertir a NV' por notas_venta; 'Convertir a Factura' por facturas",
-        "OrdenCompraDetalle: gate 'Recibir' por inventario",
-        "Tests por pantalla: botones ocultos cuando target off"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P3.1] Tab 'Modulos' en /configuracion/empresa (read-only listado)",
-      "labels": [
-        "Core",
-        "Design System"
-      ],
-      "desc": "Scaffolding del tab. Render solamente — sin interactividad de toggle todavia. Lista todos los modulos opcionales agrupados por categoria, mostrando estado actual y dependencias.\n\nRequires: P2.1 P1.7.\nBloquea: P3.2.\nEstimado: 2h.",
-      "checklist": [
-        "Pagina/tab Modulos en Configuracion (admin only)",
-        "Fetch GET /empresas/{empresa_id}/modulos (incluye registry y stored y effective)",
-        "Render agrupado por categoria con titulo y descripcion",
-        "Cada modulo muestra: label, descripcion, estado (on/off badge), 'requiere: X' si tiene parent off, 'habilita: Y' si tiene dependents",
-        "Switch visualmente disabled (sin onClick todavia)",
-        "Estado loading + error",
-        "Hide tab para non-admin"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P3.2] Toggle interactivo + dependency-aware disable visual",
-      "labels": [
-        "Core",
-        "Design System"
-      ],
-      "desc": "Activar onClick en switches. Toggles que no se pueden activar (parent off) quedan disabled con tooltip explicativo. Toggles que NO disparan cascade se aplican directo via PATCH. Cascade prompt es separado en P3.3.\n\nRequires: P3.1.\nBloquea: P3.3.\nEstimado: 3h.",
-      "checklist": [
-        "Mutation PATCH /empresas/{empresa_id}/modulos via react-query",
-        "Click en switch on->off: si no apaga ningun dependent, aplicar directo y refetch",
-        "Click en switch off->on: si parent off, no hacer nada (estaba disabled); si parent on, aplicar directo",
-        "Tooltip en toggle disabled: 'Requiere {label-de-parent}'",
-        "Optimistic update con rollback en error",
-        "Toast.success / toast.error en cada mutation",
-        "Invalidar useModulos en exito (sidebar etc. se refrescan)",
-        "Tests: toggle simple aplica; toggle bloqueado por parent muestra tooltip y no envia request"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P3.3] Modal cascade-confirm al apagar parent con dependents on",
-      "labels": [
-        "Core",
-        "Design System"
-      ],
-      "desc": "Cuando off->on de un parent que tiene dependents activos, abrir Modal mostrando la cascade completa antes de aplicar. Confirmar = PATCH atomico con todos los slugs.\n\nRequires: P3.2.\nEstimado: 2h.",
-      "checklist": [
-        "Calcular cascade en frontend usando registry (espejo de compute_cascade backend)",
-        "Modal danger variant: 'Apagar facturas. Esto tambien apagara: pagos, cobranza, nota_credito, nota_debito, libros, aprobaciones_margen. Continuar?'",
-        "Confirmar -> PATCH con todos los slugs en un solo body",
-        "Cancelar cierra modal sin cambios",
-        "Loading state durante mutation",
-        "Tests: apagar facturas dispara modal con lista correcta; confirmar manda body completo; cancelar no envia request"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Modulos P3.4] Audit visible per-modulo + acciones bulk",
-      "labels": [
-        "Core",
-        "Design System"
-      ],
-      "desc": "Mostrar quien y cuando cambio cada modulo (consultando audit_log filtrado). Botones bulk para 'Habilitar todos' y 'Apagar opcionales' (con cascade-confirm).\n\nRequires: P3.3.\nEstimado: 2h.",
-      "checklist": [
-        "Endpoint GET /empresas/{id}/modulos/audit -> ultimas N entradas con (slug, before, after, actor, ts)",
-        "Tooltip o seccion 'historial' por modulo con ultimo cambio",
-        "Boton 'Habilitar todos los opcionales' (admin) -> PATCH all-on",
-        "Boton 'Apagar todos los opcionales' (admin) -> Modal cascade-confirm + PATCH all-off",
-        "Bloquear bulk si hay validacion fallida (improbable en all-on, posible en all-off)",
-        "Test: audit se carga; bulk all-off muestra modal con todos los modulos opcionales"
       ]
     }
   ]
