@@ -23,12 +23,12 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Onboarding] Import Guías de despacho históricas",
+      "list": "In progress",
+      "name": "[Onboarding] Import Tareas / actividades CRM pendientes",
       "labels": [
         "Core"
       ],
-      "desc": "Guías de despacho ya emitidas. Registro histórico para trazabilidad de entregas. Pueden o no tener factura asociada.",
+      "desc": "Tareas y actividades de seguimiento abiertas en CRM legacy (llamadas, emails, reuniones pendientes). Permite que el equipo no pierda pendientes en la migración.",
       "checklist": [
         "UI dentro de pestaña 'Migración inicial' (solo admin)",
         "Plantilla .xlsx descargable con columnas documentadas",
@@ -38,11 +38,11 @@
         "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
         "Idempotente: re-correr el mismo Excel no duplica",
         "--- Específico ---",
-        "Cabecera: folio_guia, rut_receptor, fecha, sede_destino, tipo_traslado",
-        "Detalle: folio_guia, sku, cantidad",
-        "Flag origen=externo (no reemite SII)",
-        "NO descontar stock por guías históricas",
-        "Link opcional a factura por (folio + tipo) si la factura también fue importada"
+        "Columnas: rut_cliente, tipo, descripcion, fecha_vencimiento, asignado_email, estado, prioridad",
+        "Cliente inexistente → reportar pendiente",
+        "Asignado inexistente → asignar a admin con flag",
+        "Tipos: llamada, email, reunion, visita, cobranza, otro",
+        "Solo importar tareas en estado abierto (pendiente/en_curso)"
       ]
     }
   ]
