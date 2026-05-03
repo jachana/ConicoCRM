@@ -3351,6 +3351,302 @@
         "Phase D — Login + AppLayout QA",
         "Phase E — Semantic-token sweep + a11y pass (grep gate clean)"
       ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry] Cost & performance observability",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "Necesitamos saber que operaciones cuestan mas (latencia, llamadas externas, costo Lioren) para decidir que cachear / optimizar / facturar. Base ya existente: Sentry + RequestLoggerMiddleware con request_id/user_id/route/method/status/latency_ms + healthz/readyz.\n\nGAPS:\n- Logs no incluyen empresa_id ni query_count ni response_size\n- No hay tracking de slow queries SQLAlchemy\n- Lioren API calls no instrumentados (latencia ni costo)\n- Celery tasks sin metricas\n- No hay rollup ni endpoint admin para inspeccionar\n- Frontend sin Web Vitals\n- No hay UI admin de visibilidad\n\nSTRATEGY: usar Sentry Performance para tracing detallado on-demand (sample rate bajo en prod), y rollups locales en DB para dashboards admin que viven dentro del producto. Cost attribution per empresa es base para futura facturacion SaaS por uso.\n\nImplementacion en 4 fases (cards aparte). 12 atomic subcards de <=3h cada uno.",
+      "checklist": [
+        "Phase 1 - backend data collection (5 atomic cards)",
+        "Phase 2 - aggregation + admin API (3 atomic cards)",
+        "Phase 3 - frontend metrics (2 atomic cards)",
+        "Phase 4 - admin UI (2 atomic cards)",
+        "Documentar runbook: como interpretar dashboards y donde investigar cada tipo de problema"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry] Phase 1: backend data collection",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "Phase 1 de '[Telemetry] Cost & performance observability'. Captura de datos en runtime. Foco: enriquecer logs y agregar puntos de medicion en lugares clave (DB, Lioren, Celery). Sin agregacion ni UI todavia.\n\nCards (paralelizables):\n- T1.1 Enrich RequestLoggerMiddleware\n- T1.2 SQLAlchemy slow-query listener\n- T1.3 Lioren client instrumentation\n- T1.4 Celery task metrics\n- T1.5 Sentry Performance tuning",
+      "checklist": [
+        "[Telemetry T1.1] RequestLoggerMiddleware: agregar empresa_id + response_size + query_count",
+        "[Telemetry T1.2] SQLAlchemy slow-query event listener (>200ms)",
+        "[Telemetry T1.3] Lioren client wrapper instrumentado (count, latency, cost)",
+        "[Telemetry T1.4] Celery task metrics via signals",
+        "[Telemetry T1.5] Sentry Performance: per-route traces_sample_rate + dashboards setup"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry] Phase 2: aggregation + admin API",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "Phase 2 de '[Telemetry] Cost & performance observability'. Rollup de logs Phase-1 a tabla agregada + endpoints admin que consume el dashboard. Requires P1.1 minimo (empresa_id en logs).\n\nCards:\n- T2.1 perf_rollup table + Celery hourly aggregator\n- T2.2 GET /admin/telemetry/routes\n- T2.3 GET /admin/telemetry/cost",
+      "checklist": [
+        "[Telemetry T2.1] perf_rollup table + Celery hourly aggregator desde logs",
+        "[Telemetry T2.2] GET /admin/telemetry/routes (top slow / busy / errors)",
+        "[Telemetry T2.3] GET /admin/telemetry/cost (Lioren + requests per empresa)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry] Phase 3: frontend metrics",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "Phase 3 de '[Telemetry] Cost & performance observability'. Captura del lado cliente. Independiente de P1/P2.\n\nCards:\n- T3.1 Web Vitals capture + POST + log\n- T3.2 Bundle analyzer en CI",
+      "checklist": [
+        "[Telemetry T3.1] Web Vitals (LCP/FID/CLS/INP) -> POST + log",
+        "[Telemetry T3.2] Bundle analyzer en CI + perf budget"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry] Phase 4: admin UI",
+      "labels": [
+        "Core",
+        "Goal: Operations",
+        "Design System"
+      ],
+      "desc": "Phase 4 de '[Telemetry] Cost & performance observability'. UI admin que consume endpoints Phase 2. Requires P2.\n\nCards:\n- T4.1 Routes tab (latencia, errores)\n- T4.2 Cost & Usage tab (per empresa)",
+      "checklist": [
+        "[Telemetry T4.1] /configuracion/telemetry tab Routes",
+        "[Telemetry T4.2] /configuracion/telemetry tab Cost & Usage"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry T1.1] RequestLoggerMiddleware: agregar empresa_id + response_size + query_count",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "Enriquecer el log per-request existente con campos para attribution y deteccion de endpoints DB-heavy. Cambio puntual en backend/app/core/request_logger.py.\n\nBloquea: T2.1 T2.3.\nEstimado: 2h.",
+      "checklist": [
+        "Lookup empresa_id desde JWT claim (decode-only, sin DB hit) o desde user.empresa_id si ya cargado",
+        "Hook al engine SQLAlchemy para contar queries por request (request-scoped contextvar contador)",
+        "Capturar response Content-Length cuando este disponible",
+        "Agregar campos al log line: empresa_id, query_count, response_size",
+        "Verificar que campos null/missing no rompen el log JSON",
+        "Test: request autenticado emite log con empresa_id; request anonimo emite con null",
+        "Test: query_count refleja N+1 en endpoints conocidos",
+        "Verificar overhead negligible (<1ms) con benchmark simple"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry T1.2] SQLAlchemy slow-query event listener (>200ms)",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "Hook a eventos before_cursor_execute / after_cursor_execute de SQLAlchemy para loggear queries sobre threshold con sql + duracion + request_id. Sin alertas activas — solo log estructurado consumible por Phase 2.\n\nEstimado: 2h.",
+      "checklist": [
+        "Crear backend/app/core/db_metrics.py con event listeners",
+        "Threshold configurable via SLOW_QUERY_MS (default 200)",
+        "Log line slow_query: request_id, sql_normalized, duration_ms, params_count",
+        "Truncar SQL > 1KB para no llenar logs",
+        "Setting opt-in via env (DB_METRICS_ENABLED) para evitar overhead en dev",
+        "Test: query lenta dispara log; query rapida no",
+        "Verificar que no rompe en transacciones anidadas o async"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry T1.3] Lioren client wrapper instrumentado (count, latency, cost)",
+      "labels": [
+        "Core",
+        "DTE/SII",
+        "Goal: Operations"
+      ],
+      "desc": "Wrapper sobre el cliente actual de Lioren que captura cada call: endpoint, latency_ms, status, body_size, est_cost (segun tabla de tarifas). Logs base para attribution per empresa. Lioren cobra por call DTE — esto deberia darnos cost-per-DTE.\n\nEstimado: 3h.",
+      "checklist": [
+        "Identificar todos los call-sites del cliente Lioren actual",
+        "Wrapper en backend/app/services/lioren_metrics.py o decorador",
+        "Capturar: endpoint, method, latency_ms, http_status, request_size, response_size, empresa_id, dte_tipo, est_cost_clp",
+        "Tabla CostTariff (slug, descripcion, costo_clp) para cost lookup",
+        "Tarifas iniciales segun contrato Lioren actual (factura emit, NC, ND, GD, boleta, libro envio)",
+        "Log line lioren.call con todos los campos",
+        "Test: emitir factura test mockea Lioren y verifica log con cost no-cero",
+        "Documentar como actualizar tarifas si Lioren cambia precios"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry T1.4] Celery task metrics via signals",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "Instrumentar Celery con sus signals task_prerun / task_postrun / task_failure para loggear latencia, status y empresa_id (cuando esta en kwargs).\n\nEstimado: 2h.",
+      "checklist": [
+        "backend/app/core/celery_metrics.py con handlers de signals",
+        "task_prerun captura start_ts en task.request",
+        "task_postrun emite log: task_name, latency_ms, status=success, empresa_id (best-effort)",
+        "task_failure emite log con exception_class y traceback corto",
+        "task_revoked / task_retried tambien (opcional, para cobertura completa)",
+        "Conectar handlers en backend/app/celery_app.py al boot",
+        "Test: task sintetica produce logs con campos correctos",
+        "Documentar: queue depth se mide aparte (Redis LLEN) si hace falta"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry T1.5] Sentry Performance: per-route traces_sample_rate + dashboards",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "Sentry ya esta configurado en core/observability.py con traces_sample_rate. Aplicar sampling inteligente (alto en endpoints criticos, bajo en healthz, capped global) y documentar dashboards Sentry a configurar manualmente.\n\nEstimado: 1.5h.",
+      "checklist": [
+        "traces_sampler funcion: 0.0 para /healthz /readyz, 0.05 default, 0.5 para /api/dte/* y /api/lioren/*",
+        "Setting SENTRY_TRACES_PROFILE=on toggleable",
+        "Custom transaction names usar route template (no path con ids)",
+        "Tag transactions con empresa_id desde request scope",
+        "Documentar dashboards Sentry a crear: Slowest endpoints, Throughput per route, Error rate, p95 trends",
+        "Documentar alertas Sentry sugeridas: error spike, p95 regression",
+        "README de observabilidad actualizado"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry T2.1] perf_rollup table + Celery hourly aggregator",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "Tabla agregada que se llena desde logs (parsing JSON) o desde un sink Redis intermedio. Celery beat cada hora consolida la ventana anterior. Una fila por (route, hour, empresa_id) con count, p50, p95, p99, errors, total_query_count.\n\nRequires: T1.1.\nBloquea: T2.2 T2.3.\nEstimado: 3h.",
+      "checklist": [
+        "Migracion Alembic: tabla perf_rollup (id, hour TIMESTAMPTZ, route, empresa_id, count, p50_ms, p95_ms, p99_ms, errors, total_queries) con index (hour DESC, route)",
+        "Decision: source = parse logs JSON archivados o emitir a Redis stream/list desde middleware",
+        "Si Redis sink: middleware push minimo (request_id, route, empresa_id, latency, status, queries) a Redis list",
+        "Celery beat task aggregate_perf_hourly cada hora consolida ventana T-1h",
+        "Tabla cost_rollup analoga para Lioren (count, total_cost_clp por empresa por hora)",
+        "Aggregator para Lioren consume mismo sink",
+        "Retencion: borrar perf_rollup > 90 dias (Celery weekly)",
+        "Tests: agregator produce filas correctas con datos sinteticos"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry T2.2] GET /admin/telemetry/routes",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "Endpoint admin que consume perf_rollup para responder: top N routes by p95, by count, by error_rate; trend (hourly buckets) por route. Filtros: periodo, empresa.\n\nRequires: T2.1.\nBloquea: T4.1.\nEstimado: 2.5h.",
+      "checklist": [
+        "GET /admin/telemetry/routes?period=24h|7d|30d&empresa_id=optional&order_by=p95|count|error_rate&limit=20",
+        "Response: [{route, count, p50, p95, p99, error_rate, trend:[{hour, p95, count}]}]",
+        "Permission: require_admin",
+        "Filtrar healthz/readyz/static",
+        "Tests: respuesta correcta con datos seed",
+        "Schema Pydantic + documentado en OpenAPI"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry T2.3] GET /admin/telemetry/cost",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "Endpoint admin que consume cost_rollup + perf_rollup para reportar uso y costo per empresa. Foundation para SaaS billing futuro.\n\nRequires: T2.1.\nBloquea: T4.2.\nEstimado: 2.5h.",
+      "checklist": [
+        "GET /admin/telemetry/cost?period=30d&empresa_id=optional",
+        "Response per empresa: {empresa_id, request_count, lioren_call_count, lioren_cost_clp, dte_emitidos_count, slow_request_count}",
+        "Total agregado al final",
+        "Permission: require_admin",
+        "Tests con seed multi-empresa",
+        "Schema Pydantic + OpenAPI"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry T3.1] Web Vitals capture + POST endpoint",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "Capturar metricas frontend (LCP, FID, INP, CLS, TTFB) usando lib oficial web-vitals. Sample 100% inicial (volumen bajo, asumimos), POST a backend, log estructurado. Aggregar puede ser P2 follow-up.\n\nEstimado: 2h.",
+      "checklist": [
+        "Instalar web-vitals npm package",
+        "frontend/src/lib/webVitals.ts: registrar onLCP/onFID/onCLS/onINP/onTTFB",
+        "Send a POST /api/telemetry/web-vitals con {metric, value, route, user_agent}",
+        "Endpoint backend que solo loguea (no DB todavia)",
+        "Sample rate configurable (default 1.0 hasta tener volumen)",
+        "Excluir local dev (env check)",
+        "Test: smoke en BoletasList; verificar request enviado al cargar"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry T3.2] Bundle analyzer en CI + perf budget",
+      "labels": [
+        "Core",
+        "Goal: Operations"
+      ],
+      "desc": "rollup-plugin-visualizer o vite equivalente para generar reporte de bundle por build. Perf budget (ej: main < 350KB gzipped) que falla CI si se excede.\n\nEstimado: 1.5h.",
+      "checklist": [
+        "Instalar rollup-plugin-visualizer (o vite-plugin-bundle-analyzer)",
+        "Generar stats.html en build de CI",
+        "Subir stats.html como artifact en GH Actions",
+        "Script size-check.js que parsea dist/ y compara contra budget en config",
+        "Budget inicial: main 350KB gz, vendor 500KB gz",
+        "CI step que falla si excede budget",
+        "Documentar en CONTRIBUTING como inspeccionar visualizer"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry T4.1] /configuracion/telemetry: tab Routes",
+      "labels": [
+        "Core",
+        "Goal: Operations",
+        "Design System"
+      ],
+      "desc": "Tab admin que muestra top routes lentas/busy/error-prone con sparklines de tendencia. Filtros periodo + empresa. Click en una row -> drill-down con histogramic latency.\n\nRequires: T2.2.\nEstimado: 3h.",
+      "checklist": [
+        "Pagina /configuracion/telemetry (admin only, ModuloGuard core)",
+        "Tab Routes: tabla con columnas (route, count, p50, p95, p99, error_rate, sparkline_24h)",
+        "Toggle period (24h, 7d, 30d) y filter empresa",
+        "Order by switcher (p95 / count / error_rate)",
+        "Sparkline component reutilizable (libreria simple, recharts si ya esta o svg manual)",
+        "Click row -> Modal/Drawer con detalle de la ruta (24h con buckets)",
+        "Empty state cuando no hay datos",
+        "Test render con mock API"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Telemetry T4.2] /configuracion/telemetry: tab Cost & Usage",
+      "labels": [
+        "Core",
+        "Goal: Operations",
+        "Design System"
+      ],
+      "desc": "Tab admin que muestra costo y uso per empresa. Util para identificar tenants caros antes de facturacion SaaS.\n\nRequires: T2.3.\nEstimado: 3h.",
+      "checklist": [
+        "Tab Cost & Usage en /configuracion/telemetry",
+        "Tabla: empresa, request_count, lioren_calls, lioren_cost_clp, dte_emitidos, slow_requests",
+        "Order by lioren_cost_clp DESC default",
+        "Period selector (30d default, 7d, 90d)",
+        "Tile resumen arriba: total_cost_clp + total_requests + count_empresas_activas",
+        "Export CSV",
+        "Empty state",
+        "Test render con mock API"
+      ]
     }
   ]
 }
