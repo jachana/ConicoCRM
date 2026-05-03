@@ -23,26 +23,19 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Onboarding] Import Tareas / actividades CRM pendientes",
+      "list": "In progress",
+      "name": "[DTE] SII Integration — Lioren API",
       "labels": [
-        "Core"
+        "DTE/SII"
       ],
-      "desc": "Tareas y actividades de seguimiento abiertas en CRM legacy (llamadas, emails, reuniones pendientes). Permite que el equipo no pierda pendientes en la migración.",
+      "desc": "Integrate with Lioren SII API for actual DTE interchange. Implement XML generation, signing, and SII communication.",
       "checklist": [
-        "UI dentro de pestaña 'Migración inicial' (solo admin)",
-        "Plantilla .xlsx descargable con columnas documentadas",
-        "Backend: parser xlsx con validación de columnas/tipos",
-        "Validación previa con preview + conteo de filas válidas/inválidas",
-        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
-        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
-        "Idempotente: re-correr el mismo Excel no duplica",
-        "--- Específico ---",
-        "Columnas: rut_cliente, tipo, descripcion, fecha_vencimiento, asignado_email, estado, prioridad",
-        "Cliente inexistente → reportar pendiente",
-        "Asignado inexistente → asignar a admin con flag",
-        "Tipos: llamada, email, reunion, visita, cobranza, otro",
-        "Solo importar tareas en estado abierto (pendiente/en_curso)"
+        "Lioren API client setup and authentication",
+        "XML generation for Libros de Ventas/Compras",
+        "XML signing with private key",
+        "Send Libros to SII",
+        "Receive and process SII responses",
+        "Handle rejections and re-submission logic"
       ]
     }
   ]
