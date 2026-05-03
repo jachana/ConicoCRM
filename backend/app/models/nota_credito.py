@@ -1,6 +1,6 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, String, text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -25,6 +25,7 @@ class NotaCredito(Base):
     monto_iva: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     monto_total: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
     dte_estado: Mapped[str] = mapped_column(String(20), default="no_emitida", server_default=text("'no_emitida'"))
+    historico: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
