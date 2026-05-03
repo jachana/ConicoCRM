@@ -23,6 +23,1214 @@
   },
   "cards": [
     {
+      "list": "Ideas",
+      "name": "[Wave 6] Multi-tenant SaaS",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Pivotear de single-tenant on-prem a SaaS multi-empresa. Out of scope v1 según PROGRESS.md.",
+      "checklist": [
+        "Decidir modelo: schema-per-tenant vs row-level (tenant_id)",
+        "Auth multi-tenant + onboarding",
+        "Billing (Stripe / MercadoPago)",
+        "Aislamiento de datos auditado",
+        "Migración cliente actual"
+      ]
+    },
+    {
+      "list": "Ideas",
+      "name": "[Wave 6] App móvil / PWA",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "PWA primero (más barata). App nativa solo si hay demanda comprobada.",
+      "checklist": [
+        "Auditar Lighthouse PWA score",
+        "Service worker + offline básico",
+        "Install prompt",
+        "Push notifications (depende de Tier A #8)"
+      ]
+    },
+    {
+      "list": "Ideas",
+      "name": "[Wave 6] API pública + webhooks salientes",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Para integraciones tercerizadas (e-commerce, contabilidad).",
+      "checklist": [
+        "OAuth2 / API keys",
+        "Rate limiting",
+        "Documentación OpenAPI consumible",
+        "Webhooks salientes para eventos clave"
+      ]
+    },
+    {
+      "list": "Ideas",
+      "name": "[Wave 5] POS / códigos de barras",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Punto de venta retail con scan de códigos.",
+      "checklist": [
+        "Hardware testing (lectores USB / cámara)",
+        "Vista POS optimizada (touch + keyboard shortcuts)",
+        "Caja diaria + arqueo",
+        "Integración boleta DTE 39"
+      ]
+    },
+    {
+      "list": "Ideas",
+      "name": "[Wave 4] Conciliación bancaria + multi-moneda + UF",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Importar cartola bancaria y matchear contra pagos; soporte UF/USD.",
+      "checklist": [
+        "Importador formatos banco (Banco de Chile / Santander / BCI / Estado)",
+        "Matching automático + sugerencias manuales",
+        "Tipo de cambio diario (UF / USD / EUR)",
+        "Cotización/factura en moneda extranjera con conversión a CLP"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Docs] Architecture overview",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Technical documentation: system architecture, tech stack (FastAPI, React, PostgreSQL, Redis, Celery), component diagram, data flow between frontend/backend/DTE/Celery workers.",
+      "checklist": [
+        "Component diagram (frontend / backend / DB / Redis / Celery / Lioren)",
+        "Tech stack table with versions",
+        "Request lifecycle walkthrough",
+        "DTE emission pipeline diagram",
+        "Background jobs overview"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Docs] Local development setup guide",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Step-by-step guide to run Conico locally: prerequisites, env vars, Docker Compose, running migrations, seeding test data, starting frontend and backend dev servers.",
+      "checklist": [
+        "Prerequisites (Node, Python, Docker)",
+        "Clone + env file setup",
+        "Docker Compose up + healthcheck",
+        "Alembic migrations",
+        "Seed data / fixture commands",
+        "Frontend dev server (Vite)",
+        "Running tests (pytest + vitest)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Docs] Environment variables reference",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Complete reference of all environment variables: name, required/optional, default, description, and example values. Covers backend, frontend, Celery, email, Sentry, DTE/Lioren, backup.",
+      "checklist": [
+        "Backend core vars (DATABASE_URL, SECRET_KEY, etc.)",
+        "Email/SMTP vars",
+        "DTE/Lioren vars",
+        "Sentry vars",
+        "Backup/rclone vars",
+        "Frontend VITE_* vars",
+        "Mark required vs optional clearly"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Docs] DTE/Lioren integration deep-dive",
+      "labels": [
+        "DTE/SII",
+        "Roadmap"
+      ],
+      "desc": "Developer reference for the DTE emission pipeline: Lioren API auth, document types supported (33/39/41/52/56/61), CAF management, webhook flow, Celery polling with exponential backoff, error handling.",
+      "checklist": [
+        "Lioren API auth and config",
+        "Supported DTE types + payload shapes",
+        "Emission flow diagram (API -> Celery -> Lioren -> SII -> webhook)",
+        "Webhook endpoint + HMAC validation",
+        "Polling task (states, backoff, max retries)",
+        "Annulment flow (NC type 61 from boleta/guia)",
+        "CAF upload + folio management"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Docs] Roles and permissions matrix",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Reference table of all roles (Admin, SubAdmin, Vendedor) and their default permissions per module and action. Include per-user override system and how permission checks work in backend + frontend.",
+      "checklist": [
+        "Role definitions and inheritance",
+        "Module x action permission table",
+        "Per-user override mechanism",
+        "How frontend gates routes/buttons",
+        "How backend enforces with Depends"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Docs] Celery background jobs reference",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Document all Celery tasks: name, trigger, schedule/queue, what it does, retry policy, failure behavior. Covers DTE polling, task rule evaluation, collection reminders.",
+      "checklist": [
+        "DTE emission + polling task",
+        "ReglaTarea hourly evaluator",
+        "Cobranza reminder sender",
+        "Beat schedule config",
+        "How to monitor jobs (Flower / logs)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Docs] Database schema reference (ERD)",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Entity-relationship diagram and schema reference for all major models. Key relationships, nullable FKs, indexing strategy, Alembic migration workflow.",
+      "checklist": [
+        "ERD diagram (Mermaid or draw.io)",
+        "Table per module: CRM, DTE, Inventory, Approvals, Tasks",
+        "Key FK relationships and cascade rules",
+        "Alembic workflow (generate, apply, rollback)",
+        "alembic_version head verification step"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Docs] Audit log system internals",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "How the global audit trail works: SQLAlchemy event listeners, diff format, sensitive field exclusion, ASGI middleware for request context, API querying and CSV export.",
+      "checklist": [
+        "Architecture: event listeners + middleware",
+        "Diff format: create/update/delete shapes",
+        "List of audited models",
+        "Excluded sensitive fields",
+        "API filter reference",
+        "CSV export usage"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[User Guide] Getting started: configuracion inicial",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "First-run guide for new clients: entering company data (RUT, razon social, direccion), uploading logo, configuring bank accounts, uploading CAF folios, creating first users and assigning roles.",
+      "checklist": [
+        "Company data setup (/configuracion)",
+        "Logo upload",
+        "Bank accounts for payments",
+        "CAF folio upload (/migracion-inicial)",
+        "Create users and assign roles",
+        "Enable 2FA (recommended)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[User Guide] Flujo de ventas: Cotizacion -> NV -> Factura",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "End-to-end sales workflow guide: creating a quotation, sending by email, converting to Nota de Venta (full or partial lines), state transitions, generating and emitting Factura DTE 33, registering payments.",
+      "checklist": [
+        "Creating a quotation with line items",
+        "Quotation PDF and email send",
+        "Credit limit warnings",
+        "Margin approval flow",
+        "Converting quote to NV (partial selection)",
+        "NV state transitions (pending->dispatched->delivered->paid)",
+        "Creating Factura from NV",
+        "Emitting DTE type 33",
+        "Registering partial and full payments"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[User Guide] Boletas electronicas 39 y 41",
+      "labels": [
+        "Roadmap",
+        "DTE/SII"
+      ],
+      "desc": "Guide to issuing electronic receipts: type 39 (taxed) vs 41 (exempt), anonymous vs identified receiver, license plate field for automotive, payment methods, DTE emission states, annulment via NC.",
+      "checklist": [
+        "Type 39 vs 41 difference",
+        "Anonymous sale (generic RUT 66666666-6)",
+        "Identified receiver (customer lookup)",
+        "License plate field (automotive flow)",
+        "Payment methods",
+        "DTE emission and state polling",
+        "Annulling a boleta (creates NC 61)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[User Guide] Guias de Despacho 52",
+      "labels": [
+        "Roadmap",
+        "DTE/SII"
+      ],
+      "desc": "Guide to creating and emitting dispatch guides: motives (entrega cliente, devolucion, traslado, etc.), prefilling from NV, draft -> emitida workflow, DTE emission, annulment.",
+      "checklist": [
+        "When to use a dispatch guide",
+        "Motive types explained",
+        "Creating from scratch vs from NV",
+        "Company + client + dispatch site selection",
+        "Emitting DTE type 52",
+        "Annulling a guide",
+        "PDF and email"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[User Guide] Notas de Credito y Debito",
+      "labels": [
+        "Roadmap",
+        "DTE/SII"
+      ],
+      "desc": "When and how to issue credit notes (NC 61) and debit notes (ND 56): correcting facturas, annulling boletas/guias, partial corrections, DTE emission.",
+      "checklist": [
+        "When to issue a NC vs ND",
+        "Linking NC to a factura or boleta",
+        "Line items and amounts",
+        "DTE emission type 61 / 56",
+        "Effect on invoice state (annulled/partial)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[User Guide] Gestion de Clientes y Empresas",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "CRM guide: creating clients and companies, linking clients to companies, timeline view (unified document history), credit line management, dispatch sites, Excel import.",
+      "checklist": [
+        "Creating a client (fields, RUT validation)",
+        "Creating a company and linking clients",
+        "Dispatch sites (SedeDespacho)",
+        "Timeline view: reading document history",
+        "Credit line setup and warnings",
+        "Excel import (template + validation rules)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[User Guide] Inventario y control de stock",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Inventory management guide: how stock is tracked (deducted on NV creation), viewing movements, manual adjustments, low-stock alerts and thresholds, stale cost indicator.",
+      "checklist": [
+        "How stock deduction works (NV emit trigger)",
+        "Viewing current stock per product",
+        "Movement history (filters by type/date)",
+        "Manual adjustment (add/subtract + reason)",
+        "Low-stock alert thresholds config",
+        "Sidebar badge and catalog indicator"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[User Guide] Ordenes de Compra y recepcion",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Purchase orders guide: creating an OC to a supplier, sending PDF by email, receiving goods (partial vs full), stock update on receipt, cancellation.",
+      "checklist": [
+        "Creating a purchase order",
+        "Sending to supplier (PDF + email)",
+        "Partial and full receipt flow",
+        "Stock update on receipt",
+        "Cancelling an OC",
+        "Excel export"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[User Guide] Reportes y exportaciones",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Guide to using all reports: sales report (by period/vendor/product/customer), by-brand report, margin analysis, filtering, KPI cards, Excel/CSV export.",
+      "checklist": [
+        "Sales report: date range and vendor filter",
+        "Reading KPIs (net, gross, margin %, avg ticket)",
+        "Breakdown by product and by customer",
+        "Por-marca report: brand + customer aggregation",
+        "Margin analysis: list vs effective margin",
+        "Exporting to Excel and CSV"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[User Guide] Usuarios, roles y permisos",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "User management guide: creating users, role differences (Admin/SubAdmin/Vendedor), per-user permission overrides, activating/deactivating users, 2FA setup.",
+      "checklist": [
+        "Creating a new user",
+        "Role overview: Admin vs SubAdmin vs Vendedor",
+        "Permission matrix toggles",
+        "Activating and deactivating users",
+        "Admin View As feature",
+        "2FA setup for users"
+      ]
+    },
+    {
+      "list": "In progress",
+      "name": "[W1-05 checkpoint] Validar payload tipo 52 contra Lioren sandbox",
+      "labels": [
+        "Wave 1",
+        "DTE/SII",
+        "Blocked"
+      ],
+      "desc": "Bloquea producción de guías 52. Field names ind_traslado y destino.{direccion,comuna} son hipótesis LOW confidence (TODO W1-05-sandbox en dte_service.py). Requiere credenciales Lioren reales.",
+      "checklist": [
+        "Conseguir credenciales Lioren sandbox",
+        "Ejecutar pipeline DTE 52 contra sandbox con guía real",
+        "Confirmar field names ind_traslado + destino.direccion + destino.comuna",
+        "Quitar TODO(W1-05-sandbox) en dte_service.py",
+        "Documentar resultado en .planning/phases/01-gu-a-de-despacho-52-backend/01-03-SUMMARY.md"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
+      "checklist": [
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
+      ],
+      "commits": [
+        "b655fdc494fb1ebc998d3f38683f67f31f084a93"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.  If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.  For more information, see https://radix-ui.com/primitives/docs/components/dialog",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "\n\nFixed in commit e1a3124: GlobalSearchModal now embeds sr-only DialogTitle/Description (cmdk label prop only sets aria-label, Radix still requires Title).",
+      "checklist": []
+    },
+    {
+      "list": "In review",
+      "name": "[Phase E] Visual QA route-by-route + Storybook opcional",
+      "labels": [
+        "Design System"
+      ],
+      "desc": "Phase E cerrada parcial (sweep + a11y aplicados). Storybook setup completado para components/ui/*. Falta visual QA manual light+dark / mobile+desktop por ruta.",
+      "checklist": [
+        "Visual QA route-by-route en light + dark",
+        "Visual QA mobile + desktop",
+        "Storybook setup opcional para components/ui/*",
+        "Documentar gaps que aparezcan"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Cobranza] Envío automático de recordatorios",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Hoy solo envío manual; cliente espera automático según frecuencia configurada por empresa.",
+      "checklist": [
+        "Job Celery diario que lee CobranzaConfig.frecuencia por empresa",
+        "Envía recordatorio email a facturas vencidas según ventana",
+        "Actualiza ultimo_recordatorio",
+        "Toggle por factura para excluir"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Tier A #6] Pipeline / Oportunidades",
+      "labels": [
+        "Tier A"
+      ],
+      "desc": "Shipped commit e738755. Stages configurable (default seed: Lead/Calificada/Propuesta/Negociación/Ganada/Perdida). Backend + tests + kanban UI + convert-to-cotización.",
+      "checklist": [
+        "Decidir etapas fijas vs configurables",
+        "Modelo Oportunidad (cliente, empresa, vendedor, etapa, monto estimado, fecha cierre estimada)",
+        "Kanban /pipeline con drag entre etapas",
+        "Conversión oportunidad → cotización",
+        "Reportes ganadas/perdidas + tasa de conversión"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[W1-07] 2FA TOTP + reset password",
+      "labels": [
+        "Wave 1"
+      ],
+      "desc": "2FA TOTP + flujo reset password. Skip actual; reactivar pre-Live Beta 0.2.",
+      "checklist": [
+        "Setup TOTP (QR + verificación)",
+        "Endpoint enrollment + verify",
+        "Reset password vía email",
+        "Recovery codes",
+        "Settings UI"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Tier A #8] Notificaciones in-app + email digest",
+      "labels": [
+        "Tier A"
+      ],
+      "desc": "No iniciado; tareas suplen parcialmente.\n\nMVP shipped en 8c2150b: modelo Notification + REST + bell con polling + hooks tareas. Email digest pendiente como follow-up (SMTP + cron).",
+      "checklist": [
+        "Modelo Notificacion (user, tipo, payload, leída)",
+        "WebSocket o polling para in-app",
+        "Bell icon header con badge unread",
+        "Email digest configurable (diario/semanal)",
+        "Settings de preferencias por tipo"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "Dashboard widget of sales should be able to set a goal",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "In review",
+      "name": "[DTE] Factura de compra tipo 46",
+      "labels": [
+        "DTE/SII"
+      ],
+      "desc": "Para compras a proveedores no contribuyentes / cambio de sujeto.",
+      "checklist": [
+        "Modelo FacturaCompra (o reuso de OC)",
+        "Pipeline DTE tipo 46",
+        "PDF + envío"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "revamp dashboard, its boring now",
+      "labels": [
+        "Design System"
+      ],
+      "desc": "Dashboard actual carece de engagement visual y organización. Rediseñar con widgets dinámicos, colores, y datos relevantes por rol para mejorar UX y adopción.",
+      "checklist": [
+        "Auditar dashboard actual: qué datos + qué roles lo usan",
+        "Mockups: layout responsive, widgets customizables",
+        "Definir KPIs visuales por rol (vendedor vs admin)",
+        "Implementar new design con charts/cards interactivas",
+        "Test A/B con subset de usuarios",
+        "[auto-attempt failed] backend pytest failed (exit 1):\n<3>WSL (9 - Relay) ERROR: CreateProcessCommon:800: execvpe(/bin/bash) failed: No such file or directory\n",
+        "Shipped: hero greeting + KPI strip + pill tabs + gradient empty state. Backend /summary endpoint. Commit 6412835"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[DTE] Libros + intercambio DTE recepción",
+      "labels": [
+        "DTE/SII"
+      ],
+      "desc": "Libro de compras y ventas + recepción DTE proveedores.",
+      "checklist": [
+        "Libro ventas (LV)",
+        "Libro compras (LC)",
+        "Recepción DTE entrantes (acuse de recibo, reclamos)",
+        "Intercambio según norma SII"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Roadmap] OC enhancements + Empresa Cliente actualización",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Fases pendientes según roadmap memory.",
+      "checklist": [
+        "Fase 6 — OC enhancements (no iniciada)",
+        "Fase 4a — Empresa + Cliente actualización (no iniciada)",
+        "Decidir alcance específico"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Empresa] Filtros rápidos en Timeline, Facturas y Productos",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los tabs Timeline, Facturas y Productos en EmpresaDetailModal necesitan filtros rápidos preconfigurados para mejorar usabilidad. Chips/pills de acceso rápido: 'Este mes', 'Este año', 'Facturas y pagos' (solo docs oficiales). Complementa los filtros existentes.",
+      "checklist": [
+        "Diseñar chips de filtro rápido: 'Este mes', 'Este año', 'Facturas y pagos'",
+        "Timeline: 'Este mes' = fecha >= inicio_mes, 'Facturas y pagos' = tipos [factura, pago, nc, nd]",
+        "Facturas tab: 'Este mes' y 'Este año' filtran por fecha_emision",
+        "Productos tab: 'Este mes' y 'Este año' filtran por última compra/factura del producto",
+        "Estado activo del chip resaltado (aria-pressed); reset limpia a sin filtro",
+        "Chips no reemplazan filtros existentes — se combinan"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Pestaña Migración inicial — import Clientes + Empresas (Excel)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Pestaña dedicada de **Migración inicial** (settings/onboarding) con herramientas one-shot para cargar data legacy. Primer proceso: import de Clientes y Empresas desde Excel.\n\nReglas de import:\n- Validar preexistencia por RUT y, si existe, preferir los datos del Excel (update sobre la fila existente — sin perder relaciones / id).\n- Cliente que apunta a un rut_empresa inexistente → crear cliente igual, dejar vínculo pendiente y reportarlo. Nunca descartar la fila por un link colgante.\n- Reporte final por fila: creado / actualizado / vínculo pendiente / error.\n\nLa pestaña queda como contenedor para futuros procesos de iniciación (productos, precios, OC históricas, etc.) — ver checklist.\n\nCada proceso de iniciación tiene su propia card con prefijo `[Onboarding]`.",
+      "checklist": [
+        "Nueva pestaña 'Migración inicial' visible solo a admin (settings o sección aparte)",
+        "Diseño extensible: cada proceso de iniciación es una card/wizard dentro de la pestaña",
+        "--- Proceso 1: Clientes + Empresas (Excel) ---",
+        "UI: upload .xlsx + preview de las primeras filas + plantilla descargable",
+        "Plantilla con hojas separadas (Empresas / Clientes) y columnas documentadas",
+        "Backend: parser xlsx con validación de columnas y tipos",
+        "Match por RUT normalizado (sin puntos, con guión, dv en mayúscula)",
+        "Empresa existente → UPDATE con datos del Excel (preferir nuevos), preservar id/relaciones",
+        "Empresa nueva → CREATE",
+        "Cliente con rut_empresa inexistente → crear cliente sin empresa + marcar 'vínculo pendiente' (no fallar la fila)",
+        "Cliente con rut_empresa existente → asociar correctamente",
+        "Validar RUTs (módulo 11) y reportar inválidos sin abortar el batch",
+        "Import transaccional por lote: rollback si error fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import: creado / actualizado / vínculo pendiente / error + motivo",
+        "Tests: empresa nueva, empresa existente (update), cliente con empresa válida, cliente con rut_empresa inexistente, RUT inválido, duplicados dentro del mismo Excel",
+        "--- Backlog futuro de la pestaña ---",
+        "Import de Productos desde Excel",
+        "Import de Lista de precios / descuentos por cliente",
+        "Import de OC / Facturas históricas (solo registro, sin emisión SII)"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Clientes] Búsqueda por nombre de empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Al buscar clientes (autocomplete / listado), incluir el nombre de la empresa vinculada como campo de búsqueda adicional. Hoy solo se busca por nombre/RUT del cliente; si el usuario escribe el nombre de la empresa, no aparece ningún resultado aunque el cliente esté asociado.\n\nComportamiento esperado:\n- El input de búsqueda de clientes filtra por: nombre cliente, RUT cliente, **nombre empresa**.\n- Los resultados muestran el nombre del cliente y, en subtexto, el nombre de la empresa.\n- No cambiar el modelo de datos; solo ampliar el query de búsqueda (JOIN con Empresa).",
+      "checklist": [
+        "Identificar todos los endpoints/queries de búsqueda de clientes (autocomplete + listado)",
+        "Ampliar filtro SQL: OR empresa.nombre ILIKE :q (JOIN Empresa donde existe vínculo)",
+        "Verificar que el schema de respuesta ya devuelve nombre_empresa o agregar el campo",
+        "Actualizar componente autocomplete de Clientes para mostrar nombre_empresa en subtexto del resultado",
+        "Aplicar lo mismo al listado paginado de Clientes si tiene filtro de texto libre",
+        "Test: buscar por nombre exacto de empresa → el cliente vinculado aparece en resultados"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Productos / Catálogo (Excel)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Carga inicial del catálogo de productos. Match por SKU; producto existente → UPDATE (preferir datos del Excel), nuevo → CREATE. Soporta familia/categoría, unidad, precio base, costo, IVA, afecto/exento.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Match por SKU normalizado (uppercase, sin espacios)",
+        "Columnas: sku, nombre, descripcion, familia, unidad, precio_base, costo, iva, afecto",
+        "Crear familia/categoría si no existe (o reportar como pendiente según modo)",
+        "Validar tipos numéricos y rangos (precio>=0, iva en {0,19})",
+        "SKU duplicado dentro del mismo Excel → reportar y tomar la última fila"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Bodegas + Sedes de despacho",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Carga inicial de bodegas (almacenes físicos para stock) y sedes de despacho asociadas a empresas. Pre-requisito para import de stock inicial y para asignar despachos por sede.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Hojas separadas: Bodegas / Sedes",
+        "Bodegas: codigo, nombre, direccion, comuna, activa",
+        "Sedes: rut_empresa, alias, direccion, comuna, contacto, telefono",
+        "Sede con rut_empresa inexistente → crear sede 'pendiente' + reportar (no descartar)",
+        "Match bodega por código; sede por (rut_empresa + alias)"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Stock inicial por bodega",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Carga el stock físico inicial de cada SKU por bodega. Pre-requisito: productos y bodegas ya cargados. Genera movimiento de inventario tipo 'carga inicial' para auditoría.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Pre-check: productos y bodegas existen",
+        "Columnas: sku, codigo_bodega, cantidad, costo_unitario (opcional)",
+        "SKU o bodega inexistente → reportar fila como error (no crear silencioso)",
+        "Generar Movimiento de Inventario tipo CARGA_INICIAL con fecha de import",
+        "Permitir re-correr: si ya hay carga inicial para SKU+bodega, confirmar antes de sobrescribir",
+        "Cantidades negativas → rechazar"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Lista de precios + descuentos por cliente",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Precios especiales y descuentos por (cliente|empresa) × producto. Ej.: cliente X paga $1.200 por SKU Y, o tiene 15% descuento global. Match por (rut, sku).",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: rut_cliente_o_empresa, sku, precio_especial, descuento_pct, vigencia_desde, vigencia_hasta",
+        "Cliente/empresa o SKU inexistente → reportar pendiente, no descartar",
+        "Validar mutua exclusión: precio_especial XOR descuento_pct (o ambos OK si modelo lo soporta)",
+        "Rechazar descuento_pct fuera de [0,100]",
+        "Re-import: actualiza vigencia/precio de la combinación existente"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Bug:i18n] Reglas de tarea muestran \"owner\" en inglés",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Aplicación es es-CL pero la UI de Reglas de Tarea (/admin/tareas/config) muestra el término inglés \"owner\" en lugar de \"responsable\" o \"asignado\". Probable leak desde seed o desde nombres de columna sin traducir.",
+      "checklist": [
+        "Reemplazar owner → responsable/asignado en /admin/tareas/config UI",
+        "Revisar seed ReglaTarea (descripcion/labels)",
+        "Grep en frontend de strings EN restantes en módulo tareas (\"owner\", \"created\", \"due\", etc.)",
+        "Confirmar consistencia con resto de módulos"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import OC históricas (registro)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Órdenes de compra ya emitidas en sistema legacy. Solo registro histórico — no se reemiten ni se envían a proveedor. Pre-requisito: proveedores y productos cargados.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Hojas: Cabecera OC / Detalle OC (linkeadas por numero_oc)",
+        "Cabecera: numero_oc, rut_proveedor, fecha, estado, total_neto, iva, total",
+        "Detalle: numero_oc, sku, cantidad, precio_unitario, descuento",
+        "Marcar registros con flag historico=true → bloquear edición/emisión",
+        "Proveedor o SKU inexistente → reportar fila como error",
+        "Validar totales (suma detalle = cabecera, tolerancia $1)"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Facturas / Boletas históricas (registro, sin SII)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "DTEs ya emitidos en plataforma anterior. Solo registro para histórico de cliente y cobranza — NO se reemiten al SII, no consumen folio CAF, no generan PDF nuevo. Marca origen=externo.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Hojas: Cabecera DTE / Detalle DTE",
+        "Cabecera: tipo_dte, folio, rut_receptor, fecha_emision, neto, iva, total, estado_pago",
+        "Detalle: folio, sku, cantidad, precio_unitario, descuento, exento",
+        "Flag origen=externo → bloquea reenvío SII, anulación, NC posterior (a menos que se decida explícito)",
+        "Permitir adjuntar PDF original opcional",
+        "Cliente inexistente → crear stub + marcar pendiente",
+        "NO descontar stock por estos DTE históricos"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Notas de crédito/débito históricas",
+      "labels": [
+        "Core"
+      ],
+      "desc": "NC/ND ya emitidas. Linkean a factura/boleta histórica por folio + tipo. Mismo principio: solo registro, no se reemite al SII.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: tipo (NC/ND), folio, fecha, folio_referencia, tipo_referencia, motivo, neto, iva, total",
+        "Flag origen=externo",
+        "Si folio_referencia no existe → reportar pendiente, dejar NC/ND huérfana (no descartar)",
+        "Aplicar efecto contable solo si la factura referenciada también está cargada"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Guías de despacho históricas",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Guías de despacho ya emitidas. Registro histórico para trazabilidad de entregas. Pueden o no tener factura asociada.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Cabecera: folio_guia, rut_receptor, fecha, sede_destino, tipo_traslado",
+        "Detalle: folio_guia, sku, cantidad",
+        "Flag origen=externo (no reemite SII)",
+        "NO descontar stock por guías históricas",
+        "Link opcional a factura por (folio + tipo) si la factura también fue importada"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Pagos / cartola / cobranzas históricas",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Pagos recibidos ya aplicados a facturas/boletas. Necesario para que la cobranza/saldo pendiente arranque correcto.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: fecha_pago, rut_cliente, monto, medio_pago, referencia, folio_documento, tipo_documento",
+        "Aplicar pago a la factura/boleta importada (reduce saldo pendiente)",
+        "Pago sin documento referenciado → registrar como pago a cuenta (no descartar)",
+        "Documento inexistente → reportar pendiente, dejar pago colgado para reconciliación manual",
+        "Validar que sum(pagos) <= total_documento (o reportar sobrepago)"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Notas de venta abiertas (pendientes)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "NV en estado pendiente/parcial al momento del corte de migración. Estas SÍ son operativas en Conico (se pueden facturar/despachar).",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Hojas: Cabecera NV / Detalle NV",
+        "Cabecera: numero_nv, rut_cliente, fecha, vendedor, condicion_pago, estado, observaciones",
+        "Detalle: numero_nv, sku, cantidad, cantidad_facturada, cantidad_despachada, precio, descuento",
+        "Recalcular saldos pendientes (cantidad - facturada / despachada)",
+        "Cliente o SKU inexistente → reportar y bloquear (NV operativa no puede tener huecos)",
+        "Vendedor inexistente → asignar a admin con flag de revisión"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Productos] Edición masiva de precios",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Permitir actualizar precios de múltiples productos a la vez sin entrar a cada ficha individualmente. Casos de uso: ajuste por inflación, cambio de margen por categoría, subida de costos proveedor.\n\nComportamiento esperado:\n- Vista tabla editable en /productos (o modal dedicado) con columnas: nombre, precio actual, precio nuevo.\n- Filtros: por categoría, marca, o selección manual (checkboxes).\n- Soporte para incremento porcentual (ej: +10%) o valor absoluto aplicado al rango seleccionado.\n- Preview de cambios antes de confirmar.\n- Commit atómico: todos o ninguno (rollback si falla alguno).",
+      "checklist": [
+        "Endpoint PATCH /api/productos/bulk-precios (lista de {id, precio_venta})",
+        "Validaciones: precio > 0, usuario con permiso de edición de productos",
+        "UI: modo 'edición masiva' en tabla de productos (toggle o botón)",
+        "Columna 'precio nuevo' editable inline por fila seleccionada",
+        "Herramienta de ajuste rápido: % aumento/descuento aplicado a selección",
+        "Preview diff antes de guardar (precio actual → precio nuevo)",
+        "Commit atómico con feedback de éxito/error por fila",
+        "Actualizar listas de precios vinculadas si aplica"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Cotizaciones abiertas",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Cotizaciones vigentes / con seguimiento activo en CRM legacy. Permite continuar el funnel sin perder oportunidades.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Cabecera: numero_cot, rut_cliente, fecha, vigencia_hasta, vendedor, estado, total",
+        "Detalle: numero_cot, sku, cantidad, precio, descuento",
+        "Estado mapeable a borrador/enviada/aceptada/rechazada/vencida",
+        "Cotizaciones con vigencia vencida → import opcional con flag archivada",
+        "Cliente nuevo (no existe) → crear con datos mínimos"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Vendedores / usuarios / roles",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Carga inicial del equipo de ventas y usuarios del sistema. Necesario antes de importar NV/cotizaciones (asignación de vendedor) y comisiones.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: rut, nombre, email, rol, activo, comision_pct, meta_mensual",
+        "Roles válidos: admin, vendedor, cobranza, bodega, contador (lectura)",
+        "Email único; existente → UPDATE (no resetea password)",
+        "Generar password temporal + email de bienvenida (opcional, toggle)",
+        "Match por email (estable) — RUT informativo"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Proveedores",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Carga inicial de proveedores (necesario para OC históricas y futuras). Match por RUT.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: rut, razon_social, giro, direccion, comuna, contacto, email, telefono, condicion_pago",
+        "Validar RUT módulo 11",
+        "Match por RUT normalizado; existente → UPDATE",
+        "Modelo Proveedor separado de Empresa (cliente)"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Categorías / familias de productos",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Estructura de catálogo (familia → subfamilia → producto). Pre-requisito recomendado antes de import productos para que el match de familia no genere stubs.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: codigo, nombre, parent_codigo (opcional para árbol)",
+        "Soporta jerarquía (parent_codigo apunta a otra fila del mismo Excel)",
+        "Validar ciclos en el árbol",
+        "Re-import actualiza nombre/parent (no borra hijos)",
+        "[auto-attempt failed] fix attempt produced no commits"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "Búsquedas insensibles a tildes (normalización unicode)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los filtros y buscadores deben ignorar tildes/acentos. Ej: buscar 'cliente' debe encontrar 'cliénte' y viceversa. Aplica a todos los módulos: clientes, productos, NV, cotizaciones, etc.",
+      "checklist": [
+        "Backend: habilitar extensión UNACCENT en Postgres y aplicar a queries de búsqueda",
+        "Frontend: normalizar texto antes de filtros client-side (strip diacríticos)",
+        "Verificar módulos: Clientes, Empresas, Productos, NV, Cotizaciones, Facturas"
+      ],
+      "commits": [
+        "b655fdc494fb1ebc998d3f38683f67f31f084a93"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Carga de CAFs SII (folios)",
+      "labels": [
+        "DTE/SII"
+      ],
+      "desc": "Sube los archivos CAF (XML firmados por SII) por tipo de DTE para que Conico pueda emitir folios. Distinto formato (XML, no Excel).",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Upload .xml CAF (uno por archivo, multi-upload OK)",
+        "Validar firma SII y rango de folios (desde/hasta)",
+        "Reconocer tipo DTE (33/34/39/41/52/56/61) automáticamente del XML",
+        "Detectar solapamiento con CAF ya cargado → rechazar",
+        "Mostrar consumo actual + folios restantes por tipo",
+        "Alerta de folios bajos (umbral configurable)"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Import Tareas / actividades CRM pendientes",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Tareas y actividades de seguimiento abiertas en CRM legacy (llamadas, emails, reuniones pendientes). Permite que el equipo no pierda pendientes en la migración.",
+      "checklist": [
+        "UI dentro de pestaña 'Migración inicial' (solo admin)",
+        "Plantilla .xlsx descargable con columnas documentadas",
+        "Backend: parser xlsx con validación de columnas/tipos",
+        "Validación previa con preview + conteo de filas válidas/inválidas",
+        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
+        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
+        "Idempotente: re-correr el mismo Excel no duplica",
+        "--- Específico ---",
+        "Columnas: rut_cliente, tipo, descripcion, fecha_vencimiento, asignado_email, estado, prioridad",
+        "Cliente inexistente → reportar pendiente",
+        "Asignado inexistente → asignar a admin con flag",
+        "Tipos: llamada, email, reunion, visita, cobranza, otro",
+        "Solo importar tareas en estado abierto (pendiente/en_curso)"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Productos] Tags de tipo: hidráulico, motor, transmisión (multi-valor)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los productos necesitan un campo 'Tipo' que funcione como tags (multi-selección), no como categoría exclusiva. Un producto puede ser simultáneamente 'hidráulico' y 'de motor'.\n\nTipos iniciales: hidráulico, motor, transmisión. El listado debe ser configurable (admin agrega/quita tipos).\n\nComportamiento esperado:\n- ProductoModal: selector multi-tag para tipo (chips seleccionables + opción de crear nuevo tipo).\n- Listado de productos: columna de tipos como chips, filtrable por uno o varios tipos.\n- PDF/documentos: mostrar tipos del producto si aplica.",
+      "checklist": [
+        "Modelo TipoProducto (id, nombre) + tabla M2M ProductoTipo (producto_id, tipo_id) + migraciones",
+        "Seed inicial: hidráulico, motor, transmisión",
+        "CRUD /api/tipos-producto (GET lista, POST, DELETE — solo admin)",
+        "ProductoCreate/Update schema: campo tipos: list[int] (ids)",
+        "ProductoRead schema: exponer tipos como lista de strings/objetos",
+        "ProductoModal UI: multi-select chips para tipos (con opción crear nuevo)",
+        "Listado productos: columna 'Tipos' con chips + filtro multi-selección por tipo",
+        "Búsqueda/filtro: GET /api/productos?tipo=hidraulico soporta múltiples valores"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Factura] Adjuntar archivo de Orden de Compra (PDF/imagen) y reutilizar al facturar",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Hoy el cliente envía la OC por email/WhatsApp como PDF o foto, y al momento de facturar hay que ir a buscarla — se pierde, se traspapela, o el vendedor no la tiene a mano. Permitir subir el archivo de la OC al sistema y dejarlo accesible desde la ficha de empresa/cliente y desde la factura que la referencia.\n\nFlujo:\n1. Subir archivo OC (PDF / JPG / PNG) en sección 'Órdenes de compra del cliente' (ficha empresa o vista global). Capturar metadata: número OC, fecha, monto, vigencia, archivo.\n2. Al emitir factura → selector 'Adjuntar OC del cliente' lista las OC subidas para esa empresa, sin facturar (o parcialmente facturadas). Al elegir, se auto-llena el bloque de Documentos referenciados (tipo 801, folio, fecha).\n3. La factura queda con link al archivo + en la referencia SII.\n\nRelación con cards existentes:\n- Complementa '[Factura] Documentos referenciados (OC, HES, contrato, guía, NV)' — esta card aporta el storage/upload, la otra el modelo de referencias.\n- Distinto de '[Onboarding] Import OC históricas' (eso es batch xlsx legacy).",
+      "checklist": [
+        "Modelo: OrdenCompraCliente (empresa_id, numero, fecha, monto, vigencia_hasta, archivo_url, estado)",
+        "Estados: vigente / facturada_parcial / facturada_total / vencida / anulada",
+        "Storage: subir archivo (PDF/JPG/PNG, max 10MB) — usar mismo bucket/disk que adjuntos existentes",
+        "UI: sección 'Órdenes de compra' en ficha de Empresa con upload + tabla + preview",
+        "Vista global '/ordenes-compra-clientes' filtrable por empresa, estado, vigencia",
+        "Modal upload: drag&drop archivo + form con número OC, fecha, monto (opcional), vigencia",
+        "Validación: número OC único por empresa (warning si duplicado, no bloqueo)",
+        "Emisión factura: nuevo selector 'Adjuntar OC del cliente' que lista OC vigentes/parciales de esa empresa",
+        "Al seleccionar OC → auto-llenar Documento Referenciado (tipo=801, folio=numero, fecha=fecha)",
+        "Auto-llenar también link al archivo (queda visible en la ficha de la factura)",
+        "Tracking: cuando una factura referencia una OC, marcar OC como facturada_parcial/total según monto",
+        "Permitir despegar OC de factura (revertir estado)",
+        "Permisos: vendedor sube OC de su cliente; admin ve todas",
+        "Tests: subir, listar, asociar a factura, estado se actualiza, archivo accesible vía URL firmada"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Productos] Características técnicas / normas (ISO 46, SAE 80, DIN 451, ACEA C3...)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los productos (lubricantes, grasas, aditivos) cumplen con normas y especificaciones técnicas de la industria. Los clientes los buscan así: 'necesito algo ISO 46', '¿tienes algo ACEA C3?'. Hoy esa info vive en la descripción libre — no se puede filtrar, no se puede sugerir equivalentes, y no aparece estructurada en cotizaciones.\n\nEsto es distinto del card existente '[Productos] Tags de tipo' (hidráulico/motor/transmisión = uso). Características = especificación técnica que cumple.\n\nEjemplos por familia:\n- ISO VG: ISO 22, ISO 32, ISO 46, ISO 68, ISO 100, ISO 150, ISO 220, ISO 320, ISO 460\n- SAE motor: SAE 5W-30, 10W-40, 15W-40, 20W-50\n- SAE engranaje: SAE 80, 80W-90, 85W-140, 140\n- DIN: DIN 51524 HLP, DIN 51517 CLP, DIN 51825 KP\n- ACEA: A3/B4, C3, E7, E9\n- API motor: API SN, SP, CK-4, CJ-4, CI-4\n- API engranaje: API GL-4, GL-5\n- NLGI grasas: NLGI 00, 0, 1, 2, 3\n- Otros: AGMA, Cummins, MB-Approval, Volvo VDS, Caterpillar TO-4, Allison TES-295\n\nModelo: cada característica tiene una **familia/norma** (ISO, SAE, DIN, ACEA, API, NLGI, OEM...) y un **valor** (46, 80W-90, C3, GL-5...). Multi-valor por producto.",
+      "checklist": [
+        "Modelo: NormaTecnica (id, familia, valor, descripcion_opcional)",
+        "Familias seed: ISO_VG, SAE_MOTOR, SAE_ENGRANAJE, DIN, ACEA, API_MOTOR, API_ENGRANAJE, NLGI, OEM",
+        "Tabla M2M ProductoNorma (producto_id, norma_id)",
+        "Seed inicial con valores comunes de cada familia (ver desc)",
+        "CRUD /api/normas-tecnicas (admin agrega valores nuevos; familias semi-fijas)",
+        "Validación: valor único por familia (no permitir duplicar 'ISO 46' dos veces)",
+        "ProductoModal UI: sección 'Características técnicas' con selector agrupado por familia (acordeón o tabs)",
+        "Chip por norma seleccionada con formato 'ISO 46', 'ACEA C3', etc.",
+        "Listado productos: columna 'Características' con chips (max 3 visibles + '+N')",
+        "Filtro avanzado: multi-select por familia + valor (ej: 'ISO VG = 46 OR 68')",
+        "**Buscador global: todas las normas son tokens buscables** — typing 'ISO 46', 'ACEA C3', 'GL-5', 'NLGI 2', '15W-40' encuentra productos que las cumplen",
+        "Indexar normas en el índice de búsqueda global (mismo donde están SKU, nombre, categoría)",
+        "Match parcial y case-insensitive: 'iso46', 'iso 46', 'ISO46' → todos matchean",
+        "Aplicar mismo principio a las tags de tipo existentes (hidráulico, motor, transmisión) — buscables en la barra global",
+        "Autocompletar en el buscador: al tipear 'ISO' sugerir 'ISO 22, ISO 32, ISO 46...' como chips",
+        "Producto detail: bloque 'Cumple con' agrupado por familia",
+        "Cotización/Factura/NV: mostrar características bajo el nombre del producto (opcional, toggle)",
+        "PDF cotización: incluir características (los técnicos del cliente las verifican)",
+        "Sugerencias 'producto similar': priorizar productos con normas en común (Wave 4 backlog)",
+        "Import productos (Excel onboarding): columna opcional 'normas' (formato 'ISO 46;SAE 10W-40;ACEA C3')",
+        "Tests: crear/asociar/quitar normas, filtro retorna correcto, búsqueda por norma matchea"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Cotizaciones] Alertas de cliente — modelo de notas y tabla",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Crear modelo de datos para notas de cliente (cobranza, crédito, notas admin).\n\nTecnología: SQLAlchemy model + Alembic migration.\n\nDebe soportar:\n- Nota de cobranza (moneda, monto mínimo)\n- Nota de crédito bloqueado\n- Nota personalizada admin/subadmin\n- Timestamps (created_at, updated_by)\n\nResultado: tabla customer_notes en DB + modelo Python.",
+      "checklist": [
+        "Definir estructura: customer_id, note_type, content, amount, created_by, created_at",
+        "Crear modelo CustomerNote en SQLAlchemy",
+        "Escribir migración Alembic",
+        "Validar migración (heads check)",
+        "Tests unitarios para modelo"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[NV] Adjuntar documentos (OC u otros) y propagarlos a factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "La Nota de Venta debe permitir adjuntar archivos (ej. Orden de Compra del cliente). Los adjuntos deben heredarse al generar la factura desde la NV, y aparecer referenciados en el PDF de factura.",
+      "checklist": [
+        "Modelo: tabla adjuntos vinculada a NV (nombre, archivo, tipo)",
+        "UI NV: sección para subir/ver/eliminar adjuntos (multi-archivo)",
+        "Al generar factura desde NV: copiar adjuntos a la factura",
+        "PDF factura: listar adjuntos con nombre de archivo (y número de OC si aplica)",
+        "Sección de OC: campo de texto libre para número de OC del cliente"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Cotizaciones] Alertas de cliente — API endpoint",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Crear endpoint GET /api/customers/{id}/notes que retorna notas activas del cliente.\n\nFiltros:\n- Por tipo (cobranza, crédito, custom)\n- Solo notas vigentes (created_at reciente, no expiradas)\n- Respuesta: lista con tipo, contenido, monto si aplica\n\nSeguiridad: solo vendedor/admin puede ver notas de sus clientes.",
+      "checklist": [
+        "Crear ruta GET /customers/{id}/notes en blueprints",
+        "Query builder: filtrar por customer_id, ordenar por created_at desc",
+        "Validar permisos (solo si es vendedor/admin)",
+        "Tests: endpoint exists, retorna notas, filtra por tipo",
+        "Documentation: swagger/openapi"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Cotizaciones] Alertas de cliente — componente modal",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Crear componente React AlertNotesModal que muestra notas de cliente con estilo warning/danger.\n\nDiseño:\n- Modal con ícono warning\n- Lista de notas (tipo + contenido en rojo)\n- Botón para cerrar y continuar cotización\n- Estilos: fondo rojo suave, bordes rojos, texto oscuro\n\nPropiedad: isOpen, notes[], onClose.",
+      "checklist": [
+        "Crear archivo src/components/AlertNotesModal.tsx",
+        "Implementar con Modal/Dialog existente",
+        "Styling: colores warning (rojo/naranja)",
+        "Manejar isOpen y onClose",
+        "Props: notes array con type + content",
+        "Tests: renders correctly, close button works"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Cotizaciones] Alertas de cliente — integración en formulario",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Integrar llamada a endpoint /customers/{id}/notes en QuotationForm.\n\nUX:\n1. Usuario selecciona cliente en dropdown → useCustomerNotes hook hace fetch\n2. Si hay notas → modal aparece automáticamente\n3. Usuario puede cerrar modal y continuar (o cancelar)\n4. Modal no bloquea guardar, solo alerta\n\nManejo de estado: loading, error, notas.",
+      "checklist": [
+        "Crear hook useCustomerNotes(customerId) con useFetch",
+        "Integrar en QuotationForm.tsx",
+        "Trigger: cuando customer_id cambia",
+        "Mostrar AlertNotesModal si notes.length > 0",
+        "Manejar loading state (spinner en customer field)",
+        "Tests: hook, modal appears, can close and continue"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Cotizaciones] Alertas de cliente — QA y validación",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Testing end-to-end y validación de feature completa.\n\nScenarios:\n1. Cliente sin notas → no aparece modal\n2. Cliente con nota de cobranza → modal muestra monto y vence\n3. Cliente con crédito bloqueado → modal destaca en rojo\n4. Cliente con múltiples notas → lista todas\n5. Vendedor ve notas, cierra modal, guarda cotización → funciona\n\nTarget: backend + frontend tests passing, manual QA en staging.",
+      "checklist": [
+        "Backend tests: endpoint con/sin notas, permisos",
+        "Frontend tests: modal renders, displays correct notes, closes",
+        "Integration tests: crear cotización de cliente con notas",
+        "Manual QA: crear cliente con notas, citar, verificar modal",
+        "Edge cases: cliente con 10+ notas, unicode en contenido",
+        "Performance: fetch rápido (cache si aplica)"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[DTE] Libros + Recepción — Phase 2 Frontend",
+      "labels": [
+        "DTE/SII"
+      ],
+      "desc": "Frontend UI for Libros (sales/purchase registers) and DTE Recepción (manage incoming DTEs). Depends on Phase 1 backend (completed).",
+      "checklist": [
+        "Libros list view (ventas/compras with filters, pagination)",
+        "Libro detail view (export/print options)",
+        "DTE Recepción list view (accept/reject actions)",
+        "Recepción detail modal (state transitions, respuesta_sii display)",
+        "Responsive design for mobile"
+      ]
+    },
+    {
       "list": "In review",
       "name": "[DTE] SII Integration — Lioren API",
       "labels": [
@@ -36,6 +1244,1994 @@
         "Send Libros to SII",
         "Receive and process SII responses",
         "Handle rejections and re-submission logic"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Empresa] RUTs adicionales (multi-RUT) + validación dígito verificador",
+      "labels": [],
+      "desc": "",
+      "checklist": [
+        "Modelo: nueva tabla EmpresaRutAdicional (id, empresa_id FK, rut, dv, etiqueta opcional, created_at) + migración Alembic",
+        "Migración data: por cada Empresa con rut_no_oficial=true, mover su rut a EmpresaRutAdicional + dropar columna rut_no_oficial",
+        "Schema EmpresaRead incluye `ruts_adicionales: list[{rut, etiqueta}]`",
+        "API: POST/DELETE /api/empresas/{id}/ruts-adicionales (no editable in-place — agregar/borrar)",
+        "Util compartido `validar_rut(rut)` con módulo 11 (dv calculado, K para 10, normalizar puntos/guión)",
+        "Backend: aplicar validar_rut en EmpresaCreate, RutAdicionalCreate y todos los endpoints que reciben RUT (clientes, contactos)",
+        "Frontend: helper validateRut() en utils + usar en EmpresaModal, ClienteModal, autocompletes",
+        "EmpresaModal: sección 'RUTs adicionales' con lista + botón 'Agregar RUT' (input con validación inline + label opcional)",
+        "EmpresaDetail: mostrar RUTs adicionales como chips bajo el RUT oficial",
+        "Buscador global de empresas/clientes: matchear también contra ruts_adicionales",
+        "Tests backend: validar_rut acepta válidos, rechaza inválidos, normaliza formato; CRUD ruts adicionales; búsqueda por rut adicional",
+        "Tests frontend: input rechaza RUT inválido con mensaje 'Dígito verificador no coincide'",
+        "Deprecación limpia: borrar referencias a `rut_no_oficial` en código y UI"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[CAF] Fix CAFListSection frontend tests (Vitest mock binding)",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "6 tests in CAFListSection.test.tsx fail after removing empresaId prop from listCAFs(). Root cause: Vitest factory mock + React Query v5 setQueryData not propagating to component — the no-arg listCAFs() import binding appears to be a different instance than cafsApi.listCAFs in the test. Tests with empty data pass; tests with CAF items (count>0) timeout. Fix: investigate vi.mock factory vs auto-mock behavior with no-arg async functions in Vitest v2.1, or use a different test pattern (e.g. render with pre-populated QueryClient via a wrapper that passes initialData).",
+      "checklist": [
+        "Reproduce isolation: run single failing test to confirm no cross-test contamination",
+        "Try auto-mock (no factory) + explicit beforeEach mockResolvedValue",
+        "Try vi.spyOn instead of vi.mocked",
+        "Try QueryClient.setQueryData with correct key ['cafs', 0]",
+        "Fix and verify all 8 tests in CAFListSection.test.tsx pass"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Onboarding] Refactor payment_parser to match test spec",
+      "labels": [
+        "Core"
+      ],
+      "desc": "test_payment_parser.py specifies a new API that the current PaymentParser implementation does not satisfy. Tests are skipped until this is implemented.\n\nRequired changes:\n- Module-level parse_pagos_xlsx(content: bytes) function\n- result.validas / result.invalidas (rename valid_rows / invalid_rows)\n- row.fila (rename row_num), row.rut_cliente_raw (new field)\n- RUT normalization (remove dots/spaces) and check-digit validation\n- referencia, folio_documento, tipo_documento become REQUIRED fields\n- VALID_PAYMENT_METHODS validation (efectivo/transferencia/cheque/tarjeta/otro)\n- VALID_DOCUMENT_TYPES validation (factura/boleta/nota_credito/nota_debito/guia_despacho)\n- error.motivo (joined error string), error.valores_raw (dict of raw values)\n- Blank row skipping\n- Remove documentation-row skip (row[1]) — template no longer needs it\n- Update onboarding_payments.py to use new API\n- Unskip test_payment_parser.py once implementation is done",
+      "checklist": [
+        "Rewrite payment_parser.py dataclasses (validas/invalidas/fila/motivo/valores_raw)",
+        "Add RUT normalization + check-digit validation",
+        "Make referencia, folio_documento, tipo_documento required",
+        "Add VALID_PAYMENT_METHODS and VALID_DOCUMENT_TYPES validation",
+        "Add blank row skipping",
+        "Remove documentation-row skip from parse logic",
+        "Update onboarding_payments.py to use new API names",
+        "Remove pytestmark skip from test_payment_parser.py",
+        "Run full test suite, confirm all pass"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[DTE] Advanced Reporting — Libros filters and exports",
+      "labels": [
+        "DTE/SII",
+        "Roadmap"
+      ],
+      "desc": "Advanced filtering, sorting, and export options for Libros. CSV/Excel export, period ranges, status summaries.",
+      "checklist": [
+        "Multi-period filtering (date range)",
+        "Status-based filtering (enviado/aceptado/rechazado)",
+        "Sorting by monto, período, empresa",
+        "CSV export of Libros",
+        "Excel export with formatting",
+        "Print-friendly view"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "[Cotizaciones] Descuento requiere aprobación — vendedor no puede aplicarlo directo",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El vendedor no debe poder aplicar descuentos libremente en una cotización. En su lugar debe solicitar el descuento al admin/supervisor, quien lo aprueba o rechaza.\n\nFlujo esperado:\n- Vendedor propone descuento (% o monto) → cotización queda en estado 'descuento pendiente'.\n- Admin recibe notificación/alerta y puede aprobar o rechazar con comentario.\n- Si aprobado: descuento se aplica y cotización vuelve a estado normal.\n- Si rechazado: cotización sigue sin descuento, vendedor ve el motivo.\n- Config: umbral configurable (ej: descuentos > 5% requieren aprobación; menores, libres).",
+      "checklist": [
+        "Definir umbral configurable: % máximo de descuento libre por vendedor (config por empresa)",
+        "Modelo SolicitudDescuento (cotizacion_id, vendedor_id, descuento_solicitado, estado, revisor_id, comentario)",
+        "Migración Alembic",
+        "Endpoint POST /cotizaciones/{id}/solicitar-descuento",
+        "Endpoint PATCH /solicitudes-descuento/{id} (aprobar/rechazar — solo admin/supervisor)",
+        "Cotización con descuento pendiente: bloquear emisión hasta resolución",
+        "UI vendedor: input descuento muestra 'solicitar' si supera umbral, aplica directo si está dentro",
+        "UI admin: lista de solicitudes pendientes con aprobar/rechazar + campo comentario",
+        "Notificación in-app al admin al crear solicitud; al vendedor al resolver",
+        "Cotización detalle: mostrar estado de aprobación y quién aprobó/rechazó"
+      ]
+    },
+    {
+      "list": "In review",
+      "name": "En settings debe haber confirmation de Estatus de las integraciones, lioren, mail, WhatsApp",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "In review",
+      "name": "En el widget de ventas por periodo, el cliente quiere poder ver barras diarias por un entre semanas y años y tener una meta diaria visible, como una linea sobre las barras para saber que dias se cumple y que dias no",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "In review",
+      "name": "buscador en NV Factura y Cotizacion debe poder buscar/filtrar por producto, tipo marca y tags",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "In review",
+      "name": "[Empresa] RUT no oficial — flag informativo para consolidación",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Algunas empresas tienen multiples RUT, necesitamos saberlos todos para contabilidad y consolidaciones",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 3] Cotizaciones",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Cotización con numeración correlativa, líneas con autocomplete, IVA/margen, PDF, email, estados, export Excel.",
+      "checklist": [
+        "Numeración correlativa desde 12250 (SELECT FOR UPDATE)",
+        "Líneas con autocomplete + IVA 19% + margen interno",
+        "PDF WeasyPrint + template HTML",
+        "Email SMTP con PDF (degradación elegante)",
+        "Estados no_definido → abierta → cerrada_fv → rechazada",
+        "Export Excel",
+        "SystemConfig key/value para config global"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[DTE] Factura exenta tipo 34",
+      "labels": [
+        "DTE/SII"
+      ],
+      "desc": "Pendiente del módulo DTE.",
+      "checklist": [
+        "Soporte tipo 34 en DteService.build_payload",
+        "Validación: todas las líneas exentas",
+        "UI: toggle factura exenta en FacturaNueva"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "dashboard stock critico me lleva a https://crm.conico.juliocode.com/productos",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "when selecting a Empresa using ctrl+k I get 404",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "\n\nFixed in commit 01cb4fe: cmdk URL → /empresas?detalle=<id>; Empresas page opens detail modal from param.",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Guía despacho] Errores al guardar + botón \"Emitir DTE\" incorrecto",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "Dos problemas en el formulario /guias-despacho/nueva:\n1. Error al guardar — posiblemente conflicto de número/folio duplicado o constraint de BD. Revisar respuesta 400/500 del backend al hacer POST.\n2. El botón principal dice \"Emitir DTE\" pero la guía de despacho es logística interna — no emite DTE al SII. Cambiar texto a \"Guardar\" o \"Crear guía\".",
+      "checklist": [
+        "Reproducir error al guardar — capturar response exacto (status + body)",
+        "Revisar endpoint POST /api/guias-despacho: validación de número único, constraints FK",
+        "Corregir texto del botón: 'Emitir DTE' → 'Guardar guía' (o 'Crear guía')",
+        "Verificar que no haya lógica DTE disparándose para guías de despacho internas"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "Failed to load resource: the server responded with a status of 500 () al tratar de generar una guia de despacho",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "numeros en pdf e internos para NV y otros no cuadran (NV42 es la 0008)",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "FIX (NV only): nv.numero ahora == nv.id en creación + migración backfill alinea históricos. URL/list/detalle/PDF muestran el mismo número. Otros docs (cotización, OC, guía) quedan pendientes — ver card separada.",
+      "checklist": [
+        "NV: numero == id going forward (crear_nv, from_cotizacion, aprobaciones)",
+        "NV: migración b9b8e073d777 backfill numero=id en históricos",
+        "Cotización: alinear numero con id",
+        "OC: alinear numero con id",
+        "Guía despacho: alinear numero con id"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "en las cotizaciones NV facturas... una vez escogido un sku o producto, no se puede cambiar el detalle del producto, nombre formato o sku son fijos, solo se puede cambiar eliminando la fila",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Una vez seleccionado un producto del catálogo en la línea de NV/Cotización/Factura, los campos SKU, descripción y formato quedan readonly. Solo se pueden cambiar eliminando la fila y volviendo a buscar el producto. Evita desincronización con la ficha maestra del producto.",
+      "checklist": [
+        "NotaVentaDetalle: SKU/descripción/formato disabled cuando producto_id está set",
+        "CotizacionDetalle: descripción disabled cuando producto_id está set (SKU/formato ya readonly)",
+        "FacturaDetalle: SKU/descripción/formato render como span cuando producto_id está set"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "El logo de la empresa debe ser una imagen subible en settings para las facturas y cotizaciones",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Core] Bloquear edición/anulación de facturas emitidas",
+      "labels": [
+        "Core",
+        "DTE/SII"
+      ],
+      "desc": "Una vez emitida una factura (DTE enviado al SII), no debe ser posible eliminarla, modificarla ni anularla desde la app. El documento es legalmente vinculante; cualquier corrección debe hacerse mediante nota de crédito. Aplica a boletas, facturas y guías de despacho.",
+      "checklist": [
+        "Deshabilitar botón Eliminar en facturas con estado emitida/aceptada",
+        "Deshabilitar edición de campos en facturas emitidas",
+        "Ocultar/bloquear opción Anular (redirigir a flujo Nota de Crédito)",
+        "Validación en backend: rechazar PUT/DELETE sobre documentos emitidos",
+        "Mensaje de error claro al intentar modificar desde API o UI"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Empresa] Puntos de contacto visibles en ficha empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "La pantalla de detalle de empresa debe mostrar los puntos de contacto (personas de contacto: nombre, cargo, email, teléfono). Si ya existe modelo ContactoEmpresa, agregar tab o sección en EmpresaDetailModal. Si no existe, crear modelo y CRUD básico.",
+      "checklist": [
+        "Verificar si existe modelo ContactoEmpresa o similar",
+        "Si no existe: modelo ContactoEmpresa (empresa_id FK, nombre, cargo, email, telefono) + migración",
+        "API CRUD /api/empresas/{id}/contactos (GET, POST, PATCH, DELETE)",
+        "EmpresaDetailModal: tab 'Contactos' o sección inline con lista + agregar/editar/eliminar",
+        "Permisos: vendedor puede ver, solo admin puede crear/editar/eliminar"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Cotizaciones] Link a NV generada en cotización cerrada",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Cuando una cotización se cierra (estado 'cerrada' / convertida), debe mostrar un link directo a la Nota de Venta generada. Hoy no hay trazabilidad visual entre cotización y NV.\n\nComportamiento esperado:\n- En el detalle de cotización cerrada: badge o sección 'NV generada' con link a /notas-venta/{id}.\n- Si la NV fue eliminada posterior al cierre, mostrar referencia con aviso 'NV eliminada'.\n- En el listado de cotizaciones: columna/icono que indique si tiene NV asociada.",
+      "checklist": [
+        "Verificar si Cotizacion ya tiene FK nota_venta_id o campo equivalente",
+        "Si no existe: agregar Cotizacion.nota_venta_id (nullable FK) + migración Alembic",
+        "Al convertir cotización → NV: guardar nota_venta_id en la cotización",
+        "CotizacionRead schema: exponer nota_venta_id y opcionalmente nota_venta_folio",
+        "CotizacionDetalle UI: mostrar link 'Ver NV #folio' cuando nota_venta_id existe",
+        "Manejar caso NV eliminada: mostrar referencia inerte con aviso",
+        "Listado de cotizaciones: indicador visual (icono/chip) si tiene NV asociada"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Tests] Baseline failures Empresas + Facturas (12 fails)",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "12 vitest failures pre-existentes en Empresas/Facturas; carryover desde antes de Phase E. Investigar y arreglar para CI verde.",
+      "checklist": [
+        "Reproducir localmente (npm test -- Empresas Facturas)",
+        "Listar failures uno a uno",
+        "Triage: tests obsoletos vs bugs reales",
+        "Fix o skip con motivo documentado",
+        "Validar en CI cuando esté"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[W1-03] CI — lint + tests + build Docker",
+      "labels": [
+        "Wave 1"
+      ],
+      "desc": "Pipeline CI ausente. Marcado como skip en wave 1 status — reactivar cuando team crezca o pre-release a Live Beta.",
+      "checklist": [
+        "GitHub Actions workflow",
+        "Lint (ruff backend + eslint frontend)",
+        "Tests (pytest + vitest)",
+        "Build Docker images",
+        "Cache deps + parallelización"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "Revamp UI modal de edicion de empresas, campos y botones quedan fuera de pamntalla",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "sales gets Failed to load resource: the server responded with a status of 403 (), but they should just not be able to edit fields, not be rejected on save",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Factura] Estado 'pagado' derivado de pagos — no editable manualmente",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "El estado de pago de una factura (pendiente / parcial / pagado / vencida) debe ser **derivado** de la suma de pagos aplicados, nunca editable a mano. Hoy es posible marcar 'pagado' sin registrar el pago, lo que rompe la cobranza, los reportes de cartola y la conciliación con el cliente.\n\nRegla: estado_pago = f(total_factura, sum(pagos.monto))\n- 0                       → pendiente (o vencida si fecha_venc < hoy)\n- 0 < pagado < total      → parcial\n- pagado >= total         → pagado\n\nPara 'marcar como pagado' rápido (sin querer registrar pago real), el flujo correcto es: registrar un pago por el saldo pendiente con medio='ajuste' o 'condonado' (queda trazable). No debe existir botón ni endpoint que cambie el estado directamente.",
+      "checklist": [
+        "Backend: estado_pago se computa desde pagos al leer (property/computed), no se persiste mutable",
+        "Eliminar endpoint/campo que permita PATCH directo a estado_pago",
+        "Eliminar botón 'Marcar como pagado' del frontend (Factura, Cobranza, lista)",
+        "Reemplazar por flujo: 'Registrar pago' (modal de pago con monto = saldo pendiente prellenado)",
+        "Soportar medio_pago='ajuste'/'condonado' para casos sin plata real (queda en cartola con motivo)",
+        "Permisos: registrar pago tipo 'ajuste'/'condonado' solo admin",
+        "Auditoría: cada pago queda con usuario + timestamp + motivo (ya debería estar)",
+        "Reverso: anular un pago revierte el estado automáticamente (no requiere acción extra)",
+        "Recalcular estado al crear/editar/anular pago — single source of truth",
+        "Migración: si hay facturas en BD con estado_pago='pagado' y sum(pagos)=0, dejarlas pendientes y reportar (no auto-pagar)",
+        "Tests: factura con 0 pagos → pendiente; pagos parciales → parcial; pagos = total → pagado; anular pago → vuelve atrás",
+        "Tests: PATCH a estado_pago retorna 422 / es ignorado"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[PDF] Validez/vigencia visible en todos los documentos",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El plazo de validez/vigencia debe aparecer en el PDF de TODOS los documentos donde aplica, no solo cotización. Hoy falta o es inconsistente.\n\nDocs afectados:\n- Cotización: campo `vigencia_hasta` (ya existe modelo, falta render real — ver bug reabierto separado).\n- Nota de Venta: vigencia de la oferta / fecha de entrega comprometida.\n- Factura / Boleta: si aplica plazo de pago, mostrar 'Vence el DD/MM/AAAA' (fecha_emision + plazo_credito).\n- Guía de despacho: vigencia del traslado SII (si normativa lo exige).\n- OC del cliente: vigencia capturada al subir.\n- NC/ND: heredan referencia, no aplica vigencia propia.\n\nBloque visual unificado en footer/header del template (mismo patrón en todos los PDFs).",
+      "checklist": [
+        "Auditar templates PDF actuales: cotización, NV, factura, boleta, guía despacho, OC — listar cuál muestra vigencia hoy",
+        "Definir bloque común 'Validez / Vencimiento' reutilizable (partial Jinja o componente compartido)",
+        "Cotización: render `vigencia_hasta` con label 'Válido hasta DD/MM/AAAA' (resolver bug reabierto)",
+        "NV: agregar `vigencia_hasta` al template; si null, ocultar bloque",
+        "Factura/Boleta: calcular `vence_el = fecha_emision + plazo_credito` y mostrar 'Vence: DD/MM/AAAA' cuando plazo > 0",
+        "Guía de despacho: revisar si SII requiere fecha de vigencia del traslado y agregarla",
+        "OC: mostrar `vigencia_hasta` capturada en upload",
+        "Tests por cada PDF: con vigencia → texto presente; sin vigencia → bloque oculto (no 'None' ni '-')",
+        "QA visual: descargar PDFs reales en staging y verificar legibilidad (no se corta, contraste OK)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Factura] Documentos referenciados (OC, HES, contrato, guía, NV)",
+      "labels": [
+        "Core",
+        "DTE/SII"
+      ],
+      "desc": "Las facturas frecuentemente referencian otros documentos — la más común es la Orden de Compra del cliente, pero también HES, contrato, resolución, guía de despacho previa, o nota de venta interna. Hoy ese dato no se captura ni se persiste, lo que rompe el match contable del cliente y obliga a re-emitir.\n\nModelo: lista de referencias por factura (N:1). Cada referencia tiene tipo, folio, fecha y razón. Se mapea al bloque <Referencia> del XML SII al emitir DTE.\n\nTipos de documento referenciado SII (TpoDocRef):\n- 33/34/39/41/52/56/61 → DTEs (NC referencia a factura, factura referencia a guía, etc.)\n- 801 Orden de Compra (caso más común)\n- 802 Nota de Pedido\n- 803 Contrato\n- 804 Resolución\n- 805 Proceso ChileCompra\n- 806 Ficha ChileCompra\n- 807 DUS\n- 808 B/L\n- 809 AWB\n- 810 MIC/DTA\n- 811 Carta de Porte\n- HES, NV interna, etc. (tipo libre con código de texto)",
+      "checklist": [
+        "Modelo: ReferenciaFactura (factura_id, tipo_doc, folio, fecha, razon, codigo_tipo_sii)",
+        "Soportar 1..N referencias por factura (lista, no campo único)",
+        "Tipo de doc desde catálogo SII (33,34,39,41,52,56,61,801..811) + tipo libre 'OTROS' con texto",
+        "UI emisión: sección 'Documentos referenciados' en formulario de factura, agregar/quitar filas",
+        "Caso rápido: botón 'Referenciar OC' con input de número + fecha (autocompleta tipo=801)",
+        "Validación: si tipo es DTE (33,34,...), folio debe ser numérico; si es 801/HES/contrato, libre",
+        "Persistencia: tabla referencias_factura con FK a factura (cascade delete)",
+        "Render en ficha de factura: bloque visible con todas las referencias",
+        "PDF/preview: incluir referencias bajo el detalle (igual que el SII las imprime)",
+        "DTE XML emisión (Lioren): mapear referencias al bloque <Referencia> del XML",
+        "Filtro/búsqueda en lista de facturas: 'Buscar por OC referenciada' (input → match en folio referencia tipo 801)",
+        "Ficha de Empresa/Cliente: columna 'OC' en historial de facturas (primera referencia tipo 801)",
+        "Migración legacy: campo opcional en import facturas históricas (tipo + folio + fecha)",
+        "Tests: emitir factura con 0/1/N referencias, validar XML SII, búsqueda por OC retorna factura"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:HTTPS] Mixed content por redirect de FastAPI sin proxy-headers",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "En producción (HTTPS detrás de reverse proxy), FastAPI emite redirects 307 con Location http:// porque uvicorn corría sin --proxy-headers. El navegador bloquea el request por mixed content. Reproducido en /configuracion -> /api/bancos-receptores (sin trailing slash) -> 307 -> http://...//bancos-receptores/. Fix root cause: añadir --proxy-headers --forwarded-allow-ips=* al CMD de backend/Dockerfile (uvicorn ahora respeta X-Forwarded-Proto). Adicional: trailing slash en llamadas /api/bancos-receptores en Configuracion.tsx y FacturaDetalle.tsx para evitar el redirect en sí. Pendiente: re-deploy backend en Coolify para aplicar Dockerfile.",
+      "checklist": [
+        "Backend: uvicorn --proxy-headers --forwarded-allow-ips=*",
+        "Frontend: trailing slash en /api/bancos-receptores",
+        "Re-deploy backend en Coolify",
+        "Verificar /configuracion sin error de consola",
+        "Auditar otros endpoints que dependen de redirect 307"
+      ],
+      "commits": [
+        "e3ea0038a46f138c2431da98b4900257d0e82a79"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:Cobranza] Facturas y Cobranza muestran data duplicada sin diferenciación",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "DECISIÓN: Mantener separadas con scope diferenciado. /facturas = todas las facturas. /cobranza = solo pendientes (emitida/parcial), con aging y recordatorios. Backend ya filtra por _PENDIENTES; ajustar frontend Cobranza.tsx para no listar facturas pagadas/anuladas.",
+      "checklist": [
+        "Decidir alcance /cobranza vs /facturas",
+        "Si (a): /cobranza default a vencidas + próximas a vencer + antigüedad",
+        "Si (b): mover bandejas como tab dentro de /facturas y eliminar ruta",
+        "Documentar decisión en CLAUDE.md o PROGRESS.md",
+        "Ajustar sidebar y permisos resultantes"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:DarkMode] Títulos Auditoría y Cobranza invisibles en dark mode",
+      "labels": [
+        "Bug",
+        "Design System"
+      ],
+      "desc": "Headers de /admin/auditoria y /cobranza usan color hardcoded (text-gray-900 o similar) sin variante dark, quedando invisibles. Reemplazar por token semántico (text-foreground) y barrer otras páginas con el mismo patrón.",
+      "checklist": [
+        "Fix header /admin/auditoria → token semántico",
+        "Fix header /cobranza → token semántico",
+        "Grep frontend por text-gray-900|text-black sin dark: en headers de página",
+        "Validar contraste WCAG AA en light + dark"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:Sidebar] Click en \"Listas de precios\" resalta también \"Inventario\"",
+      "labels": [
+        "Bug",
+        "Design System"
+      ],
+      "desc": "Al navegar a /listas-precios el sidebar marca como activo tanto el item Listas de precios como Inventario. Probable: active-state hace match por prefijo (/inventario incluye route hermana) o ambos viven en el mismo grupo colapsable.",
+      "checklist": [
+        "Revisar Sidebar.tsx isActive matching (exact vs startsWith)",
+        "Separar grupos o usar match exacto por path",
+        "Validar también en otras rutas hermanas (productos, marcas, etc.)",
+        "Vitest snapshot del active state"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:Datos] \"Forma de pago\" duplica \"Plazo de Crédito\"",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "DECISIÓN: Son distintos — forma_pago=método (efectivo/transferencia/cheque/crédito), plazo_credito=días. Convertir forma_pago de texto libre a select con opciones fijas. Cuando forma=efectivo/transferencia/cheque → plazo se fuerza a 0.",
+      "checklist": [
+        "Mapear usos de forma_pago vs plazo_credito en backend + UI",
+        "Decidir semántica: método vs plazo (o merge)",
+        "Migración Alembic + backfill desde valores existentes",
+        "Ajustar enforce al_contado (Sprint A) y FacturaDetalle banco/método",
+        "Actualizar formularios Empresa/Cliente/Cotización/NV/Factura",
+        "Definir enum FormaPago: efectivo, transferencia, cheque, credito",
+        "Migración Alembic: cambiar columna a String con CHECK constraint o enum",
+        "Backend: validar forma_pago en schemas Pydantic con Literal/Enum",
+        "Frontend: reemplazar Input por Select en Empresa/Cliente/Cotización/NV/Factura",
+        "Lógica: forma≠credito → forzar plazo_credito=0 en formularios"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:Datos] \"Límite de crédito\" duplica \"Línea de crédito\"",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "DECISIÓN: Conservar solo 'linea_credito'. Dropar 'limite_credito' del modelo Empresa. Migración Alembic + actualizar API/schemas/UI.",
+      "checklist": [
+        "Mapear todos los usos de cada campo (modelo, API, UI, reportes, lógica crédito)",
+        "Decidir: merge en uno solo vs renombrar con semántica distinta",
+        "Migración Alembic (drop o rename + backfill)",
+        "Ajustar AprobacionCredito + GET /empresas/{id}/credito",
+        "Actualizar UI EmpresaModal + filtros + export",
+        "Migración Alembic: drop columna limite_credito",
+        "Remover limite_credito de schemas Pydantic y serializers",
+        "Ajustar AprobacionCredito + GET /empresas/{id}/credito → usar linea_credito",
+        "Actualizar UI EmpresaModal: quitar campo Límite, renombrar Línea si hace falta",
+        "Grep frontend/backend por 'limite_credito' y limpiar referencias"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[DevX] Seed data — Pagos, NC, ND, GD, Boletas, Proveedores, OC",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Seed actual cubre Cotizaciones/NV/Facturas/Clientes pero deja vacíos los módulos posteriores. Demos y entornos nuevos no muestran cobranza, DTE, ni proveedores. Extender scripts/seed_demo.py (o equivalente) con datos coherentes y vinculados al grafo existente.",
+      "checklist": [
+        "Pagos múltiples por Factura (estados parcial/pagada)",
+        "NC vinculadas a facturas existentes (D-16 anulación + ajuste)",
+        "ND vinculadas a facturas existentes",
+        "Guías de despacho desde NV existentes",
+        "Boletas standalone tipo 39 + algunas anuladas vía NC 61",
+        "Proveedores con OC en distintos estados",
+        "OC con líneas y al menos una recibida",
+        "Idempotencia (--reset borra y re-siembra) y respeta secuencias correlativas"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[UI] EmpresaModal dark mode + nota cobranza overflow",
+      "labels": [
+        "Bug",
+        "Design System"
+      ],
+      "desc": "Dos bugs visuales en EmpresaModal:\n\n1. **Dark mode**: algunos textos dentro del modal de editar empresa usan colores hardcodeados (text-gray-X, text-black, etc.) en vez de tokens semánticos, quedando ilegibles en dark mode.\n\n2. **Nota cobranza overflow**: el campo/texto de nota de cobranza desborda el contenedor del modal y queda fuera del área scrollable, impidiendo seleccionarlo o editarlo.",
+      "checklist": [
+        "Reproducir ambos bugs en dark mode con EmpresaModal abierto en modo edición",
+        "Dark mode: grep EmpresaModal por clases hardcodeadas (text-gray-, text-black, bg-white, border-gray-) y reemplazar con tokens semánticos (text-foreground, bg-background, etc.)",
+        "Revisar también inputs, labels y placeholders dentro del modal",
+        "Nota cobranza: identificar el elemento que desborda (textarea o div)",
+        "Fijar overflow: asegurar que el contenido del modal tenga overflow-y-auto con max-h apropiado, o que el campo textarea tenga min-h y resize-y correctos",
+        "Verificar que el modal completo sea scrollable si el contenido supera la altura de pantalla",
+        "QA: probar en light y dark mode, pantallas pequeñas (1280px) y grandes"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Guía despacho] Números de NV y factura incorrectos",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "En el detalle y PDF de la guía de despacho, los números de NV y factura asociados se muestran incorrectos o no corresponden al documento real.",
+      "checklist": [
+        "Revisar query que obtiene NV y factura vinculadas a la guía de despacho",
+        "Verificar que el folio mostrado es el folio SII y no el ID interno",
+        "Corregir PDF: mostrar número NV y número factura correctos",
+        "Prueba: emitir guía desde NV facturada y verificar ambos números"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Empresas] Logo como imagen subible",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Hoy el logo de empresa se configura como texto/URL. Permitir upload de imagen (PNG/JPG/SVG) con preview en EmpresaModal y render en PDFs (cotización, factura, boleta, guía de despacho, NC/ND). Almacenar en volumen uploads_data con validación de tipo y tamaño.",
+      "checklist": [
+        "Campo Empresa.logo_path (o relación a archivo) + migración Alembic",
+        "Endpoint upload con validación MIME (PNG/JPG/SVG) + límite tamaño (~2MB)",
+        "Preview en EmpresaModal con botón eliminar/reemplazar",
+        "Render en templates WeasyPrint (cotizacion/factura/boleta/guia/nc/nd)",
+        "Fallback texto cuando no hay logo",
+        "Servir asset protegido (auth) desde backend"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "PDF cotización no muestra validez/vigencia",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "REABIERTO 2026-04-28: el commit 051fddd (fix(cotizacion): mostrar validez/vigencia en PDF) no se ve reflejado en el PDF generado — verificar despliegue, template path y caché. La fecha de validez sigue sin aparecer.\n\nOriginal: el PDF generado para cotizaciones no incluye la fecha de validez (vigencia). El cliente no sabe hasta cuándo es válida la oferta.",
+      "checklist": [
+        "Identificar campo de vigencia en modelo Cotización",
+        "Agregar campo 'Válido hasta' en template PDF de cotización",
+        "Manejar caso donde vigencia es null/no definida",
+        "REGRESIÓN: reproducir en producción/staging — confirmar que el deploy 051fddd está vivo (Coolify last_online_at + commit)",
+        "Verificar template renderiza el campo (no else silencioso por null)",
+        "Forzar regeneración (no servir PDF cacheado)",
+        "Test E2E: crear cotización con vigencia → descargar PDF → assert texto 'Válido hasta' presente"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[BUG:Vendedor] Vendedor puede ver reportes Y cobranza, Notas de credito y debito",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Vendedor accede a reportes financieros, cobranza y notas de crédito/débito (solo admin/contador). Controlador de acceso fallido. Fix: validar rol antes de renderizar vistas.",
+      "checklist": [
+        "Backend: ACL por endpoint (reportes, cobranza, notas fiscal)",
+        "Frontend: menu condicional (ocultar para vendedor)",
+        "Validar permisos en /api/reports, /api/collections, /api/credit-notes",
+        "Test: vendedor intenta nav directo a URLs → 403",
+        "Logging: auditar intentos fallidos desde vendedor"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:Vendedor] Vendedor puede ver OC y proveedores y precios de costo y margen",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Fuga de información financiera: vendedores ven órdenes de compra, proveedores, costos y márgenes (datos confidenciales). Restringir a admin/gerencia solo.",
+      "checklist": [
+        "Backend: filtrar OC, proveedores, campos de costo por rol",
+        "Frontend: ocultar tabs OC y Proveedores para vendedor",
+        "Validar permisos en cada endpoint (costo, margen)",
+        "Test: vendedor no accede /api/suppliers, /api/purchase-orders",
+        "Audit: revisar logs de acceso vendedor a datos financieros"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Bug:Tareas] Vendedor puede ver Tareas de Admins y subadmins",
+      "labels": [
+        "Core",
+        "Bug"
+      ],
+      "desc": "Brecha de seguridad: vendedores acceden a Tareas privadas de admin/subadmin. Solo deben ver tareas propias y asignadas. Fix urgente: validar permisos en queries + frontend.",
+      "checklist": [
+        "Auditar query: filtrar tareas por rol + ownership",
+        "Backend: validar permisos antes de retornar lista",
+        "Frontend: ocultar tabs/vistas no autorizadas",
+        "Reproducir: login vendedor → verificar no ve admin tasks",
+        "Audit logs: registrar acceso anterior"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "Settings siempre visible en sidebar (no removible)",
+      "labels": [
+        "Bug"
+      ],
+      "desc": "El ítem de Settings en el sidebar puede ocultarse o quitarse. Debe estar fijo y no ser removible por ningún usuario ni rol.",
+      "checklist": [
+        "Identificar lógica que controla visibilidad del sidebar",
+        "Marcar Settings como ítem fijo (no sujeto a personalización ni permisos de ocultado)",
+        "Verificar que aplica para todos los roles (vendedor, admin, gerente)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "Search bars in general not working",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Cotización] Duplicar cotización con precios y fecha actualizados",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en CotizacionDetalle que crea una nueva cotización con los mismos productos/cantidades pero fecha_emision = hoy y precios tomados del catálogo actual (precio_venta vigente). Útil para compras repetidas. Lo mismo desde NV y Factura — ver cards hermanas.",
+      "checklist": [
+        "POST /api/cotizaciones/{id}/duplicar: copia líneas, reemplaza fecha_emision=hoy y precio_unitario desde Producto.precio_venta vigente",
+        "Responde {id} de la cotización nueva → redirigir a /cotizaciones/{nuevo_id}",
+        "Si algún producto fue eliminado del catálogo: incluirlo con precio original + warning en respuesta",
+        "Permiso: cualquier rol con cotizaciones:create puede duplicar",
+        "Botón 'Re-cotizar' en CotizacionDetalle (junto a Editar / Anular)",
+        "Toast con link a la cotización nueva",
+        "Test backend: precios actualizados, fecha hoy, productos descontinuados manejados",
+        "Si algún producto fue eliminado del catálogo: cantidad=0 + warning en respuesta (lista de SKUs afectados)",
+        "Frontend: mostrar banner de advertencia en CotizacionDetalle si hay líneas con cantidad=0 por producto descontinuado",
+        "Test backend: precios actualizados, fecha hoy, cantidad=0 para descontinuados, warning presente"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Empresa] Permisos: solo admins modifican línea de crédito",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Vendedores no deben poder modificar ni ver el campo línea de crédito de una empresa. Solo admins y subadmins pueden editarlo. Implica bloquear el campo en EmpresaModal para vendedor y restringir el endpoint PATCH /empresas/{id}.",
+      "checklist": [
+        "Backend: validar rol antes de actualizar linea_credito en PATCH /empresas/{id}",
+        "Frontend: ocultar / deshabilitar campo línea de crédito en EmpresaModal si rol=vendedor",
+        "Ocultar AprobacionCredito y GET /empresas/{id}/credito para vendedor si aplica",
+        "Test: vendedor envía PATCH con linea_credito → 403"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Empresas] Quitar campo \"Prioridad\"",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El campo Prioridad en Empresa no se usa en filtros, reportes ni reglas de negocio. Genera ruido en formularios y export. Eliminar del modelo, UI, filtros y export Excel; migración Alembic drop column.",
+      "checklist": [
+        "Migración Alembic drop column empresas.prioridad",
+        "Quitar campo de EmpresaCreate/EmpresaUpdate/EmpresaRead",
+        "Quitar input de EmpresaModal + columna de EmpresaList + filtro",
+        "Quitar de export Excel y de cualquier reporte",
+        "Audit log: confirmar que listener no falla por columna ausente"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Empresa] RUT como ID inmutable — no editable post-creación",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El RUT es el identificador estable de la empresa. Una vez creada, no debe poder modificarse. Bloquear el campo rut en EmpresaModal en modo edición y rechazar cambios en el backend.",
+      "checklist": [
+        "Backend: ignorar/rechazar rut en PATCH /empresas/{id} (422 si se envía distinto)",
+        "Frontend: campo rut deshabilitado (readonly) en EmpresaModal al editar",
+        "Agregar tooltip explicativo: 'El RUT no puede modificarse después de creada la empresa'",
+        "Test: PATCH con rut distinto → 422 o silencio"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[NV] Botón Re-cotizar desde Nota de Venta",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en NotaVentaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes del catálogo. Mismo endpoint que duplicar cotización pero iniciando desde NV.",
+      "checklist": [
+        "POST /api/notas-venta/{id}/recotizar: extrae líneas de la NV, aplica misma lógica de precio vigente",
+        "Redirigir a /cotizaciones/{nuevo_id}",
+        "Botón 'Re-cotizar' en NotaVentaDetalle (acción secundaria)",
+        "Toast con link a cotización creada",
+        "Test: NV con productos eliminados del catálogo mantiene precio original + warning",
+        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
+        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
+        "Test: productos descontinuados → cantidad=0 + warning presente"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Factura] Botón Re-cotizar desde Factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botón 'Re-cotizar' en FacturaDetalle que genera una cotización nueva con los mismos productos/cantidades, fecha hoy y precios vigentes. Mismo flujo que desde NV — facilita recompras facturadas.",
+      "checklist": [
+        "POST /api/facturas/{id}/recotizar: extrae líneas de la factura, aplica precio vigente",
+        "Redirigir a /cotizaciones/{nuevo_id}",
+        "Botón 'Re-cotizar' en FacturaDetalle (acción secundaria)",
+        "Toast con link a cotización creada",
+        "Test: factura con productos descontinuados mantiene precio original + warning",
+        "Productos descontinuados: cantidad=0 + lista de SKUs en campo warnings[] de la respuesta",
+        "Frontend: banner de advertencia si hay líneas con cantidad=0 por descontinuado",
+        "Test: productos descontinuados → cantidad=0 + warning presente"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "Settings de admin debe poder ordenar y quitar items del sidebar",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Administrador necesita personalizar navegación: ocultar módulos no usados y reordenar sidebar según flujo de negocio. Mejora usabilidad para roles específicos.",
+      "checklist": [
+        "UI settings: drag-drop o checkboxes para visibilidad",
+        "Persistir preferencias por rol (no por usuario)",
+        "Validar que no se oculten módulos críticos (ej: Clientes)",
+        "Default sensato: todos visibles on first load",
+        "Test con admin + vendedor"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[NV] Cerrar NV automáticamente al generar factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Al emitir una factura desde una Nota de Venta, la NV debe quedar en estado 'cerrada' automáticamente. Hoy la NV permanece abierta aunque ya tenga factura generada, lo que genera confusión en el listado.\n\nComportamiento esperado:\n- Al crear la factura asociada a una NV: transición automática NV → estado 'cerrada'.\n- NV cerrada no es editable ni permite generar una segunda factura.\n- En el listado de NV: chip de estado 'Facturada' con link a la factura generada.",
+      "checklist": [
+        "Identificar el endpoint/flujo donde se crea la factura desde una NV",
+        "Al commit exitoso de la factura: actualizar NotaVenta.estado → 'cerrada' en la misma transacción",
+        "Guardar referencia factura_id en NotaVenta (si no existe FK)",
+        "NotaVentaRead schema: exponer estado y factura_id/folio",
+        "Bloquear edición y re-facturación de NV cerrada (backend 409 + UI botón deshabilitado)",
+        "Listado NV: chip 'Facturada' en estado cerrada con link a /facturas/{id}",
+        "NV detalle: sección 'Factura generada' con link, similar a cotización → NV"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[NV] Bloquear edición al emitir factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Cuando se emite una factura desde una NV, la NV debe quedar bloqueada (read-only). No se puede editar líneas, precios ni cantidades una vez facturada.",
+      "checklist": [
+        "Estado NV: agregar estado 'facturada' al emitir factura",
+        "Backend: rechazar PUT/PATCH sobre NV con estado 'facturada'",
+        "UI: deshabilitar todos los campos editables y botones de acción cuando NV está facturada",
+        "Mostrar banner/badge 'Facturada' con link a la factura emitida",
+        "Solo admin puede desbloquear (opcional, con log de auditoría)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Pagos] Recuperar método de pago — combinable con plazo (cheque a 30 días, transferencia a 30, etc.)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Recuperar el campo 'método de pago' por documento (cotización, NV, factura) y permitir combinarlo libremente con el plazo. Hoy el catálogo es muy limitado y asume que cualquier método distinto de 'crédito' es al contado — eso es incorrecto.\n\nCasos reales del cliente (Paly, 28-04):\n- Cheque a 30 días\n- Transferencia a 30 días\n- Al contado con tarjeta\n- Al contado con transferencia\n- Vale vista (típicamente al contado)\n\n**Cambio de regla anterior:** la decisión previa ('cheque/transferencia/efectivo → plazo forzado a 0') queda obsoleta. Cheque y transferencia SÍ pueden ir con plazo. Solo efectivo y tarjeta presencial fuerzan plazo=0.\n\nModelo: dos campos independientes en cada documento — `metodo_pago` (catálogo fijo) y `plazo_dias` (0..N). El display los combina: '{Método} a {N} días' o '{Método} al contado'.",
+      "checklist": [
+        "Catálogo MétodoPago: efectivo, tarjeta_credito, tarjeta_debito, transferencia, cheque, vale_vista, credito_simple, otros",
+        "Modelo: metodo_pago (FK/enum) + plazo_dias (int) por documento (Cotización, NV, Factura)",
+        "Reglas de validación:",
+        "  - efectivo / tarjeta_debito / tarjeta_credito (presencial) → plazo_dias forzado a 0",
+        "  - cheque / transferencia / vale_vista → plazo_dias libre (0, 30, 60, 90, custom)",
+        "  - credito_simple → plazo_dias > 0 obligatorio (es la condición de venta a plazo)",
+        "Display: 'Transferencia a 30 días', 'Cheque al contado', 'Vale vista al contado'",
+        "UI: dos selectores en form de NV/Factura/Cotización — Método (select) + Plazo (select 0/30/60/90 + custom)",
+        "Defaults inteligentes: si vendedor selecciona 'efectivo' → plazo se bloquea en 0",
+        "Defaults por cliente: la Empresa puede tener un método+plazo SUGERIDO (no obligatorio) que prefilla el form",
+        "  - NOTA: esto NO contradice '[Empresa] Quitar forma de pago' — ahí se quitó el campo COMO regla; aquí vuelve como SUGERENCIA prefill (override por documento)",
+        "Cálculo fecha_vencimiento de factura: fecha_emision + plazo_dias (single source of truth)",
+        "Reportes cobranza: agrupar por método (cuánto en cheques pendientes, cuánto en transferencias)",
+        "Filtro lista facturas: por método + por rango de plazo",
+        "Migración: facturas existentes con forma_pago texto libre → mapear a catálogo + setear plazo_dias=0 si efectivo/tarjeta",
+        "Resolver pendientes en review:",
+        "  - '[Bug:Datos] Forma de pago duplica Plazo de Crédito' → cerrada por esta card (regla actualizada)",
+        "  - '[Empresa] Quitar forma de pago del modelo Empresa' → revisitar (sugerido prefill, no campo de negocio)",
+        "Tests: cheque+30d emite ok, efectivo+30d rechazado, vencimiento = emision + plazo, prefill desde empresa funciona"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "GET https://crm.conico.juliocode.com/api/nota_ventas/?q=and 500 (Internal Server Error) when trying to use the search bar in NV",
+      "labels": [],
+      "desc": "",
+      "checklist": []
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Empresa] Quitar forma de pago del modelo Empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Decisión de negocio: la Empresa no tiene forma de pago propia. Cada transacción (cotización, NV, factura) define su propia forma de pago. Eliminar forma_pago de EmpresaCreate/Update/Read, modal y export si existe; la lógica de forma_pago vive en cada documento.",
+      "checklist": [
+        "Confirmar si Empresa.forma_pago existe en modelo (grep)",
+        "Si existe: migración Alembic drop column + backfill",
+        "Quitar forma_pago de EmpresaModal (input)",
+        "Quitar forma_pago de EmpresaRead schema y export Excel",
+        "Validar que cotización/NV/factura sigan teniendo su propio forma_pago"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Listados] Orden cronológico por defecto — más reciente primero",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Los listados de documentos (Cotizaciones, NV, Facturas, Boletas, NC, ND, Guías de Despacho) deben ordenarse por defecto con el más reciente primero (ORDER BY fecha_emision DESC o created_at DESC). Hoy el orden varía o es inconsistente entre módulos.\n\nNo requiere cambio en UI de columnas — solo fijar el default en el backend y mantener la columna de fecha ordenable asc/desc.",
+      "checklist": [
+        "Auditar orden actual de cada endpoint: GET /cotizaciones, /notas-venta, /facturas, /boletas, /notas-credito, /notas-debito, /guias-despacho",
+        "Estandarizar: ORDER BY fecha_emision DESC (o created_at DESC si no existe fecha_emision)",
+        "Verificar que el frontend no sobreescriba el orden al recibir la respuesta",
+        "Columna de fecha en cada listado: soportar click para invertir orden (asc/desc)",
+        "Asegurar que el orden se mantiene con paginación (no romper en página 2+)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Vista como] Admin preview de roles",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Frontend-only role preview con stores/viewAs.ts + intersección admin∩target + banner sticky.",
+      "checklist": [
+        "stores/viewAs.ts (zustand + sessionStorage)",
+        "hooks/useEffectivePermissions.ts (intersección admin∩target)",
+        "Banner sticky warning con role='status' + botón 'Salir de vista'",
+        "Sidebar gating module-based + adminOnly silenciado",
+        "Counters silenciados (stock-bajo, aprobaciones-pendientes)",
+        "Migrados: Dashboard, Productos, TareaDrawer/Tareas, Aprobaciones, AdminAuditoria, TareasConfig, Configuracion",
+        "Logout purga conico-view-as",
+        "Backend untouched (banner lo explicita)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[NV] Buscador en lista de Notas de Venta",
+      "labels": [
+        "Core"
+      ],
+      "desc": "La lista de Notas de Venta no tiene buscador — para encontrar una NV específica hay que paginar a mano. Agregar barra de búsqueda con match contra los campos más usados.\n\nMismo patrón que el buscador global de productos: un input arriba de la tabla, debounce 300ms, match parcial case-insensitive, normalizado a tildes.",
+      "checklist": [
+        "Input de búsqueda arriba de la tabla NV con placeholder 'Buscar NV (nº, cliente, vendedor, producto, OC...)'",
+        "Backend: GET /api/notas-venta?q=<texto> con búsqueda OR en:",
+        "  - número de NV",
+        "  - nombre/razón social cliente o empresa",
+        "  - RUT cliente/empresa",
+        "  - nombre vendedor",
+        "  - SKU o nombre de producto en el detalle",
+        "  - número de OC referenciada (si existe)",
+        "  - observaciones",
+        "Match parcial, case-insensitive, normalizado (sin tildes)",
+        "Debounce 300ms en frontend (no spammear backend mientras tipea)",
+        "Combinable con filtros existentes (estado, fecha, vendedor) — query AND filtros",
+        "Highlight del match en la fila (opcional, nice-to-have)",
+        "Indicador 'Buscando...' mientras carga; 'Sin resultados' si vacío",
+        "Conservar query en URL (?q=...) para compartir/refresh",
+        "Performance: índice en campos buscables; LIMIT 100 resultados",
+        "Tests: búsqueda por nº NV, RUT cliente, SKU, OC referenciada — todos retornan correcto"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Seguridad] Vendedor no puede modificar plazo de crédito",
+      "labels": [
+        "Core"
+      ],
+      "desc": "El rol vendedor no debe poder cambiar el plazo de crédito del cliente ni en la NV/cotización. Solo admin y gerente pueden modificarlo.",
+      "checklist": [
+        "Backend: bloquear campo plazo_credito en NV/cotización para rol vendedor",
+        "UI: campo plazo de crédito read-only cuando el usuario es vendedor",
+        "Validar también en endpoint de cliente (PATCH) — vendedor no puede editar plazo"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[W2-02] Timeline unificado cliente/empresa",
+      "labels": [
+        "Tier A",
+        "Wave 2"
+      ],
+      "desc": "Endpoints /api/clientes|empresas/{id}/timeline con 9 tipos + Timeline.tsx reusable + EmpresaDetailModal 5to tab + ClienteDetailModal MVP.",
+      "checklist": [
+        "Backend app/api/timeline.py: GET /api/clientes/{id}/timeline + /empresas/{id}/timeline",
+        "Query params: tipos (csv 9 tipos) + limit (1-200, default 50) + offset",
+        "Response {items, total, limit, offset}, sort (fecha, id) DESC",
+        "Vendedor scope: scope realista NC/ND/Pago basado en estructura",
+        "NC empresa-scope vía Cliente.empresa_id JOIN + branch boleta-anónima",
+        "Frontend api/timeline.ts typed client",
+        "Timeline.tsx reusable con useInfiniteQuery + 9 filter pills aria-pressed",
+        "ESTADO_VARIANT en tokens, font-num en monto, focus-visible ring",
+        "Skeleton + EmptyState (Inbox) + error banner role='alert'",
+        "EmpresaDetailModal 5to tab Timeline (entre Resumen y Facturas)",
+        "ClienteDetailModal MVP con tabs Datos | Timeline + botón 'Ver' (Eye)",
+        "16 backend tests pytest + 5 vitest Timeline + 3 vitest ClienteDetailModal",
+        "TODO W2-02-followup: N+1 9 SELECTs (low priority)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 2] Datos maestros",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Productos, Clientes y Proveedores con CRUD + búsqueda + Excel.",
+      "checklist": [
+        "Catálogo Productos (CRUD, búsqueda, alerta stock bajo, Excel)",
+        "Clientes (CRUD, búsqueda nombre/RUT, Excel)",
+        "Proveedores (CRUD, Excel)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 1] Fundación — Auth + Roles + Layout",
+      "labels": [
+        "Core"
+      ],
+      "desc": "JWT auth (access + refresh), roles (admin/subadmin/vendedor), permisos configurables por usuario, layout sidebar colapsable + dark/light theme.",
+      "checklist": [
+        "JWT access + refresh tokens",
+        "Roles admin/subadmin/vendedor",
+        "Permisos toggles por usuario (módulo × acción)",
+        "Gestión usuarios CRUD",
+        "Sidebar colapsable + dark/light theme"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 10] Control de crédito + aprobaciones",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Crédito por empresa + flujo de aprobación asíncrono para NV que excede el cupo.",
+      "checklist": [
+        "GET /api/empresas/{id}/credito (usado vs disponible)",
+        "Cotización: warning no bloqueante si excede crédito",
+        "NV nueva: si excede → flujo aprobación asíncrono",
+        "AprobacionCredito (origen, payload JSON, estado pendiente/aprobada/denegada)",
+        "Admin aprueba → NV creada automáticamente",
+        "CreditWarningModal sin polling",
+        "Página /aprobaciones unificada (crédito + margen)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 4a] Empresa + Cliente",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Módulo Empresa con CRUD + 4 tabs; Clientes asociados a Empresa con campos heredados read-only.",
+      "checklist": [
+        "Empresa CRUD + búsqueda + Excel",
+        "EmpresaDetailModal con 4 tabs (Clientes, Facturas, Productos, Cotizaciones)",
+        "Filtros + sort por columna + export por tab",
+        "Cliente FK nullable a Empresa",
+        "Campos: recibe_correo, forma_pago, despacho_o_retiro, comuna, direccion_despacho, ultimo_contacto, forma_captacion, compromiso, es_nuevo",
+        "ClienteSelectModal con scope por empresa"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 4b] Nota de Venta + Factura + Chain locking",
+      "labels": [
+        "Core"
+      ],
+      "desc": "NV desde cero o desde cotización; Factura desde NV; chain locking (cotización→NV→factura inmutables aguas arriba).",
+      "checklist": [
+        "NV: creación desde cero o cotización (líneas editables, selección parcial)",
+        "NV: numeración correlativa (nv_last_id)",
+        "NV: estados Pendiente → Despachada → Entregada → Pagada | Cancelada",
+        "Factura: generada manual desde NV ('Generar Factura')",
+        "Factura: hereda líneas + totales, registro de pago opcional",
+        "Factura: PDF + email mismo formato que cotización",
+        "Factura: numeración propia (factura_last_id)",
+        "Factura: Emitida → Pagada → Anulada",
+        "Factura: vencimiento + registro pago (fecha, monto, método)",
+        "Chain locking: cotización locked al crear NV; NV locked al crear factura; factura siempre 403 PATCH",
+        "Banner de bloqueo + campos disabled en UI",
+        "Banco receptor + método pago dropdown en FacturaDetalle"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 7] Inventario",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Stock por producto + movimientos + alertas + ajuste manual con motivo.",
+      "checklist": [
+        "Stock actual por producto",
+        "Movimientos: entrada (OC), salida (NV), ajuste manual",
+        "Historial global y por producto (filtros tipo/fecha/producto)",
+        "Alertas stock bajo: badge sidebar, banner /inventario, indicador catálogo",
+        "Ajuste manual: motivo (conteo_fisico/merma/correccion/otro) + nota"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 6] Órdenes de Compra",
+      "labels": [
+        "Core"
+      ],
+      "desc": "OC con numeración propia, estados, recepción que crea movimiento inventario, PDF + email proveedor.",
+      "checklist": [
+        "OrdenCompra + OrdenCompraLinea (orden_compra_last_id)",
+        "Estados: borrador → enviada → recibida parcial → completa → cancelada",
+        "API CRUD + endpoints de recepción",
+        "PDF WeasyPrint + email SMTP a proveedor",
+        "Recepción: crea MovimientoInventario (entrada) + actualiza stock",
+        "Frontend list + detail wired al router"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 8] RRHH (Admin only)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "CRUD empleados + documentos adjuntos + vacaciones; volumen Docker uploads_data.",
+      "checklist": [
+        "CRUD empleados (nombre, cargo, sueldo, fecha ingreso)",
+        "Documentos adjuntos en disco (descarga protegida)",
+        "Períodos de vacaciones",
+        "Volumen Docker uploads_data persistente"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 9] Dashboard configurable",
+      "labels": [
+        "Core"
+      ],
+      "desc": "8 widgets, layouts persistidos por rol, modo edición drag-and-drop, gráficos Recharts.",
+      "checklist": [
+        "8 widgets (ventas, cotizaciones, top clientes/productos, stock crítico, NV por cobrar, ventas por vendedor)",
+        "Layouts persistidos por rol en DB (dashboard_layouts)",
+        "Modo edición: agregar/mover/redimensionar/eliminar (react-grid-layout)",
+        "Templates predefinidos: Ventas / Operacional / Completo",
+        "Vendedor scoping automático",
+        "Gráficos KPI/barras/línea (Recharts) + tablas inline"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Fase 11] Solicitud de ajuste de márgenes",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Vendedor propone márgenes; admin aprueba/deniega; latest-wins auto-deniega anterior.",
+      "checklist": [
+        "AprobacionMargen (cotizacion_id, snapshot líneas, estado)",
+        "Latest wins: nueva solicitud auto-deniega la pendiente",
+        "API POST/GET/PATCH /api/aprobaciones_margen/",
+        "En aprobación: aplica valor_neto_propuesto + recalcula márgenes/totales",
+        "Vendedor: input borde punteado (propuesta local) + precio propuesto inline",
+        "Botón 'Solicitar ajuste' + modal con resumen",
+        "Banners en CotizacionDetalle (crédito + margen)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Productos v2] Catálogo extendido + costos por lista de precios",
+      "labels": [
+        "Core",
+        "Roadmap"
+      ],
+      "desc": "Marca como entidad, IVA configurable, ProductoModal con tabs, sistema de listas de precios reemplaza FIFO.",
+      "checklist": [
+        "Marca FK + CRUD admin",
+        "Volumen, IVA configurable, precio_con_iva + costo_con_iva computados",
+        "ProductoModal con tabs: datos, Documentos (5 PDFs), Historial costos, Lotes",
+        "ProductoDocumento upload/download/delete (catalogo:delete)",
+        "ListaPrecios + ListaPrecioItem reemplaza FIFO",
+        "Página /listas-precios con upload Excel/CSV admin-only",
+        "Panel costo admin-only en ProductoModal con stale-cost indicator",
+        "Filtro stale-cost en /inventario con threshold configurable",
+        "OC recepción usa lista de precios vigente (no FIFO)",
+        "Historial costos paginado por producto"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Sedes] Sedes de despacho por Empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Modelo SedeDespacho 1-N por Empresa; reemplaza direccion_despacho de Cliente.",
+      "checklist": [
+        "Modelo SedeDespacho FK Empresa",
+        "Subtable CRUD inline en Empresa edit modal",
+        "NV referencia sede_despacho_id (FK nullable)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Sugerencias] Productos por historial de cliente/empresa",
+      "labels": [
+        "Roadmap"
+      ],
+      "desc": "Endpoint que sugiere productos previos del cliente/empresa al abrir autocomplete vacío.",
+      "checklist": [
+        "Endpoint /api/productos/sugerencias con ranking por historial facturas",
+        "Índices facturas/líneas para performance",
+        "Autocomplete input vacío sugiere productos previos",
+        "Autocomplete cotización usa /buscar (nombre + SKU + tag)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Sprint A] Quick wins — al_contado + expiración + scope",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Enforce al_contado sin línea de crédito, bloqueo NV de cotización vencida, scope ClienteSelectModal por empresa.",
+      "checklist": [
+        "Enforce al_contado cuando empresa sin línea de crédito (cotización + NV)",
+        "Lock payment terms UI sin línea de crédito",
+        "Bloquear creación NV desde cotización vencida (409)",
+        "ClienteSelectModal scope por empresa con query invalidation"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Reportes] Por Marca",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Endpoint /api/reportes/por-marca con KPIs + agregación marca y marca+cliente, exports Excel/CSV.",
+      "checklist": [
+        "Agregación por marca y marca+cliente, filtro multi-cliente y por marca",
+        "Bucket sin_marca separado",
+        "KPIs: total_neto/bruto, ganancia, margen %, num_facturas/marcas, ticket prom, cantidad",
+        "Export Excel (4 hojas) + CSV (BOM UTF-8)",
+        "Vendedor scoping respetado; estado != anulada",
+        "UI: tab 'Por Marca' en /reportes con multi-cliente picker + sub-tabs"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Tier A #5] Tareas y Recordatorios",
+      "labels": [
+        "Tier A"
+      ],
+      "desc": "Modelo Tarea + ReglaTarea con job Celery horario auto-generador (6 reglas) + UI completa.",
+      "checklist": [
+        "Tarea con 6 FKs nullables (CHECK máx 1) + ReglaTarea seed 6 reglas",
+        "API CRUD + completar/descartar/reasignar + /mis-pendientes + /timeline/{tipo}/{id}",
+        "Permisos tareas:view/view_all/create/admin",
+        "Job Celery horario: 6 reglas (cot_vence, fact_vencida, aprob_pendiente, nv_despachada_sin_avanzar, cli_sin_actividad, stock_bajo) idempotente",
+        "UI: /tareas con tabs pendiente/hecha/descartada + widget sidebar + sección en fichas",
+        "Config admin /admin/tareas/config",
+        "Hook reasignación al desactivar usuario; guard último admin",
+        "Tests model + API + auto-gen + e2e"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Tier A #7] Búsqueda global Cmd+K",
+      "labels": [
+        "Tier A"
+      ],
+      "desc": "Endpoint /api/search fan-out 8 entidades, modal cmdk permission-aware, atajo configurable.",
+      "checklist": [
+        "Fan-out a productos/clientes/empresas/cotizaciones/NV/facturas/OC/empleados",
+        "Permission-aware + vendedor solo docs propios",
+        "Modal cmdk con grupos, recientes en localStorage, debounce 200ms, AbortController",
+        "Atajo configurable (Ctrl+K / Ctrl+P / Ctrl+Shift+F / Alt+S) con detección Mac",
+        "Botón header configurable + sección /configuracion (users.preferencias JSON)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[NC/ND] Notas de Crédito y Notas de Débito",
+      "labels": [
+        "Core",
+        "DTE/SII"
+      ],
+      "desc": "NC/ND con líneas + numeración propia + integración DTE 61/56.",
+      "checklist": [
+        "NotaCredito + NotaDebito con líneas y razón",
+        "Numeración correlativa propia",
+        "Páginas list + nueva + detalle",
+        "Vinculación opcional a Factura",
+        "Integración DTE (61 NC, 56 ND) vía DteEmision"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Pagos] Pagos múltiples por Factura",
+      "labels": [
+        "Core"
+      ],
+      "desc": "1..N pagos por Factura; estado emitida → parcial → pagada.",
+      "checklist": [
+        "Modelo Pago 1..N por Factura (método, fecha, monto, banco)",
+        "Estado factura: emitida → parcial → pagada",
+        "Página /pagos + registro inline desde FacturaDetalle"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Cobranza] Bandejas + recordatorios",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Cobranza por empresa con frecuencia recordatorios + bandejas + envío manual.",
+      "checklist": [
+        "CobranzaConfig por empresa (frecuencia recordatorios)",
+        "Página /cobranza con bandejas: vencidas, próximas, antigüedad",
+        "Campo ultimo_recordatorio en Factura",
+        "Envío manual (envío automático pendiente)"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[DTE/SII] Integración Lioren — factura 33 / NC 61 / ND 56",
+      "labels": [
+        "DTE/SII"
+      ],
+      "desc": "DteService httpx + Lioren + DteEmision tracking + webhook HMAC + Celery polling.",
+      "checklist": [
+        "DteService httpx integrado con Lioren",
+        "Tipos soportados: factura 33, NC 61, ND 56",
+        "DteEmision (folio, estado, respuesta SII, intentos poll)",
+        "Webhook entrante validado HMAC SHA256",
+        "Celery task tasks/dte.py con polling de estado"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[W1-01] Audit log global",
+      "labels": [
+        "Wave 1"
+      ],
+      "desc": "AuditLog con 18 modelos, listeners SQLAlchemy + ASGI middleware, página admin con filtros y export streaming.",
+      "checklist": [
+        "Modelo AuditLog (user_id, action, entity_type, entity_id, diff_json, ip, ua, created_at) + índices",
+        "Listeners before_flush + after_flush_postexec sobre 18 modelos",
+        "Diff legible: create {after} / update {before, after, changed[]} / delete {before}",
+        "Denylist passwords/tokens/secrets",
+        "Middleware ASGI extrae user_id (JWT), IP (X-Forwarded-For), UA en ContextVar",
+        "GET /api/auditoria con filtros + paginación",
+        "Export CSV streaming yield_per(500) + BOM UTF-8",
+        "Permiso usuarios:admin (vendedor 403)",
+        "Frontend /admin/auditoria con tabla + filtros + paginación + modal diff",
+        "Sidebar entry admin-only",
+        "11 tests pytest + 3 vitest + conftest opt-in audit_enabled"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[W1-02] Backups Postgres + offsite",
+      "labels": [
+        "Wave 1"
+      ],
+      "desc": "Servicios postgres-backup-local + rclone con retención configurable, restore script idempotente, runbook.",
+      "checklist": [
+        "Servicio backups (prodrigestivill/postgres-backup-local:15) en docker-compose.prod.yml",
+        "Servicio backups-offsite (rclone) con S3/B2/Wasabi/MinIO",
+        "Retención BACKUP_SCHEDULE/KEEP_DAYS/KEEP_WEEKS/KEEP_MONTHS",
+        "scripts/restore.sh con list/restore/dry-run + confirmación tipada",
+        "Runbook docs/runbooks/backup-restore.md (local + S3, verificación, rollback)",
+        ".env.prod.example con placeholders"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[W1-04] Boleta DTE 39/41",
+      "labels": [
+        "Wave 1",
+        "DTE/SII"
+      ],
+      "desc": "Boleta standalone tipos 39/41, receptor anónimo, pipeline DTE Lioren, anulación vía NC 61.",
+      "checklist": [
+        "Modelos Boleta + BoletaLinea standalone (FK opcional cliente/empresa/vendedor)",
+        "Tipo 39 (afecta) / 41 (exenta) con validación",
+        "Receptor anónimo: nombre/RUT/email/patente; RUT genérico SII 66666666-6",
+        "Numeración propia con SystemConfig.boleta_last_id + with_for_update()",
+        "Stock descuenta al emitir + reversa automática si DTE rechazado/anulada",
+        "Pipeline DTE reutilizado (DteEmision + Celery) tipos 039/041",
+        "Anulación → NC tipo 61 con boleta_id; permiso boletas:delete",
+        "Migration relaja notas_credito.cliente_id a nullable",
+        "PDF (boleta.html) + email SMTP + export Excel 12 cols",
+        "/api/reportes/ventas agrega boletas en clave separada",
+        "Auditoría agregada (Boleta + BoletaLinea)",
+        "Frontend: /boletas/nueva, /boletas, /boletas/:id con polling 10s",
+        "16 backend tests + 5 vitest"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[W1-05] Guía de despacho DTE 52 — Phase 1 backend + Phase 2 frontend",
+      "labels": [
+        "Wave 1",
+        "DTE/SII"
+      ],
+      "desc": "Backend GuiaDespacho + pipeline DTE 52 + Phase 2 frontend (lista/nueva/detalle/Excel + integración NC).",
+      "checklist": [
+        "Modelos GuiaDespacho + GuiaDespachoLinea (FK CASCADE en DteEmision, SET NULL en NotaCredito)",
+        "Migración Alembic monolítica c1d2e3f4a5b6 reversible",
+        "Router /api/guias-despacho con _next_numero (SELECT FOR UPDATE) + permisos por rol + audit zero-code",
+        "Pipeline DTE 52: /emitir, build_guia_payload, branches en _process_emit y _sync_dte_estado",
+        "NC anula guía D-16",
+        "PDF WeasyPrint (guia_despacho.html) + email SMTP",
+        "Stock invariante D-13 confirmado por test (guía no descuenta)",
+        "Export Excel /api/guias-despacho/export.xlsx (11 cols, admin/subadmin)",
+        "Frontend SC-1: /guias-despacho lista con 5 filtros + paginación + Excel",
+        "Frontend SC-2: /guias-despacho/nueva con prefill ?nv_id=X",
+        "Frontend SC-3: /guias-despacho/:id detalle con polling 10s",
+        "Frontend SC-4: integración NC vía ?guia_despacho_id=X",
+        "Sidebar 'Guías de despacho' permiso guias_despacho:view",
+        "13/14 backend tests + ~14 vitest"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[W1-06] Observabilidad — logs + Sentry + healthz",
+      "labels": [
+        "Wave 1"
+      ],
+      "desc": "Logs estructurados loguru + RequestLoggerMiddleware + Sentry backend/frontend + /healthz + /readyz.",
+      "checklist": [
+        "Logs loguru controlados por LOG_FORMAT (json/pretty) + LOG_LEVEL",
+        "RequestLoggerMiddleware: request_id, user_id, route, method, status, latency_ms",
+        "Echo x-request-id en respuesta",
+        "Sentry backend (sentry-sdk[fastapi]) con DSN/env/sample/release",
+        "Sentry frontend (@sentry/react) + ErrorBoundary captura excepciones",
+        "/healthz + /readyz sin auth (Postgres NullPool + Redis ping)",
+        "Settings: SENTRY_*, LOG_FORMAT, LOG_LEVEL + .env.prod.example",
+        "frontend/.env.example con VITE_SENTRY_*",
+        "Tests: healthz/readyz, log line, user_id, 5xx ERROR, init sin DSN, JSON parseable"
+      ]
+    },
+    {
+      "list": "Friendly Beta 0.1",
+      "name": "[Design System v2] Phases 0–E — Refined SaaS migration",
+      "labels": [
+        "Design System"
+      ],
+      "desc": "Migración full a paleta semántica + primitivas ui/* + sweep tokens + a11y pass.",
+      "checklist": [
+        "Phase 0 — Foundation: paleta semántica, primitivas, sonner Toaster",
+        "Phase 1.1 — Dashboard",
+        "Phase 1.2a — NotasVenta list",
+        "Phase 1.3 — Inventario + ProductoModal + ProductoHistorial",
+        "Phase 1.4a/b — Clientes + Empresas list/detail/4 tabs",
+        "Phase 1.6a — BoletasList",
+        "Sidebar polish + NotaVentaDetalle",
+        "Cotizaciones list + CotizacionDetalle",
+        "Phase A5 — Facturas list + FacturaDetalle",
+        "Phase A6 — BoletaDetalle + BoletaNueva",
+        "Phase A7 — GuiasDespacho list + nueva + detalle",
+        "Phase A8 — NotasCredito + NotasDebito sextet",
+        "Phase B1 — Pagos",
+        "Phase B2 — Cobranza",
+        "Phase B3 — OrdenesCompra list + detalle",
+        "Phase B4 — Proveedores",
+        "Phase B5 — Reportes",
+        "Phase B6 — Productos catálogo + ListasPrecios",
+        "Phase C1 — Tareas + TareasConfig",
+        "Phase C2 — Aprobaciones",
+        "Phase C3 — RRHH",
+        "Phase C4 — AdminAuditoria",
+        "Phase C5 — Configuracion",
+        "Phase C6 — Users",
+        "Phase D — Login + AppLayout QA",
+        "Phase E — Semantic-token sweep + a11y pass (grep gate clean)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Replace native window.alert/confirm with toast/Modal",
+      "labels": [
+        "Design System"
+      ],
+      "desc": "13 sites across 9 files still use browser-native alert()/window.confirm(). Replace with existing toast (success/error) and Modal (danger variant) components for consistent UX. Files: EmpresaTabResumen.tsx, FacturaAdjuntos.tsx, NotaVentaAdjuntos.tsx, ProductoDocumentos.tsx, FacturaDetalle.tsx, GuiaDespachoDetalle.tsx, GuiasDespachoList.tsx, Pipeline.tsx.",
+      "checklist": [
+        "Inventariar todas las llamadas alert() y window.confirm()",
+        "Reemplazar alert() de error con toast.error()",
+        "Reemplazar window.confirm() destructivos con Modal danger",
+        "Verificar mensajes en espanol",
+        "Smoke test cada flujo afectado"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] BoletaNueva: autocomplete productos + ClienteSelectModal",
+      "labels": [
+        "Core"
+      ],
+      "desc": "TODO(W1-04) explicito en BoletaNueva.tsx:11-12. Boleta sigue usando input plano de descripcion y campo numerico cliente_id. Componentes ya existen y se usan en NV/Factura. Solo integrar.",
+      "checklist": [
+        "Reemplazar input descripcion por autocomplete productos (patron NV)",
+        "Reemplazar cliente_id numerico por ClienteSelectModal",
+        "Eliminar TODOs",
+        "Test de smoke en BoletaNueva.test.tsx"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Migrar BoletaAnularModal/BoletaEmailModal a ui/Modal",
+      "labels": [
+        "Design System"
+      ],
+      "desc": "TODO en BoletaDetalle.tsx:297. Modales legacy fuera del sistema de diseno. Portar a ui/Modal con variant danger donde aplique para consistencia visual.",
+      "checklist": [
+        "Portar BoletaAnularModal a ui/Modal (variant danger)",
+        "Portar BoletaEmailModal a ui/Modal",
+        "Eliminar componentes legacy si quedan sin uso",
+        "Verificar tests"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Perf] Paginacion en listas de alto volumen",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Solo 3 de 67 paginas paginan (BoletasList, DTERecepcionList, LibrosList). Resto renderiza todo. Aplicar patron existente a paginas con volumen alto. Necesario antes de escalar a mas clientes.",
+      "checklist": [
+        "Facturas list: paginacion + page size selector",
+        "Cotizaciones list: paginacion",
+        "NotaVentas list: paginacion",
+        "GuiasDespachoList: paginacion",
+        "OrdenesCompra list: paginacion",
+        "NotasCredito list: paginacion",
+        "Backend: verificar endpoints aceptan skip/limit"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Perf] Hook useDebounce + aplicar a busquedas en listas",
+      "labels": [
+        "Core"
+      ],
+      "desc": "62 paginas hacen fetch en cada keystroke. Crear hook useDebounce reutilizable y aplicar a top paginas con barra de busqueda. Reduce carga al backend y mejora UX.",
+      "checklist": [
+        "Crear frontend/src/hooks/useDebounce.ts",
+        "Aplicar en Facturas list",
+        "Aplicar en Cotizaciones list",
+        "Aplicar en NotaVentas list",
+        "Aplicar en Productos list",
+        "Aplicar en Clientes list",
+        "Aplicar en Empresas list"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Perf] Cache de Redis para reportes/dashboard",
+      "labels": [
+        "Core"
+      ],
+      "desc": "reportes.py tiene 2068 LOC, 21 endpoints con agregaciones costosas que se recalculan cada request. Cachear con TTL corto (1-5min) e invalidar en writes relevantes. Mejora dramatica en dashboard load time.",
+      "checklist": [
+        "Identificar endpoints mas costosos en reportes.py",
+        "Definir keys de cache por (empresa_id, filtros, periodo)",
+        "Implementar wrapper de cache con TTL configurable",
+        "Invalidacion en eventos de escritura (factura emitida, etc.)",
+        "Metrica de hit rate"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Command palette Cmd+K (busqueda global + acciones)",
+      "labels": [
+        "Design System"
+      ],
+      "desc": "Expansion del Cmd+K palette ya shipped en Tier A #7 (cmdk modal, fan-out 8 entidades, permission-aware, atajo configurable). Componente GlobalSearchModal.tsx existente cubre BUSQUEDA de entidades. Falta la capa de ACCIONES: ejecutar comandos desde el palette sin tener que navegar primero. Ej: 'nueva factura', 'nueva NV', 'nueva cotizacion', 'nuevo cliente', 'nueva OC', 'ir a reportes/X', 'cerrar sesion'. Agregar grupo 'Acciones' en el palette existente, antes de Recientes/Entidades.",
+      "checklist": [
+        "Definir registro de acciones (slug, label, icono, ruta o handler, permiso requerido)",
+        "Componente ActionItem en components/search/items/",
+        "Grupo 'Acciones' en GlobalSearchModal antes de Recientes",
+        "Filtro permission-aware (ocultar acciones sin permiso)",
+        "Match por palabra clave en espanol (ej: 'fac', 'nueva', 'ir a')",
+        "Test: ejecutar accion cierra modal y navega/dispara handler",
+        "Documentar en help/onboarding la capa de comandos"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Bulk actions en listas (multi-select)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Listas no permiten seleccion multiple. Agregar checkboxes + barra de acciones bulk: exportar seleccionados, enviar por email, anular en masa (donde aplique). Ahorro de tiempo enorme para usuarios power.",
+      "checklist": [
+        "Componente reusable de checkbox column + select-all",
+        "Barra flotante de acciones cuando hay seleccion",
+        "Bulk export en Facturas",
+        "Bulk export en NotaVentas",
+        "Bulk send email en Facturas/Boletas",
+        "Backend: endpoints bulk donde falten"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Campana de notificaciones en topbar",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Backend notifications.py ya emite eventos pero no hay surface en UI. Agregar dropdown de notificaciones en topbar con conteo de no leidas, marcar como leido, link a entidad relacionada.",
+      "checklist": [
+        "Verificar API GET /notifications + PATCH read",
+        "Componente NotificationBell con badge count",
+        "Dropdown con ultimas 10 notificaciones",
+        "Click en notif navega a entidad y marca leida",
+        "Polling o websocket cada 30-60s"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Ops] Banner de alerta CAF: folios bajos / vencimiento proximo",
+      "labels": [
+        "DTE/SII",
+        "Core"
+      ],
+      "desc": "Admins ciegos al consumo de folios CAF. Quedarse sin folios bloquea emision DTE. Agregar banner visible cuando consumido >= 90% o vencimiento < 30 dias. Modelo CAF ya tiene todos los campos.",
+      "checklist": [
+        "Endpoint backend: CAFs en estado de alerta (consumo o vencimiento)",
+        "Componente Banner global persistente",
+        "Mostrar tipo DTE + folios restantes + dias al vencimiento",
+        "Link a configuracion CAF",
+        "Email de aviso a admins (Celery diario)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Ops] Health endpoint expandido (DB + Celery + Lioren)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "health.py minimo. Expandir a chequeos: DB ping, worker Celery activo, Lioren API alcanzable. Util para uptime monitoring (Coolify, UptimeRobot) y diagnostico rapido en incidentes.",
+      "checklist": [
+        "GET /health/full con subchecks",
+        "DB ping con timeout corto",
+        "Celery: ping a workers via broadcast",
+        "Lioren: ping a endpoint sandbox",
+        "Respuesta estructurada con latencias",
+        "Endpoint /health/live (siempre 200) para liveness"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Ops] Job de retencion/archivo de audit_log",
+      "labels": [
+        "Core"
+      ],
+      "desc": "audit_log crece sin limite. A largo plazo degrada performance. Job Celery semanal que archiva registros mayores a 180 dias a tabla cold (audit_log_archive) o exporta a S3-like. Periodo configurable.",
+      "checklist": [
+        "Definir politica (180 dias default, configurable)",
+        "Tabla audit_log_archive con misma estructura",
+        "Celery task semanal de archivo",
+        "Metrica de filas archivadas",
+        "Endpoint admin para consultar archivo si se requiere"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Hygiene] Eliminar artefactos .js compilados duplicados",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Cada .tsx tiene un .js legacy al lado (commit ce9ad58 hizo limpieza parcial para tests). Sweep completo + .gitignore rule + lint o pre-commit check para evitar reaparicion. Reduce ruido en git status y posibles bugs de resolucion de modulos.",
+      "checklist": [
+        "Lista completa de pares .tsx + .js redundantes",
+        "Borrar .js que tienen contraparte .tsx",
+        "Agregar regla a .gitignore",
+        "Pre-commit hook que rechace .js junto a .tsx",
+        "Verificar tests/build pasan"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Dashboard: KPI tiles principales",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Dashboard.tsx existe pero falta capa de KPIs ejecutivos. Agregar tiles: ventas mes vs mes anterior (delta %), top 5 clientes, DTE rejection rate, AR aging (deuda por tramos 0-30/30-60/60-90/+90). Modelos ya tienen todo lo necesario.",
+      "checklist": [
+        "Endpoint GET /reportes/kpis con periodo",
+        "Tile: ventas del mes vs anterior",
+        "Tile: top 5 clientes del mes",
+        "Tile: DTE rejection rate (rechazadas / emitidas)",
+        "Tile: AR aging buckets",
+        "Sparklines o mini-charts donde aporte"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[UX] Auditoria de print CSS / PDF por tipo DTE",
+      "labels": [
+        "DTE/SII"
+      ],
+      "desc": "pdf.py existe pero cobertura visual desigual entre tipos. Verificar render correcto de factura 33, boleta 39/41, NC 61, ND 56, GD 52. Ajustar print CSS y plantillas. Incluye preview en UI antes de enviar.",
+      "checklist": [
+        "Render de prueba para cada tipo DTE",
+        "Checklist visual: header, lineas, totales, timbre, footer",
+        "Boton 'preview' en cada detalle antes de emitir",
+        "Print CSS: media print rules verificadas",
+        "Test de regresion visual (snapshot PDF si factible)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Core] Modulos habilitables/deshabilitables por empresa",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Distintos clientes usan distintos subsets del producto (ej: Conico no usa boletas). Hoy todo esta siempre activo. Implementacion en 3 fases (cards hijas).\n\nDEPENDENCY GRAPH:\nCORE (no toggleable): empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config.\n\nOPTIONAL con deps:\n- facturas -> pagos, cobranza, nota_credito, nota_debito, libros, aprobaciones_margen\n- boletas -> nota_credito (61 anula boleta)\n- inventario -> guias_despacho\n- guias_despacho -> nota_credito (61 anula GD)\n- nota_credito requires >=1 of {facturas, boletas, guias_despacho}\n- nota_debito requires facturas\n- proveedores -> ordenes_compra, facturas_compra\n- ordenes_compra requires proveedores\n- facturas_compra -> aprobaciones_costo\n- listas_precios -> precios_especiales\n- pagos -> cobranza, bancos_receptores (pagos requires facturas)\n- tareas -> reglas_tareas\n- rrhh_empleados -> rrhh_vacaciones, rrhh_documentos\n- libros requires facturas\n- dte_emission auto-on si cualquiera de {facturas,boletas,GD,NC,ND} on\n- dte_recepcion independent\n- reportes always on, tabs adaptan\n\nREGLAS DE TOGGLE:\n- No se puede activar un modulo con parent off (UI lo previene).\n- Apagar parent prompt: 'Tambien apaga X,Y,Z. Continuar?' cascade atomico.\n- dte_emission y caf_management auto-derivados, no son toggle directo.\n\nPHASES:\n1. Backend foundation (registro, column, gate, API, audit, tests)\n2. Frontend gating (hook, sidebar/routes/CTAs)\n3. Admin UI con cascade prompts",
+      "checklist": [
+        "Phase 1 - backend foundation (card aparte)",
+        "Phase 2 - frontend gating (card aparte)",
+        "Phase 3 - admin UI (card aparte)",
+        "Phase 4 (futuro) - tier presets para SaaS pricing",
+        "Smoke test E2E: Conico con boletas off; otro tenant con boletas on",
+        "Documentacion en docs/architecture/modulos.md publicada"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Core] Modulos toggle - Phase 1: backend foundation",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Phase 1 de '[Core] Modulos habilitables/deshabilitables por empresa'. Backend solamente: registro central de modulos, persistencia per-empresa, dependency de gating, validacion de dependencias, endpoints de admin y de current user, auditoria. Sin cambios de UI todavia. Output esperado: cualquier router opcional retorna 403 cuando su modulo esta off para la empresa del usuario; admin puede toggle via API.\n\nVer card umbrella '[Core] Modulos habilitables/deshabilitables por empresa' para grafo de dependencias completo. CORE (no toggleable): empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config. OPTIONAL con deps: facturas->{pagos,cobranza,NC,ND,libros,aprobaciones_margen}; boletas->{NC}; inventario->{GD}; GD->{NC}; NC requires >=1 of {facturas,boletas,GD}; ND requires facturas; proveedores->{OC,facturas_compra}; OC requires proveedores; facturas_compra->{aprobaciones_costo}; listas_precios->{precios_especiales}; facturas->pagos->{cobranza,bancos_receptores}; tareas->{reglas_tareas}; rrhh_empleados->{vacaciones,documentos}; libros requires facturas; dte_emission auto-on si cualquiera de {facturas,boletas,GD,NC,ND} esta on.\n\nDESGLOSE EN CARDS ATOMICAS (cada una en una sesion o menos): ver checklist.",
+      "checklist": [
+        "[Modulos P1.1] Registro central de modulos + grafo de dependencias",
+        "[Modulos P1.2] Migracion Alembic + Empresa.modulos_enabled + backfill",
+        "[Modulos P1.3] require_modulo dependency + cascade calculator + unit tests",
+        "[Modulos P1.4] Wire require_modulo a routers de ventas DTE",
+        "[Modulos P1.5] Wire require_modulo a procurement + inventario + finanzas",
+        "[Modulos P1.6] Wire require_modulo a RRHH + CRM + libros + DTE recepcion + aprobaciones",
+        "[Modulos P1.7] Endpoints admin /empresas/{id}/modulos + /me/modulos + audit"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Core] Modulos toggle - Phase 2: frontend gating",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Phase 2 de '[Core] Modulos habilitables/deshabilitables por empresa'. Requiere Phase 1 mergeada. Consume /me/modulos, expone hook + helpers, filtra Sidebar, agrega route guards, oculta CTAs (botones 'nueva X') donde el modulo esta off. Sin admin UI todavia (eso es Phase 3) — solo gating consumiendo el estado existente.\n\nVer card umbrella '[Core] Modulos habilitables/deshabilitables por empresa' para grafo de dependencias completo. CORE (no toggleable): empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config. OPTIONAL con deps: facturas->{pagos,cobranza,NC,ND,libros,aprobaciones_margen}; boletas->{NC}; inventario->{GD}; GD->{NC}; NC requires >=1 of {facturas,boletas,GD}; ND requires facturas; proveedores->{OC,facturas_compra}; OC requires proveedores; facturas_compra->{aprobaciones_costo}; listas_precios->{precios_especiales}; facturas->pagos->{cobranza,bancos_receptores}; tareas->{reglas_tareas}; rrhh_empleados->{vacaciones,documentos}; libros requires facturas; dte_emission auto-on si cualquiera de {facturas,boletas,GD,NC,ND} esta on.\n\nDESGLOSE EN CARDS ATOMICAS: ver checklist.",
+      "checklist": [
+        "[Modulos P2.1] Mirror modulos.ts + useModulos hook + helpers",
+        "[Modulos P2.2] Componente <ModuloGuard> + envolver rutas opcionales",
+        "[Modulos P2.3] Filtrar Sidebar por modulos habilitados",
+        "[Modulos P2.4] Ocultar CTAs Dashboard + filtrar tabs Reportes",
+        "[Modulos P2.5] Ocultar acciones cross-module en detalles"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Core] Modulos toggle - Phase 3: admin UI",
+      "labels": [
+        "Core",
+        "Design System"
+      ],
+      "desc": "Phase 3 de '[Core] Modulos habilitables/deshabilitables por empresa'. Requiere Phase 1 (API) y Phase 2 (gating activo). UI admin para toggle de modulos con visualizacion de dependencias y cascade prompts. Vive en /configuracion/empresa como tab nuevo 'Modulos'.\n\nVer card umbrella '[Core] Modulos habilitables/deshabilitables por empresa' para grafo de dependencias completo. CORE (no toggleable): empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config. OPTIONAL con deps: facturas->{pagos,cobranza,NC,ND,libros,aprobaciones_margen}; boletas->{NC}; inventario->{GD}; GD->{NC}; NC requires >=1 of {facturas,boletas,GD}; ND requires facturas; proveedores->{OC,facturas_compra}; OC requires proveedores; facturas_compra->{aprobaciones_costo}; listas_precios->{precios_especiales}; facturas->pagos->{cobranza,bancos_receptores}; tareas->{reglas_tareas}; rrhh_empleados->{vacaciones,documentos}; libros requires facturas; dte_emission auto-on si cualquiera de {facturas,boletas,GD,NC,ND} esta on.\n\nDESGLOSE EN CARDS ATOMICAS: ver checklist.",
+      "checklist": [
+        "[Modulos P3.1] Tab 'Modulos' en /configuracion/empresa (read-only listado)",
+        "[Modulos P3.2] Toggle interactivo + dependency-aware disable visual",
+        "[Modulos P3.3] Modal cascade-confirm al apagar parent con dependents on",
+        "[Modulos P3.4] Audit visible per-modulo + acciones bulk"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.1] Registro central de modulos + grafo de dependencias",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Crear unico modulo Python que define todos los modulos optional, su categoria, label legible, dependencias y reglas auto-on. Sin migracion, sin gating todavia. Output: backend/app/core/modulos.py importable. Solo definiciones + funciones puras.\n\nBloquea: P1.2 P1.3 P2.1.\nEstimado: 2h.",
+      "checklist": [
+        "Crear backend/app/core/modulos.py",
+        "Constante CORE_MODULES (set de slugs no toggleable)",
+        "Constante OPTIONAL_MODULES como dict {slug: ModuloSpec(label, categoria, requires=[], dependents=[])}",
+        "Categorias: 'ventas', 'compras', 'inventario_precios', 'finanzas', 'dte_sii', 'crm', 'rrhh', 'aprobaciones'",
+        "Modulos iniciales: cotizaciones, notas_venta, facturas, boletas, guias_despacho, nota_credito, nota_debito, proveedores, ordenes_compra, facturas_compra, inventario, listas_precios, precios_especiales, pagos, cobranza, bancos_receptores, libros, dte_recepcion, oportunidades, tareas, reglas_tareas, rrhh_empleados, rrhh_vacaciones, rrhh_documentos, aprobaciones_descuento, aprobaciones_costo, aprobaciones_margen",
+        "Funcion all_modulo_slugs() y get_modulo(slug) (raise si no existe)",
+        "Funcion modulos_by_categoria() para UI agrupada",
+        "Tests: registro coherente (cada 'requires' apunta a slug existente), no hay ciclos de dependencia, todos los routers actuales tienen su slug"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.2] Migracion Alembic + Empresa.modulos_enabled + backfill",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Agregar columna JSONB a empresas y backfill que deja todas las empresas existentes con comportamiento actual (todos los modulos optional explicitamente true). Sin endpoints, sin gating todavia.\n\nRequires: P1.1.\nBloquea: P1.3 P1.7.\nEstimado: 1.5h.",
+      "checklist": [
+        "Agregar campo Empresa.modulos_enabled: Mapped[dict] = mapped_column(JSONB, server_default='{}')",
+        "Generar migracion Alembic con autogenerate, revisar a mano",
+        "Backfill en migracion: UPDATE empresas SET modulos_enabled = '<dict con todos los OPTIONAL en true>'",
+        "Verificar single head Alembic post-merge",
+        "Smoke test: arrancar backend, leer empresa existente, asserts modulos_enabled poblado",
+        "Test unitario: nueva empresa creada via API tambien recibe defaults all-on",
+        "Update factory de tests si aplica"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.3] require_modulo dependency + cascade calculator + unit tests",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Logica pura de gating. Implementa compute_effective_modulos (aplica auto-on de dte_emission cuando factura/boleta/GD/NC/ND on, valida required), validate_toggle (detecta violaciones en cambios propuestos), y dependency FastAPI require_modulo(slug) que retorna 403 estructurado. Sin wirear todavia a routers reales.\n\nRequires: P1.1 P1.2.\nBloquea: P1.4 P1.5 P1.6 P1.7.\nEstimado: 3h.",
+      "checklist": [
+        "compute_effective_modulos(stored: dict) -> dict — aplica auto-on de dte_emission/caf si cualquier doc DTE on",
+        "validate_toggle(current: dict, slug: str, target: bool) -> raise si activar sin parent o apagar parent con dependents on",
+        "compute_cascade(current: dict, slug: str, target: bool) -> dict[slug, bool] — devuelve diff resultante con cascade",
+        "FastAPI dependency require_modulo(slug) en backend/app/api/deps.py: lee user.empresa, computa efectivo, 403 con detail estructurado {error: 'modulo_disabled', slug, label}",
+        "Test: efectivo correcto para empresas con todo on / con boletas off / con facturas off (NC/ND/pagos/cobranza/libros tambien off)",
+        "Test: validate_toggle bloquea activar nota_credito sin facturas/boletas/GD",
+        "Test: validate_toggle bloquea apagar facturas si pagos on",
+        "Test: cascade calcula correctamente al apagar facturas (apaga pagos, cobranza, NC, ND, libros, aprobaciones_margen)",
+        "Test: require_modulo retorna 403 cuando user empresa tiene modulo off",
+        "Test: require_modulo permite paso cuando on"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.4] Wire require_modulo a routers de ventas DTE",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Aplicar Depends(require_modulo(...)) a todos los routers de documentos de venta. Cada router obtiene su modulo correspondiente en el include_router del main.py o como dependency a nivel de APIRouter. Tests integrales con cliente de prueba.\n\nRequires: P1.3.\nEstimado: 3h.",
+      "checklist": [
+        "boletas router -> require_modulo('boletas')",
+        "facturas + facturas_adjuntos router -> require_modulo('facturas')",
+        "guias_despacho router -> require_modulo('guias_despacho')",
+        "nota_credito + nota_debito routers -> require_modulo segun corresponda",
+        "cotizaciones router -> require_modulo('cotizaciones')",
+        "nota_ventas + nota_ventas_adjuntos router -> require_modulo('notas_venta')",
+        "Test integral por router: empresa con modulo off recibe 403 en GET/POST",
+        "Test integral por router: empresa con modulo on funciona como antes",
+        "Verificar audit_log y notifications cross-module no se rompen"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.5] Wire require_modulo a procurement + inventario + finanzas",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Segundo batch de routers. Un solo card porque cambios son repetitivos del mismo patron de P1.4.\n\nRequires: P1.3.\nEstimado: 3h.",
+      "checklist": [
+        "proveedores router -> require_modulo('proveedores')",
+        "ordenes_compra router -> require_modulo('ordenes_compra')",
+        "facturas_compra router -> require_modulo('facturas_compra')",
+        "inventario router -> require_modulo('inventario')",
+        "listas_precios router -> require_modulo('listas_precios')",
+        "(precios especiales) listas_precios sub-endpoints o router separado -> require_modulo('precios_especiales')",
+        "pagos router -> require_modulo('pagos')",
+        "cobranza router -> require_modulo('cobranza')",
+        "bancos_receptores router -> require_modulo('bancos_receptores')",
+        "Test integral por router: 403 cuando off, 200 cuando on"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.6] Wire require_modulo a RRHH + CRM + libros + DTE recepcion + aprobaciones",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Tercer batch — el resto. Mismo patron.\n\nRequires: P1.3.\nEstimado: 3h.",
+      "checklist": [
+        "empleados + empleados_documentos + empleados_vacaciones routers -> require_modulo correspondiente",
+        "oportunidades router -> require_modulo('oportunidades')",
+        "tareas + reglas_tarea routers -> require_modulo correspondiente",
+        "libros router -> require_modulo('libros')",
+        "dte_recepcion router -> require_modulo('dte_recepcion')",
+        "aprobaciones + aprobaciones_costo + aprobaciones_margen routers -> require_modulo correspondiente",
+        "solicitudes_descuento -> require_modulo('aprobaciones_descuento')",
+        "Test integral por router",
+        "Verificar reportes.py NO esta gateado (siempre on, tabs adaptan en Phase 2)"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P1.7] Endpoints admin /empresas/{id}/modulos + /me/modulos + audit",
+      "labels": [
+        "Core"
+      ],
+      "desc": "API publica de gestion. GET admin devuelve {stored, effective, registry-with-deps}. PATCH admin valida cascade y persiste. /me/modulos devuelve solo el efectivo del usuario actual (sin requerir admin). Cada cambio escribe audit_log con diff slug-by-slug.\n\nRequires: P1.3.\nEstimado: 3h.",
+      "checklist": [
+        "Crear backend/app/api/modulos.py router",
+        "GET /empresas/{id}/modulos (require_admin) -> {stored: dict, effective: dict, registry: [...]}",
+        "PATCH /empresas/{id}/modulos (require_admin) body {modulos: {slug: bool}} -> valida con compute_cascade + validate_toggle, persiste atomico",
+        "GET /me/modulos (require_user) -> {effective: dict}",
+        "Audit log entries: action='modulos.toggle', target='empresa:{id}', meta={diff: [{slug, before, after}]}",
+        "Schemas Pydantic: EmpresaModulosResponse, EmpresaModulosUpdate",
+        "Validacion 400 con detail 'dependency_violation' o 'unknown_slug'",
+        "Tests: GET admin solo, GET me funciona para vendedor, PATCH bloquea cambios invalidos, audit registra diff",
+        "Tests: PATCH idempotente cuando no hay cambios reales",
+        "Registrar router en main.py"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P2.1] Mirror modulos.ts + useModulos hook + helpers",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Espejo TypeScript del registro backend con metadata para UI (label, categoria, descripcion). Hook useModulos() consume /me/modulos via react-query. Helpers para uso ergonomico.\n\nRequires: P1.7.\nBloquea: P2.2 P2.3 P2.4 P2.5 P3.*.\nEstimado: 2h.",
+      "checklist": [
+        "frontend/src/lib/modulos.ts: MODULO_SLUGS const tuple + type Modulo + MODULO_META {label, categoria, descripcion}",
+        "frontend/src/api/modulos.ts: fetchMyModulos() -> {effective: Record<Modulo, boolean>}",
+        "frontend/src/hooks/useModulos.ts: useModulos() con react-query (staleTime 5min, refetchOnWindowFocus true)",
+        "Helper isModuloEnabled(state, slug) y hook useModuloEnabled(slug)",
+        "Loading state + error state expuestos por el hook",
+        "Test: hook devuelve effective; isModuloEnabled funciona con loading",
+        "Test: cambio en backend se refleja al refetch"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P2.2] Componente <ModuloGuard> + envolver rutas opcionales",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Wrapper de ruta que muestra skeleton mientras carga, redirige a /modulo-no-disponible (o muestra mensaje inline) cuando el modulo esta off, y renderiza children cuando on. Aplicar a todas las rutas de modulos opcionales en el router.\n\nRequires: P2.1.\nEstimado: 3h.",
+      "checklist": [
+        "frontend/src/components/ModuloGuard.tsx con props {slug, children, fallback?}",
+        "Pagina ModuloNoDisponible.tsx con mensaje 'Este modulo no esta habilitado para tu empresa, contacta al admin'",
+        "Envolver rutas: /boletas/*, /facturas/*, /guias-despacho/*, /notas-credito/*, /notas-debito/*, /ordenes-compra/*, /inventario, /listas-precios, /pagos, /cobranza, /rrhh/*, /pipeline, /tareas, /libros/*, /dte-recepcion",
+        "Skeleton state mientras /me/modulos carga (no redirigir prematuramente)",
+        "Test render: modulo off muestra fallback; modulo on muestra children",
+        "E2E smoke: empresa con boletas off intenta /boletas y ve mensaje"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P2.3] Filtrar Sidebar por modulos habilitados",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Sidebar.tsx filtra items segun estado de modulos. Items core siempre visibles; items opcionales solo si modulo on. Loading: skeleton de items.\n\nRequires: P2.1.\nEstimado: 2h.",
+      "checklist": [
+        "Anotar items del Sidebar con su slug de modulo correspondiente (campo nuevo en config de nav)",
+        "Filtrar items en render usando useModulos",
+        "Skeleton loader por seccion durante loading inicial",
+        "Items sin slug (CRM dashboard, configuracion, perfil) siempre visibles",
+        "Test: render con modulos partial; verificar visibilidad correcta",
+        "Verificar que un usuario sin permiso de admin tampoco ve link a /configuracion/empresa modulos"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P2.4] Ocultar CTAs Dashboard + filtrar tabs Reportes",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Dashboard.tsx tiene quick-action buttons ('Nueva factura', 'Nueva NV', etc.) que deben esconderse si su modulo esta off. Reportes.tsx tiene tabs por tipo de documento — solo mostrar tabs cuyo modulo esta on.\n\nRequires: P2.1.\nEstimado: 2h.",
+      "checklist": [
+        "Dashboard: cada quick-action declarada con su modulo slug; filtrar antes de render",
+        "Dashboard: KPI tiles que dependen de modulo (ej: facturacion mes) se ocultan si modulo off",
+        "Reportes: tabs declaradas con slug; filtrar en render",
+        "Reportes: tab default seleccionada es la primera disponible",
+        "Test: Dashboard con facturas off no muestra 'Nueva Factura' ni tile de facturacion",
+        "Test: Reportes con boletas off no muestra tab boletas"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P2.5] Ocultar acciones cross-module en detalles",
+      "labels": [
+        "Core"
+      ],
+      "desc": "Botones en pantallas de detalle que cruzan modulos: NV detail tiene 'Crear factura'; GD detail tiene 'Crear NC'; Factura tiene 'Anular con NC'; NV puede generar boleta. Cada uno debe esconderse si el modulo target esta off.\n\nRequires: P2.1.\nEstimado: 3h.",
+      "checklist": [
+        "NotaVentaDetalle: gate boton 'Generar Factura' por facturas; 'Generar Boleta' por boletas; 'Generar GD' por guias_despacho",
+        "FacturaDetalle: gate 'Anular con NC' por nota_credito; 'Registrar pago' por pagos",
+        "BoletaDetalle: gate 'Anular con NC' por nota_credito",
+        "GuiaDespachoDetalle: gate 'Anular con NC' por nota_credito",
+        "CotizacionDetalle: gate 'Convertir a NV' por notas_venta; 'Convertir a Factura' por facturas",
+        "OrdenCompraDetalle: gate 'Recibir' por inventario",
+        "Tests por pantalla: botones ocultos cuando target off"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P3.1] Tab 'Modulos' en /configuracion/empresa (read-only listado)",
+      "labels": [
+        "Core",
+        "Design System"
+      ],
+      "desc": "Scaffolding del tab. Render solamente — sin interactividad de toggle todavia. Lista todos los modulos opcionales agrupados por categoria, mostrando estado actual y dependencias.\n\nRequires: P2.1 P1.7.\nBloquea: P3.2.\nEstimado: 2h.",
+      "checklist": [
+        "Pagina/tab Modulos en Configuracion (admin only)",
+        "Fetch GET /empresas/{empresa_id}/modulos (incluye registry y stored y effective)",
+        "Render agrupado por categoria con titulo y descripcion",
+        "Cada modulo muestra: label, descripcion, estado (on/off badge), 'requiere: X' si tiene parent off, 'habilita: Y' si tiene dependents",
+        "Switch visualmente disabled (sin onClick todavia)",
+        "Estado loading + error",
+        "Hide tab para non-admin"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P3.2] Toggle interactivo + dependency-aware disable visual",
+      "labels": [
+        "Core",
+        "Design System"
+      ],
+      "desc": "Activar onClick en switches. Toggles que no se pueden activar (parent off) quedan disabled con tooltip explicativo. Toggles que NO disparan cascade se aplican directo via PATCH. Cascade prompt es separado en P3.3.\n\nRequires: P3.1.\nBloquea: P3.3.\nEstimado: 3h.",
+      "checklist": [
+        "Mutation PATCH /empresas/{empresa_id}/modulos via react-query",
+        "Click en switch on->off: si no apaga ningun dependent, aplicar directo y refetch",
+        "Click en switch off->on: si parent off, no hacer nada (estaba disabled); si parent on, aplicar directo",
+        "Tooltip en toggle disabled: 'Requiere {label-de-parent}'",
+        "Optimistic update con rollback en error",
+        "Toast.success / toast.error en cada mutation",
+        "Invalidar useModulos en exito (sidebar etc. se refrescan)",
+        "Tests: toggle simple aplica; toggle bloqueado por parent muestra tooltip y no envia request"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P3.3] Modal cascade-confirm al apagar parent con dependents on",
+      "labels": [
+        "Core",
+        "Design System"
+      ],
+      "desc": "Cuando off->on de un parent que tiene dependents activos, abrir Modal mostrando la cascade completa antes de aplicar. Confirmar = PATCH atomico con todos los slugs.\n\nRequires: P3.2.\nEstimado: 2h.",
+      "checklist": [
+        "Calcular cascade en frontend usando registry (espejo de compute_cascade backend)",
+        "Modal danger variant: 'Apagar facturas. Esto tambien apagara: pagos, cobranza, nota_credito, nota_debito, libros, aprobaciones_margen. Continuar?'",
+        "Confirmar -> PATCH con todos los slugs en un solo body",
+        "Cancelar cierra modal sin cambios",
+        "Loading state durante mutation",
+        "Tests: apagar facturas dispara modal con lista correcta; confirmar manda body completo; cancelar no envia request"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Modulos P3.4] Audit visible per-modulo + acciones bulk",
+      "labels": [
+        "Core",
+        "Design System"
+      ],
+      "desc": "Mostrar quien y cuando cambio cada modulo (consultando audit_log filtrado). Botones bulk para 'Habilitar todos' y 'Apagar opcionales' (con cascade-confirm).\n\nRequires: P3.3.\nEstimado: 2h.",
+      "checklist": [
+        "Endpoint GET /empresas/{id}/modulos/audit -> ultimas N entradas con (slug, before, after, actor, ts)",
+        "Tooltip o seccion 'historial' por modulo con ultimo cambio",
+        "Boton 'Habilitar todos los opcionales' (admin) -> PATCH all-on",
+        "Boton 'Apagar todos los opcionales' (admin) -> Modal cascade-confirm + PATCH all-off",
+        "Bloquear bulk si hay validacion fallida (improbable en all-on, posible en all-off)",
+        "Test: audit se carga; bulk all-off muestra modal con todos los modulos opcionales"
       ]
     }
   ]
