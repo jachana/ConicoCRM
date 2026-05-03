@@ -4,7 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CAFUploadSection } from './CAFUploadSection'
 import * as cafsApi from '../../api/cafs'
 
-vi.mock('../../api/cafs')
+vi.mock('../../api/cafs', () => ({
+  listCAFs: vi.fn().mockResolvedValue({ count: 0, cafs: [] }),
+  uploadCAFs: vi.fn(),
+  getCAF: vi.fn(),
+}))
 vi.mock('sonner', () => ({
   toast: {
     error: vi.fn(),
@@ -32,22 +36,22 @@ describe('CAFUploadSection', () => {
   })
 
   it('renders upload section header', () => {
-    renderWithQuery(<CAFUploadSection empresaId={1} />)
+    renderWithQuery(<CAFUploadSection />)
     expect(screen.getByText(/Cargar CAF/)).toBeInTheDocument()
   })
 
   it('shows instruction text for file upload', () => {
-    renderWithQuery(<CAFUploadSection empresaId={1} />)
+    renderWithQuery(<CAFUploadSection />)
     expect(screen.getByText(/Arrastra o selecciona archivos CAF/)).toBeInTheDocument()
   })
 
   it('renders CAF list section', () => {
-    renderWithQuery(<CAFUploadSection empresaId={1} />)
+    renderWithQuery(<CAFUploadSection />)
     expect(screen.getByText(/CAFs Actuales/)).toBeInTheDocument()
   })
 
   it('displays no CAFs message when list is empty', async () => {
-    renderWithQuery(<CAFUploadSection empresaId={1} />)
+    renderWithQuery(<CAFUploadSection />)
 
     await waitFor(() => {
       expect(screen.getByText(/No hay CAFs cargados aún/)).toBeInTheDocument()
@@ -55,17 +59,15 @@ describe('CAFUploadSection', () => {
   })
 
   it('renders upload area component', () => {
-    renderWithQuery(<CAFUploadSection empresaId={1} />)
+    renderWithQuery(<CAFUploadSection />)
     const selectBtn = screen.getByText(/Seleccionar archivo/)
     expect(selectBtn).toBeInTheDocument()
   })
 
-  it('passes empresaId to listCAFs', async () => {
-    vi.mocked(cafsApi.listCAFs).mockResolvedValue({ count: 0, cafs: [] })
-    renderWithQuery(<CAFUploadSection empresaId={123} />)
-
+  it('renders CAF list after mount', async () => {
+    renderWithQuery(<CAFUploadSection />)
     await waitFor(() => {
-      expect(vi.mocked(cafsApi.listCAFs)).toHaveBeenCalledWith(123)
-    }, { timeout: 3000 })
+      expect(screen.getByText(/No hay CAFs cargados aún/)).toBeInTheDocument()
+    })
   })
 })

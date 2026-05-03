@@ -41,20 +41,14 @@ export interface CAFListResponse {
   cafs: CAFDetail[]
 }
 
-/**
- * Upload one or more CAF XML files
- */
-export async function uploadCAFs(
-  empresaId: number,
-  files: File[]
-): Promise<CAFUploadResponse> {
+export async function uploadCAFs(files: File[]): Promise<CAFUploadResponse> {
   const formData = new FormData()
   files.forEach((file) => {
     formData.append('files', file)
   })
 
   const { data } = await api.post<CAFUploadResponse>(
-    `/api/onboarding/cafs?empresa_id=${empresaId}`,
+    `/api/onboarding/cafs`,
     formData,
     {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -63,13 +57,8 @@ export async function uploadCAFs(
   return data
 }
 
-/**
- * Get list of CAFs for an empresa
- */
-export async function listCAFs(empresaId: number): Promise<CAFListResponse> {
-  const { data } = await api.get<CAFListResponse>(
-    `/api/onboarding/cafs?empresa_id=${empresaId}`
-  )
+export async function listCAFs(): Promise<CAFListResponse> {
+  const { data } = await api.get<CAFListResponse>(`/api/onboarding/cafs`)
   return data
 }
 

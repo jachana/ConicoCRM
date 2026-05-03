@@ -24,24 +24,17 @@
   "cards": [
     {
       "list": "In review",
-      "name": "[Onboarding] Import Notas de crédito/débito históricas",
+      "name": "[CAF] Fix CAFListSection frontend tests (Vitest mock binding)",
       "labels": [
-        "Core"
+        "Bug"
       ],
-      "desc": "NC/ND ya emitidas. Linkean a factura/boleta histórica por folio + tipo. Mismo principio: solo registro, no se reemite al SII.",
+      "desc": "6 tests in CAFListSection.test.tsx fail after removing empresaId prop from listCAFs(). Root cause: Vitest factory mock + React Query v5 setQueryData not propagating to component — the no-arg listCAFs() import binding appears to be a different instance than cafsApi.listCAFs in the test. Tests with empty data pass; tests with CAF items (count>0) timeout. Fix: investigate vi.mock factory vs auto-mock behavior with no-arg async functions in Vitest v2.1, or use a different test pattern (e.g. render with pre-populated QueryClient via a wrapper that passes initialData).",
       "checklist": [
-        "UI dentro de pestaña 'Migración inicial' (solo admin)",
-        "Plantilla .xlsx descargable con columnas documentadas",
-        "Backend: parser xlsx con validación de columnas/tipos",
-        "Validación previa con preview + conteo de filas válidas/inválidas",
-        "Import transaccional por lote: rollback si fatal, reporte fila a fila si recuperable",
-        "Reporte descargable post-import (creado / actualizado / pendiente / error + motivo)",
-        "Idempotente: re-correr el mismo Excel no duplica",
-        "--- Específico ---",
-        "Columnas: tipo (NC/ND), folio, fecha, folio_referencia, tipo_referencia, motivo, neto, iva, total",
-        "Flag origen=externo",
-        "Si folio_referencia no existe → reportar pendiente, dejar NC/ND huérfana (no descartar)",
-        "Aplicar efecto contable solo si la factura referenciada también está cargada"
+        "Reproduce isolation: run single failing test to confirm no cross-test contamination",
+        "Try auto-mock (no factory) + explicit beforeEach mockResolvedValue",
+        "Try vi.spyOn instead of vi.mocked",
+        "Try QueryClient.setQueryData with correct key ['cafs', 0]",
+        "Fix and verify all 8 tests in CAFListSection.test.tsx pass"
       ]
     }
   ]

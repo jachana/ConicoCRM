@@ -9,13 +9,12 @@ import { uploadCAFs } from '../../api/cafs'
 import type { CAFUploadResponse } from '../../api/cafs'
 
 interface CAFUploadSectionProps {
-  empresaId: number
   onUploadComplete?: () => void
 }
 
 type Step = 'idle' | 'uploading' | 'done'
 
-export function CAFUploadSection({ empresaId, onUploadComplete }: CAFUploadSectionProps) {
+export function CAFUploadSection({ onUploadComplete }: CAFUploadSectionProps) {
   const [files, setFiles] = useState<File[]>([])
   const [step, setStep] = useState<Step>('idle')
   const [loading, setLoading] = useState(false)
@@ -32,7 +31,7 @@ export function CAFUploadSection({ empresaId, onUploadComplete }: CAFUploadSecti
     setStep('uploading')
 
     try {
-      const uploadResult = await uploadCAFs(empresaId, files)
+      const uploadResult = await uploadCAFs(files)
       setResult(uploadResult)
       setStep('done')
 
@@ -121,10 +120,7 @@ export function CAFUploadSection({ empresaId, onUploadComplete }: CAFUploadSecti
       )}
 
       {/* CAF List */}
-      <CAFListSection
-        empresaId={empresaId}
-        refreshTrigger={refreshListTrigger}
-      />
+      <CAFListSection refreshTrigger={refreshListTrigger} />
     </div>
   )
 }

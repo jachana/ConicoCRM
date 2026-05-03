@@ -1,9 +1,9 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Download, Upload, FileSpreadsheet, CheckCircle2, XCircle, Info } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { Button, Card, Tabs, TabsList, TabsTrigger, TabsContent, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Skeleton } from '../components/ui'
+import { Button, Card, Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui'
 import { PaymentImportSection } from '../components/onboarding/PaymentImportSection'
 import { CAFUploadSection } from '../components/onboarding/CAFUploadSection'
 import { ProductosImportSection } from '../components/onboarding/ProductosImportSection'
@@ -17,7 +17,6 @@ import { ImportPreciosEspecialesSection } from '../components/onboarding/ImportP
 import { ImportOCSection } from '../components/onboarding/ImportOCSection'
 import { ImportNCNDSection } from '../components/onboarding/ImportNCNDSection'
 import { Stat } from '../components/onboarding/StatCard'
-import type { Empresa } from '../types'
 
 type Estado = 'creada' | 'actualizada' | 'sin_cambio' | 'error'
 
@@ -75,19 +74,6 @@ const ESTADO_STYLE: Record<Estado, { icon: React.ReactNode; cls: string }> = {
 }
 
 export default function MigracionInicial() {
-  const [selectedEmpresaId, setSelectedEmpresaId] = useState<number | null>(null)
-
-  const { data: empresas = [], isLoading: loadingEmpresas } = useQuery<Empresa[]>({
-    queryKey: ['empresas'],
-    queryFn: () => api.get('/api/empresas/').then((r) => r.data),
-  })
-
-  // Auto-select first empresa if available
-  useEffect(() => {
-    if (empresas.length > 0 && !selectedEmpresaId) {
-      setSelectedEmpresaId(empresas[0].id)
-    }
-  }, [empresas, selectedEmpresaId])
 
   return (
     <div className="p-4 md:p-6 max-w-3xl space-y-5">
@@ -99,28 +85,6 @@ export default function MigracionInicial() {
       </div>
 
       {/* Empresa selector for CAF tab */}
-      {loadingEmpresas ? (
-        <Skeleton className="h-10" />
-      ) : empresas.length > 0 ? (
-        <Card padded className="p-3">
-          <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-2">
-            Empresa para CAF
-          </label>
-          <Select value={selectedEmpresaId?.toString()} onValueChange={(v) => setSelectedEmpresaId(parseInt(v))}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {empresas.map((emp) => (
-                <SelectItem key={emp.id} value={emp.id.toString()}>
-                  {emp.razon_social || emp.nombre}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Card>
-      ) : null}
-
       <Tabs defaultValue="proveedores">
         <TabsList variant="underline">
           <TabsTrigger value="proveedores">Proveedores</TabsTrigger>
@@ -178,15 +142,7 @@ export default function MigracionInicial() {
           <ImportPreciosEspecialesSection />
         </TabsContent>
         <TabsContent value="cafs">
-          {selectedEmpresaId ? (
-            <CAFUploadSection empresaId={selectedEmpresaId} />
-          ) : (
-            <Card padded>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Selecciona una empresa para cargar CAFs.
-              </p>
-            </Card>
-          )}
+          <CAFUploadSection />
         </TabsContent>
       </Tabs>
     </div>

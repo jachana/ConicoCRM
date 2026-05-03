@@ -6,11 +6,10 @@ import { listCAFs } from '../../api/cafs'
 import type { CAFDetail } from '../../api/cafs'
 
 interface CAFListSectionProps {
-  empresaId: number
   refreshTrigger?: number
 }
 
-export function CAFListSection({ empresaId, refreshTrigger }: CAFListSectionProps) {
+export function CAFListSection({ refreshTrigger }: CAFListSectionProps) {
   const [refetchCount, setRefetchCount] = useState(0)
 
   useEffect(() => {
@@ -20,9 +19,8 @@ export function CAFListSection({ empresaId, refreshTrigger }: CAFListSectionProp
   }, [refreshTrigger])
 
   const { data: response, isLoading, error, refetch } = useQuery({
-    queryKey: ['cafs', empresaId, refetchCount],
-    queryFn: () => listCAFs(empresaId),
-    enabled: !!empresaId,
+    queryKey: ['cafs', refetchCount],
+    queryFn: () => listCAFs(),
   })
 
   const cafs = response?.cafs || []
