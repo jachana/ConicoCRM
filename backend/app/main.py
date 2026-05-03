@@ -63,6 +63,7 @@ from app.api import onboarding_precios_especiales
 from app.api import onboarding_oc
 from app.api import onboarding_nc
 from app.api import onboarding_guias_despacho
+from app.api import onboarding_tareas
 from app.api import libros as libros_api
 from app.api import dte_recepcion as dte_recepcion_api
 from app.api import nota_alerta as nota_alerta_api
@@ -186,5 +187,6 @@ app.include_router(onboarding_precios_especiales.router, prefix="/api/onboarding
 app.include_router(onboarding_oc.router, prefix="/api/onboarding/oc-historicas", tags=["onboarding"])
 app.include_router(onboarding_nc.router, prefix="/api/onboarding/nc-nd-historicas", tags=["onboarding"])
 app.include_router(onboarding_guias_despacho.router, prefix="/api/onboarding/guias-despacho-historicas", tags=["onboarding"])
+app.include_router(onboarding_tareas.router, prefix="/api/onboarding/tareas", tags=["onboarding"])
 app.include_router(libros_api.router, prefix="/api/libros", tags=["libros"])
 app.include_router(dte_recepcion_api.router, prefix="/api/dte/recepcion", tags=["dte_recepcion"])

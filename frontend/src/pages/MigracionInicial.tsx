@@ -17,6 +17,7 @@ import { ImportPreciosEspecialesSection } from '../components/onboarding/ImportP
 import { ImportOCSection } from '../components/onboarding/ImportOCSection'
 import { ImportNCNDSection } from '../components/onboarding/ImportNCNDSection'
 import { ImportGDSection } from '../components/onboarding/ImportGDSection'
+import { ImportTareasSection } from '../components/onboarding/ImportTareasSection'
 import { Stat } from '../components/onboarding/StatCard'
 
 type Estado = 'creada' | 'actualizada' | 'sin_cambio' | 'error'
@@ -102,6 +103,7 @@ export default function MigracionInicial() {
           <TabsTrigger value="nc_nd_historicas">NC/ND Históricas</TabsTrigger>
           <TabsTrigger value="gd_historicas">GD Históricas</TabsTrigger>
           <TabsTrigger value="precios_especiales">Precios Especiales</TabsTrigger>
+          <TabsTrigger value="tareas_crm">Tareas CRM</TabsTrigger>
           <TabsTrigger value="cafs">CAF</TabsTrigger>
         </TabsList>
         <TabsContent value="proveedores">
@@ -145,6 +147,9 @@ export default function MigracionInicial() {
         </TabsContent>
         <TabsContent value="precios_especiales">
           <ImportPreciosEspecialesSection />
+        </TabsContent>
+        <TabsContent value="tareas_crm">
+          <ImportTareasSection />
         </TabsContent>
         <TabsContent value="cafs">
           <CAFUploadSection />
