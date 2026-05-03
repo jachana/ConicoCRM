@@ -1,7 +1,7 @@
 """add_historico_nc_nd
 
 Revision ID: 6e0dd2e43ea7
-Revises: z5a6b7c8d9e0
+Revises: b1c2d3e4f5a6
 Create Date: 2026-05-02 10:00:00.000000
 
 Onboarding NC/ND: add historico boolean flag to notas_credito and notas_debito tables.
@@ -14,7 +14,7 @@ from alembic import op
 
 
 revision: str = '6e0dd2e43ea7'
-down_revision: Union[str, Sequence[str], None] = 'z5a6b7c8d9e0'
+down_revision: Union[str, Sequence[str], None] = 'b1c2d3e4f5a6'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
