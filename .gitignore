@@ -58,7 +58,12 @@ uploads/*
 !uploads/.gitkeep
 backend/uploads/*
 !backend/uploads/.gitkeep
+frontend/uploads/*
+!frontend/uploads/.gitkeep
 resources/*
+
+# Stray alembic dir (real one is backend/migrations/)
+/migrations/
 
 *storybook.log
 storybook-static
