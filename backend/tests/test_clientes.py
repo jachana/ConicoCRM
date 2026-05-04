@@ -20,18 +20,18 @@ def test_vendedor_puede_crear_cliente(client, vendedor_token):
 def test_crear_cliente(client, admin_token):
     r = client.post(
         "/api/clientes/",
-        json={"nombre": "Empresa ABC Ltda.", "rut": "76.543.210-K", "email": "contacto@abc.cl", "telefono": "+56221234567"},
+        json={"nombre": "Empresa ABC Ltda.", "rut": "76.543.210-3", "email": "contacto@abc.cl", "telefono": "+56221234567"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 201
     data = r.json()
     assert data["nombre"] == "Empresa ABC Ltda."
-    assert data["rut"] == "76.543.210-K"
+    assert data["rut"] == "76.543.210-3"
 
 
 def test_crear_cliente_rut_duplicado(client, admin_token):
-    client.post("/api/clientes/", json={"nombre": "A", "rut": "99.000.001-1"}, headers={"Authorization": f"Bearer {admin_token}"})
-    r = client.post("/api/clientes/", json={"nombre": "B", "rut": "99.000.001-1"}, headers={"Authorization": f"Bearer {admin_token}"})
+    client.post("/api/clientes/", json={"nombre": "A", "rut": "99.000.001-8"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.post("/api/clientes/", json={"nombre": "B", "rut": "99.000.001-8"}, headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 409
 
 
@@ -82,10 +82,10 @@ def test_exportar_excel_clientes(client, admin_token):
 
 
 def test_actualizar_rut_duplicado(client, admin_token):
-    client.post("/api/clientes/", json={"nombre": "A", "rut": "88.000.001-1"}, headers={"Authorization": f"Bearer {admin_token}"})
-    r = client.post("/api/clientes/", json={"nombre": "B", "rut": "88.000.002-2"}, headers={"Authorization": f"Bearer {admin_token}"})
+    client.post("/api/clientes/", json={"nombre": "A", "rut": "88.000.001-2"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r = client.post("/api/clientes/", json={"nombre": "B", "rut": "88.000.002-0"}, headers={"Authorization": f"Bearer {admin_token}"})
     cid = r.json()["id"]
-    r2 = client.patch(f"/api/clientes/{cid}", json={"rut": "88.000.001-1"}, headers={"Authorization": f"Bearer {admin_token}"})
+    r2 = client.patch(f"/api/clientes/{cid}", json={"rut": "88.000.001-2"}, headers={"Authorization": f"Bearer {admin_token}"})
     assert r2.status_code == 409
 
 
@@ -95,6 +95,26 @@ def test_obtener_cliente(client, admin_token):
     r2 = client.get(f"/api/clientes/{cid}", headers={"Authorization": f"Bearer {admin_token}"})
     assert r2.status_code == 200
     assert r2.json()["nombre"] == "Empresa Directa"
+
+
+def test_crear_cliente_rut_invalido_rechazado(client, admin_token):
+    r = client.post(
+        "/api/clientes/",
+        json={"nombre": "Cliente Inv", "rut": "76.543.210-K"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 422
+
+
+def test_actualizar_cliente_rut_invalido_rechazado(client, admin_token):
+    r = client.post("/api/clientes/", json={"nombre": "Cliente OK"}, headers={"Authorization": f"Bearer {admin_token}"})
+    cid = r.json()["id"]
+    r2 = client.patch(
+        f"/api/clientes/{cid}",
+        json={"rut": "12.345.678-9"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r2.status_code == 422
 
 
 def test_listar_clientes_con_filtro_q(client, admin_token):

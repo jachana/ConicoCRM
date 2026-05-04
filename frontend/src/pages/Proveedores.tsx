@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, FileSpreadsheet, Inbox, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '../lib/api'
+import { validateRut } from '../utils/rut'
 import type { Proveedor } from '../types'
 import {
   Button, Input, Textarea, FormField, EmptyState, Skeleton, Tooltip,
@@ -36,6 +37,7 @@ export default function Proveedores() {
   const [editando, setEditando] = useState<Proveedor | null>(null)
   const [form, setForm] = useState<FormData>(EMPTY_FORM)
   const [error, setError] = useState<string | null>(null)
+  const [rutError, setRutError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<Proveedor | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
@@ -57,6 +59,7 @@ export default function Proveedores() {
     setModalOpen(false)
     setEditando(null)
     setError(null)
+    setRutError(null)
   }
 
   const guardar = useMutation({
@@ -175,7 +178,12 @@ export default function Proveedores() {
           <ModalHeader>
             <ModalTitle>{editando ? 'Editar proveedor' : 'Nuevo proveedor'}</ModalTitle>
           </ModalHeader>
-          <form onSubmit={e => { e.preventDefault(); guardar.mutate(form) }} className="flex flex-col flex-1 min-h-0">
+          <form onSubmit={e => {
+              e.preventDefault()
+              if (form.rut && !validateRut(form.rut)) { setRutError('RUT inválido'); return }
+              setRutError(null)
+              guardar.mutate(form)
+            }} className="flex flex-col flex-1 min-h-0">
             <ModalBody>
               <div className="grid grid-cols-2 gap-4">
                 {CAMPOS.map(campo => (
@@ -188,12 +196,16 @@ export default function Proveedores() {
                           rows={3}
                         />
                       ) : (
-                        <Input
-                          type="text"
-                          value={form[campo.key]}
-                          onChange={e => setForm(f => ({ ...f, [campo.key]: e.target.value }))}
-                          required={campo.required}
-                        />
+                        <>
+                          <Input
+                            type="text"
+                            value={form[campo.key]}
+                            onChange={e => { setForm(f => ({ ...f, [campo.key]: e.target.value })); if (campo.key === 'rut') setRutError(null) }}
+                            onBlur={() => { if (campo.key === 'rut' && form.rut) setRutError(validateRut(form.rut) ? null : 'RUT inválido') }}
+                            required={campo.required}
+                          />
+                          {campo.key === 'rut' && rutError && <p className="text-xs text-danger-500 mt-1">{rutError}</p>}
+                        </>
                       )}
                     </FormField>
                   </div>

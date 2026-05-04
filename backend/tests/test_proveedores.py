@@ -11,25 +11,25 @@ def test_listar_sin_permisos_vendedor(client, vendedor_token):
 def test_crear_proveedor(client, admin_token):
     r = client.post(
         "/api/proveedores/",
-        json={"nombre": "Proveedor A", "rut": "76.123.456-7", "contacto": "Juan"},
+        json={"nombre": "Proveedor A", "rut": "76.123.456-0", "contacto": "Juan"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 201
     data = r.json()
     assert data["nombre"] == "Proveedor A"
-    assert data["rut"] == "76.123.456-7"
+    assert data["rut"] == "76.123.456-0"
     assert "id" in data
 
 
 def test_crear_proveedor_rut_duplicado(client, admin_token):
     client.post(
         "/api/proveedores/",
-        json={"nombre": "Prov A", "rut": "76.000.001-1"},
+        json={"nombre": "Prov A", "rut": "76.000.001-9"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     r = client.post(
         "/api/proveedores/",
-        json={"nombre": "Prov B", "rut": "76.000.001-1"},
+        json={"nombre": "Prov B", "rut": "76.000.001-9"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 409
@@ -89,3 +89,23 @@ def test_exportar_excel(client, admin_token):
     r = client.get("/api/proveedores/export/excel", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
     assert "spreadsheetml" in r.headers["content-type"]
+
+
+def test_crear_proveedor_rut_invalido_rechazado(client, admin_token):
+    r = client.post(
+        "/api/proveedores/",
+        json={"nombre": "Prov Inv", "rut": "76.123.456-7"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 422
+
+
+def test_actualizar_proveedor_rut_invalido_rechazado(client, admin_token):
+    r = client.post("/api/proveedores/", json={"nombre": "Prov OK"}, headers={"Authorization": f"Bearer {admin_token}"})
+    pid = r.json()["id"]
+    r2 = client.patch(
+        f"/api/proveedores/{pid}",
+        json={"rut": "12.345.678-9"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r2.status_code == 422

@@ -70,7 +70,7 @@ def test_update_cliente_writes_before_after_changed(client, admin_token, admin_u
     # crea cliente
     resp = client.post(
         "/api/clientes/",
-        json={"nombre": "Original SA", "rut": "12345678-9"},
+        json={"nombre": "Original SA", "rut": "12.345.678-5"},
         headers=_bearer(admin_token),
     )
     assert resp.status_code == 201

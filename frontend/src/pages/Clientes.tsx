@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { Plus, Search, FileSpreadsheet, Inbox, Eye } from 'lucide-react'
 import { api } from '../lib/api'
+import { validateRut } from '../utils/rut'
 import type { Cliente, Empresa } from '../types'
 import ClienteDetailModal from '../components/ClienteDetailModal'
 import {
@@ -40,6 +41,7 @@ export default function Clientes() {
   const [editando, setEditando] = useState<Cliente | null>(null)
   const [form, setForm] = useState<FormData>(EMPTY_FORM)
   const [error, setError] = useState<string | null>(null)
+  const [rutError, setRutError] = useState<string | null>(null)
   const [eliminandoId, setEliminandoId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [verCliente, setVerCliente] = useState<Cliente | null>(null)
@@ -71,7 +73,7 @@ export default function Clientes() {
     })
     setError(null); setModalOpen(true)
   }
-  function cerrarModal() { setModalOpen(false); setEditando(null); setError(null) }
+  function cerrarModal() { setModalOpen(false); setEditando(null); setError(null); setRutError(null) }
 
   const guardar = useMutation({
     mutationFn: (data: FormData) => {
@@ -254,7 +256,12 @@ export default function Clientes() {
           <ModalHeader>
             <ModalTitle>{editando ? 'Editar cliente' : 'Nuevo cliente'}</ModalTitle>
           </ModalHeader>
-          <form onSubmit={ev => { ev.preventDefault(); guardar.mutate(form) }} className="flex flex-col flex-1 min-h-0">
+          <form onSubmit={ev => {
+              ev.preventDefault()
+              if (form.rut && !validateRut(form.rut)) { setRutError('RUT inválido'); return }
+              setRutError(null)
+              guardar.mutate(form)
+            }} className="flex flex-col flex-1 min-h-0">
             <ModalBody>
               <div className="grid grid-cols-2 gap-4">
                 <FormField label="Empresa" className="col-span-2">
@@ -286,7 +293,14 @@ export default function Clientes() {
                 </FormField>
 
                 <FormField label="RUT" required>
-                  <Input placeholder="76.123.456-7" required value={form.rut} onChange={e => setForm(f => ({ ...f, rut: e.target.value }))} />
+                  <Input
+                    placeholder="76.123.456-7"
+                    required
+                    value={form.rut}
+                    onChange={e => { setForm(f => ({ ...f, rut: e.target.value })); setRutError(null) }}
+                    onBlur={() => { if (form.rut) setRutError(validateRut(form.rut) ? null : 'RUT inválido') }}
+                  />
+                  {rutError && <p className="text-xs text-danger-500 mt-1">{rutError}</p>}
                 </FormField>
                 <FormField label="Email">
                   <Input type="email" placeholder="contacto@empresa.cl" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />

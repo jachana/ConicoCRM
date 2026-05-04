@@ -4,7 +4,7 @@ import openpyxl
 
 
 def _setup_cotizacion(client, admin_token):
-    r = client.post("/api/clientes/", json={"nombre": "CLI Export", "rut": "12345678-9"},
+    r = client.post("/api/clientes/", json={"nombre": "CLI Export", "rut": "12.345.678-5"},
                     headers={"Authorization": f"Bearer {admin_token}"})
     cli_id = r.json()["id"]
     r1 = client.post("/api/productos/", json={"nombre": "Tornillo M5", "sku": "T-M5", "precio_venta": 100, "precio_costo": 80},
