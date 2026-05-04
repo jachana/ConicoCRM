@@ -32,16 +32,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "sales gets Failed to load resource: the server responded with a status of 403 (), but they should just not be able to edit fields, not be rejected on save",
-      "labels": [],
-      "desc": "**Resumen** — Los vendedores veían botones de edición en empresas y facturas, pero al intentar usarlos recibían error 403. Ahora esos botones se ocultan para evitar confusiones.\n\n**Cambios / Decisiones** — Se ocultaron los botones de Agregar, Editar y Eliminar en la vista de Empresas cuando el usuario es vendedor. En FacturaDetalle, se ocultó el botón Editar y la opción de borrar bajo la misma condición. Se ajustó EmpresaDetailModal y EmpresaTabResumen para aceptar onEdit opcional, permitiendo que el botón desaparezca cuando no se pasa esa función.",
+      "list": "In progress",
+      "name": "GET https://crm.conico.juliocode.com/api/dte_recepcion?limit=50&offset=0 404 (Not Found)",
+      "labels": [
+        "DTE/SII",
+        "Blocked",
+        "Size:M"
+      ],
+      "desc": "**Contexto / Problema**\nEl endpoint GET `/api/dte_recepcion` retorna 404 (Not Found), impidiendo que los clientes carguen la lista de DTE recibidos. Esto bloquea la funcionalidad core de recepción de documentos tributarios.\n\n**Acceptance Criteria**\n- El endpoint GET `/api/dte_recepcion?limit=50&offset=0` responde con status 200 y un JSON válido.\n- La respuesta contiene un array de DTE recibidos o un array vacío si no hay registros.\n- Los parámetros `limit` y `offset` se aplican correctamente en la paginación.\n- Solo usuarios autenticados con token válido pueden acceder (se rechaza 401 sin token o token inválido).\n- Los logs backend no muestran errores críticos después de la corrección.\n\n**Definition of Done**\n- El archivo de routing backend se ha revisado y el endpoint está registrado correctamente.\n- Se ha validado que el método HTTP es GET (no confundido con POST).\n- Se han ejecutado tests unitarios e integración para el endpoint; todos pasan.\n- Se ha probado manualmente en staging con y sin parámetros de paginación.\n- La tarjeta Trello se ha movido a «In review».\n- Se ha desplegado a staging exitosamente sin errores.\n\n**Notas tecnicas**\n- Ruta esperada: `src/routes/api/dte_recepcion.js` o similar según estructura.\n- Controlador asociado: verificar que exista handler para GET en ese endpoint.\n- Auth: validar middleware de autenticación aplica correctamente (JWT, bearer token).\n- Revisar logs backend (stderr, logs de aplicación) para stack trace de 404.\n- Query params: `limit` (int, default 50), `offset` (int, default 0).\n\n<!-- conico-refined -->",
       "checklist": [
-        "Ingresar como vendedor y abrir listado de empresas",
-        "Verificar que NO aparecen botones de Agregar, Editar ni Eliminar",
-        "Abrir detalle de una factura y confirmar que no hay botón Editar",
-        "Revisar que no se puede eliminar filas de la tabla de factura",
-        "Ingresar como admin y verificar que los botones sí aparecen"
+        "Verificar endpoint existe en API (routing backend)",
+        "Confirmar método HTTP (GET vs POST)",
+        "Validar auth token cliente",
+        "Revisar logs backend para causa 404",
+        "Testear con query params correctos",
+        "Revisar routing backend: confirmar que GET /api/dte_recepcion existe en tabla de rutas",
+        "Validar controlador y método HTTP: verificar que no está definido como POST o falta implementación",
+        "Revisar middleware de autenticación: confirmar que token se valida correctamente y no rechaza prematuro",
+        "Revisar logs backend: identificar causa raíz del 404 y stack trace asociado",
+        "Implementar/corregir endpoint: asegurar respuesta JSON con paginación (limit, offset)",
+        "Escribir/ejecutar tests: unitario del endpoint + integración con query params",
+        "Desplegar a staging y verificar: GET `/api/dte_recepcion?limit=50&offset=0` retorna 200"
       ]
     }
   ]
