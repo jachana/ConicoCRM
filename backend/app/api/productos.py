@@ -228,6 +228,7 @@ def actualizar_precios_bulk(
 def listar_productos(
     q: str = Query("", description="Filtrar por nombre, SKU, marca, tipo o tag"),
     tipo: list[str] = Query(default_factory=list, description="Filtrar por nombre(s) de tipo (multi-valor)"),
+    spec: list[str] = Query(default_factory=list, description="Filtrar por spec exacta (multi-valor, case-insensitive)"),
     perms: tuple[User, Session] = require_permission("catalogo", "view"),
 ):
     user, db = perms
@@ -248,6 +249,9 @@ def listar_productos(
                 .distinct()
             )
     rows = query.order_by(Producto.nombre).all()
+    if spec:
+        spec_lower = {s.strip().lower() for s in spec if s.strip()}
+        rows = [p for p in rows if spec_lower.issubset({s.lower() for s in (p.specs or [])})]
 
     if user.role != "admin":
         return [ProductoOutPublic.model_validate(p).model_dump(mode="json") for p in rows]

@@ -31,6 +31,7 @@ export default function Productos() {
   const canEdit = !!permissions?.catalogo?.edit
   const [busqueda, setBusqueda] = useState('')
   const [tiposFiltro, setTiposFiltro] = useState<string[]>([])
+  const [specsFiltro, setSpecsFiltro] = useState<string[]>([])
 
   const { data: tipos = [] } = useQuery<TipoProducto[]>({
     queryKey: ['tipos-producto'],
@@ -38,11 +39,12 @@ export default function Productos() {
   })
 
   const { data: productos = [], isLoading } = useQuery<Producto[]>({
-    queryKey: ['productos', busqueda, tiposFiltro],
+    queryKey: ['productos', busqueda, tiposFiltro, specsFiltro],
     queryFn: () => {
       const params = new URLSearchParams()
       if (busqueda) params.set('q', busqueda)
       for (const t of tiposFiltro) params.append('tipo', t)
+      for (const s of specsFiltro) params.append('spec', s)
       return api.get(`/api/productos/?${params.toString()}`).then(r => r.data)
     },
   })
@@ -50,6 +52,18 @@ export default function Productos() {
   function toggleTipoFiltro(nombre: string) {
     setTiposFiltro(prev => prev.includes(nombre) ? prev.filter(t => t !== nombre) : [...prev, nombre])
   }
+
+  function toggleSpecFiltro(spec: string) {
+    setSpecsFiltro(prev => prev.includes(spec) ? prev.filter(s => s !== spec) : [...prev, spec])
+  }
+
+  const availableSpecs = useMemo(() => {
+    const set = new Set<string>()
+    for (const p of productos) {
+      for (const s of (p.specs ?? [])) set.add(s)
+    }
+    return Array.from(set).sort()
+  }, [productos])
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editando, setEditando] = useState<Producto | null>(null)
@@ -274,6 +288,35 @@ export default function Productos() {
         </div>
       )}
 
+      {availableSpecs.length > 0 && !bulkMode && (
+        <div className="mb-4 flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">Filtrar por spec:</span>
+          {availableSpecs.map(s => {
+            const sel = specsFiltro.includes(s)
+            return (
+              <button
+                type="button"
+                key={s}
+                onClick={() => toggleSpecFiltro(s)}
+                className="focus:outline-none"
+                aria-pressed={sel}
+              >
+                <Badge variant={sel ? 'info' : 'outline'} size="sm">{s}</Badge>
+              </button>
+            )
+          })}
+          {specsFiltro.length > 0 && (
+            <button
+              type="button"
+              className="text-xs text-gray-500 hover:underline ml-1"
+              onClick={() => setSpecsFiltro([])}
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+      )}
+
       {bulkMode && (
         <Card padded className="mb-4">
           <div className="flex flex-wrap items-end gap-3">
@@ -389,6 +432,26 @@ export default function Productos() {
                     <TD>
                       <div className="font-medium text-gray-900 dark:text-white">{p.nombre}</div>
                       {p.descripcion && <div className="text-xs text-gray-400 truncate max-w-xs">{p.descripcion}</div>}
+                      {!bulkMode && p.specs && p.specs.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {p.specs.map(s => (
+                            <button
+                              type="button"
+                              key={s}
+                              onClick={() => toggleSpecFiltro(s)}
+                              className="focus:outline-none"
+                              aria-pressed={specsFiltro.includes(s)}
+                            >
+                              <Badge
+                                variant={specsFiltro.includes(s) ? 'info' : 'neutral'}
+                                size="sm"
+                              >
+                                {s}
+                              </Badge>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </TD>
                     <TD className="text-gray-500 dark:text-gray-400 text-xs">
                       {p.marca ? p.marca.nombre : <span className="text-gray-300 dark:text-gray-600">—</span>}

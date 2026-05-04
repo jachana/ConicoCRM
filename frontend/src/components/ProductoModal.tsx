@@ -170,6 +170,13 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
           value={form.specs}
           onChange={e => { setFormDirty(true); setForm(f => ({ ...f, specs: e.target.value })) }}
         />
+        {form.specs.trim() && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {form.specs.split(',').map(s => s.trim()).filter(Boolean).map(s => (
+              <Badge key={s} variant="info" size="sm">{s}</Badge>
+            ))}
+          </div>
+        )}
       </FormField>
 
       <FormField label="Marca">
