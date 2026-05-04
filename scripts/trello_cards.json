@@ -32,18 +32,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "PATCH https://crm.conico.juliocode.com/api/facturas/24 500 (Internal Server Error) al guardar una factura",
+      "list": "In progress",
+      "name": "Save button on Edit empresa is not working",
       "labels": [
+        "Core",
+        "Blocked",
         "Size:M"
       ],
-      "desc": "**Resumen** — Al guardar una factura mediante PATCH /api/facturas/24, el servidor retornaba 500 Internal Server Error por un campo 'referencias_docs' siendo None en lugar de una lista vacía.\n\n**Cambios / Decisiones** — Se corrigió el schema Pydantic en `backend/app/schemas/factura.py` agregando un validador que convierte None a lista vacía (`[]`) en la serialización. Se agregaron tests en `backend/tests/test_facturas.py` que cubren casos con y sin referencias_docs para evitar regresiones. El endpoint afectado es PATCH /api/facturas/{id}.",
+      "desc": "**Contexto / Problema**\nEl botón guardar en el formulario de edición de empresa no persiste los cambios en la base de datos. Esto bloquea operaciones básicas de gestión de empresas y afecta la usabilidad central del producto.\n\n**Acceptance Criteria**\n- Al hacer clic en \"Guardar\" en la pantalla de editar empresa, los cambios se guardan exitosamente en la base de datos.\n- El usuario recibe confirmación visual (toast/notificación) indicando que los cambios fueron guardados.\n- Los cambios persisten después de recargar la página.\n- No aparecen errores en la consola del navegador (Network ni JS).\n- Los permisos de autenticación se validan correctamente antes de permitir la actualización.\n\n**Definition of Done**\n- Bug reproducido y causa raíz identificada.\n- Fix implementado en el código relevante (frontend validation y/o backend endpoint).\n- Tests unitarios/integración agregados o actualizados para cubrir el flujo de edición.\n- Verificado en staging environment.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Endpoint afectado: `PATCH /empresas/:id`\n- Verificar validación del lado del cliente en el form antes de submit.\n- Validar que el payload enviado coincida con el schema esperado en el backend.\n- Revisar token de autenticación y permisos del usuario para actualizar empresa.\n- Inspeccionar Network tab (response status, body) y console (errores JS).\n- Archivo probable: `src/pages/Empresa/Edit.tsx` o equivalente.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Hacer PATCH a /api/facturas/24 con datos válidos y verificar 200 OK",
-        "Verificar que respuesta tenga 'referencias_docs': [] cuando es null en BD",
-        "Ejecutar tests unitarios en backend/tests/test_facturas.py",
-        "Probar GET /api/facturas/24 y confirmar serialización correcta",
-        "Validar que factura se guarda en BD con o sin referencias_docs"
+        "Verificar form validation antes de submit",
+        "Revisar API endpoint PATCH /empresas/:id",
+        "Testear payload enviado vs schema esperado",
+        "Validar auth token / permisos",
+        "Revisar console errores (network + JS)",
+        "Reproducir el bug: abrir form editar empresa, cambiar un campo, hacer clic en Guardar y verificar si persiste.",
+        "Inspeccionar Network tab para ver request/response del `PATCH /empresas/:id` (status, payload, error message).",
+        "Verificar validación del formulario: ¿el form bloquea submit si falta validar? ¿El payload es válido antes de enviar?",
+        "Revisar autenticación y permisos: ¿token es válido? ¿Usuario tiene permisos para actualizar?",
+        "Identificar causa raíz y aplicar fix (backend endpoint, schema, frontend form, auth middleware).",
+        "Escribir/actualizar tests para cubrir guardar cambios exitosamente.",
+        "Deployar a staging, validar fix, mover Trello card a In review."
       ]
     }
   ]
