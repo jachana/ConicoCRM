@@ -32,27 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "en las normas o especificaciones tecnicas del producto, quiero que se formen \"capsulas\" para los tags separados por coma, y que sean filtrables por esas categorias",
       "labels": [
         "Design System",
         "Goal: UX Polish",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nActualmente, los tags en normas y especificaciones técnicas se muestran como texto plano separado por comas, lo que dificulta su lectura y no permite filtrar rápidamente por categoría. El cliente requiere una presentación visual mejorada (cápsulas/chips) y capacidad de filtrado interactivo para mejor UX.\n\n**Acceptance Criteria**\n- Los tags se renderizan como cápsulas visuales (chips) en la vista de normas/specs, cada uno en su propio contenedor.\n- Al hacer clic en una cápsula, se activa un filtro que muestra solo las normas que contienen ese tag.\n- Es posible limpiar el filtro activo con un botón o clic en el chip nuevamente.\n- El componente chip es reutilizable en otros módulos del sistema (Design System).\n- Los tags largos o especiales (comillas, espacios) se parsean correctamente sin causar errores de renderizado.\n- El filtrado es instantáneo sin recarga de página.\n\n**Definition of Done**\n- Componente chip/cápsula creado en Design System y documentado.\n- Lógica de parseo de tags (comma-separated → array) implementada y testeada.\n- Filtro por tags funcional en lista de normas y specs.\n- Unit tests y tests de integración pasan (parseo, renderizado, filtrado).\n- Componente agregado a Storybook o documentación del DS.\n- Card movida a \"In review\" después de QA en staging.\n\n**Notas tecnicas**\n- Ubicación: `src/components/Chip.tsx` (Design System), `src/modules/norms/NormsList.tsx`.\n- Parser: `src/utils/tagParser.ts` - función que convierte string con comas a array, trimea espacios.\n- Estado: usar Context o Zustand para almacenar tag activo de filtro.\n- Tests: Jest + React Testing Library para chip interacción, parseo edge cases.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Mostrar tags de normas/especificaciones como cápsulas clickeables y permitir filtrar productos por esos tags.\n\n**Cambios / Decisiones**\n- Implementado componente de chips para mostrar tags de especificaciones de forma visual\n- Agregado parser automático de texto separado por comas a chips en ProductoModal\n- Añadido filtro por tags en la página de productos (/api/productos?spec=...)\n- Los chips en la tabla de productos son clickeables para activar filtros\n- Barra de filtros activos agregada encima de la tabla\n- Backend actualizado para soportar múltiples valores de `spec` en query param\n- Vista previa en tiempo real de chips en el modal de edición",
       "checklist": [
-        "Diseñar componente chip/cápsula reutilizable",
-        "Actualizar form specs para input multi-tag (comma-separated → array)",
-        "Implementar filtro por tags en lista normas",
-        "Testear con tags largos / especiales (comillas, etc)",
-        "Agregar a Design System",
-        "Diseñar e implementar componente Chip reutilizable con estados (default, active, hover)",
-        "Crear parser de tags: string separado por comas → array limpio",
-        "Integrar Chip en lista de normas; mostrar tags como cápsulas",
-        "Implementar estado y lógica de filtro: clic en chip → filtrar lista",
-        "Testear parseo con tags especiales (comillas, espacios, caracteres especiales)",
-        "Agregar componente a Design System (Storybook, si existe)",
-        "Tests unitarios e integración pasan; desplegar a staging y mover a In review"
+        "Abrir modal de producto y escribir tags separados por coma en campo specs",
+        "Ver chips generados debajo del input en tiempo real",
+        "Guardar producto y verificar chips en la fila de la tabla",
+        "Hacer clic en un chip de la tabla para activar filtro por ese tag",
+        "Ver barra de filtros activos encima de la tabla con el tag seleccionado",
+        "Ver que tabla se actualiza mostrando solo productos con ese tag",
+        "Probar varios tags clickeables y combinaciones de filtros"
       ]
     }
   ]
