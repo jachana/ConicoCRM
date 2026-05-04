@@ -61,6 +61,12 @@ class VendedorMinOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class NotaVentaMinOut(BaseModel):
+    id: int
+    numero: int
+    model_config = ConfigDict(from_attributes=True)
+
+
 class GuiaDespachoOut(BaseModel):
     id: int
     numero: int
@@ -85,6 +91,7 @@ class GuiaDespachoOut(BaseModel):
     updated_at: datetime
     cliente: ClienteMinOut | None = None
     vendedor: VendedorMinOut | None = None
+    nota_venta: NotaVentaMinOut | None = None
     lineas: list[GuiaDespachoLineaOut] = []
     model_config = ConfigDict(from_attributes=True)
 

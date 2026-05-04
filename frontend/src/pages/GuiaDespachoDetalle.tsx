@@ -213,7 +213,7 @@ export default function GuiaDespachoDetalle() {
               onClick={() => navigate(`/notas-venta/${guia.nota_venta_id}`)}
               className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-num"
             >
-              N°{guia.nota_venta_id} →
+              N°{String(guia.nota_venta?.numero ?? guia.nota_venta_id).padStart(5, '0')} →
             </button>
           </CardContent>
         </Card>

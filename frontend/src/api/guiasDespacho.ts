@@ -82,6 +82,7 @@ export interface GuiaDespacho {
   updated_at: string;
   cliente?: ClienteMin | null;
   vendedor?: VendedorMin | null;
+  nota_venta?: { id: number; numero: number } | null;
   lineas: GuiaLinea[];
 }
 
