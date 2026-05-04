@@ -143,6 +143,11 @@ class FacturaOut(BaseModel):
     is_locked: bool
     model_config = {"from_attributes": True}
 
+    @field_validator("referencias_docs", mode="before")
+    @classmethod
+    def _coerce_referencias_docs(cls, v):
+        return [] if v is None else v
+
 
 class FacturaListOut(BaseModel):
     id: int

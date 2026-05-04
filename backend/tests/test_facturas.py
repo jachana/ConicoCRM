@@ -120,6 +120,48 @@ def test_actualizar_header(client, admin_token):
     assert r.json()["contacto"] == "Juan Test"
 
 
+def test_patch_factura_referencias_docs_null_returns_list(client, admin_token):
+    """Regression: column NULL must serialize as [] in response (not raise 500)."""
+    from tests.conftest import TestingSession
+    from app.models.factura import Factura
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+    db = TestingSession()
+    try:
+        row = db.get(Factura, f["id"])
+        row.referencias_docs = None
+        db.commit()
+    finally:
+        db.close()
+    r = client.patch(
+        f"/api/facturas/{f['id']}",
+        json={"contacto": "Test Refs"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["referencias_docs"] == []
+
+
+def test_get_factura_referencias_docs_null_returns_list(client, admin_token):
+    from tests.conftest import TestingSession
+    from app.models.factura import Factura
+    cid = _create_cliente(client, admin_token)
+    f = _create_factura(client, admin_token, cid)
+    db = TestingSession()
+    try:
+        row = db.get(Factura, f["id"])
+        row.referencias_docs = None
+        db.commit()
+    finally:
+        db.close()
+    r = client.get(
+        f"/api/facturas/{f['id']}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["referencias_docs"] == []
+
+
 # --- Desde NV ---
 
 def test_crear_desde_nv_copia_lineas(client, admin_token):
