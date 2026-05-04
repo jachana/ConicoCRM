@@ -34,23 +34,31 @@ export default function GlobalSearchModal({ open, onOpenChange }: Props) {
   const { data, isFetching } = useGlobalSearch(q)
   const { recientes, push } = useRecentEntities()
 
+  const handleClose = useCallback(
+    (v: boolean) => {
+      if (!v) setQ('')
+      onOpenChange(v)
+    },
+    [onOpenChange]
+  )
+
   const handleSelect = useCallback(
     (entry: { tipo: RecentTipo; id: number; titulo: string; subtitulo?: string; estado?: string }) => {
       push(entry)
       navigate(URL_BY_TIPO[entry.tipo](entry.id))
-      onOpenChange(false)
-      setQ('')
+      handleClose(false)
     },
-    [navigate, push, onOpenChange]
+    [navigate, push, handleClose]
   )
 
   return (
     <Command.Dialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleClose}
       label="Búsqueda global"
       shouldFilter={false}
       className="fixed inset-0 z-[60] flex items-start justify-center pt-[15vh] bg-black/40 backdrop-blur-sm"
+      onClick={() => handleClose(false)}
     >
       <div
         className="w-[640px] max-w-[92vw] bg-white dark:bg-[#111827] rounded-xl shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden"
@@ -71,7 +79,7 @@ export default function GlobalSearchModal({ open, onOpenChange }: Props) {
           {isFetching && <Loader2 size={16} className="text-gray-400 animate-spin" />}
         </div>
 
-        <Command.List className="max-h-[60vh] overflow-y-auto p-2">
+        <Command.List className="max-h-[60vh] overflow-y-auto p-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-gray-500 dark:[&_[cmdk-group-heading]]:text-gray-400">
           {q.length < 2 && <RecentesGroup recientes={recientes} onSelect={handleSelect} />}
           {q.length >= 2 && (
             <>
