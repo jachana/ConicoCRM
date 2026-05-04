@@ -408,32 +408,3 @@ def test_crear_empresa_rut_invalido_rechazado(client, admin_token):
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 422
-
-
-def test_crear_empresa_rut_no_oficial_bypassea_validacion(client, admin_token):
-    r = client.post(
-        "/api/empresas/",
-        json={"nombre": "Emp Holding", "rut": "12.345.678-9", "rut_no_oficial": True},
-        headers={"Authorization": f"Bearer {admin_token}"},
-    )
-    assert r.status_code == 201, r.text
-    data = r.json()
-    assert data["rut_no_oficial"] is True
-    assert data["rut"] == "12.345.678-9"
-
-
-def test_actualizar_empresa_marcar_rut_no_oficial(client, admin_token):
-    r = client.post(
-        "/api/empresas/",
-        json={"nombre": "Emp Mut", "rut": "11.111.111-1"},
-        headers={"Authorization": f"Bearer {admin_token}"},
-    )
-    eid = r.json()["id"]
-    assert r.json()["rut_no_oficial"] is False
-    r2 = client.patch(
-        f"/api/empresas/{eid}",
-        json={"rut_no_oficial": True},
-        headers={"Authorization": f"Bearer {admin_token}"},
-    )
-    assert r2.status_code == 200
-    assert r2.json()["rut_no_oficial"] is True

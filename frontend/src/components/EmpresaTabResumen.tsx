@@ -118,11 +118,6 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <div>
           <Field label="RUT" value={empresa.rut ?? '—'} />
-          {empresa.rut_no_oficial && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 mt-1">
-              RUT no oficial
-            </span>
-          )}
           {empresa.ruts_adicionales && empresa.ruts_adicionales.length > 0 && (
             <div className="mt-2">
               <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">RUTs adicionales</div>

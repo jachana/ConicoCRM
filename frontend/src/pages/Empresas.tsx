@@ -25,7 +25,6 @@ type FormData = {
   nombre: string
   razon_social: string
   rut: string
-  rut_no_oficial: boolean
   linea_credito: string
   plazo_credito: string
   sector: string
@@ -37,7 +36,6 @@ type FormData = {
 
 const EMPTY_FORM: FormData = {
   nombre: '', razon_social: '', rut: '',
-  rut_no_oficial: false,
   linea_credito: '', plazo_credito: '',
   sector: '', email: '', nota_cobranza: '', ubicacion: '',
   ruts_adicionales: [],
@@ -168,7 +166,6 @@ export default function Empresas() {
     setEditando(e)
     setForm({
       nombre: e.nombre, razon_social: e.razon_social ?? '', rut: e.rut ?? '',
-      rut_no_oficial: e.rut_no_oficial,
       linea_credito: e.linea_credito != null ? String(e.linea_credito) : '',
       plazo_credito: e.plazo_credito ?? '',
       sector: e.sector ?? '',
@@ -216,7 +213,6 @@ export default function Empresas() {
       const payload: Record<string, unknown> = Object.fromEntries(
         Object.entries(data).map(([k, v]) => [k, v || null])
       )
-      payload.rut_no_oficial = data.rut_no_oficial
       payload.ruts_adicionales = data.ruts_adicionales
       if (data.linea_credito) payload.linea_credito = parseFloat(data.linea_credito)
       else payload.linea_credito = null
@@ -489,7 +485,7 @@ export default function Empresas() {
           <form
             onSubmit={ev => {
               ev.preventDefault()
-              if (!editando && form.rut && !form.rut_no_oficial && !validateRut(form.rut)) {
+              if (!editando && form.rut && !validateRut(form.rut)) {
                 setRutError('RUT inválido')
                 return
               }
@@ -518,7 +514,7 @@ export default function Empresas() {
                     value={form.rut}
                     onChange={e => { setForm(f => ({ ...f, rut: e.target.value })); setRutError(null) }}
                     onBlur={() => {
-                      if (form.rut && !form.rut_no_oficial) {
+                      if (form.rut) {
                         setRutError(validateRut(form.rut) ? null : 'RUT inválido')
                       } else {
                         setRutError(null)
@@ -532,21 +528,6 @@ export default function Empresas() {
                   {!editando && rutError && (
                     <p className="text-xs text-danger-500 mt-1">{rutError}</p>
                   )}
-                </FormField>
-
-                <FormField label="RUT no oficial" className="col-span-2">
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={form.rut_no_oficial}
-                      onChange={e => {
-                        setForm(f => ({ ...f, rut_no_oficial: e.target.checked }))
-                        if (e.target.checked) setRutError(null)
-                      }}
-                      className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500"
-                    />
-                    <span>RUT no oficial (informativo)</span>
-                  </label>
                 </FormField>
 
                 <div className="col-span-2">

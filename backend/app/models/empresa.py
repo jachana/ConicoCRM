@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal
-from sqlalchemy import Boolean, ForeignKey, String, Text, DateTime, Numeric, text
+from sqlalchemy import ForeignKey, String, Text, DateTime, Numeric, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -27,7 +27,6 @@ class Empresa(Base):
     nombre: Mapped[str] = mapped_column(String(255))
     razon_social: Mapped[str | None] = mapped_column(String(255), nullable=True)
     rut: Mapped[str | None] = mapped_column(String(20), unique=True, nullable=True, index=True)
-    rut_no_oficial: Mapped[bool] = mapped_column(Boolean(), default=False, server_default="false")
     linea_credito: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
     plazo_credito: Mapped[str | None] = mapped_column(String(50), nullable=True)
     sector: Mapped[str | None] = mapped_column(String(100), nullable=True)

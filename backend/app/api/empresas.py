@@ -256,7 +256,7 @@ def crear_empresa(
     perms: tuple[User, Session] = require_permission("empresas", "create"),
 ):
     _, db = perms
-    if body.rut and not body.rut_no_oficial and not validate_rut(body.rut):
+    if body.rut and not validate_rut(body.rut):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="RUT inválido")
     ruts_adicionales = body.ruts_adicionales or []
     for r in ruts_adicionales:

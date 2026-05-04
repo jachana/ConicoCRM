@@ -32,20 +32,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Guía despacho] Números de NV y factura incorrectos",
+      "list": "In progress",
+      "name": "delete the RUT no oficial  RUT no oficial (informativo)  from the form, the\" RUTs Adicionales \"does the thing",
       "labels": [
-        "Bug"
+        "Core",
+        "Goal: UX Polish",
+        "Size:M"
       ],
-      "desc": "**Resumen** — Corregir los números de NV y factura que se muestran incorrectamente en el detalle y PDF de la guía de despacho.\n\n**Cambios / Decisiones** — Se corrigió el detalle de la guía de despacho para mostrar el número de secuencia de la NV (ej: 00008) en vez del ID interno (ej: 42). Se actualizó el schema GuiaDespachoOut para incluir NotaVentaMinOut con los campos id y numero. El frontend ahora usa nota_venta.numero con padding de 5 dígitos. Pendiente corregir el PDF y verificar factura.",
+      "desc": "**Contexto / Problema**\nEl formulario de empresa contiene un campo 'RUT no oficial' (informativo) que es redundante, ya que 'RUTs Adicionales' cumple la misma función. Se requiere eliminar este campo para simplificar la UX y reducir confusión del usuario.\n\n**Acceptance Criteria**\n- El campo 'RUT no oficial' ya no aparece en el formulario de creación/edición de empresas.\n- El campo 'RUT no oficial' ya no aparece en la visualización de datos de la empresa.\n- Los datos existentes de 'RUT no oficial' se migran correctamente a 'RUTs Adicionales' (si aplica) o se preservan en base de datos.\n- El formulario de empresa valida correctamente sin este campo.\n- La documentación técnica se actualiza para reflejar la remoción.\n\n**Definition of Done**\n- Tests unitarios y de integración pasan para el formulario de empresa.\n- Migración de base de datos ejecutada en staging.\n- Card movida a 'In review' con validación de cliente (si es necesario).\n- Deployment a staging completado.\n- Confirmación de que 'RUTs Adicionales' funciona correctamente post-migración.\n\n**Notas tecnicas**\n- Campo a remover: enterprise.rut_no_oficial (verificar modelo y tabla).\n- Validación backend: revisar endpoints POST/PATCH /enterprises/{id}.\n- Migración: script SQL para copiar datos de rut_no_oficial a additional_ruts si es necesario.\n- Formulario frontend: remover campo en vistas de empresa y actualizar esquema de validación.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir detalle de guía de despacho desde NV facturada",
-        "Verificar que se muestra número NV con ceros adelante (ej: 00008)",
-        "Confirmar que no aparece el ID interno de la NV",
-        "Revisar que se muestra número de factura correcto",
-        "Generar PDF y verificar números NV y factura",
-        "Probar con NV sin factura asociada",
-        "Validar navegación desde detalle a NV vinculada"
+        "Confirmar con cliente que RUTs Adicionales reemplaza RUT no oficial",
+        "Remover field form + validación backend",
+        "Migrar datos existentes (si aplica)",
+        "Testear form empresa sin campo",
+        "Actualizar docs",
+        "Confirmar con cliente que RUTs Adicionales reemplaza funcionalmente RUT no oficial",
+        "Remover campo RUT no oficial del modelo, form frontend y validaciones backend",
+        "Crear y ejecutar migración de datos (rut_no_oficial → additional_ruts o backup)",
+        "Escribir y ejecutar tests para formulario de empresa sin el campo",
+        "Actualizar documentación técnica y comentarios de código",
+        "Deployar a staging y validar con cliente",
+        "Mover card a In review"
       ]
     }
   ]
