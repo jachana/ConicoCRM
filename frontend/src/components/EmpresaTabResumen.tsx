@@ -8,7 +8,7 @@ import { useAuthStore } from '../stores/auth'
 
 interface Props {
   empresa: EmpresaListItem
-  onEdit: (e: Empresa) => void
+  onEdit?: (e: Empresa) => void
 }
 
 function fmtDate(s: string | null) {
@@ -155,11 +155,13 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
           </CardContent>
         </Card>
       )}
-      <div>
-        <Button leftIcon={<Pencil />} onClick={() => onEdit(empresa)}>
-          Editar empresa
-        </Button>
-      </div>
+      {onEdit && (
+        <div>
+          <Button leftIcon={<Pencil />} onClick={() => onEdit(empresa)}>
+            Editar empresa
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

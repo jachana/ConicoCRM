@@ -334,7 +334,7 @@ export default function FacturaDetalle() {
   })
 
   const validTransitions = factura ? getValidTransitions(factura.estado, factura.dte_estado) : []
-  const canDelete = factura?.estado === 'emitida' && !isDteLocked(factura?.dte_estado)
+  const canDelete = isAdmin && factura?.estado === 'emitida' && !isDteLocked(factura?.dte_estado)
 
   async function handleEmitirDte() {
     setEmitiendo(true)
@@ -449,7 +449,7 @@ export default function FacturaDetalle() {
           >
             Re-cotizar
           </Button>
-          {!factura?.is_locked && (
+          {!factura?.is_locked && isAdmin && (
             !editing ? (
               <Button
                 size="sm"

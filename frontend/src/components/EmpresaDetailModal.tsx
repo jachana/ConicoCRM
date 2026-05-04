@@ -13,7 +13,7 @@ import {
 interface Props {
   empresa: EmpresaListItem | null
   onClose: () => void
-  onEdit: (e: Empresa) => void
+  onEdit?: (e: Empresa) => void
 }
 
 export default function EmpresaDetailModal({ empresa, onClose, onEdit }: Props) {

@@ -52,6 +52,7 @@ function fmt(n: number) {
 export default function Empresas() {
   const qc = useQueryClient()
   const user = useAuthStore(s => s.user)
+  const canEdit = user?.role !== 'vendedor'
   const [busqueda, setBusqueda] = useState('')
   const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
 
@@ -326,9 +327,11 @@ export default function Empresas() {
           >
             Excel
           </Button>
-          <Button leftIcon={<Plus />} onClick={abrirCrear}>
-            Agregar
-          </Button>
+          {canEdit && (
+            <Button leftIcon={<Plus />} onClick={abrirCrear}>
+              Agregar
+            </Button>
+          )}
         </div>
       </div>
 
@@ -439,18 +442,22 @@ export default function Empresas() {
                             <Button size="xs" variant="outline" leftIcon={<Eye />} onClick={() => setDetalleEmpresa(e)}>
                               Ver
                             </Button>
-                            <Button size="icon-xs" variant="ghost" aria-label={`Editar ${e.nombre}`} onClick={() => abrirEditar(e)}>
-                              <Pencil />
-                            </Button>
-                            <Button
-                              size="icon-xs"
-                              variant="ghost"
-                              aria-label={`Eliminar ${e.nombre}`}
-                              className="text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
-                              onClick={() => { setEliminandoId(e.id); setDeleteError(null) }}
-                            >
-                              <Trash2 />
-                            </Button>
+                            {canEdit && (
+                              <Button size="icon-xs" variant="ghost" aria-label={`Editar ${e.nombre}`} onClick={() => abrirEditar(e)}>
+                                <Pencil />
+                              </Button>
+                            )}
+                            {canEdit && (
+                              <Button
+                                size="icon-xs"
+                                variant="ghost"
+                                aria-label={`Eliminar ${e.nombre}`}
+                                className="text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                                onClick={() => { setEliminandoId(e.id); setDeleteError(null) }}
+                              >
+                                <Trash2 />
+                              </Button>
+                            )}
                           </div>
                         )}
                       </TD>
@@ -467,10 +474,10 @@ export default function Empresas() {
         key={detalleEmpresa?.id}
         empresa={detalleEmpresa}
         onClose={() => setDetalleEmpresa(null)}
-        onEdit={(e) => {
+        onEdit={canEdit ? (e) => {
           setDetalleEmpresa(null)
           abrirEditar(e)
-        }}
+        } : undefined}
       />
 
       {/* Create / Edit modal */}
