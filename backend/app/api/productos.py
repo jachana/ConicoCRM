@@ -7,7 +7,7 @@ from io import BytesIO
 import openpyxl
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, or_
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -38,7 +38,7 @@ from app.services.producto_parser import (
     build_template_xlsx,
     parse_productos_xlsx,
 )
-from app.utils.search import unaccent_ilike
+from app.utils.search import producto_ids_matching
 from app.schemas.movimiento_inventario import MovimientoListOut
 
 
@@ -132,20 +132,18 @@ def exportar_excel(
 
 @router.get("/buscar")
 def buscar_productos(
-    q: str = Query("", description="Texto a buscar en nombre, SKU o tag"),
+    q: str = Query("", description="Texto a buscar en nombre, SKU, marca, tipo o tag"),
     perms: tuple[User, Session] = require_permission("catalogo", "view"),
 ):
     user, db = perms
-    query = db.query(Producto).outerjoin(Producto.tags)
+    q = (q or "").strip()
     if q:
-        pattern = f"%{q}%"
-        query = query.filter(
-            or_(
-                unaccent_ilike(Producto.nombre, pattern),
-                unaccent_ilike(Producto.sku, pattern),
-                unaccent_ilike(ProductoTag.nombre, pattern),
-            )
-        ).distinct()
+        ids = producto_ids_matching(db, q)
+        if not ids:
+            return []
+        query = db.query(Producto).filter(Producto.id.in_(ids))
+    else:
+        query = db.query(Producto)
     rows = query.order_by(Producto.nombre).limit(20).all()
     schema = ProductoBusquedaOutAdmin if user.role == "admin" else ProductoBusquedaOutPublic
     return [schema.model_validate(p).model_dump(mode="json") for p in rows]
@@ -228,21 +226,19 @@ def actualizar_precios_bulk(
 
 @router.get("/")
 def listar_productos(
-    q: str = Query("", description="Filtrar por nombre, SKU o tag"),
+    q: str = Query("", description="Filtrar por nombre, SKU, marca, tipo o tag"),
     tipo: list[str] = Query(default_factory=list, description="Filtrar por nombre(s) de tipo (multi-valor)"),
     perms: tuple[User, Session] = require_permission("catalogo", "view"),
 ):
     user, db = perms
-    query = db.query(Producto).outerjoin(Producto.tags)
+    q = (q or "").strip()
     if q:
-        pattern = f"%{q}%"
-        query = query.filter(
-            or_(
-                unaccent_ilike(Producto.nombre, pattern),
-                unaccent_ilike(Producto.sku, pattern),
-                unaccent_ilike(ProductoTag.nombre, pattern),
-            )
-        ).distinct()
+        ids = producto_ids_matching(db, q)
+        if not ids:
+            return []
+        query = db.query(Producto).filter(Producto.id.in_(ids))
+    else:
+        query = db.query(Producto)
     if tipo:
         nombres = [t.strip().lower() for t in tipo if t.strip()]
         if nombres:

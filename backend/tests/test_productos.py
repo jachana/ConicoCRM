@@ -238,6 +238,102 @@ def test_buscar_producto_insensible_tildes(client, admin_token):
     assert any(p["nombre"] == "Válvula hidráulica" for p in r.json())
 
 
+def test_listar_q_busca_por_nombre(client, admin_token):
+    h = {"Authorization": f"Bearer {admin_token}"}
+    client.post("/api/productos/", json={"nombre": "Aceite hidraulico", "precio_venta": "10"}, headers=h)
+    client.post("/api/productos/", json={"nombre": "Filtro de aire", "precio_venta": "20"}, headers=h)
+    r = client.get("/api/productos/?q=aceite", headers=h)
+    assert r.status_code == 200
+    nombres = [p["nombre"] for p in r.json()]
+    assert "Aceite hidraulico" in nombres
+    assert "Filtro de aire" not in nombres
+
+
+def test_listar_q_busca_por_sku(client, admin_token):
+    h = {"Authorization": f"Bearer {admin_token}"}
+    client.post("/api/productos/", json={"nombre": "Producto SKU", "sku": "ABC-999", "precio_venta": "10"}, headers=h)
+    client.post("/api/productos/", json={"nombre": "Otro", "sku": "ZZZ-001", "precio_venta": "10"}, headers=h)
+    r = client.get("/api/productos/?q=ABC", headers=h)
+    assert r.status_code == 200
+    nombres = [p["nombre"] for p in r.json()]
+    assert nombres == ["Producto SKU"]
+
+
+def test_listar_q_busca_por_marca(client, admin_token):
+    h = {"Authorization": f"Bearer {admin_token}"}
+    m = client.post("/api/marcas/", json={"nombre": "Bosch"}, headers=h).json()
+    client.post("/api/productos/", json={"nombre": "Filtro premium", "marca_id": m["id"], "precio_venta": "10"}, headers=h)
+    client.post("/api/productos/", json={"nombre": "Tornillo basic", "precio_venta": "5"}, headers=h)
+    r = client.get("/api/productos/?q=bosch", headers=h)
+    assert r.status_code == 200
+    nombres = [p["nombre"] for p in r.json()]
+    assert "Filtro premium" in nombres
+    assert "Tornillo basic" not in nombres
+
+
+def test_listar_q_busca_por_tag(client, admin_token):
+    h = {"Authorization": f"Bearer {admin_token}"}
+    client.post("/api/productos/", json={"nombre": "Pieza A", "tags": ["motor"], "precio_venta": "10"}, headers=h)
+    client.post("/api/productos/", json={"nombre": "Pieza B", "tags": ["frenos"], "precio_venta": "10"}, headers=h)
+    r = client.get("/api/productos/?q=motor", headers=h)
+    assert r.status_code == 200
+    nombres = [p["nombre"] for p in r.json()]
+    assert "Pieza A" in nombres
+    assert "Pieza B" not in nombres
+
+
+def test_listar_q_busca_por_tipo(client, admin_token):
+    h = {"Authorization": f"Bearer {admin_token}"}
+    t = client.post("/api/tipos-producto/", json={"nombre": "hidraulico"}, headers=h).json()
+    client.post("/api/productos/", json={"nombre": "Bomba X", "tipos": [t["id"]], "precio_venta": "10"}, headers=h)
+    client.post("/api/productos/", json={"nombre": "Empaque Y", "precio_venta": "10"}, headers=h)
+    r = client.get("/api/productos/?q=hidraulico", headers=h)
+    assert r.status_code == 200
+    nombres = [p["nombre"] for p in r.json()]
+    assert "Bomba X" in nombres
+    assert "Empaque Y" not in nombres
+
+
+def test_listar_q_sin_resultados(client, admin_token):
+    h = {"Authorization": f"Bearer {admin_token}"}
+    client.post("/api/productos/", json={"nombre": "Cualquier producto", "precio_venta": "10"}, headers=h)
+    r = client.get("/api/productos/?q=nonexistentxyz123", headers=h)
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_listar_q_sin_duplicados_con_multiples_tags(client, admin_token):
+    h = {"Authorization": f"Bearer {admin_token}"}
+    client.post(
+        "/api/productos/",
+        json={"nombre": "MultiTag", "tags": ["motor", "transmision", "freno"], "precio_venta": "10"},
+        headers=h,
+    )
+    r = client.get("/api/productos/?q=multi", headers=h)
+    assert r.status_code == 200
+    rows = r.json()
+    nombres = [p["nombre"] for p in rows]
+    assert nombres.count("MultiTag") == 1
+
+
+def test_buscar_producto_por_marca(client, admin_token):
+    h = {"Authorization": f"Bearer {admin_token}"}
+    m = client.post("/api/marcas/", json={"nombre": "Shimano"}, headers=h).json()
+    client.post("/api/productos/", json={"nombre": "Cadena bici", "marca_id": m["id"], "precio_venta": "10"}, headers=h)
+    r = client.get("/api/productos/buscar?q=shimano", headers=h)
+    assert r.status_code == 200
+    assert any(p["nombre"] == "Cadena bici" for p in r.json())
+
+
+def test_buscar_producto_por_tipo(client, admin_token):
+    h = {"Authorization": f"Bearer {admin_token}"}
+    t = client.post("/api/tipos-producto/", json={"nombre": "neumatico"}, headers=h).json()
+    client.post("/api/productos/", json={"nombre": "Llanta R15", "tipos": [t["id"]], "precio_venta": "10"}, headers=h)
+    r = client.get("/api/productos/buscar?q=neumatico", headers=h)
+    assert r.status_code == 200
+    assert any(p["nombre"] == "Llanta R15" for p in r.json())
+
+
 def test_buscar_producto_acento_en_query(client, admin_token):
     client.post("/api/productos/", json={"nombre": "Filtro aceite motor", "precio_venta": "25.00"}, headers={"Authorization": f"Bearer {admin_token}"})
     r = client.get("/api/productos/buscar?q=aceité", headers={"Authorization": f"Bearer {admin_token}"})
