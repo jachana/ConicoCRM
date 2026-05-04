@@ -32,11 +32,17 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "sales gets Failed to load resource: the server responded with a status of 403 (), but they should just not be able to edit fields, not be rejected on save",
       "labels": [],
-      "desc": "",
-      "checklist": []
+      "desc": "**Resumen** — Los vendedores veían botones de edición en empresas y facturas, pero al intentar usarlos recibían error 403. Ahora esos botones se ocultan para evitar confusiones.\n\n**Cambios / Decisiones** — Se ocultaron los botones de Agregar, Editar y Eliminar en la vista de Empresas cuando el usuario es vendedor. En FacturaDetalle, se ocultó el botón Editar y la opción de borrar bajo la misma condición. Se ajustó EmpresaDetailModal y EmpresaTabResumen para aceptar onEdit opcional, permitiendo que el botón desaparezca cuando no se pasa esa función.",
+      "checklist": [
+        "Ingresar como vendedor y abrir listado de empresas",
+        "Verificar que NO aparecen botones de Agregar, Editar ni Eliminar",
+        "Abrir detalle de una factura y confirmar que no hay botón Editar",
+        "Revisar que no se puede eliminar filas de la tabla de factura",
+        "Ingresar como admin y verificar que los botones sí aparecen"
+      ]
     }
   ]
 }
