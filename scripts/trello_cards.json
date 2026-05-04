@@ -32,22 +32,11 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "revision de digito verificador debe aplicar a todas las instancias de RUT",
-      "labels": [
-        "Core",
-        "DTE/SII",
-        "Size:L"
-      ],
-      "desc": "**Resumen** — Aplicar validación de dígito verificador RUT en todos los formularios y APIs donde se ingresa un RUT, rechazando valores inválidos tanto en frontend como en backend.\n\n**Cambios / Decisiones** — Se añadió `@field_validator(\"rut\")` en schemas `ClienteBase`, `ClienteUpdate`, `ProveedorBase` y `ProveedorUpdate` para validar DV antes de guardar. En frontend, se agregó feedback inmediato en `Clientes.tsx` y `Proveedores.tsx` con validación en `onBlur` y al enviar. Se actualizaron tests existentes y se agregaron casos para RUT inválido (`test_crear_cliente_rut_invalido_rechazado`, etc).",
-      "checklist": [
-        "Ingresar RUT 12.345.678-0 en formulario de cliente y verificar error",
-        "Enviar POST /api/clientes con RUT inválido y verificar HTTP 422",
-        "Editar proveedor con RUT malformado y confirmar rechazo en guardado",
-        "Probar RUT 1-9 en contacto y verificar error de DV inmediato",
-        "Revisar que formularios muestren error sin recargar la página",
-        "Ejecutar tests de cliente y proveedor con RUT inválido y confirmar fallo controlado"
-      ]
+      "list": "In progress",
+      "name": "sales gets Failed to load resource: the server responded with a status of 403 (), but they should just not be able to edit fields, not be rejected on save",
+      "labels": [],
+      "desc": "",
+      "checklist": []
     }
   ]
 }
