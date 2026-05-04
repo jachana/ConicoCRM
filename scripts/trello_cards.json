@@ -32,21 +32,26 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "Save button on Edit empresa is not working",
+      "list": "In progress",
+      "name": "busqueda en catalogo de productos no funciona",
       "labels": [
         "Core",
-        "Blocked",
         "Size:M"
       ],
-      "desc": "**Resumen** — El botón de guardar en el formulario de edición de empresa no funcionaba cuando la empresa tenía un RUT con dígito verificador inválido. Esto impedía guardar cambios válidos en la edición.\n\n**Cambios / Decisiones** — Se corrigió la validación condicional del RUT en modo edición. En `frontend/src/pages/Empresas.tsx`, se ajustó el comportamiento para no ejecutar `validateRut()` en modo edición, ya que el campo está deshabilitado y el dígito verificador no puede modificarse. Esto evita fallos silenciosos al guardar empresas con RUTs legacy.",
+      "desc": "**Contexto / Problema**\nLa búsqueda en el catálogo de productos no retorna resultados esperados o responde muy lentamente, impactando directamente la usabilidad del módulo de catálogos y la productividad del usuario.\n\n**Acceptance Criteria**\n- Búsqueda por nombre de producto retorna resultados relevantes en <500ms para catálogos con 1000+ SKUs.\n- Búsqueda funciona correctamente con productos existentes en la BD (sin resultados vacíos falsos).\n- Filtros frontend aplican correctamente sin duplicados ni pérdida de resultados.\n- Permisos de tenant se respetan: usuario solo ve productos del catálogo asignado.\n- Query SQL en backend utiliza índices apropiados (sin full table scans).\n\n**Definition of Done**\n- Tests unitarios en backend validan lógica LIKE/búsqueda con casos límite (caracteres especiales, acentos, espacios).\n- Tests de integración confirman respuesta <500ms con dataset de prueba.\n- Profiler/EXPLAIN plan aplicado; índices faltantes creados o query optimizada.\n- Cambios deployados a staging y validados con datos reales de cliente piloto.\n- Trello card movido a \"In review\" con enlace a staging.\n\n**Notas tecnicas**\n- Revisar endpoint: `/api/catalog/search?q=...&tenant_id=...`\n- Tablas: `products`, `catalogs`, `catalog_products`, `tenants`.\n- Verificar índices en columna `name` (products) y relación tenant_id.\n- Frontend filter logic: archivo probable `/src/pages/Catalog/SearchFilter.jsx` o similar.\n- Considerar caching si búsquedas frecuentes (Redis si está disponible).\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir formulario de editar empresa con RUT inválido",
-        "Cambiar un campo editable (ej. nombre)",
-        "Hacer clic en Guardar y verificar éxito",
-        "Verificar que no hay errores en consola",
-        "Confirmar que cambios persisten al recargar",
-        "Revisar Network tab: PATCH /empresas/:id responde 200"
+        "Verificar query search backend (LIKE, índice DB)",
+        "Testear con productos reales existentes",
+        "Revisar frontend filter lógica",
+        "Validar permisos tenant sobre catálogo",
+        "Profiler para performance (índices DB faltantes?)",
+        "Reproducir bug: búsqueda con producto existente debe retornar resultado (verificar con 3+ ejemplos reales)",
+        "Optimizar query backend: agregar índices faltantes en `products.name` y aplicar EXPLAIN PLAN",
+        "Revisar filtros frontend: validar que no eliminan resultados válidos, testear con acentos y caracteres especiales",
+        "Validar permisos tenant: confirmar usuario solo ve productos del catálogo asignado",
+        "Profiler backend + medir tiempo respuesta; debe ser <500ms para 1000+ productos",
+        "Tests: unitarios (query search), integración (endpoint), performance threshold",
+        "Deploy a staging + validar con datos reales; mover card a In review"
       ]
     }
   ]
