@@ -152,50 +152,16 @@ def _check_duplicate_caf(
 @router.post("/", status_code=status.HTTP_200_OK)
 def upload_cafs(
     files: list[UploadFile] = File(...),
-    empresa_id: int = Query(..., description="Enterprise ID that owns these CAFs"),
     perms: tuple[User, Session] = Depends(require_admin),
 ):
-    """
-    Upload and process multiple CAF XML files.
+    current_user, db = perms
 
-    Multi-file upload with per-file validation. Each file is processed independently:
-    - Validates XML structure and folio ranges
-    - Detects overlaps with existing CAFs (409 warning)
-    - Persists to database with transaction per file
-    - Returns detailed report per file
-
-    Args:
-        files: List of .xml CAF files (FastAPI UploadFile)
-        empresa_id: Enterprise ID (required)
-
-    Returns:
-        {
-          "success": bool,
-          "total_files": int,
-          "processed": int,
-          "results": [
-            {
-              "filename": str,
-              "valid": bool,
-              "tipo_dte": str,
-              "num_inicio": int,
-              "num_fin": int,
-              "rut_emisor": str,
-              "message": str,
-              "errors": [str],
-              "warnings": [str],
-              "caf_id": int | null
-            }
-          ]
-        }
-
-    Raises:
-        400: Invalid file format (not XML), missing empresa_id
-        401: Unauthorized (not admin)
-        404: Empresa not found
-        500: Database error
-    """
-    _, db = perms
+    empresa_id = current_user.empresa_id
+    if not empresa_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tu usuario no está asociado a ninguna empresa",
+        )
 
     # Validate empresa exists
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
@@ -379,47 +345,16 @@ def _process_single_caf_file(
 
 @router.get("/", status_code=status.HTTP_200_OK)
 def list_cafs(
-    empresa_id: int = Query(..., description="Enterprise ID"),
     perms: tuple[User, Session] = Depends(require_admin),
 ):
-    """
-    Retrieve all CAFs for an empresa with consumption details.
+    current_user, db = perms
 
-    Returns list of CAFs with calculated fields:
-    - total_folios: num_fin - num_inicio + 1
-    - folios_restantes: total_folios - consumido
-    - porcentaje_consumido: (consumido / total_folios) * 100
-
-    Args:
-        empresa_id: Enterprise ID (required)
-
-    Returns:
-        {
-          "count": int,
-          "cafs": [
-            {
-              "id": int,
-              "empresa_id": int,
-              "tipo_dte": str,
-              "num_inicio": int,
-              "num_fin": int,
-              "vigente": bool,
-              "consumido": int,
-              "total_folios": int,
-              "folios_restantes": int,
-              "porcentaje_consumido": float,
-              "fecha_carga": str,
-              "created_at": str,
-              "updated_at": str
-            }
-          ]
-        }
-
-    Raises:
-        401: Unauthorized (not admin)
-        404: Empresa not found
-    """
-    _, db = perms
+    empresa_id = current_user.empresa_id
+    if not empresa_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tu usuario no está asociado a ninguna empresa",
+        )
 
     # Validate empresa exists
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()

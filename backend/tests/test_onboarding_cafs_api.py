@@ -31,36 +31,6 @@ def client():
 
 
 @pytest.fixture
-def admin_user(db: Session) -> User:
-    """Create admin user."""
-    user = User(
-        email="admin@test.com",
-        name="Admin User",
-        hashed_password="dummy_hash",
-        role="admin",
-        is_active=True,
-    )
-    db.add(user)
-    db.commit()
-    return user
-
-
-@pytest.fixture
-def non_admin_user(db: Session) -> User:
-    """Create non-admin user."""
-    user = User(
-        email="user@test.com",
-        name="Test User",
-        hashed_password="dummy_hash",
-        role="user",
-        is_active=True,
-    )
-    db.add(user)
-    db.commit()
-    return user
-
-
-@pytest.fixture
 def empresa(db: Session) -> Empresa:
     """Create test empresa."""
     empresa = Empresa(
@@ -82,6 +52,69 @@ def another_empresa(db: Session) -> Empresa:
     db.add(empresa)
     db.commit()
     return empresa
+
+
+@pytest.fixture
+def admin_user(db: Session, empresa: Empresa) -> User:
+    """Create admin user linked to empresa."""
+    user = User(
+        email="admin@test.com",
+        name="Admin User",
+        hashed_password="dummy_hash",
+        role="admin",
+        is_active=True,
+        empresa_id=empresa.id,
+    )
+    db.add(user)
+    db.commit()
+    return user
+
+
+@pytest.fixture
+def admin_user_no_empresa(db: Session) -> User:
+    """Create admin user with no empresa_id."""
+    user = User(
+        email="admin_no_empresa@test.com",
+        name="Admin No Empresa",
+        hashed_password="dummy_hash",
+        role="admin",
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    return user
+
+
+@pytest.fixture
+def admin_user_another_empresa(db: Session, another_empresa: Empresa) -> User:
+    """Create admin user linked to another_empresa."""
+    user = User(
+        email="admin2@test.com",
+        name="Admin User 2",
+        hashed_password="dummy_hash",
+        role="admin",
+        is_active=True,
+        empresa_id=another_empresa.id,
+    )
+    db.add(user)
+    db.commit()
+    return user
+
+
+@pytest.fixture
+def non_admin_user(db: Session, empresa: Empresa) -> User:
+    """Create non-admin user."""
+    user = User(
+        email="user@test.com",
+        name="Test User",
+        hashed_password="dummy_hash",
+        role="user",
+        is_active=True,
+        empresa_id=empresa.id,
+    )
+    db.add(user)
+    db.commit()
+    return user
 
 
 # Valid CAF XML samples
@@ -186,7 +219,6 @@ class TestPostCAFUpload:
         db: Session,
     ):
         """Test uploading a single valid CAF XML file."""
-        # Mock authentication
         from app.api.auth import get_current_user
         client.app.dependency_overrides[get_current_user] = lambda: admin_user
 
@@ -194,10 +226,7 @@ class TestPostCAFUpload:
             ("files", ("caf_33.xml", io.BytesIO(VALID_CAF_XML_33.encode("utf-8")), "application/xml")),
         ]
 
-        response = client.post(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-            files=files,
-        )
+        response = client.post("/api/onboarding/cafs/", files=files)
 
         assert response.status_code == 200
         data = response.json()
@@ -216,7 +245,6 @@ class TestPostCAFUpload:
         assert result["message"] == "CAF cargado exitosamente"
         assert result["caf_id"] is not None
 
-        # Verify CAF was saved to database
         saved_caf = db.query(CAF).filter(CAF.id == result["caf_id"]).first()
         assert saved_caf is not None
         assert saved_caf.empresa_id == empresa.id
@@ -228,7 +256,6 @@ class TestPostCAFUpload:
         self,
         client: TestClient,
         admin_user: User,
-        empresa: Empresa,
         db: Session,
     ):
         """Test uploading multiple valid CAF XML files."""
@@ -240,10 +267,7 @@ class TestPostCAFUpload:
             ("files", ("caf_39.xml", io.BytesIO(VALID_CAF_XML_39.encode("utf-8")), "application/xml")),
         ]
 
-        response = client.post(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-            files=files,
-        )
+        response = client.post("/api/onboarding/cafs/", files=files)
 
         assert response.status_code == 200
         data = response.json()
@@ -252,7 +276,6 @@ class TestPostCAFUpload:
         assert data["processed"] == 2
         assert len(data["results"]) == 2
 
-        # Both should be valid
         for result in data["results"]:
             assert result["valid"] is True
             assert result["caf_id"] is not None
@@ -261,7 +284,6 @@ class TestPostCAFUpload:
         self,
         client: TestClient,
         admin_user: User,
-        empresa: Empresa,
     ):
         """Test uploading invalid XML file."""
         from app.api.auth import get_current_user
@@ -271,10 +293,7 @@ class TestPostCAFUpload:
             ("files", ("caf_invalid.xml", io.BytesIO(INVALID_XML_MALFORMED.encode("utf-8")), "application/xml")),
         ]
 
-        response = client.post(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-            files=files,
-        )
+        response = client.post("/api/onboarding/cafs/", files=files)
 
         assert response.status_code == 200
         data = response.json()
@@ -287,7 +306,6 @@ class TestPostCAFUpload:
         self,
         client: TestClient,
         admin_user: User,
-        empresa: Empresa,
     ):
         """Test uploading non-XML file (should be rejected)."""
         from app.api.auth import get_current_user
@@ -297,10 +315,7 @@ class TestPostCAFUpload:
             ("files", ("document.txt", io.BytesIO(b"This is not XML"), "text/plain")),
         ]
 
-        response = client.post(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-            files=files,
-        )
+        response = client.post("/api/onboarding/cafs/", files=files)
 
         assert response.status_code == 200
         data = response.json()
@@ -312,10 +327,9 @@ class TestPostCAFUpload:
         self,
         client: TestClient,
         admin_user: User,
-        empresa: Empresa,
         db: Session,
     ):
-        """Test uploading multiple files with mixed results (some valid, some invalid)."""
+        """Test uploading multiple files with mixed results."""
         from app.api.auth import get_current_user
         client.app.dependency_overrides[get_current_user] = lambda: admin_user
 
@@ -325,70 +339,41 @@ class TestPostCAFUpload:
             ("files", ("caf_39.xml", io.BytesIO(VALID_CAF_XML_39.encode("utf-8")), "application/xml")),
         ]
 
-        response = client.post(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-            files=files,
-        )
+        response = client.post("/api/onboarding/cafs/", files=files)
 
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
         assert data["total_files"] == 3
-        assert data["processed"] == 2  # Only 2 valid ones
+        assert data["processed"] == 2
         assert len(data["results"]) == 3
 
-        # Check each result
         assert data["results"][0]["valid"] is True
         assert data["results"][1]["valid"] is False
         assert data["results"][2]["valid"] is True
 
-    def test_upload_missing_empresa_id(
+    def test_upload_user_without_empresa_returns_400(
         self,
         client: TestClient,
-        admin_user: User,
+        admin_user_no_empresa: User,
     ):
-        """Test upload without empresa_id (should fail)."""
+        """Admin user not linked to any empresa gets 400."""
         from app.api.auth import get_current_user
-        client.app.dependency_overrides[get_current_user] = lambda: admin_user
+        client.app.dependency_overrides[get_current_user] = lambda: admin_user_no_empresa
 
         files = [
             ("files", ("caf_33.xml", io.BytesIO(VALID_CAF_XML_33.encode("utf-8")), "application/xml")),
         ]
 
-        response = client.post(
-            "/api/onboarding/cafs/",
-            files=files,
-        )
+        response = client.post("/api/onboarding/cafs/", files=files)
 
-        # Missing query parameter should return 422
-        assert response.status_code == 422
-
-    def test_upload_nonexistent_empresa(
-        self,
-        client: TestClient,
-        admin_user: User,
-    ):
-        """Test upload for nonexistent empresa (should fail)."""
-        from app.api.auth import get_current_user
-        client.app.dependency_overrides[get_current_user] = lambda: admin_user
-
-        files = [
-            ("files", ("caf_33.xml", io.BytesIO(VALID_CAF_XML_33.encode("utf-8")), "application/xml")),
-        ]
-
-        response = client.post(
-            "/api/onboarding/cafs/?empresa_id=99999",
-            files=files,
-        )
-
-        assert response.status_code == 404
-        assert "no encontrada" in response.json()["detail"]
+        assert response.status_code == 400
+        assert "empresa" in response.json()["detail"].lower()
 
     def test_upload_unauthorized_non_admin(
         self,
         client: TestClient,
         non_admin_user: User,
-        empresa: Empresa,
     ):
         """Test upload by non-admin user (should fail)."""
         from app.api.auth import get_current_user
@@ -398,10 +383,7 @@ class TestPostCAFUpload:
             ("files", ("caf_33.xml", io.BytesIO(VALID_CAF_XML_33.encode("utf-8")), "application/xml")),
         ]
 
-        response = client.post(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-            files=files,
-        )
+        response = client.post("/api/onboarding/cafs/", files=files)
 
         assert response.status_code == 403
         assert "admin" in response.json()["detail"].lower()
@@ -410,7 +392,6 @@ class TestPostCAFUpload:
         self,
         client: TestClient,
         admin_user: User,
-        empresa: Empresa,
         db: Session,
     ):
         """Test uploading the same CAF twice (idempotency check)."""
@@ -421,65 +402,48 @@ class TestPostCAFUpload:
             ("files", ("caf_33.xml", io.BytesIO(VALID_CAF_XML_33.encode("utf-8")), "application/xml")),
         ]
 
-        # First upload
-        response1 = client.post(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-            files=files,
-        )
+        response1 = client.post("/api/onboarding/cafs/", files=files)
         assert response1.status_code == 200
         assert response1.json()["processed"] == 1
         first_caf_id = response1.json()["results"][0]["caf_id"]
 
-        # Second upload (same file)
         files = [
             ("files", ("caf_33.xml", io.BytesIO(VALID_CAF_XML_33.encode("utf-8")), "application/xml")),
         ]
-        response2 = client.post(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-            files=files,
-        )
+        response2 = client.post("/api/onboarding/cafs/", files=files)
 
         assert response2.status_code == 200
         data = response2.json()
-        assert data["processed"] == 1  # Still counts as processed (valid result)
+        assert data["processed"] == 1
         assert data["results"][0]["valid"] is True
-        assert data["results"][0]["caf_id"] == first_caf_id  # Same CAF ID
-        assert "já existe" in data["results"][0]["message"].lower() or "existe" in data["results"][0]["message"].lower()
+        assert data["results"][0]["caf_id"] == first_caf_id
+        assert "existe" in data["results"][0]["message"].lower()
 
     def test_upload_overlap_detection(
         self,
         client: TestClient,
         admin_user: User,
-        empresa: Empresa,
         db: Session,
     ):
-        """Test overlap detection (409-like handling but still returns 200)."""
+        """Test overlap detection."""
         from app.api.auth import get_current_user
         client.app.dependency_overrides[get_current_user] = lambda: admin_user
 
-        # Upload first CAF
         files1 = [
             ("files", ("caf_39.xml", io.BytesIO(VALID_CAF_XML_39.encode("utf-8")), "application/xml")),
         ]
-        response1 = client.post(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-            files=files1,
-        )
+        response1 = client.post("/api/onboarding/cafs/", files=files1)
         assert response1.status_code == 200
         assert response1.json()["processed"] == 1
 
-        # Try to upload overlapping CAF
         files2 = [
             ("files", ("caf_39_overlap.xml", io.BytesIO(VALID_CAF_XML_39_OVERLAP.encode("utf-8")), "application/xml")),
         ]
-        response2 = client.post(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-            files=files2,
-        )
+        response2 = client.post("/api/onboarding/cafs/", files=files2)
 
         assert response2.status_code == 200
         data = response2.json()
-        assert data["processed"] == 0  # Overlap prevents processing
+        assert data["processed"] == 0
         assert data["results"][0]["valid"] is False
         assert any("superpone" in err.lower() for err in data["results"][0]["errors"])
 
@@ -487,33 +451,27 @@ class TestPostCAFUpload:
         self,
         client: TestClient,
         admin_user: User,
-        empresa: Empresa,
-        another_empresa: Empresa,
+        admin_user_another_empresa: User,
         db: Session,
     ):
-        """Test that overlaps only apply to the same empresa."""
+        """Test that overlaps only apply to the same empresa (two different admin users)."""
         from app.api.auth import get_current_user
-        client.app.dependency_overrides[get_current_user] = lambda: admin_user
 
-        # Upload CAF to first empresa
+        # Upload CAF as first admin (empresa 1)
+        client.app.dependency_overrides[get_current_user] = lambda: admin_user
         files1 = [
             ("files", ("caf_39.xml", io.BytesIO(VALID_CAF_XML_39.encode("utf-8")), "application/xml")),
         ]
-        response1 = client.post(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-            files=files1,
-        )
+        response1 = client.post("/api/onboarding/cafs/", files=files1)
         assert response1.status_code == 200
         assert response1.json()["processed"] == 1
 
-        # Upload same range to second empresa (should work)
+        # Upload same range as second admin (empresa 2) — should work
+        client.app.dependency_overrides[get_current_user] = lambda: admin_user_another_empresa
         files2 = [
             ("files", ("caf_39.xml", io.BytesIO(VALID_CAF_XML_39.encode("utf-8")), "application/xml")),
         ]
-        response2 = client.post(
-            f"/api/onboarding/cafs/?empresa_id={another_empresa.id}",
-            files=files2,
-        )
+        response2 = client.post("/api/onboarding/cafs/", files=files2)
 
         assert response2.status_code == 200
         assert response2.json()["processed"] == 1
@@ -526,15 +484,12 @@ class TestGetCAFsList:
         self,
         client: TestClient,
         admin_user: User,
-        empresa: Empresa,
     ):
         """Test listing CAFs when none exist."""
         from app.api.auth import get_current_user
         client.app.dependency_overrides[get_current_user] = lambda: admin_user
 
-        response = client.get(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-        )
+        response = client.get("/api/onboarding/cafs/")
 
         assert response.status_code == 200
         data = response.json()
@@ -552,7 +507,6 @@ class TestGetCAFsList:
         from app.api.auth import get_current_user
         client.app.dependency_overrides[get_current_user] = lambda: admin_user
 
-        # Create CAF directly in DB
         caf = CAF(
             empresa_id=empresa.id,
             tipo_dte="33",
@@ -565,9 +519,7 @@ class TestGetCAFsList:
         db.add(caf)
         db.commit()
 
-        response = client.get(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-        )
+        response = client.get("/api/onboarding/cafs/")
 
         assert response.status_code == 200
         data = response.json()
@@ -584,34 +536,29 @@ class TestGetCAFsList:
         assert caf_data["porcentaje_consumido"] == 25.0
         assert caf_data["vigente"] is True
 
-    def test_list_cafs_nonexistent_empresa(
+    def test_list_cafs_user_without_empresa_returns_400(
         self,
         client: TestClient,
-        admin_user: User,
+        admin_user_no_empresa: User,
     ):
-        """Test listing CAFs for nonexistent empresa."""
+        """Admin user not linked to empresa gets 400."""
         from app.api.auth import get_current_user
-        client.app.dependency_overrides[get_current_user] = lambda: admin_user
+        client.app.dependency_overrides[get_current_user] = lambda: admin_user_no_empresa
 
-        response = client.get(
-            "/api/onboarding/cafs/?empresa_id=99999",
-        )
+        response = client.get("/api/onboarding/cafs/")
 
-        assert response.status_code == 404
+        assert response.status_code == 400
 
     def test_list_cafs_unauthorized(
         self,
         client: TestClient,
         non_admin_user: User,
-        empresa: Empresa,
     ):
         """Test listing CAFs as non-admin."""
         from app.api.auth import get_current_user
         client.app.dependency_overrides[get_current_user] = lambda: non_admin_user
 
-        response = client.get(
-            f"/api/onboarding/cafs/?empresa_id={empresa.id}",
-        )
+        response = client.get("/api/onboarding/cafs/")
 
         assert response.status_code == 403
 
@@ -642,9 +589,7 @@ class TestGetSingleCAF:
         db.add(caf)
         db.commit()
 
-        response = client.get(
-            f"/api/onboarding/cafs/{caf.id}",
-        )
+        response = client.get(f"/api/onboarding/cafs/{caf.id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -666,9 +611,7 @@ class TestGetSingleCAF:
         from app.api.auth import get_current_user
         client.app.dependency_overrides[get_current_user] = lambda: admin_user
 
-        response = client.get(
-            "/api/onboarding/cafs/99999",
-        )
+        response = client.get("/api/onboarding/cafs/99999")
 
         assert response.status_code == 404
 
@@ -693,8 +636,6 @@ class TestGetSingleCAF:
         db.add(caf)
         db.commit()
 
-        response = client.get(
-            f"/api/onboarding/cafs/{caf.id}",
-        )
+        response = client.get(f"/api/onboarding/cafs/{caf.id}")
 
         assert response.status_code == 403
