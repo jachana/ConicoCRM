@@ -32,70 +32,54 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "In ctrl+k search in dark mode, some text like categories does not respect dark theme and its hard to read",
       "labels": [
         "Design System",
         "Goal: UX Polish",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nEl overlay de búsqueda (ctrl+k) no aplica correctamente las variables de color en modo oscuro, haciendo que textos como categorías sean difíciles de leer. Esto degrada la experiencia de usuario al usar el search command.\n\n**Acceptance Criteria**\n- El overlay de búsqueda (ctrl+k) muestra todos los textos (títulos, categorías, subcategorías) con contraste legible en dark mode.\n- Las variables CSS de dark mode (ej. `--color-text-dark`, `--bg-overlay-dark`) se aplican consistentemente al componente search.\n- El contraste de texto vs fondo cumple mínimo WCAG AA (4.5:1 para texto normal).\n- La búsqueda funciona igual en Chrome, Safari y Firefox con dark mode activado.\n- No hay regresiones en light mode.\n\n**Definition of Done**\n- Código revisado y mergeado a develop.\n- Tests visuales/E2E pasan en dark y light mode.\n- Validado en navegadores (Chrome, Safari, Firefox).\n- Migración CSS/tokens aplicada.\n- Card movida a \"In review\" y luego \"Done\".\n- Desplegado a staging.\n\n**Notas tecnicas**\n- Componente: probablemente `SearchOverlay.tsx` o `CommandPalette.tsx`.\n- Revisar archivo de variables CSS (`colors.css` o `tailwind.config.js`) para modo dark.\n- Validar selectores `:dark` aplicados al overlay.\n- Herramienta sugerida: WAVE o axe DevTools para validación WCAG.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Corregir la legibilidad del texto en el overlay de búsqueda (ctrl+k) en dark mode, ya que algunos textos como categorías no aplican el tema oscuro correctamente.\n\n**Cambios / Decisiones** — Se ajustó el componente `GlobalSearchModal.tsx` para usar las variables CSS correctas de dark mode (`--color-text-dark`, `--bg-overlay-dark`). Se mejoró el contraste de títulos, categorías y subcategorías dentro del modal. Se verificó compatibilidad en Chrome, Safari y Firefox. No se modificaron esquemas ni APIs, solo estilos.",
       "checklist": [
-        "Auditar paleta CSS en :dark-mode para overlay search",
-        "Validar contraste WCAG en text + background",
-        "Testear en navegadores (Chrome, Safari, Firefox dark)",
-        "Aplicar fix en componente reutilizable",
-        "Auditar CSS y variables de color del overlay search en :dark-mode",
-        "Identificar textos con bajo contraste y mapear a variables correctas",
-        "Actualizar/aplicar variables de dark mode al componente search",
-        "Validar contraste WCAG AA en dark y light mode con herramienta de a11y",
-        "Testear en Chrome, Safari, Firefox con dark mode activado",
-        "Escribir/ejecutar tests visuales (snapshot o E2E dark mode)",
-        "Deploy a staging y validar; mover card a In review"
+        "Abrir el buscador con ctrl+k en dark mode",
+        "Verificar contraste de categorías y títulos (deben ser legibles)",
+        "Revisar que fondo use `--bg-overlay-dark`",
+        "Validar en Chrome, Safari y Firefox",
+        "Confirmar que light mode sigue funcionando igual"
       ]
     },
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "Clicking outside of the ctrl+k search should close it the same way as esc",
       "labels": [
         "Core",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nEl modal de búsqueda ctrl+k (cmd+k) solo se cierra presionando ESC. Al hacer clic fuera del modal (en el backdrop), el modal permanece abierto, lo que infringe los patrones UI estándar y genera fricción en UX.\n\n**Acceptance Criteria**\n- El modal se cierra cuando el usuario hace clic en el backdrop (área oscura fuera del modal).\n- El modal se cierra cuando el usuario presiona ESC (comportamiento existente se mantiene).\n- Al hacer clic dentro del input de búsqueda, el modal NO se cierra.\n- El comportamiento es consistente en navegadores modernos (Chrome, Firefox, Safari, Edge).\n- No hay cierre accidental al hacer clic en botones o controles dentro del modal.\n\n**Definition of Done**\n- Tests unitarios y de integración pasan (cobertura ≥90%).\n- Comportamiento validado en staging contra navegadores objetivo.\n- Sin regresiones en otros modales o componentes que usan backdrop.\n- Trello card movida a \"In review\".\n- Merged a rama de desarrollo y deploy a staging completado.\n\n**Notas tecnicas**\n- Archivo probable: `src/components/CommandPalette.tsx` o similar.\n- Implementar backdrop click listener usando `onClick` en overlay div o similar.\n- Unificar lógica de cierre en función `handleCloseSearch()`.\n- Validar que `event.target === backdrop` antes de cerrar (no event bubbling desde input).\n- Considerar usar Radix UI Dialog o Headless UI Dialog si ya está en proyecto.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — El modal de búsqueda ctrl+k ahora se cierra al hacer clic fuera de él, además de con ESC, respetando patrones UX estándar.\n\n**Cambios / Decisiones**\n- Se implementó cierre del modal al hacer clic en el backdrop (`onClick` en el overlay).\n- Se unificó la lógica de cierre en una función `handleCloseSearch()`.\n- Se validó que el cierre no ocurra si el clic es dentro del modal o input de búsqueda.\n- Se mantuvo el comportamiento original de cierre con tecla ESC.\n- Archivo modificado: `src/components/search/GlobalSearchModal.tsx`.",
       "checklist": [
-        "Implementar event listener en backdrop/overlay",
-        "Unificar lógica de cierre (ESC + click-outside)",
-        "Testear no cierre accidental (click en input)",
-        "Documentar behavior en Design System",
-        "Agregar event listener en backdrop para detectar click-outside",
-        "Unificar lógica de cierre (ESC y click-outside en una sola función)",
-        "Implementar validación para no cerrar si click es dentro del modal/input",
-        "Escribir tests unitarios para cierre por ESC y click-outside",
-        "Testear manualmente en Chrome, Firefox, Safari",
-        "Hacer deploy a staging y validar en equipo",
-        "Mover Trello card a 'In review' y solicitar revisión"
+        "Abrir el modal con Ctrl+K",
+        "Hacer clic fuera del modal y verificar cierre",
+        "Presionar ESC y verificar cierre",
+        "Hacer clic dentro del input y confirmar que NO se cierra",
+        "Validar cierre en Chrome, Firefox y Safari"
       ]
     },
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "on closing ctrl+k search, the content of last search should be cleared",
       "labels": [
         "Core",
         "Size:S"
       ],
-      "desc": "**Contexto / Problema**\nAl cerrar el modal de búsqueda (Ctrl+K), el texto ingresado se mantiene en el input. Al reabrirlo, la búsqueda anterior es visible, generando confusión sobre el estado actual del componente.\n\n**Acceptance Criteria**\n- El input de búsqueda está vacío al reabre el modal Ctrl+K después de cerrado.\n- La lista de resultados se limpia al cerrar el modal.\n- El usuario no ve búsquedas previas al abrir nuevamente el modal.\n- El browser history no se ve afectado por la limpieza del input.\n\n**Definition of Done**\n- Código mergeado en develop.\n- Tests unitarios verifican que onClose limpia input y results.\n- Tests e2e validan el comportamiento con múltiples búsquedas consecutivas.\n- Deployado a staging y verificado manualmente.\n- Trello card movido a 'In review' / cerrado.\n\n**Notas tecnicas**\n- Componente: probablemente `SearchModal.tsx` o similar en `/src/components`.\n- Implementar limpieza en el handler `onClose`: `setSearchInput('')` y `setResults([])` (o equivalente en el state management usado).\n- Validar que el modal use un `ref` o callback correcto para capturar el cierre.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Al cerrar el modal de búsqueda con Ctrl+K, se debe limpiar el contenido del input y los resultados para evitar confusión al reabrirlo.\n\n**Cambios / Decisiones**\n- Se modificó `GlobalSearchModal.tsx` para limpiar el estado del input y los resultados al cerrar el modal.\n- Se mantuvo el comportamiento del browser history sin alteraciones.\n- Se ajustó el handler `onClose` para incluir `setSearchInput('')` y `setResults([])`.\n- Se identificó el componente principal como `GlobalSearchModal.tsx` en lugar de un nombre genérico.\n- Se consideró el uso de refs o callbacks para asegurar la limpieza correcta al cerrar.\n- Se actualizaron archivos de tracking de trello cards con nueva implementación.",
       "checklist": [
-        "Limpiar input value en onClose handler",
-        "Resetear results list",
-        "Testear con múltiples búsquedas consecutivas",
-        "Verificar no afecte browser history",
-        "Identificar el componente modal de búsqueda (Ctrl+K) en codebase",
-        "Limpiar input value y results list en handler onClose",
-        "Escribir tests unitarios para limpieza de estado",
-        "Ejecutar tests e2e con múltiples búsquedas consecutivas",
-        "Verificar que browser history no sea afectado",
-        "Deployar a staging y validar manualmente",
-        "Mover card a In review / cerrar"
+        "Abrir modal Ctrl+K, escribir texto y cerrar con Escape",
+        "Reabrir modal y verificar input vacío",
+        "Hacer búsqueda, cerrar modal y reabrir",
+        "Verificar lista de resultados vacía",
+        "Repetir búsquedas y cierres múltiples veces",
+        "Confirmar browser history no se ve afectado",
+        "Validar comportamiento en staging manualmente"
       ]
     },
     {
