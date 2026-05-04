@@ -23,7 +23,24 @@ Conflict rule: **online wins**. If local JSON disagrees with the board, `--pull`
 4. **Claim on Trello.** Set the chosen card's `list` to `In progress`, run `python scripts/trello_sync.py --apply`, commit with `chore(trello): claim <card name>`. `--apply` never deletes cards from Trello, so pruning local JSON is safe.
 5. **Do the work.**
 6. **Update Trello as state changes.** Move list, tick checklist items, append sub-tasks — edit local JSON for the active card, `--apply`, commit.
-7. **When the card ships.** Move it to `In review` (PR open) or the appropriate shipped list, `--apply`, commit. Then it can be removed from local JSON on the next pull/prune cycle.
+7. **When the card ships.** Use `--ship-review` (see below) — DO NOT just edit `list` to `In review` and `--apply`. The ship-review command rewrites the card description and checklist into the review-ready format the human reviewer expects.
+
+### Shipping a card → `In review` (mandatory format)
+
+When moving a card to `In review`, **always** use:
+
+```
+python scripts/trello_sync.py --ship-review --card "<unique substring>"
+```
+
+This regenerates the card via LLM (default haiku, `--model sonnet` for richer output) using the git log between the claim commit and HEAD:
+
+- **Description** is replaced with `**Resumen**` (1–2 sentence restatement of the ask) + `**Cambios / Decisiones**` (concrete bullets: real file paths, endpoints, schema changes, libs added).
+- **Subtareas checklist** is replaced (wiped + refilled) with 3–7 short imperative manual-test steps a reviewer can run by hand to verify the change works end-to-end.
+
+Auto-detects the "since" sha from the `chore(trello): claim <name>` commit. Override with `--since <sha>` if the claim commit is missing or wrong.
+
+This rule applies to **every** card move to `In review`, whether shipped via `auto_loop.py` (which does this automatically) or via interactive Claude Code work. Do not bypass it.
 
 ### When to push updates to Trello
 

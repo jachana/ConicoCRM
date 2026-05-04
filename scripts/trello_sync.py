@@ -589,6 +589,123 @@ def sync_checklist(card_id: str, items: list[str]) -> None:
              params={"name": label, "checked": "false"})
 
 
+REVIEW_SUMMARY_SYSTEM = """You document shipped Trello cards for a code review handoff.
+
+Given a card (name, original description) and the git log of the implementation
+since claim (commit messages + file stats), produce two artifacts:
+
+1. "description": markdown for the card description. Structure:
+     **Resumen** — 1-2 sentences restating the original ask in plain Spanish.
+     **Cambios / Decisiones** — bullet list of what was actually done and any
+     non-obvious design decisions (file moves, schema changes, API shape, libs added).
+   Be concrete. Reference real file paths / endpoints / functions visible in the log.
+   Keep it under 1500 chars. Do NOT include the commit hash list (the loop already
+   appends that). Spanish.
+
+2. "checklist": list of 3-7 short imperative steps a reviewer can run by hand to
+   verify the change works end-to-end. Each step <=120 chars. Spanish.
+   Prefer concrete UI/CLI/API actions ("Abrir /clientes y filtrar por RUT 76...",
+   "POST /api/x con payload {...} y verificar 200 y empresa_id en la respuesta").
+   No setup boilerplate ("clonar repo", "instalar deps") unless the card is about that.
+
+Return STRICT JSON only:
+{"description": "...", "checklist": ["step 1", "step 2", ...]}
+No prose, no code fences."""
+
+
+def summarize_for_review(card: dict, git_log_text: str,
+                         model_alias: str = "haiku",
+                         provider: str = "auto") -> dict | None:
+    """Best-effort: ask LLM for {description, checklist} for a shipped card.
+
+    Returns None on failure — caller should fall back to leaving the card as-is.
+    """
+    user = (
+        f"CARD NAME: {card.get('name', '')}\n\n"
+        f"ORIGINAL DESCRIPTION:\n{(card.get('desc') or '').strip() or '(empty)'}\n\n"
+        f"ORIGINAL CHECKLIST:\n"
+        + "\n".join(f"- {it}" for it in (card.get('checklist') or [])) + "\n\n"
+        f"GIT LOG SINCE CLAIM:\n{git_log_text or '(no log captured)'}"
+    )
+    try:
+        result = prompt_json(REVIEW_SUMMARY_SYSTEM, user,
+                             model_alias=model_alias, provider=provider)
+    except Exception as e:
+        print(f"  review-summary llm failed: {e}", file=sys.stderr)
+        return None
+    if not isinstance(result, dict):
+        return None
+    desc = (result.get("description") or "").strip()
+    items = result.get("checklist") or []
+    if not desc or not isinstance(items, list):
+        return None
+    items = [str(i).strip() for i in items if str(i).strip()]
+    if not items:
+        return None
+    return {"description": desc, "checklist": items}
+
+
+def git_log_range(from_sha: str, to_sha: str, max_chars: int = 8000) -> str:
+    """Commit log + per-commit file stats between from_sha (excl.) and to_sha (incl.)."""
+    try:
+        r = subprocess.run(
+            ["git", "log", "--reverse", "--stat",
+             "--pretty=format:%n--- %h %s%n%b", f"{from_sha}..{to_sha}"],
+            capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
+        )
+    except subprocess.CalledProcessError:
+        return ""
+    out = r.stdout or ""
+    if len(out) > max_chars:
+        out = out[:max_chars] + f"\n... [truncated; {len(r.stdout) - max_chars} more chars]"
+    return out
+
+
+def find_claim_sha(card_name: str, max_scan: int = 200) -> str | None:
+    """Find the parent of the 'chore(trello): claim <card>' commit, i.e. the sha
+    just before this card's work started. Returns None if no claim commit found.
+    """
+    try:
+        r = subprocess.run(
+            ["git", "log", f"-{max_scan}", "--pretty=format:%H%x09%s"],
+            capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
+        )
+    except subprocess.CalledProcessError:
+        return None
+    needle = f"claim {card_name}".lower()
+    for line in r.stdout.splitlines():
+        sha, _, subject = line.partition("\t")
+        if "chore(trello)" in subject.lower() and needle in subject.lower():
+            try:
+                p = subprocess.run(["git", "rev-parse", f"{sha}^"],
+                                   capture_output=True, text=True, check=True)
+                return p.stdout.strip() or None
+            except subprocess.CalledProcessError:
+                return None
+    return None
+
+
+def replace_subtareas(card_id: str, items: list[str], name: str = "Subtareas") -> None:
+    """Wipe the named checklist on a card and refill from `items`.
+
+    Unlike sync_checklist (additive), this ensures the checklist matches `items`
+    exactly. Used when shipping cards to "In review" so the checklist becomes
+    the manual-test plan, not a graveyard of original sub-tasks.
+    """
+    existing = fetch_card_checklists(card_id)
+    target = next((c for c in existing if c["name"] == name), None)
+    if target is not None:
+        http("DELETE", f"/checklists/{target['id']}")
+    target = http("POST", "/checklists", params={"idCard": card_id, "name": name})
+    for label in items:
+        if not label or not str(label).strip():
+            continue
+        http("POST", f"/checklists/{target['id']}/checkItems",
+             params={"name": str(label).strip(), "checked": "false"})
+
+
 def is_bare(card: dict) -> bool:
     return (not (card.get("desc") or "").strip()
             and not card.get("checklist")
@@ -989,6 +1106,78 @@ def link_commit(spec: dict, cards_path: Path, sha_arg: str, card_needle: str,
     return 0
 
 
+def ship_review(spec: dict, cards_path: Path, card_needle: str,
+                board_id: str, since: str | None,
+                model_alias: str, provider: str) -> int:
+    """Move a card to 'In review', regenerate desc + manual-test checklist via LLM,
+    and replace the 'Subtareas' checklist on Trello.
+
+    `since` is the sha just before implementation started; if None, auto-detect
+    from the 'chore(trello): claim <name>' commit. Range is `since..HEAD`.
+    """
+    needle = card_needle.lower()
+    matches = [c for c in spec["cards"] if needle in c["name"].lower()]
+    if len(matches) != 1:
+        print(f"error: --card {card_needle!r} matches {len(matches)} cards (need exactly 1)",
+              file=sys.stderr)
+        for m in matches:
+            print(f"   - {m['name']!r}", file=sys.stderr)
+        return 2
+    card = matches[0]
+    name = card["name"]
+
+    head = _git("rev-parse", "HEAD")
+    if not head:
+        print("error: cannot resolve HEAD", file=sys.stderr)
+        return 2
+
+    base = _git("rev-parse", since) if since else find_claim_sha(name)
+    if not base:
+        print(f"error: cannot determine 'since' sha for {name!r}. "
+              f"Pass --since <sha> explicitly.", file=sys.stderr)
+        return 2
+    if base == head:
+        print(f"error: since == HEAD ({base[:7]}); no commits to summarize.",
+              file=sys.stderr)
+        return 2
+
+    print(f"ship-review: {name!r}  range {base[:7]}..{head[:7]}")
+    log_text = git_log_range(base, head)
+    if not log_text.strip():
+        print("warning: empty git log range; LLM context will be poor.", file=sys.stderr)
+
+    print(f"  generating review summary via {provider}/{model_alias} ...")
+    summary = summarize_for_review(card, log_text,
+                                   model_alias=model_alias, provider=provider)
+    if not summary:
+        print("error: LLM summarization failed; aborting ship-review.", file=sys.stderr)
+        return 1
+
+    card["list"] = "In review"
+    card["desc"] = summary["description"]
+    card["checklist"] = summary["checklist"]
+
+    cards_path.write_text(
+        json.dumps(spec, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(f"  JSON updated: {cards_path}")
+
+    rc = apply_spec(spec, board_id, dry_run=False, only_cards=name)
+
+    card_id = find_card_id(board_id, name)
+    if card_id:
+        try:
+            replace_subtareas(card_id, summary["checklist"])
+            print("  replaced 'Subtareas' checklist with manual-test steps")
+        except Exception as e:
+            print(f"  warning: replace_subtareas failed: {e}", file=sys.stderr)
+    else:
+        print(f"  warning: could not locate card on board to replace checklist", file=sys.stderr)
+
+    return rc
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Sync Conico tasks to Trello")
     parser.add_argument("--dry-run", action="store_true", help="preview push, no writes")
@@ -1019,21 +1208,33 @@ def main() -> int:
                         help="link a commit (sha, ref, or HEAD) to one card; "
                              "use with --card. Updates JSON + auto-applies "
                              "unless --no-push is set.")
+    parser.add_argument("--ship-review", action="store_true",
+                        help="move a card to 'In review' with LLM-generated "
+                             "description (Resumen + Cambios/Decisiones) and "
+                             "manual-test checklist. Requires --card. Auto-detects "
+                             "the claim commit unless --since is passed.")
+    parser.add_argument("--since", default=None, metavar="SHA",
+                        help="for --ship-review: sha just before implementation "
+                             "started. Defaults to parent of 'chore(trello): claim <name>'.")
     parser.add_argument("--card", default=None, metavar="NAME_SUBSTR",
-                        help="card name substring for --link-commit (must match exactly one)")
+                        help="card name substring for --link-commit / --ship-review (must match exactly one)")
     parser.add_argument("--cards-file", default=str(CARDS_FILE))
     args = parser.parse_args()
 
     modes = sum([args.dry_run, args.apply, args.pull, args.enrich,
-                 bool(args.link_commit)])
+                 bool(args.link_commit), args.ship_review])
     if modes != 1:
         print("error: pass exactly one of "
-              "--dry-run / --apply / --pull / --enrich / --link-commit",
+              "--dry-run / --apply / --pull / --enrich / --link-commit / --ship-review",
               file=sys.stderr)
         return 2
 
     if args.link_commit and not args.card:
         print("error: --link-commit requires --card NAME_SUBSTR", file=sys.stderr)
+        return 2
+
+    if args.ship_review and not args.card:
+        print("error: --ship-review requires --card NAME_SUBSTR", file=sys.stderr)
         return 2
 
     load_dotenv(ENV_FILE)
@@ -1054,6 +1255,12 @@ def main() -> int:
         spec = json.loads(cards_path.read_text(encoding="utf-8"))
         return link_commit(spec, cards_path, args.link_commit, args.card,
                            board_id=board_id, push=not args.no_push)
+
+    if args.ship_review:
+        spec = json.loads(cards_path.read_text(encoding="utf-8"))
+        return ship_review(spec, cards_path, args.card, board_id=board_id,
+                           since=args.since, model_alias=args.model,
+                           provider=args.provider)
 
     if args.enrich:
         print("Pulling Trello -> JSON before enrichment...")

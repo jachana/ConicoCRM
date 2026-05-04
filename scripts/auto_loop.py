@@ -128,6 +128,8 @@ def git_head() -> str:
     return git("rev-parse", "HEAD", capture=True)
 
 
+
+
 DIRTY_IGNORE_PREFIXES = (".claude/", "Conico-reportes", "scripts/trello_cards.json")
 
 
@@ -774,7 +776,10 @@ def claim(spec: dict, name: str, board_id: str) -> None:
                    cwd=str(REPO_ROOT), check=False)
 
 
-def ship(spec: dict, name: str, sha: str) -> None:
+def ship(spec: dict, name: str, sha: str,
+         pre_sha: str | None = None,
+         summary_model: str = "haiku",
+         summary_provider: str = "auto") -> None:
     card = find_card(spec, name)
     if not card:
         raise RuntimeError(f"card not found locally: {name}")
@@ -782,8 +787,35 @@ def ship(spec: dict, name: str, sha: str) -> None:
     commits.append(sha)
     card["commits"] = commits
     card["list"] = SHIPPED_LIST
+
+    summary = None
+    if pre_sha and pre_sha != sha:
+        log_text = ts.git_log_range(pre_sha, sha)
+        if log_text.strip():
+            print("  generating review summary via LLM ...")
+            summary = ts.summarize_for_review(card, log_text,
+                                              model_alias=summary_model,
+                                              provider=summary_provider)
+    if summary:
+        card["desc"] = summary["description"]
+        card["checklist"] = summary["checklist"]
+        print("  review summary: desc + manual-test checklist generated")
+    else:
+        print("  review summary skipped; leaving desc/checklist as-is")
+
     save_spec(spec)
     trello_apply()
+
+    if summary:
+        try:
+            board_id = os.environ["TRELLO_BOARD_ID"]
+            card_id = ts.find_card_id(board_id, name)
+            if card_id:
+                ts.replace_subtareas(card_id, summary["checklist"])
+                print("  replaced 'Subtareas' checklist with manual-test steps")
+        except Exception as e:
+            print(f"  warning: replace_subtareas failed: {e}", file=sys.stderr)
+
     git("add", str(CARDS_FILE.relative_to(REPO_ROOT)))
     subprocess.run(["git", "commit", "-m", f"chore(trello): ship {name} -> In review"],
                    cwd=str(REPO_ROOT), check=False)
@@ -958,7 +990,10 @@ def iteration(args, board_id: str) -> str:
 
     print("\n=== ship ===")
     spec = load_spec()
-    ship(spec, name, final_sha)
+    ship(spec, name, final_sha,
+         pre_sha=pre_sha,
+         summary_model=args.summary_model,
+         summary_provider=args.provider)
 
     print("\n=== push ===")
     subprocess.run(["git", "push", "origin", args.branch],
@@ -997,6 +1032,9 @@ def main() -> int:
     parser.add_argument("--branch", default="master")
     parser.add_argument("--max", type=int, default=0, help="0 = unlimited")
     parser.add_argument("--triage-model", default=DEFAULT_TRIAGE_MODEL)
+    parser.add_argument("--summary-model", default="haiku",
+                        help="LLM alias for ship-time review summary (haiku|sonnet|gemini-flash|...). "
+                             "Generates the 'In review' card description + manual-test checklist.")
     parser.add_argument("--provider", default=DEFAULT_PROVIDER,
                         choices=["auto", "straico", "openrouter"])
     parser.add_argument("--dry-run", action="store_true")
