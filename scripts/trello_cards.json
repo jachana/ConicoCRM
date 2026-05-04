@@ -32,71 +32,17 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "In ctrl+k search in dark mode, some text like categories does not respect dark theme and its hard to read",
-      "labels": [
-        "Design System",
-        "Goal: UX Polish",
-        "Size:M"
-      ],
-      "desc": "**Resumen** — Corregir la legibilidad del texto en el overlay de búsqueda (ctrl+k) en dark mode, ya que algunos textos como categorías no aplican el tema oscuro correctamente.\n\n**Cambios / Decisiones** — Se ajustó el componente `GlobalSearchModal.tsx` para usar las variables CSS correctas de dark mode (`--color-text-dark`, `--bg-overlay-dark`). Se mejoró el contraste de títulos, categorías y subcategorías dentro del modal. Se verificó compatibilidad en Chrome, Safari y Firefox. No se modificaron esquemas ni APIs, solo estilos.",
-      "checklist": [
-        "Abrir el buscador con ctrl+k en dark mode",
-        "Verificar contraste de categorías y títulos (deben ser legibles)",
-        "Revisar que fondo use `--bg-overlay-dark`",
-        "Validar en Chrome, Safari y Firefox",
-        "Confirmar que light mode sigue funcionando igual"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "Clicking outside of the ctrl+k search should close it the same way as esc",
-      "labels": [
-        "Core",
-        "Size:M"
-      ],
-      "desc": "**Resumen** — El modal de búsqueda ctrl+k ahora se cierra al hacer clic fuera de él, además de con ESC, respetando patrones UX estándar.\n\n**Cambios / Decisiones**\n- Se implementó cierre del modal al hacer clic en el backdrop (`onClick` en el overlay).\n- Se unificó la lógica de cierre en una función `handleCloseSearch()`.\n- Se validó que el cierre no ocurra si el clic es dentro del modal o input de búsqueda.\n- Se mantuvo el comportamiento original de cierre con tecla ESC.\n- Archivo modificado: `src/components/search/GlobalSearchModal.tsx`.",
-      "checklist": [
-        "Abrir el modal con Ctrl+K",
-        "Hacer clic fuera del modal y verificar cierre",
-        "Presionar ESC y verificar cierre",
-        "Hacer clic dentro del input y confirmar que NO se cierra",
-        "Validar cierre en Chrome, Firefox y Safari"
-      ]
-    },
-    {
-      "list": "In review",
-      "name": "on closing ctrl+k search, the content of last search should be cleared",
-      "labels": [
-        "Core",
-        "Size:S"
-      ],
-      "desc": "**Resumen** — Al cerrar el modal de búsqueda con Ctrl+K, se debe limpiar el contenido del input y los resultados para evitar confusión al reabrirlo.\n\n**Cambios / Decisiones**\n- Se modificó `GlobalSearchModal.tsx` para limpiar el estado del input y los resultados al cerrar el modal.\n- Se mantuvo el comportamiento del browser history sin alteraciones.\n- Se ajustó el handler `onClose` para incluir `setSearchInput('')` y `setResults([])`.\n- Se identificó el componente principal como `GlobalSearchModal.tsx` en lugar de un nombre genérico.\n- Se consideró el uso de refs o callbacks para asegurar la limpieza correcta al cerrar.\n- Se actualizaron archivos de tracking de trello cards con nueva implementación.",
-      "checklist": [
-        "Abrir modal Ctrl+K, escribir texto y cerrar con Escape",
-        "Reabrir modal y verificar input vacío",
-        "Hacer búsqueda, cerrar modal y reabrir",
-        "Verificar lista de resultados vacía",
-        "Repetir búsquedas y cierres múltiples veces",
-        "Confirmar browser history no se ve afectado",
-        "Validar comportamiento en staging manualmente"
-      ]
-    },
-    {
       "list": "In progress",
-      "name": "[W1-05 checkpoint] Validar payload tipo 52 contra Lioren sandbox",
+      "name": "[Guía despacho] Números de NV y factura incorrectos",
       "labels": [
-        "Wave 1",
-        "DTE/SII",
-        "Blocked"
+        "Bug"
       ],
-      "desc": "Bloquea producción de guías 52. Field names ind_traslado y destino.{direccion,comuna} son hipótesis LOW confidence (TODO W1-05-sandbox en dte_service.py). Requiere credenciales Lioren reales.",
+      "desc": "En el detalle y PDF de la guía de despacho, los números de NV y factura asociados se muestran incorrectos o no corresponden al documento real.",
       "checklist": [
-        "Conseguir credenciales Lioren sandbox",
-        "Ejecutar pipeline DTE 52 contra sandbox con guía real",
-        "Confirmar field names ind_traslado + destino.direccion + destino.comuna",
-        "Quitar TODO(W1-05-sandbox) en dte_service.py",
-        "Documentar resultado en .planning/phases/01-gu-a-de-despacho-52-backend/01-03-SUMMARY.md"
+        "Revisar query que obtiene NV y factura vinculadas a la guía de despacho",
+        "Verificar que el folio mostrado es el folio SII y no el ID interno",
+        "Corregir PDF: mostrar número NV y número factura correctos",
+        "Prueba: emitir guía desde NV facturada y verificar ambos números"
       ]
     }
   ]
