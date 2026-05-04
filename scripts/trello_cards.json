@@ -32,17 +32,20 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Guía despacho] Números de NV y factura incorrectos",
       "labels": [
         "Bug"
       ],
-      "desc": "En el detalle y PDF de la guía de despacho, los números de NV y factura asociados se muestran incorrectos o no corresponden al documento real.",
+      "desc": "**Resumen** — Corregir los números de NV y factura que se muestran incorrectamente en el detalle y PDF de la guía de despacho.\n\n**Cambios / Decisiones** — Se corrigió el detalle de la guía de despacho para mostrar el número de secuencia de la NV (ej: 00008) en vez del ID interno (ej: 42). Se actualizó el schema GuiaDespachoOut para incluir NotaVentaMinOut con los campos id y numero. El frontend ahora usa nota_venta.numero con padding de 5 dígitos. Pendiente corregir el PDF y verificar factura.",
       "checklist": [
-        "Revisar query que obtiene NV y factura vinculadas a la guía de despacho",
-        "Verificar que el folio mostrado es el folio SII y no el ID interno",
-        "Corregir PDF: mostrar número NV y número factura correctos",
-        "Prueba: emitir guía desde NV facturada y verificar ambos números"
+        "Abrir detalle de guía de despacho desde NV facturada",
+        "Verificar que se muestra número NV con ceros adelante (ej: 00008)",
+        "Confirmar que no aparece el ID interno de la NV",
+        "Revisar que se muestra número de factura correcto",
+        "Generar PDF y verificar números NV y factura",
+        "Probar con NV sin factura asociada",
+        "Validar navegación desde detalle a NV vinculada"
       ]
     }
   ]
