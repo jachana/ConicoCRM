@@ -32,20 +32,18 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "PATCH https://crm.conico.juliocode.com/api/facturas/24 500 (Internal Server Error) al guardar una factura",
       "labels": [
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nAl guardar una factura mediante PATCH /api/facturas/24, el servidor retorna 500 Internal Server Error. La traza muestra ResponseValidationError: el campo 'referencias_docs' en la respuesta es None, pero el schema Pydantic espera una lista válida. Esto bloquea operaciones normales de facturación.\n\n**Acceptance Criteria**\n- PATCH /api/facturas/{id} con datos válidos retorna 200 OK y JSON serializable sin errores de validación.\n- El campo 'referencias_docs' en la respuesta es siempre una lista (vacía [] si no hay referencias, nunca None).\n- La factura se persiste correctamente en base de datos.\n- El error no se reproduce al guardar facturas con o sin referencias de documentos.\n\n**Definition of Done**\n- Raíz del problema identificada (schema, query, transformación de datos).\n- Schema Pydantic corregido o lógica de retorno ajustada.\n- Test unitario o integración reproduce el error antes de la corrección y pasa después.\n- Cambios desplegados a staging y validados.\n- Trello card movida a 'In Review'.\n\n**Notas tecnicas**\n- Archivo: `/app/app/routes/facturas.py` (endpoint PATCH) o modelo en `/app/app/models/factura.py`.\n- Revisar schema Pydantic del response: `referencias_docs` debe tener `default=[]` o `default_factory=list`.\n- Puntos de serialización: query a BD, transformación antes de retornar, middleware de respuesta.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Al guardar una factura mediante PATCH /api/facturas/24, el servidor retornaba 500 Internal Server Error por un campo 'referencias_docs' siendo None en lugar de una lista vacía.\n\n**Cambios / Decisiones** — Se corrigió el schema Pydantic en `backend/app/schemas/factura.py` agregando un validador que convierte None a lista vacía (`[]`) en la serialización. Se agregaron tests en `backend/tests/test_facturas.py` que cubren casos con y sin referencias_docs para evitar regresiones. El endpoint afectado es PATCH /api/facturas/{id}.",
       "checklist": [
-        "Reproducir error localmente con curl o Postman en PATCH /api/facturas/24",
-        "Inspeccionar schema Pydantic y validar que 'referencias_docs' tiene default correcto",
-        "Revisar lógica de query/transformación que retorna 'referencias_docs'",
-        "Corregir asignación de None → [] en modelo o endpoint",
-        "Escribir test que valida respuesta sin error de validación",
-        "Desplegar a staging y confirmar 200 OK",
-        "Mover Trello a 'In Review'"
+        "Hacer PATCH a /api/facturas/24 con datos válidos y verificar 200 OK",
+        "Verificar que respuesta tenga 'referencias_docs': [] cuando es null en BD",
+        "Ejecutar tests unitarios en backend/tests/test_facturas.py",
+        "Probar GET /api/facturas/24 y confirmar serialización correcta",
+        "Validar que factura se guarda en BD con o sin referencias_docs"
       ]
     }
   ]
