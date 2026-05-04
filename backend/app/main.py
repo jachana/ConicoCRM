@@ -189,4 +189,4 @@ app.include_router(onboarding_nc.router, prefix="/api/onboarding/nc-nd-historica
 app.include_router(onboarding_guias_despacho.router, prefix="/api/onboarding/guias-despacho-historicas", tags=["onboarding"])
 app.include_router(onboarding_tareas.router, prefix="/api/onboarding/tareas", tags=["onboarding"])
 app.include_router(libros_api.router, prefix="/api/libros", tags=["libros"])
-app.include_router(dte_recepcion_api.router, prefix="/api/dte/recepcion", tags=["dte_recepcion"])
+app.include_router(dte_recepcion_api.router, prefix="/api/dte_recepcion", tags=["dte_recepcion"])

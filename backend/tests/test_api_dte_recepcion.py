@@ -126,7 +126,7 @@ class TestCrearDteRecepcion:
     def test_crear_dte_recepcion_success(self, client, token_empresa1, user_empresa1):
         """Test successful DTE recepción creation"""
         resp = client.post(
-            "/api/dte/recepcion",
+            "/api/dte_recepcion",
             headers={"Authorization": f"Bearer {token_empresa1}"},
             json={
                 "tipo": "46",
@@ -151,7 +151,7 @@ class TestCrearDteRecepcion:
     def test_crear_dte_recepcion_sin_xml(self, client, token_empresa1, user_empresa1):
         """Test DTE recepción creation without xml_raw"""
         resp = client.post(
-            "/api/dte/recepcion",
+            "/api/dte_recepcion",
             headers={"Authorization": f"Bearer {token_empresa1}"},
             json={
                 "tipo": "46",
@@ -169,7 +169,7 @@ class TestCrearDteRecepcion:
     def test_crear_dte_recepcion_empresa_mismatch(self, client, token_empresa1, user_empresa1, empresa2):
         """Test that user cannot create DTE for different empresa"""
         resp = client.post(
-            "/api/dte/recepcion",
+            "/api/dte_recepcion",
             headers={"Authorization": f"Bearer {token_empresa1}"},
             json={
                 "tipo": "46",
@@ -185,7 +185,7 @@ class TestCrearDteRecepcion:
     def test_crear_dte_recepcion_missing_required_fields(self, client, token_empresa1, user_empresa1):
         """Test DTE creation with missing required fields"""
         resp = client.post(
-            "/api/dte/recepcion",
+            "/api/dte_recepcion",
             headers={"Authorization": f"Bearer {token_empresa1}"},
             json={
                 "tipo": "46",
@@ -200,7 +200,7 @@ class TestCrearDteRecepcion:
     def test_crear_dte_recepcion_unauthorized(self, client, user_empresa1):
         """Test DTE creation without authorization"""
         resp = client.post(
-            "/api/dte/recepcion",
+            "/api/dte_recepcion",
             json={
                 "tipo": "46",
                 "folio": 2003,
@@ -220,7 +220,7 @@ class TestListarDteRecepciones:
     def test_listar_dte_recepciones_sin_filtro(self, client, token_empresa1, sample_dte_recepciones):
         """Test listing all DTE recepciones for empresa"""
         resp = client.get(
-            "/api/dte/recepcion",
+            "/api/dte_recepcion",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         assert resp.status_code == 200
@@ -235,7 +235,7 @@ class TestListarDteRecepciones:
     def test_listar_dte_recepciones_con_pagination(self, client, token_empresa1, sample_dte_recepciones):
         """Test pagination in listing"""
         resp = client.get(
-            "/api/dte/recepcion?limit=2&offset=0",
+            "/api/dte_recepcion?limit=2&offset=0",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         assert resp.status_code == 200
@@ -246,7 +246,7 @@ class TestListarDteRecepciones:
     def test_listar_dte_recepciones_offset(self, client, token_empresa1, sample_dte_recepciones):
         """Test offset in pagination"""
         resp = client.get(
-            "/api/dte/recepcion?limit=2&offset=2",
+            "/api/dte_recepcion?limit=2&offset=2",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         assert resp.status_code == 200
@@ -256,7 +256,7 @@ class TestListarDteRecepciones:
     def test_listar_dte_recepciones_filter_estado_recibido(self, client, token_empresa1, sample_dte_recepciones):
         """Test filtering by estado=recibido"""
         resp = client.get(
-            "/api/dte/recepcion?estado=recibido",
+            "/api/dte_recepcion?estado=recibido",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         assert resp.status_code == 200
@@ -267,7 +267,7 @@ class TestListarDteRecepciones:
     def test_listar_dte_recepciones_filter_estado_aceptado(self, client, token_empresa1, sample_dte_recepciones):
         """Test filtering by estado=aceptado"""
         resp = client.get(
-            "/api/dte/recepcion?estado=aceptado",
+            "/api/dte_recepcion?estado=aceptado",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         assert resp.status_code == 200
@@ -278,7 +278,7 @@ class TestListarDteRecepciones:
     def test_listar_dte_recepciones_filter_rut_emisor(self, client, token_empresa1, sample_dte_recepciones):
         """Test filtering by rut_emisor"""
         resp = client.get(
-            "/api/dte/recepcion?rut_emisor=76123456-7",
+            "/api/dte_recepcion?rut_emisor=76123456-7",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         assert resp.status_code == 200
@@ -289,7 +289,7 @@ class TestListarDteRecepciones:
     def test_listar_dte_recepciones_filter_rut_y_estado(self, client, token_empresa1, sample_dte_recepciones):
         """Test filtering by both rut_emisor and estado"""
         resp = client.get(
-            "/api/dte/recepcion?rut_emisor=76123456-7&estado=aceptado",
+            "/api/dte_recepcion?rut_emisor=76123456-7&estado=aceptado",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         assert resp.status_code == 200
@@ -301,7 +301,7 @@ class TestListarDteRecepciones:
     def test_listar_dte_recepciones_invalid_estado(self, client, token_empresa1):
         """Test invalid estado filter"""
         resp = client.get(
-            "/api/dte/recepcion?estado=invalido",
+            "/api/dte_recepcion?estado=invalido",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         assert resp.status_code == 400
@@ -310,7 +310,7 @@ class TestListarDteRecepciones:
     def test_listar_dte_recepciones_limit_exceeded(self, client, token_empresa1):
         """Test limit exceeding max"""
         resp = client.get(
-            "/api/dte/recepcion?limit=600",
+            "/api/dte_recepcion?limit=600",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         # FastAPI's Query validation returns 422 for invalid constraints
@@ -319,7 +319,7 @@ class TestListarDteRecepciones:
     def test_listar_dte_recepciones_negative_offset(self, client, token_empresa1):
         """Test negative offset"""
         resp = client.get(
-            "/api/dte/recepcion?offset=-1",
+            "/api/dte_recepcion?offset=-1",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         # FastAPI's Query validation returns 422 for invalid constraints
@@ -344,7 +344,7 @@ class TestListarDteRecepciones:
 
         # User 1 should only see their own DTEs
         resp = client.get(
-            "/api/dte/recepcion",
+            "/api/dte_recepcion",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         assert resp.status_code == 200
@@ -353,7 +353,7 @@ class TestListarDteRecepciones:
 
         # User 2 should only see their own DTE
         resp = client.get(
-            "/api/dte/recepcion",
+            "/api/dte_recepcion",
             headers={"Authorization": f"Bearer {token_empresa2}"},
         )
         assert resp.status_code == 200
@@ -362,7 +362,7 @@ class TestListarDteRecepciones:
 
     def test_listar_dte_recepciones_unauthorized(self, client):
         """Test listing without authorization"""
-        resp = client.get("/api/dte/recepcion")
+        resp = client.get("/api/dte_recepcion")
         assert resp.status_code == 401
 
 
@@ -377,7 +377,7 @@ class TestObtenerDteRecepcion:
         dte_id = dte.id
 
         resp = client.get(
-            f"/api/dte/recepcion/{dte_id}",
+            f"/api/dte_recepcion/{dte_id}",
             headers={"Authorization": f"Bearer {token_empresa1}"}
         )
 
@@ -391,7 +391,7 @@ class TestObtenerDteRecepcion:
     def test_obtener_dte_recepcion_no_existe(self, client, token_empresa1):
         """Test retrieval of non-existent DTE recepción"""
         resp = client.get(
-            "/api/dte/recepcion/99999",
+            "/api/dte_recepcion/99999",
             headers={"Authorization": f"Bearer {token_empresa1}"}
         )
 
@@ -404,7 +404,7 @@ class TestObtenerDteRecepcion:
 
         # Try to access with token_empresa2 (different empresa)
         resp = client.get(
-            f"/api/dte/recepcion/{dte_id}",
+            f"/api/dte_recepcion/{dte_id}",
             headers={"Authorization": f"Bearer {token_empresa2}"}
         )
 
@@ -427,7 +427,7 @@ class TestObtenerDteRecepcion:
         db.refresh(dte)
 
         resp = client.get(
-            f"/api/dte/recepcion/{dte.id}",
+            f"/api/dte_recepcion/{dte.id}",
             headers={"Authorization": f"Bearer {token_empresa1}"}
         )
 
@@ -438,7 +438,7 @@ class TestObtenerDteRecepcion:
 
     def test_obtener_dte_recepcion_unauthorized(self, client):
         """Test retrieval without authorization"""
-        resp = client.get("/api/dte/recepcion/1")
+        resp = client.get("/api/dte_recepcion/1")
         assert resp.status_code == 401
 
 
@@ -452,7 +452,7 @@ class TestAceptarDteRecepcion:
         dte_id = sample_dte_recepciones[0].id
 
         resp = client.post(
-            f"/api/dte/recepcion/{dte_id}/aceptar",
+            f"/api/dte_recepcion/{dte_id}/aceptar",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         assert resp.status_code == 200
@@ -466,7 +466,7 @@ class TestAceptarDteRecepcion:
     def test_aceptar_dte_recepcion_no_existe(self, client, token_empresa1):
         """Test accepting non-existent DTE"""
         resp = client.post(
-            "/api/dte/recepcion/999999/aceptar",
+            "/api/dte_recepcion/999999/aceptar",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         assert resp.status_code == 404
@@ -478,7 +478,7 @@ class TestAceptarDteRecepcion:
 
         # Create a token for user_empresa2
         resp = client.post(
-            f"/api/dte/recepcion/{dte_id}/aceptar",
+            f"/api/dte_recepcion/{dte_id}/aceptar",
             headers={"Authorization": f"Bearer {token_empresa2}"},
         )
         assert resp.status_code == 403
@@ -489,7 +489,7 @@ class TestAceptarDteRecepcion:
         dte_id = sample_dte_recepciones[2].id  # Already in aceptado estado
 
         resp = client.post(
-            f"/api/dte/recepcion/{dte_id}/aceptar",
+            f"/api/dte_recepcion/{dte_id}/aceptar",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         assert resp.status_code == 400
@@ -515,7 +515,7 @@ class TestAceptarDteRecepcion:
         session.close()
 
         resp = client.post(
-            f"/api/dte/recepcion/{dte_id}/aceptar",
+            f"/api/dte_recepcion/{dte_id}/aceptar",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         assert resp.status_code == 400
@@ -525,7 +525,7 @@ class TestAceptarDteRecepcion:
         """Test accepting DTE without authorization"""
         dte_id = sample_dte_recepciones[0].id
 
-        resp = client.post(f"/api/dte/recepcion/{dte_id}/aceptar")
+        resp = client.post(f"/api/dte_recepcion/{dte_id}/aceptar")
         assert resp.status_code == 401
 
 
@@ -539,7 +539,7 @@ class TestRechazarDteRecepcion:
         dte_id = sample_dte_recepciones[0].id
 
         resp = client.post(
-            f"/api/dte/recepcion/{dte_id}/rechazar",
+            f"/api/dte_recepcion/{dte_id}/rechazar",
             headers={"Authorization": f"Bearer {token_empresa1}"},
             json={"motivo": "Documento duplicado"},
         )
@@ -552,7 +552,7 @@ class TestRechazarDteRecepcion:
     def test_rechazar_dte_recepcion_no_existe(self, client, token_empresa1):
         """Test rejecting non-existent DTE"""
         resp = client.post(
-            "/api/dte/recepcion/999999/rechazar",
+            "/api/dte_recepcion/999999/rechazar",
             headers={"Authorization": f"Bearer {token_empresa1}"},
             json={"motivo": "No existe"},
         )
@@ -564,7 +564,7 @@ class TestRechazarDteRecepcion:
         dte_id = sample_dte_recepciones[0].id
 
         resp = client.post(
-            f"/api/dte/recepcion/{dte_id}/rechazar",
+            f"/api/dte_recepcion/{dte_id}/rechazar",
             headers={"Authorization": f"Bearer {token_empresa1}"},
             json={"motivo": ""},
         )
@@ -575,7 +575,7 @@ class TestRechazarDteRecepcion:
         dte_id = sample_dte_recepciones[0].id
 
         resp = client.post(
-            f"/api/dte/recepcion/{dte_id}/rechazar",
+            f"/api/dte_recepcion/{dte_id}/rechazar",
             headers={"Authorization": f"Bearer {token_empresa1}"},
             json={},
         )
@@ -586,7 +586,7 @@ class TestRechazarDteRecepcion:
         dte_id = sample_dte_recepciones[0].id
 
         resp = client.post(
-            f"/api/dte/recepcion/{dte_id}/rechazar",
+            f"/api/dte_recepcion/{dte_id}/rechazar",
             headers={"Authorization": f"Bearer {token_empresa2}"},
             json={"motivo": "No autorizado"},
         )
@@ -598,7 +598,7 @@ class TestRechazarDteRecepcion:
         dte_id = sample_dte_recepciones[2].id  # Already in aceptado estado
 
         resp = client.post(
-            f"/api/dte/recepcion/{dte_id}/rechazar",
+            f"/api/dte_recepcion/{dte_id}/rechazar",
             headers={"Authorization": f"Bearer {token_empresa1}"},
             json={"motivo": "No puedo rechazar"},
         )
@@ -625,7 +625,7 @@ class TestRechazarDteRecepcion:
         session.close()
 
         resp = client.post(
-            f"/api/dte/recepcion/{dte_id}/rechazar",
+            f"/api/dte_recepcion/{dte_id}/rechazar",
             headers={"Authorization": f"Bearer {token_empresa1}"},
             json={"motivo": "Intento doble"},
         )
@@ -637,7 +637,7 @@ class TestRechazarDteRecepcion:
         dte_id = sample_dte_recepciones[0].id
 
         resp = client.post(
-            f"/api/dte/recepcion/{dte_id}/rechazar",
+            f"/api/dte_recepcion/{dte_id}/rechazar",
             json={"motivo": "No autorizado"},
         )
         assert resp.status_code == 401
@@ -659,7 +659,7 @@ class TestDteRecepcionPermissions:
         token = resp.json()["access_token"]
 
         resp = client.post(
-            "/api/dte/recepcion",
+            "/api/dte_recepcion",
             headers={"Authorization": f"Bearer {token}"},
             json={
                 "tipo": "46",
@@ -681,7 +681,7 @@ class TestDteRecepcionPermissions:
         token = resp.json()["access_token"]
 
         resp = client.get(
-            "/api/dte/recepcion",
+            "/api/dte_recepcion",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert resp.status_code == 200
@@ -691,7 +691,7 @@ class TestDteRecepcionPermissions:
         dte_id = sample_dte_recepciones[0].id
 
         resp = client.post(
-            f"/api/dte/recepcion/{dte_id}/aceptar",
+            f"/api/dte_recepcion/{dte_id}/aceptar",
             headers={"Authorization": f"Bearer {token_empresa1}"},
         )
         # Should succeed since subadmin has edit=True
@@ -702,7 +702,7 @@ class TestDteRecepcionPermissions:
         dte_id = sample_dte_recepciones[0].id
 
         resp = client.post(
-            f"/api/dte/recepcion/{dte_id}/rechazar",
+            f"/api/dte_recepcion/{dte_id}/rechazar",
             headers={"Authorization": f"Bearer {token_empresa1}"},
             json={"motivo": "Prueba"},
         )
