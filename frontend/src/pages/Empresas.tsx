@@ -482,7 +482,7 @@ export default function Empresas() {
           <form
             onSubmit={ev => {
               ev.preventDefault()
-              if (form.rut && !form.rut_no_oficial && !validateRut(form.rut)) {
+              if (!editando && form.rut && !form.rut_no_oficial && !validateRut(form.rut)) {
                 setRutError('RUT inválido')
                 return
               }
