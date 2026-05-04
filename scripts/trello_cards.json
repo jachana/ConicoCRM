@@ -32,26 +32,21 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "busqueda en catalogo de productos no funciona",
       "labels": [
         "Core",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nLa búsqueda en el catálogo de productos no retorna resultados esperados o responde muy lentamente, impactando directamente la usabilidad del módulo de catálogos y la productividad del usuario.\n\n**Acceptance Criteria**\n- Búsqueda por nombre de producto retorna resultados relevantes en <500ms para catálogos con 1000+ SKUs.\n- Búsqueda funciona correctamente con productos existentes en la BD (sin resultados vacíos falsos).\n- Filtros frontend aplican correctamente sin duplicados ni pérdida de resultados.\n- Permisos de tenant se respetan: usuario solo ve productos del catálogo asignado.\n- Query SQL en backend utiliza índices apropiados (sin full table scans).\n\n**Definition of Done**\n- Tests unitarios en backend validan lógica LIKE/búsqueda con casos límite (caracteres especiales, acentos, espacios).\n- Tests de integración confirman respuesta <500ms con dataset de prueba.\n- Profiler/EXPLAIN plan aplicado; índices faltantes creados o query optimizada.\n- Cambios deployados a staging y validados con datos reales de cliente piloto.\n- Trello card movido a \"In review\" con enlace a staging.\n\n**Notas tecnicas**\n- Revisar endpoint: `/api/catalog/search?q=...&tenant_id=...`\n- Tablas: `products`, `catalogs`, `catalog_products`, `tenants`.\n- Verificar índices en columna `name` (products) y relación tenant_id.\n- Frontend filter logic: archivo probable `/src/pages/Catalog/SearchFilter.jsx` o similar.\n- Considerar caching si búsquedas frecuentes (Redis si está disponible).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — La búsqueda en el catálogo de productos no funcionaba correctamente porque no incluía campos como marca, tipo y tags, y a veces mostraba resultados vacíos o duplicados.\n\n**Cambios / Decisiones** — Se refactorizó la lógica de búsqueda en el backend para incluir `marca`, `tipo`, `tag` y `SKU`, además del nombre. Ambos endpoints `GET /` y `GET /buscar` ahora delegan en `producto_ids_matching`, que ya manejaba coincidencias sin distinguir acentos. Se agregaron tests unitarios para cada campo searchable y una protección contra filas duplicadas por múltiples tags. Se modificaron `backend/app/api/productos.py` y se añadieron tests en `backend/tests/test_productos.py`.",
       "checklist": [
-        "Verificar query search backend (LIKE, índice DB)",
-        "Testear con productos reales existentes",
-        "Revisar frontend filter lógica",
-        "Validar permisos tenant sobre catálogo",
-        "Profiler para performance (índices DB faltantes?)",
-        "Reproducir bug: búsqueda con producto existente debe retornar resultado (verificar con 3+ ejemplos reales)",
-        "Optimizar query backend: agregar índices faltantes en `products.name` y aplicar EXPLAIN PLAN",
-        "Revisar filtros frontend: validar que no eliminan resultados válidos, testear con acentos y caracteres especiales",
-        "Validar permisos tenant: confirmar usuario solo ve productos del catálogo asignado",
-        "Profiler backend + medir tiempo respuesta; debe ser <500ms para 1000+ productos",
-        "Tests: unitarios (query search), integración (endpoint), performance threshold",
-        "Deploy a staging + validar con datos reales; mover card a In review"
+        "Buscar por nombre de producto existente y verificar resultados",
+        "Buscar por marca y tipo; confirmar resultados relevantes",
+        "Verificar que no hayan duplicados en búsquedas con múltiples tags",
+        "Probar búsqueda con acentos y caracteres especiales",
+        "Confirmar que usuario solo ve productos de su catálogo",
+        "Validar que la respuesta sea <500ms con 1000+ productos",
+        "Revisar logs de test para confirmar nuevos casos cubiertos"
       ]
     }
   ]
