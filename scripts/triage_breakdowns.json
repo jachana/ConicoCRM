@@ -1,0 +1,1339 @@
+{
+  "breakdowns": [
+    {
+      "parent_name": "[Wave 6] Multi-tenant SaaS",
+      "parent_list": "Ideas",
+      "children": [
+        {
+          "name": "[Wave 6 P1] Arquitectura multi-tenant: modelo de datos y decisiones",
+          "desc": "**Contexto / Problema**\nDecidir entre schema-per-tenant (aislamiento total, complejidad operacional) vs row-level (costo reducido, RBAC). Esta decisión impacta todo lo demás.\n\n**Acceptance Criteria**\n- ADR publicado con análisis de security, cost, complexity, scalability para cada opción.\n- Trade-offs claros (ej: schema-per-tenant = máximo aislamiento pero más DBs; row-level = menor costo pero RBAC más crítico).\n- Decisión aprobada por tech lead y stakeholder.\n- Diagrama de arquitectura + secuencia de multi-tenancy en docs.\n\n**Definition of Done**\n- ADR mergeado en main.\n- Equipo alineado en decisión.\n- Backlog de P2-P5 actualizado con detalles técnicos de la opción elegida.",
+          "checklist": [
+            "Analizar schema-per-tenant vs row-level multi-tenancy",
+            "Documentar pros/contras con métricas (latencia, costo, complejidad)",
+            "Presentar opciones a tech lead y stakeholder",
+            "Obtener aprobación y firmar ADR",
+            "Actualizar tickets de Wave 6 P2-P5 con decisión",
+            "Move to In review"
+          ]
+        },
+        {
+          "name": "[Wave 6 P2] Auth multi-tenant + onboarding SaaS",
+          "desc": "**Contexto / Problema**\nImplementar autenticación y sesiones que aíslen usuarios por tenant, plus flujo de sign-up / creación de empresa para nuevos SaaS users.\n\n**Acceptance Criteria**\n- Usuario se registra, crea empresa, recibe tenant_id.\n- Login autentica usuario y bind a tenant_id correcto.\n- Token JWT o sesión incluye tenant_id; no puede acceder a otros tenants cambiando token.\n- Invitación de usuarios a empresa existente funciona.\n- Tests cubren: valid login, invalid login, cross-tenant access blocked, invite flow.\n\n**Definition of Done**\n- Auth middleware o service actualizado.\n- Migrations de DB (usuarios + empresas) aplicadas.\n- Tests de integración verdes.\n- Feature flag listo para rollout.\n- Deployable a staging.",
+          "checklist": [
+            "Actualizar schema de usuarios y empresas (tenant_id, invite_token)",
+            "Implementar middleware/guard de multi-tenant auth",
+            "Crear endpoints de signup, login, invite",
+            "Escribir tests de aislamiento de auth",
+            "Feature flag para onboarding",
+            "Deploy a staging + Tests pass",
+            "Move to In review"
+          ]
+        },
+        {
+          "name": "[Wave 6 P3] Billing: integración Stripe + MercadoPago",
+          "desc": "**Contexto / Problema**\nImplementar facturación por tenant: planes, suscripciones, webhooks de Stripe/MercadoPago, invoicing.\n\n**Acceptance Criteria**\n- Admin puede seleccionar plan (free, pro, enterprise) para su empresa.\n- Stripe / MercadoPago checkout integrado en onboarding.\n- Webhooks procesan eventos (subscription created, payment failed, etc.).\n- Invoices generados y archivados en storage.\n- Tests cubren: plan selection, payment success/failure, webhook idempotency.\n\n**Definition of Done**\n- Tablas: plans, subscriptions, invoices, payments con tenant_id.\n- Endpoints: POST /billing/checkout, GET /invoices.\n- Stripe + MercadoPago clients configurados.\n- Webhook handlers implementados.\n- Tests de integración verdes.\n- Deployed a staging con modo sandbox.",
+          "checklist": [
+            "Diseñar schema de billing (plans, subscriptions, invoices)",
+            "Integrar Stripe SDK y MercadoPago SDK",
+            "Implementar checkout + plan selection",
+            "Implementar webhook handlers con idempotency",
+            "Generar e-mail de invoice",
+            "Tests de payment flow",
+            "Deploy a staging + Tests pass",
+            "Move to In review"
+          ]
+        },
+        {
+          "name": "[Wave 6 P4] Aislamiento de datos: row-level security + auditoría",
+          "desc": "**Contexto / Problema**\nGarantizar que cada tenant ve solo sus datos (contactos, documentos, configuración). Auditar accesos para compliance.\n\n**Acceptance Criteria**\n- Todas las queries incluyen filtro WHERE tenant_id = $1.\n- RLS (Row-Level Security) en DB si se usa Postgres, o policy en app si SQL Server.\n- Tests de pentest o security review: intentar acceder a datos de otro tenant falla.\n- Audit log registra: user, tenant, table, action, timestamp.\n- Reporte de acceso anómalo o cross-tenant en logs.\n\n**Definition of Done**\n- RLS policies o app-level filters implementados en 100% de queries.\n- Audit log schema + insertions en todas las mutaciones.\n- Tests de seguridad verdes.\n- Pentest o security review aprobado.\n- Logs auditables en centralizado (CloudWatch, Datadog, etc.).",
+          "checklist": [
+            "Implementar RLS o app-level tenant filtering en todos los queries",
+            "Crear audit log schema y triggers/middleware",
+            "Escribir tests de cross-tenant access (debe fallar)",
+            "Realizar pentest o security code review",
+            "Configurar central logging para auditoría",
+            "Deploy a staging + Tests pass",
+            "Move to In review + Security approval"
+          ]
+        },
+        {
+          "name": "[Wave 6 P5] Migración cliente actual on-prem → SaaS",
+          "desc": "**Contexto / Problema**\nMigrar datos y configuración del cliente existente desde on-prem single-tenant a nuevo ambiente SaaS multi-tenant sin pérdida de datos ni downtime significativo.\n\n**Acceptance Criteria**\n- Script de migración exporta datos desde DB on-prem.\n- Transforma datos a schema multi-tenant (agrega tenant_id).\n- Importa en SaaS staging sin corrupción.\n- Usuarios on-prem pueden login con credenciales en SaaS.\n- Datos validados: contact count, document count, configuration match.\n- Plan de rollback documentado.\n- Cutover ejecutado en horario bajo (ej: domingo 2-4am).\n\n**Definition of Done**\n- Migration script testeado en dev + staging.\n- Datos pre-migracion auditados (backup).\n- Cutover documentado y comunicado al cliente.\n- Post-cutover validación completada sin errores.\n- Rollback plan ejecutado y probado.\n- Cliente accediendo a SaaS con todos sus datos.",
+          "checklist": [
+            "Desarrollar export script de on-prem DB",
+            "Transformar datos a schema multi-tenant",
+            "Cargar en DB SaaS staging + validar integridad",
+            "Testing de login post-migración",
+            "Rehearse cutover en dev/staging",
+            "Ejecutar migración en producción + validación",
+            "Move to In review + Deployed"
+          ]
+        },
+        {
+          "name": "[Wave 6 P6] Testing + deployment de multi-tenant a producción",
+          "desc": "**Contexto / Problema**\nValidar toda la arquitectura multi-tenant en staging y coordinar deployment a producción con feature flags para rollout gradual.\n\n**Acceptance Criteria**\n- Load test: 100+ tenants simultáneos, auth + billing + data queries.\n- Test suite: 200+ tests cubre auth, billing, data isolation, migration.\n- Staging idéntico a prod.\n- Feature flags para auth multi-tenant, onboarding, billing.\n- Runbook de deployment + rollback listos.\n- Monitoring alerts configurados (failed logins, billing errors, cross-tenant access).\n\n**Definition of Done**\n- CI/CD pipeline pasa todos los checks (lint, test, security scan).\n- Load test results documentados.\n- Staging deployment verificado.\n- Feature flags mergeados en main.\n- On-call engineer familiarizado con runbook.\n- Go/no-go meeting con product, devops, customer success.",
+          "checklist": [
+            "Ejecutar load test: 100+ tenants, auth + queries",
+            "Ejecutar suite de 200+ tests multi-tenant",
+            "Validar staging env idéntico a prod",
+            "Configurar feature flags en prod (disabled al inicio)",
+            "Documentar runbook de deployment + rollback",
+            "Configurar monitoring y alertas en prod",
+            "Go/no-go meeting + Deploy a prod con flags off",
+            "Move to In review + Deployed"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Wave 6] App móvil / PWA",
+      "parent_list": "Ideas",
+      "children": [
+        {
+          "name": "[Wave 6 P1] Auditoría Lighthouse PWA + estrategia de caché",
+          "desc": "**Contexto / Problema**\nAntes de implementar features PWA, necesitamos benchmark de score actual y definir estrategia de caché offline para rutas críticas.\n\n**Acceptance Criteria**\n- Reporte Lighthouse generado (pestaña PWA, Performance, Accessibility).\n- Score PWA actual documentado.\n- Estrategia de caché definida: qué rutas (dashboard, contactos, documentos) se cachean, TTL, invalidation.\n- Matriz de decisión: online-first vs cache-first por ruta.\n\n**Definition of Done**\n- Documento en wiki con reporte y estrategia.\n- Tarjeta movida a Done.",
+          "checklist": [
+            "Ejecutar Lighthouse PWA audit en staging",
+            "Documentar score y brechas",
+            "Definir estrategia de caché offline",
+            "Revisar y aprobar en Sprint Planning"
+          ]
+        },
+        {
+          "name": "[Wave 6 P2] Service Worker + caché offline",
+          "desc": "**Contexto / Problema**\nImplementar service worker que permita acceso offline a funcionalidad crítica (lectura de datos cacheados).\n\n**Acceptance Criteria**\n- Service worker registrado y activado en todos los navegadores target (iOS Safari 16+, Chrome 90+).\n- Rutas críticas (/api/dashboard, /api/contacts, /api/documents) se cachean en install o first request.\n- Usuario puede navegar y leer datos en offline mode.\n- Sincronización de datos cuando vuelve conectividad.\n\n**Definition of Done**\n- Service worker code testeado con workbox.\n- Tests E2E validando offline behavior.\n- Lighthouse PWA score ≥ 90.\n- Merged a main.",
+          "checklist": [
+            "Implementar service worker con Workbox",
+            "Configurar estrategia de caché (cache-first para assets, network-first para API)",
+            "Tests E2E offline behavior",
+            "Validar score Lighthouse PWA ≥90",
+            "Merge y deploy a staging"
+          ]
+        },
+        {
+          "name": "[Wave 6 P3] Web App Manifest + Install Prompt",
+          "desc": "**Contexto / Problema**\nPermitir que usuarios instalen PWA en pantalla de inicio (iOS, Android) con identidad visual.\n\n**Acceptance Criteria**\n- web-app-manifest.json creado con nombre, ícono, start_url, display: standalone.\n- Install prompt aparece automáticamente en mobile (Chrome, Edge, Samsung Internet).\n- Ícono y splash screen personalizados con branding Conico.\n- iOS: simulación de 'Add to Home Screen' funciona.\n\n**Definition of Done**\n- Manifest validado en DevTools.\n- Tests E2E verificando install prompt.\n- Assets (ícono 192x192, 512x512) integrados.\n- Deployed a staging.",
+          "checklist": [
+            "Crear web-app-manifest.json",
+            "Diseñar y optimizar ícono 192x192 y 512x512",
+            "Implementar install prompt UX",
+            "Tests: verificar manifest y prompt en mobile",
+            "Deploy a staging"
+          ]
+        },
+        {
+          "name": "[Wave 6 P4] Push Notifications (integración con Tier A #8)",
+          "desc": "**Contexto / Problema**\nIntegrar notificaciones push web que funcionen incluso en offline (cuando service worker está activo). Depende de que Tier A #8 tenga push backend listo.\n\n**Acceptance Criteria**\n- Service worker escucha 'push' events y muestra notificaciones.\n- Notificación llega incluso cuando la pestaña está cerrada.\n- Usuario puede hacer clic en notificación y volver a la app.\n- Metrics de entrega registradas (opened, dismissed).\n\n**Definition of Done**\n- Push handler en service worker.\n- Tests E2E simulando push events.\n- Tier A #8 completada y integrada.\n- Deployed a staging.",
+          "checklist": [
+            "Esperar a Tier A #8 completado",
+            "Implementar push event listener en service worker",
+            "Mostrar notifications UI con payload personalizado",
+            "Tests E2E: push offline, click action",
+            "Deploy y validar en staging"
+          ]
+        },
+        {
+          "name": "[Wave 6 P5] Tests E2E + Métricas de Instalación",
+          "desc": "**Contexto / Problema**\nValidar end-to-end offline behavior, push, e instalación. Configurar tracking de métricas de adoption.\n\n**Acceptance Criteria**\n- Suite E2E cubre: offline load, data read, push delivery, install flow.\n- Eventos de instalación y engagement registrados en analytics.\n- Dashboard admin muestra: instalaciones por día, sessiones offline % de total.\n\n**Definition of Done**\n- Tests pasando en CI/CD.\n- Métricas disponibles en admin panel.\n- Documentación de KPIs en wiki.\n- Merged a main.",
+          "checklist": [
+            "Escribir tests E2E: offline, push, install",
+            "Configurar tracking: install event, offline sessions",
+            "Dashboard admin: widget PWA metrics",
+            "Tests passing en CI",
+            "Merge y deploy"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Wave 6] API pública + webhooks salientes",
+      "parent_list": "Ideas",
+      "children": [
+        {
+          "name": "[Wave 6-1] Autenticación: API keys + OAuth2",
+          "desc": "**Contexto / Problema**\nTerceros necesitan autenticarse contra la API pública de forma segura. Requerimos soporte para API keys simples (para scripts internos) y OAuth2 (para aplicaciones terceras con delegación de permisos).\n\n**Acceptance Criteria**\n- Usuario administrador genera una API key desde UI, recibe secret una sola vez.\n- API key puede tener scopes limitados (ej: solo lectura de facturas).\n- OAuth2 authorization_code flow permite a usuario tercero otorgar permisos sin compartir credenciales.\n- Request a cualquier endpoint requiere Authorization header válido (Bearer token o API key).\n- Token expirado retorna 401; scopes insuficientes retornan 403.\n\n**Definition of Done**\n- Tabla `api_keys` + endpoints POST /api/keys, GET /api/keys, DELETE /api/keys/{id}.\n- Middleware de autenticación integrado en todas las rutas protegidas.\n- OAuth2 metadata endpoint + token introspection endpoint.\n- Tests para autenticación exitosa y fallida (401, 403, token expirado).\n- Deployado a staging.",
+          "checklist": [
+            "Crear tabla api_keys + endpoints CRUD con validación de scope",
+            "Implementar middleware de autenticación (validar Bearer token y API key)",
+            "Configurar OAuth2 provider con authlib (client_credentials, authorization_code)",
+            "Escribir tests para autenticación y denegación de acceso",
+            "Deploy a staging"
+          ]
+        },
+        {
+          "name": "[Wave 6-2] Rate limiting + DDoS protection",
+          "desc": "**Contexto / Problema**\nSin control de tasa, un integrador defectuoso o malicioso puede sobrecargar la API y degradar el servicio para otros. Necesitamos rate limiting por API key y por IP.\n\n**Acceptance Criteria**\n- Limit: 100 requests/minuto por API key (ventana deslizante).\n- Requests excedentes reciben 429 Too Many Requests.\n- Header `Retry-After` indica segundos hasta reintentar.\n- Estadísticas de uso son accesibles en dashboard (requests/min promedio por key).\n\n**Definition of Done**\n- Middleware slowapi + redis store integrado.\n- Tests para aceptación y rechazo de requests bajo/sobre límite.\n- Deploy a staging.",
+          "checklist": [
+            "Integrar slowapi + redis para rate limiting (100 req/min por key)",
+            "Agregar header Retry-After en respuesta 429",
+            "Escribir tests para límite y rechazo",
+            "Deploy a staging"
+          ]
+        },
+        {
+          "name": "[Wave 6-3] OpenAPI spec + documentación interactiva",
+          "desc": "**Contexto / Problema**\nIntegadores necesitan documentación clara y explorable de la API. OpenAPI 3.0 + Swagger UI permiten auto-generación y sandbox interactivo.\n\n**Acceptance Criteria**\n- Documentación interactiva disponible en `GET /api/docs` (Swagger UI).\n- OpenAPI spec (YAML/JSON) descargable desde `GET /api/openapi.json`.\n- Spec incluye todos los endpoints, parámetros, esquemas, códigos de respuesta.\n- Spec se regenera automáticamente en cada deploy (no manual).\n\n**Definition of Done**\n- FastAPI/Swagger integrado + spec auto-generado desde docstrings y models.\n- Spec validado contra OpenAPI 3.0 schema en CI.\n- Documentación + ejemplos cURL/Python en docs.\n- Deploy a staging.",
+          "checklist": [
+            "Generar OpenAPI spec automático desde FastAPI docstrings",
+            "Exponer Swagger UI en GET /api/docs",
+            "Escribir ejemplos de uso (curl, python) en docs",
+            "Validar spec en CI + deploy a staging"
+          ]
+        },
+        {
+          "name": "[Wave 6-4] Webhooks salientes + reintentos",
+          "desc": "**Contexto / Problema**\nTerceros necesitan ser notificados en tiempo real cuando ocurren eventos clave (factura creada, pago recibido). Webhooks permiten que Conico envíe eventos HTTP POST al endpoint del integrador.\n\n**Acceptance Criteria**\n- Webhooks se lanzan para: invoice_created, payment_created, order_received, customer_updated.\n- Usuario registra webhook URL desde UI (ej: https://integrador.com/webhooks).\n- Webhook delivery incluye firma HMAC-SHA256 (header X-Conico-Signature) para validación.\n- Reintentos exponenciales: 3 intentos (1s, 10s, 100s) si respuesta no es 2xx.\n- Webhook delivery log es auditable (timestamp, payload, response code, retry count).\n\n**Definition of Done**\n- Tabla `webhooks` (url, eventos, active, created_at) + tabla `webhook_deliveries` (webhook_id, event, payload, status_code, retry_count, next_retry_at).\n- Evento dispara task async que envía POST a URL registrada con firma.\n- Tests para envío exitoso, fallos y reintentos.\n- Deploy a staging.",
+          "checklist": [
+            "Crear tablas webhook + webhook_deliveries con schema de reintentos",
+            "Implementar lógica de envío + firma HMAC-SHA256",
+            "Agregar reintentos exponenciales (3x: 1s, 10s, 100s)",
+            "Escribir tests para webhook delivery + reintentos",
+            "Deploy a staging"
+          ]
+        },
+        {
+          "name": "[Wave 6-5] Integración en endpoints existentes + emitir eventos",
+          "desc": "**Contexto / Problema**\nPara que webhooks funcionen, necesitamos disparar eventos cuando se crean/actualizan recursos clave (facturas, pagos, órdenes, clientes). Esto requiere integrar event publishing en la lógica de negocio existente.\n\n**Acceptance Criteria**\n- Cada vez que se crea una factura, se dispara evento invoice_created con ID y resumen.\n- Cada pago registrado dispara payment_created.\n- Cada orden recibida dispara order_received.\n- Cada cliente actualizado dispara customer_updated.\n- Eventos se persisten en DB antes de enviar webhooks (para auditoría y reintentos).\n\n**Definition of Done**\n- Event dispatcher integrado en servicios de negocio (invoice_service, payment_service, etc.).\n- Tabla `events` (id, type, resource_id, payload, created_at) para auditoría.\n- Tests que verifiquen que evento se dispara en cada operación.\n- Deploy a staging.",
+          "checklist": [
+            "Crear tabla events + dispatcher en servicios de negocio",
+            "Dispara invoice_created, payment_created, order_received, customer_updated",
+            "Tests que verifiquen disparo de eventos",
+            "Deploy a staging"
+          ]
+        },
+        {
+          "name": "[Wave 6-6] Documentación de integrador + testing manual",
+          "desc": "**Contexto / Problema**\nIntegradores necesitan guía paso-a-paso para consumir la API. Documentación clara reduce fricción y soporte.\n\n**Acceptance Criteria**\n- Documentación en español (es-CL) con: Overview, autenticación, primeros pasos, ejemplos por recurso.\n- Ejemplos cURL y Python listos para copy-paste.\n- Guía de webhook con validación HMAC incluida.\n- Documentación deployada en docs.conico.cl (o similar).\n\n**Definition of Done**\n- Documento markdown + ejemplos cURL/Python.\n- Testeo manual con integrador piloto (e-commerce o contable).\n- Feedback integrador incorporado.\n- Deploy a staging.",
+          "checklist": [
+            "Escribir guía de integrador (autenticación, primeros pasos, webhooks)",
+            "Incluir ejemplos cURL + Python listos para usar",
+            "Testear con integrador piloto + recopilar feedback",
+            "Deploy documentación + Trello a In review"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Wave 5] POS / códigos de barras",
+      "parent_list": "Ideas",
+      "children": [
+        {
+          "name": "[POS P1] Captura de códigos de barras (USB + cámara)",
+          "desc": "**Contexto / Problema**\nEl módulo POS requiere soporte para dos fuentes de entrada de códigos: lectores USB estándar (HID) y cámaras web. Sin esta funcionalidad, el scanning no es posible.\n\n**Acceptance Criteria**\n- El usuario puede conectar un lector USB y escanear códigos; el producto se agrega automáticamente a la venta.\n- El usuario puede alternativamente usar la cámara web para capturar códigos QR/EAN13 y agregar el producto.\n- Si el código no existe en el catálogo, el sistema muestra un error controlado.\n- El input se auto-enfoca en el campo de scaneo después de cada lectura exitosa.\n\n**Definition of Done**\n- Código mergeado a main con tests unitarios (±80% coverage).\n- Verificado en navegadores Chrome, Safari, Firefox en macOS y Windows.\n- Documentado en README: configuración HID, permisos de cámara, troubleshooting.",
+          "checklist": [
+            "Implementar handler USB HID con barcode-js",
+            "Implementar captura de cámara con jsQR",
+            "Validar formato EAN13/QR y buscar en BD",
+            "Tests unitarios: scaneo válido, inválido, timeout",
+            "Mergear a main y desplegar a staging"
+          ]
+        },
+        {
+          "name": "[POS P2] Interfaz POS optimizada (touch + keyboard)",
+          "desc": "**Contexto / Problema**\nLa interfaz POS debe ser ergonómica en tablets (7–10\") y soportar interacción por touch y teclado. Sin esto, la UX será ineficiente para operadores de caja.\n\n**Acceptance Criteria**\n- Botones principales (Agregar, Eliminar, Pagar, Cancelar) tienen ≥40px de height.\n- El layout es responsive: se adapta a orientación portrait/landscape.\n- Atajos de teclado funcionan: F1=Pagar, ESC=Cancelar, +/- ajusta cantidad.\n- El carrito de compras es visible en ≥60% de la pantalla.\n- Totales (subtotal, impuesto, total) se actualizan en tiempo real.\n\n**Definition of Done**\n- Componentes React reutilizables (PosCart, ItemRow, CheckoutPanel) testeados.\n- Responsive testing completo en iPad Air, tablet 7\" Android.\n- Atajos de teclado mapeados y documentados.\n- Despliegue a staging completado.",
+          "checklist": [
+            "Diseñar mockups en Figma (touch-first, 40px+ buttons)",
+            "Implementar componentes React: PosCart, ItemRow, CheckoutPanel",
+            "Mapear atajos de teclado (F1, ESC, +/-)",
+            "Tests responsive (iPad, tablet 7\")",
+            "Mergear a main y pasar review de UX"
+          ]
+        },
+        {
+          "name": "[POS P3] Caja diaria y arqueo",
+          "desc": "**Contexto / Problema**\nAl cierre del día, el usuario debe poder generar un resumen de caja (ingresos, discrepancias, reporte de ventas) y arquear la caja. Sin este módulo, no hay control contable.\n\n**Acceptance Criteria**\n- El usuario abre la opción 'Arqueo diario' desde el POS.\n- El sistema lista todas las ventas del día (filtrable por rango horario).\n- Se muestra total de ingresos, número de transacciones, desglose por medio de pago.\n- El usuario ingresa el monto en efectivo contado; el sistema calcula la diferencia (faltante/sobrante).\n- El arqueo se guarda con timestamp y firma del operador (si está disponible).\n- Se genera un reporte descargable (PDF o CSV).\n\n**Definition of Done**\n- Tabla daily_closings creada con migración.\n- Endpoints POST /api/closing y GET /api/closings/{date} implementados.\n- Tests de integración: cierre exitoso, validación de montos, discrepancias.\n- Despliegue a staging completado.",
+          "checklist": [
+            "Crear tabla daily_closings y migración",
+            "Implementar endpoints POST /closing, GET /closings/{date}",
+            "UI: formulario de arqueo (monto en efectivo, notas)",
+            "Generar reporte diario (PDF/CSV)",
+            "Tests: cierre exitoso, validación de montos",
+            "Mergear y desplegar a staging"
+          ]
+        },
+        {
+          "name": "[POS P4] Integración boleta DTE 39 con SII",
+          "desc": "**Contexto / Problema**\nCada venta POS debe generar una boleta electrónica (DTE 39) conforme a normativa SII. Sin esta integración, las ventas no son legales ante fisco.\n\n**Acceptance Criteria**\n- Al confirmar una venta, el sistema emite automáticamente un DTE 39 vía SII.\n- La boleta recibe un folio asignado por el SII.\n- El usuario ve el número de folio en pantalla al finalizar la transacción.\n- La boleta se guarda en BD con estado (Emitida, Enviada, Rechazada).\n- El usuario puede reimprimir boletas desde historial de ventas.\n- Se soporta modo de prueba (certificados de testing del SII).\n\n**Definition of Done**\n- Integración con SII webservice (sii-chile lib o custom) funcional.\n- Tabla dte_receipts creada con campos folio, estado, timestamp, xml.\n- Endpoints POST /api/receipt/emit, GET /api/receipts/{folio} implementados.\n- Tests: emisión exitosa, manejo de errores SII (folio agotado, timeout).\n- Documentación de setup (certificados, credenciales SII) en README.\n- Despliegue a staging con certificados de prueba.",
+          "checklist": [
+            "Integrar sii-chile lib (o equivalente) para DTE 39",
+            "Crear tabla dte_receipts y migración",
+            "Implementar endpoint POST /receipt/emit (llamada SII)",
+            "UI: mostrar folio al finalizar venta",
+            "Reimpresión de boletas desde historial",
+            "Tests: emisión exitosa, errores SII, modo prueba",
+            "Desplegar a staging con certs de testing"
+          ]
+        },
+        {
+          "name": "[POS P5] Tests de integración y QA",
+          "desc": "**Contexto / Problema**\nAntes de Wave 5, todos los componentes POS deben pasar una suite completa de tests de integración y QA manual con cliente piloto.\n\n**Acceptance Criteria**\n- Suite de tests E2E: scanning → agregar producto → pagar → generar boleta DTE → arquear caja.\n- Cobertura de código ≥80% en módulos core (scanning, checkout, DTE).\n- Manual QA: operador de caja completa un turno completo sin errores.\n- Performance: tiempo de respuesta <200ms en transacciones normales.\n- Compatibilidad: validado en Chrome, Safari, Firefox, navegadores móvil.\n\n**Definition of Done**\n- Suite E2E ejecutada y pasando en CI/CD.\n- Reporte de cobertura generado y documentado.\n- QA manual completado con checklist firmado.\n- Bugs críticos resueltos; no-critical logged para Wave 6.\n- Despliegue a staging listo para client pilot.\n- Trello card movida a 'In review'.",
+          "checklist": [
+            "Escribir tests E2E: scanning → checkout → DTE → arqueo",
+            "Medir cobertura de código (≥80% target)",
+            "QA manual: turno completo, 10+ transacciones",
+            "Performance testing (P95 latency <200ms)",
+            "Compatibilidad: Chrome, Safari, Firefox, mobile",
+            "Fix críticos; log no-critical",
+            "Mergear a main y mover card a In review"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Wave 4] Conciliación bancaria + multi-moneda + UF",
+      "parent_list": "Ideas",
+      "children": [
+        {
+          "name": "[Conciliación P1] Importadores de cartola bancaria (4 formatos)",
+          "desc": "**Contexto / Problema**\nConico no puede leer cartolas bancarias. Las pymes chilenas usan Banco de Chile, Santander, BCI y Estado, cada uno con formato distinto (TXT/CSV/OFX). Necesitamos parsers robustos para cada uno.\n\n**Acceptance Criteria**\n- Usuario carga archivo de cartola en formato Banco de Chile (TXT) y sistema extrae: fecha, monto, descripción, saldo.\n- Usuario carga archivo Santander (CSV) y sistema normaliza a la misma estructura.\n- Usuario carga archivo BCI (OFX) y sistema parsea correctamente.\n- Usuario carga archivo Estado (TXT) y sistema valida formato.\n- Cada parser valida integridad (sumas, fechas válidas) y rechaza con mensaje claro si hay error.\n- Sistema almacena raw import + parsed data en BD para auditoría.\n\n**Definition of Done**\n- Tabla bank_statements creada (id, file_id, format, raw_data, parsed_rows, account, created_at).\n- 4 parsers implementados con tests unitarios >=90% coverage.\n- Endpoint POST /api/bank-imports con validación de file type.\n- Desplegado a staging, validado con 3 ejemplos reales de cada banco.\n- Trello card movida a In review.\n\n**Notas tecnicas**\n- Banco de Chile: parsear TXT con espacios fijos o CSV; columas: fecha, descripción, abono, cargo, saldo.\n- Santander: CSV con header; usar librería csv.DictReader.\n- BCI: OFX; usar 'ofxparse' (pip).\n- Estado: TXT específico; validar contra DTE.\n- Guardar raw file en storage (S3/local) con hash para deduplicación.",
+          "checklist": [
+            "Crear tabla bank_statements con campos: id, file_id, format, account, raw_data, parsed_rows, created_at",
+            "Implementar parser Banco de Chile (TXT) con regex y validación",
+            "Implementar parser Santander (CSV) y BCI (OFX using ofxparse library)",
+            "Implementar parser Estado (TXT) con validación contra SII format",
+            "Tests unitarios para cada parser (>=90% coverage), incluyendo casos edge (montos negativos, fechas inválidas)",
+            "Endpoint POST /api/bank-imports con validación MIME type y almacenamiento",
+            "Deploy staging, validar con 3 archivos reales, mover a In review"
+          ]
+        },
+        {
+          "name": "[Conciliación P2] Cotizaciones diarias (UF/USD/EUR)",
+          "desc": "**Contexto / Problema**\nPara convertir moneda extranjera a CLP en facturas y conciliación, necesitamos cotizaciones históricas diarias confiables. El Banco Central y SII las publican; debemos sincronizar automáticamente.\n\n**Acceptance Criteria**\n- Sistema ejecuta cron diario a las 08:00 que obtiene UF del día desde Banco Central.\n- Sistema obtiene USD/EUR desde Banco Central (oficial) o mercado.\n- Sistema almacena en BD con fecha y tasa para histórico.\n- Si falla, sistema reintenta 3 veces con backoff exponencial y alerta.\n- Usuario ve tabla de cotizaciones del último mes en dashboard de configuración.\n- Para fecha antigua, sistema usa cotización del día más cercano disponible.\n\n**Definition of Done**\n- Tabla fx_rates creada (date, currency, rate_to_clp, source, fetched_at).\n- Cron job implementado (usar Celery/APScheduler según stack).\n- Integración con API Banco Central (https://si3.bcentral.cl/SieInternet/visitzaDir.asp).\n- Tests: mock API, validar almacenamiento, validar reintento.\n- Desplegado a staging con logs de ejecución.\n- Trello card movida a In review.\n\n**Notas tecnicas**\n- Banco Central API: documentación en bcentral.cl; usar requests library.\n- Celery beat schedule: `crontab(hour=8, minute=0)` en zona CLP.\n- Fallback: si API falla, usar última cotización conocida + log warning.\n- Schema: fx_rates (id, date, currency_code, rate_to_clp, source, fetched_at, updated_at).",
+          "checklist": [
+            "Crear tabla fx_rates (date, currency_code, rate_to_clp, source, fetched_at)",
+            "Implementar fetcher para Banco Central API (UF/USD/EUR)",
+            "Configurar cron job (Celery/APScheduler) ejecutar diario 08:00 CLP",
+            "Implementar retry logic (3 intentos, backoff exponencial) y alerting",
+            "Tests: mock API calls, validar inserción BD, validar reintento",
+            "Endpoint GET /api/fx-rates/{date} que retorna cotizaciones del día o más cercana",
+            "Deploy staging, validar logs de cron, mover a In review"
+          ]
+        },
+        {
+          "name": "[Conciliación P3] Matching automático + sugerencias manuales",
+          "desc": "**Contexto / Problema**\nUna vez importada la cartola bancaria, necesitamos matchear cada movimiento contra pagos registrados en facturas. El matching automático debe ser inteligente (por monto, fecha, cliente) pero permitir override manual.\n\n**Acceptance Criteria**\n- Sistema sugiere automáticamente match entre movimiento bancario y pago si:\n  - Monto es exacto (o dentro de tolerancia ±CLP 100).\n  - Fecha de transacción es ±2 días de fecha de pago registrado.\n  - Descripción contiene RUT o nombre de cliente.\n- Usuario ve lista de sugerencias con score de confianza (alto/medio/bajo).\n- Usuario puede aceptar, rechazar o hacer match manual entre movimiento y factura.\n- Una factura NO puede matchearse a 2 movimientos distintos (1:1 relationship).\n- Sistema muestra estado: matched, pending review, rejected, unmatched.\n- Dashboard de conciliación muestra % reconciliado por período.\n\n**Definition of Done**\n- Tabla reconciliation_matches creada (bank_stmt_id, invoice_id, confidence, matched_by, status, created_at, reviewed_at).\n- Algoritmo de scoring implementado y documentado.\n- Endpoints POST /api/reconciliation/match (manual), GET /api/reconciliation/suggestions, PATCH /api/reconciliation/{match_id}/status.\n- Tests: unitarios (scoring), integración (end-to-end).\n- Desplegado a staging.\n- Trello card movida a In review.\n\n**Notas tecnicas**\n- Scoring: (monto exacto: +50pts) + (fecha ±1d: +30pts, ±2d: +15pts) + (descripción match: +20pts).\n- Threshold: score >=80 = high confidence, 60-79 = medium, <60 = low.\n- Constraint: UNIQUE (invoice_id, status='matched') para evitar duplicados.\n- Schema: reconciliation_matches (id, bank_stmt_id, invoice_id, confidence_score, matched_by_user_id, status, created_at, reviewed_at).",
+          "checklist": [
+            "Crear tabla reconciliation_matches (bank_stmt_id, invoice_id, confidence_score, matched_by_user_id, status, reviewed_at)",
+            "Implementar algoritmo de scoring (monto, fecha, descripción)",
+            "Implementar lógica de sugerencias automáticas (generar scores para todos los pares)",
+            "Endpoint POST /api/reconciliation/match (match manual) con validación 1:1",
+            "Endpoint GET /api/reconciliation/suggestions?bank_import_id={id} retorna top sugerencias ordenadas por score",
+            "Endpoint PATCH /api/reconciliation/{match_id}/status actualiza (accepted/rejected/pending)",
+            "Tests unitarios + integración (>=85% coverage), deploy staging, mover a In review"
+          ]
+        },
+        {
+          "name": "[Conciliación P4] Conversión de moneda extranjera en facturas",
+          "desc": "**Contexto / Problema**\nUna factura en USD/UF/EUR debe convertirse a CLP usando la cotización del día de emisión/pago para registro contable. Sin esto, no hay trazabilidad ni cumplimiento fiscal en moneda uniforme.\n\n**Acceptance Criteria**\n- Usuario crea factura en USD; sistema le sugiere tasa de cambio del día automáticamente.\n- Usuario puede aceptar o ingresar tasa manual si es necesario (ej. por acuerdo comercial).\n- Factura guarda: monto_original, moneda, tasa_cambio, monto_clp.\n- Dashboard y reportes siempre muestran montos en CLP (sumando conversiones).\n- Si se crea factura sin especificar moneda, por defecto es CLP (sin conversión).\n- Sistema no permite convertir CLP (es moneda base).\n\n**Definition of Done**\n- Schema de factura extendido: add currency_code, exchange_rate, amount_clp.\n- Endpoint PUT /api/invoices/{id} que permite actualizar moneda y tasa.\n- GET /api/invoices retorna siempre amount_clp calculado.\n- Migraciones de datos: convertir facturas existentes (si aplica).\n- Tests: unitarios (conversión), integración (crear factura con USD, validar amount_clp).\n- Desplegado a staging.\n- Trello card movida a In review.\n\n**Notas tecnicas**\n- amount_clp = amount_original * exchange_rate (almacenar ambos para auditoría).\n- Si currency_code == 'CLP' o null, amount_clp = amount_original.\n- Si falta exchange_rate, usar fx_rates de ese día (fallback a más cercano).\n- Schema: invoices.add (currency_code: CHAR(3), exchange_rate: DECIMAL(10,6), amount_clp: DECIMAL(15,2)).",
+          "checklist": [
+            "Extender schema factura: add currency_code (CHAR(3)), exchange_rate (DECIMAL), amount_clp (DECIMAL)",
+            "Crear migración para llenar amount_clp = amount_original para facturas existentes",
+            "Implementar lógica: al crear/actualizar factura, si currency != CLP, buscar fx_rates del día",
+            "Endpoint PUT /api/invoices/{id} con parámetros currency_code, exchange_rate (opcional, calcula si omitido)",
+            "GET /api/invoices retorna amount_clp (calculated field)",
+            "Tests unitarios (conversión correcta, fallback a fx_rates, CLP no convierte) + integración",
+            "Deploy staging, validar con factura USD/UF de ejemplo, mover a In review"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[User Guide] Getting started: configuracion inicial",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[Config P1] Formulario datos empresariales (RUT, razón social, dirección)",
+          "desc": "Implementar formulario en `/configuracion` que permita al cliente ingresar y guardar datos básicos de su empresa (RUT con validación de formato, razón social, dirección). Estos datos deben ser editables y persistir en la base de datos.",
+          "checklist": [
+            "Crear/actualizar modelo Company con campos RUT, razon_social, direccion",
+            "Implementar endpoint PATCH /api/company para actualizar datos",
+            "Crear formulario reactivo en `/configuracion` con validación de RUT",
+            "Mostrar toast de confirmación al guardar",
+            "Tests: validación RUT, guardado persistente, error handling",
+            "Mover a 'In review'"
+          ]
+        },
+        {
+          "name": "[Config P2] Upload y almacenamiento de logo",
+          "desc": "Permitir que el cliente suba un logo (JPG/PNG, <=2MB) que aparezca en encabezado, reportes y documentos. Implementar preview antes de guardar y almacenar en S3.",
+          "checklist": [
+            "Configurar endpoint POST /api/company/logo con validación de tipo/tamaño",
+            "Integrar S3 (o storage elegido) para almacenamiento",
+            "Guardar URL de logo en Company.logo_url",
+            "Implementar preview visual antes de confirmar",
+            "Mostrar logo en encabezado y reportes",
+            "Tests: validación archivo, almacenamiento, referencia en Company",
+            "Mover a 'In review'"
+          ]
+        },
+        {
+          "name": "[Config P3] Gestión de cuentas bancarias",
+          "desc": "Implementar ABM (Alta, Baja, Modificación) de cuentas bancarias en `/configuracion` o panel separado. Cada cuenta debe tener banco, tipo de cuenta, número y titular. Usada para pagos y transferencias.",
+          "checklist": [
+            "Crear modelo BankAccount con campos: banco, tipo_cuenta, numero, titular, activa",
+            "Implementar endpoints CRUD /api/company/bank-accounts",
+            "Crear tabla/listado UI con acciones editar/eliminar/activar",
+            "Validar número de cuenta según banco (si aplica)",
+            "Tests: CRUD completo, validaciones, soft delete",
+            "Mover a 'In review'"
+          ]
+        },
+        {
+          "name": "[Config P4] Upload y validación de folios CAF",
+          "desc": "Permitir upload de archivos CAF (XML) en `/migracion-inicial`. Validar formato, vigencia y almacenar para uso en emisión de DTE. Mostrar estado (vigente/expirado/inválido).",
+          "checklist": [
+            "Crear modelo CAFUpload con campos: archivo, estado, fecha_vencimiento, fecha_upload",
+            "Implementar endpoint POST /api/caf/upload con parseo XML básico",
+            "Validar vigencia CAF contra fecha actual",
+            "Mostrar listado de CAFs con estado visual",
+            "Tests: parseo XML, validación vigencia, manejo de errores",
+            "Mover a 'In review'"
+          ]
+        },
+        {
+          "name": "[Config P5] Creación de usuarios y asignación de roles",
+          "desc": "Permitir crear múltiples usuarios en `/usuarios` con roles asignables (Administrador, Vendedor, Bodeguero, etc.). Mostrar listado, editar roles y revocar accesos. Enviar invitación por email.",
+          "checklist": [
+            "Crear UI en `/usuarios` con formulario de nuevo usuario (nombre, email, rol)",
+            "Implementar endpoint POST /api/users con validación email único",
+            "Implementar asignación de rol y permisos según rol",
+            "Enviar email de invitación con link temporal de setup contraseña",
+            "Mostrar listado editable de usuarios con opción revoke",
+            "Tests: creación usuario, asignación rol, email envío, revoke",
+            "Mover a 'In review'"
+          ]
+        },
+        {
+          "name": "[Config P6] Setup de 2FA (recomendación e implementación)",
+          "desc": "Mostrar recomendación clara de habilitar 2FA (TOTP con Google Authenticator) en `/seguridad`. Permitir que el cliente lo active sin fricción, con QR code y código backup.",
+          "checklist": [
+            "Implementar endpoint POST /api/2fa/setup para generar secret TOTP",
+            "Generar QR code y mostrar código backup en UI",
+            "Implementar validación de TOTP al confirmar activación",
+            "Mostrar advertencia/recomendación en dashboard o configuración",
+            "Tests: TOTP generation, validation, backup codes",
+            "Mover a 'In review'"
+          ]
+        },
+        {
+          "name": "[Config P7] User Guide - Documentación paso a paso",
+          "desc": "Redactar y publicar User Guide en es-CL que cubre el flujo completo de configuración inicial: datos empresariales, logo, bancos, CAF, usuarios, 2FA. Incluir capturas, ejemplos y troubleshooting.",
+          "checklist": [
+            "Escribir estructura: Introducción, paso 1-6 (datos, logo, bancos, CAF, usuarios, 2FA), FAQ, troubleshooting",
+            "Capturar pantallazos de cada paso en interfaz",
+            "Proporcionar ejemplo de datos válidos (RUT ficticio, banco, etc.)",
+            "Incluir links a validadores SII si aplica",
+            "Publicar en wiki/help center interno",
+            "Revisar con UX/PO y compartir link en onboarding email",
+            "Mover a 'In review'"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[User Guide] Flujo de ventas: Cotizacion -> NV -> Factura",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[Guide P1] Cotización: creación, envío y PDF",
+          "desc": "**Contexto / Problema**\nUsuarios necesitan aprender a crear cotizaciones con líneas, enviarlas por email y generar PDFs. Esta es la puerta de entrada al flujo de ventas.\n\n**Acceptance Criteria**\n- Guía explica cómo crear una cotización nueva desde el módulo de ventas.\n- Guía muestra cómo agregar líneas (productos/servicios) con cantidad, precio unitario y descuentos.\n- Guía documenta cómo enviar cotización por email a cliente.\n- Guía incluye screenshot del PDF generado y qué datos contiene.\n- Guía menciona campos obligatorios y validaciones del sistema.\n\n**Definition of Done**\n- Sección publicada en docs.conico.cl/ventas/cotizaciones.\n- Incluye mínimo 5 screenshots con interfaz actualizada.\n- Ejemplo completo con números ficticios (cliente, líneas, totales).\n- Revisión de UX/Product aprobada.",
+          "checklist": [
+            "Redactar paso a paso: crear cotización nueva",
+            "Redactar paso a paso: agregar líneas y cálculos",
+            "Redactar paso a paso: envío por email",
+            "Capturar 5+ screenshots de cada etapa",
+            "Crear ejemplo completo con datos ficticios",
+            "Tests: validar coherencia con interfaz real",
+            "Publicar en staging / Revisar con Product"
+          ]
+        },
+        {
+          "name": "[Guide P2] Límites de crédito y aprobación de margen",
+          "desc": "**Contexto / Problema**\nEl sistema valida límites de crédito del cliente y margen de ventas antes de permitir conversión a NV. Usuarios deben entender estas restricciones, cómo verlas y qué hacer si se bloquean.\n\n**Acceptance Criteria**\n- Guía explica qué es límite de crédito y cómo se configura por cliente.\n- Guía muestra warnings cuando cotización se acerca al límite.\n- Guía documenta bloqueo si límite se excede y cómo resolver (contact admin, increase limit).\n- Guía explica qué es margen de venta y cuándo requiere aprobación.\n- Guía muestra flujo de solicitud y aprobación de margen.\n\n**Definition of Done**\n- Sección publicada en docs.conico.cl/ventas/credito-margen.\n- Incluye 3+ screenshots de warnings y diálogos.\n- Ejemplo con cliente que alcanza límite y flujo de resolución.\n- Glosario con términos: 'límite de crédito', 'margen', 'aprobación'.",
+          "checklist": [
+            "Redactar concepto: límite de crédito y configuración",
+            "Redactar concepto: margen de venta y aprobación",
+            "Capturar screenshots: warning de límite y bloqueo",
+            "Capturar screenshots: flujo de solicitud de margen",
+            "Crear ejemplo: cliente con límite alcanzado",
+            "Tests: validar reglas de negocio reflejadas",
+            "Revisar con Product / Publicar"
+          ]
+        },
+        {
+          "name": "[Guide P3] Conversión de Cotización a NV: flujo completo y parcial",
+          "desc": "**Contexto / Problema**\nUsuarios deben convertir cotizaciones a Notas de Venta (NV), ya sea enviando todas las líneas o seleccionando parcialmente. Esta es la transición crítica en el flujo de ventas.\n\n**Acceptance Criteria**\n- Guía muestra cómo convertir una cotización a NV (botón, confirmación).\n- Guía explica flujo parcial: seleccionar líneas específicas para enviar.\n- Guía documenta qué sucede con las líneas no enviadas (quedan en cotización).\n- Guía menciona estados de NV tras la conversión (draft, pending, sent).\n- Guía incluye warnings sobre crédito y margen antes de confirmar conversión.\n\n**Definition of Done**\n- Sección publicada en docs.conico.cl/ventas/cotizacion-nv.\n- Incluye 4+ screenshots del flujo completo y parcial.\n- Ejemplo: conversión completa y ejemplo separado de parcial.\n- Claridad sobre qué ocurre en cada estado (draft → pending → sent).",
+          "checklist": [
+            "Redactar paso a paso: conversión completa de cotización a NV",
+            "Redactar paso a paso: conversión parcial (selección de líneas)",
+            "Capturar screenshots: botón convertir, diálogo selección, confirmación",
+            "Capturar screenshots: estados de NV antes/después conversión",
+            "Crear 2 ejemplos: uno completo, uno parcial",
+            "Tests: validar lógica de líneas enviadas/no enviadas",
+            "Publicar en staging / Revisar"
+          ]
+        },
+        {
+          "name": "[Guide P4] NV: transiciones de estado y gestión de envíos/pagos",
+          "desc": "**Contexto / Problema**\nUna Nota de Venta pasa por varios estados (draft, pending, dispatched, delivered, paid). Usuarios necesitan entender cada transición, cuándo ocurre automáticamente vs manual, y cómo afecta la facturación.\n\n**Acceptance Criteria**\n- Guía documenta estados de NV: draft, pending, dispatched, delivered, partially_paid, paid.\n- Guía explica transiciones: qué acción causa cada cambio (envío, despacho, entrega, pago).\n- Guía muestra cómo registrar despacho y entrega en el sistema.\n- Guía incluye diagrama de estados o tabla de transiciones.\n- Guía menciona que factura DTE solo se crea cuando NV está delivered o paid.\n\n**Definition of Done**\n- Sección publicada en docs.conico.cl/ventas/nv-estados.\n- Diagrama de transiciones incluido (ASCII o PNG).\n- Tabla con estado → acción → próximo estado.\n- 3+ screenshots ilustrando cambios de estado.\n- Glosario: despacho, entrega, recepción.",
+          "checklist": [
+            "Redactar concepto: estados de NV y transiciones",
+            "Crear diagrama de estados (ASCII o generar PNG)",
+            "Redactar paso a paso: registrar despacho",
+            "Redactar paso a paso: registrar entrega",
+            "Capturar screenshots: cambio de estado en interfaz",
+            "Tests: validar flujo de estados en sistema",
+            "Publicar / Revisar con Product"
+          ]
+        },
+        {
+          "name": "[Guide P5] Factura DTE 33: creación, emisión y requisitos SII",
+          "desc": "**Contexto / Problema**\nUsuarios deben generar Facturas DTE tipo 33 a partir de NV entregadas, entender la emisión a SII, y cumplir con requisitos legales. Esta es la etapa crítica de regulación.\n\n**Acceptance Criteria**\n- Guía explica qué es un DTE 33 (factura de venta) y cuándo se aplica.\n- Guía muestra cómo crear factura DTE desde una NV (botón, datos pre-rellenados).\n- Guía documenta requisitos obligatorios: cliente RUT válido, dirección, NV estado delivered.\n- Guía explica diferencia entre 'crear' y 'emitir' factura.\n- Guía menciona estados SII: emitted, accepted, rejected, cancelled.\n- Guía incluye qué hacer si hay error en emisión (rechazo SII, reintento).\n\n**Definition of Done**\n- Sección publicada en docs.conico.cl/ventas/factura-dte.\n- Incluye 4+ screenshots: creación, pre-visualización, emisión, confirmación.\n- Glosario DTE: tipo 33, folio, timbre, emisión, aceptación.\n- Ejemplo completo con datos ficticios y flujo SII.\n- Nota sobre logs/auditoría de emisión.",
+          "checklist": [
+            "Redactar concepto: DTE 33, emisión SII, requisitos",
+            "Redactar paso a paso: crear factura DTE desde NV",
+            "Redactar paso a paso: emisión a SII y confirmación",
+            "Redactar manejo de errores: rechazo SII, reintento",
+            "Capturar screenshots: creación, pre-visualización, emisión",
+            "Crear ejemplo completo con folio ficticio",
+            "Tests: validar flujo de emisión en sistema",
+            "Publicar / Revisar con Legal/Compliance"
+          ]
+        },
+        {
+          "name": "[Guide P6] Pagos: registro completo, parcial y conciliación",
+          "desc": "**Contexto / Problema**\nUsuarios necesitan registrar pagos de facturas (completos o parciales), actualizar estados y entender cómo el sistema concilia pagos con factura emitida.\n\n**Acceptance Criteria**\n- Guía explica cómo registrar un pago completo: monto, fecha, método (transferencia, cheque, etc).\n- Guía muestra cómo registrar pagos parciales y qué estado tienen (partially_paid).\n- Guía documenta qué sucede cuando se alcanza monto total (estado becomes paid).\n- Guía incluye forma de ver historial de pagos en factura.\n- Guía menciona consideraciones: cambio de tasa si hay desfase temporal.\n\n**Definition of Done**\n- Sección publicada en docs.conico.cl/ventas/pagos.\n- Incluye 4+ screenshots: registro pago, historial, estado actualizado.\n- Ejemplo: pago completo y ejemplo separado de 2 pagos parciales.\n- Glosario: conciliación, deudor, saldo pendiente.",
+          "checklist": [
+            "Redactar paso a paso: registrar pago completo",
+            "Redactar paso a paso: registrar pagos parciales múltiples",
+            "Redactar cómo ver historial de pagos y saldo pendiente",
+            "Capturar screenshots: formulario pago, historial, estado factura",
+            "Crear 2 ejemplos: pago completo + 2 parciales",
+            "Tests: validar cálculo de saldos y transiciones de estado",
+            "Publicar / Revisar con Finanzas"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[User Guide] Gestion de Clientes y Empresas",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[User Guide P1] Crear Cliente y Empresa",
+          "desc": "**Contexto / Problema**\nUsuarios requieren instrucciones paso a paso para crear un cliente en Conico CRM, incluyendo validación de RUT, campos obligatorios y vinculación a empresa.\n\n**Acceptance Criteria**\n- Guía documenta flujo: acceder a módulo Clientes → Nuevo → rellenar formulario → validar RUT → guardar → vincular a empresa.\n- Se explican campos: Nombre, RUT, Email, Teléfono, Dirección, Empresa.\n- Se muestran errores comunes: RUT inválido, cliente duplicado, empresa no existe.\n- Guía incluye 3-4 capturas de pantalla del formulario en diferentes estados.\n\n**Definition of Done**\n- Documento redactado en Markdown y revisado por PM.\n- Capturas validadas con la UI actual.\n- Publicada en Help Center.",
+          "checklist": [
+            "Redactar pasos: acceder Clientes, Nuevo cliente, completar formulario",
+            "Documentar validación RUT: formato, máx caracteres, errores",
+            "Capturar pantallas: formulario vacío, completo, modal de éxito",
+            "Incluir troubleshooting: cliente duplicado, RUT rechazado",
+            "Revisar ortografía y tono es-CL",
+            "Publicar y verificar links",
+            "Mover tarjeta a Done"
+          ]
+        },
+        {
+          "name": "[User Guide P2] Gestión de Sedes de Despacho",
+          "desc": "**Contexto / Problema**\nLa funcionalidad de Sedes de Despacho (SedeDespacho) es crítica para empresas con múltiples puntos de distribución, pero carece de documentación clara sobre su propósito, límites y configuración.\n\n**Acceptance Criteria**\n- Guía define qué es una Sede de Despacho y cuándo usarla (filiales, almacenes, centros de distribución).\n- Documenta límite de 10 sedes por empresa.\n- Pasos: crear sede (nombre, dirección, ciudad, contacto), editar, eliminar.\n- Casos de uso: empresa con múltiples puntos de venta, cada punto con contacto distinto.\n\n**Definition of Done**\n- Documento redactado con ejemplos reales de pymes chilenas.\n- Capturas del formulario de sede.\n- Publicada en Help Center.",
+          "checklist": [
+            "Redactar definición: qué es Sede de Despacho y casos de uso",
+            "Documentar límites: máx 10 sedes, campos requeridos",
+            "Capturar pantallas: lista de sedes, formulario crear/editar",
+            "Incluir ejemplo: empresa con 3 sedes (oficina, almacén, tienda)",
+            "Revisar con usuario pilot",
+            "Publicar en Help Center",
+            "Mover tarjeta a Done"
+          ]
+        },
+        {
+          "name": "[User Guide P3] Timeline y Historial de Documentos",
+          "desc": "**Contexto / Problema**\nLa vista Timeline unifica el historial de documentos asociados a un cliente/empresa, pero no está documentada. Usuarios no saben cómo acceder ni qué información contiene.\n\n**Acceptance Criteria**\n- Guía explica qué es Timeline: registro cronológico de documentos (facturas, notas, correos, cambios).\n- Documenta cómo acceder desde perfil de cliente/empresa.\n- Explica columnas: fecha, tipo de documento, usuario que actuó, descripción.\n- Muestra cómo filtrar por rango de fechas o tipo de documento.\n\n**Definition of Done**\n- Documento redactado con diagrama o captura de Timeline.\n- Casos de uso: auditar cambios, ver historial de transacciones.\n- Publicada en Help Center.",
+          "checklist": [
+            "Redactar: qué es Timeline y qué contiene",
+            "Documentar acceso: desde cliente → pestaña Timeline",
+            "Capturar pantalla: vista Timeline con 5+ registros",
+            "Explicar filtros: por fecha, por tipo de documento",
+            "Incluir caso de uso: auditar quién cambió datos críticos",
+            "Revisar con equipo de operaciones",
+            "Publicar en Help Center"
+          ]
+        },
+        {
+          "name": "[User Guide P4] Líneas de Crédito y Advertencias",
+          "desc": "**Contexto / Problema**\nLas líneas de crédito permiten definir límites de exposición por empresa. Los usuarios necesitan entender cómo configurarlas, cómo se calculan y qué alertas disparan.\n\n**Acceptance Criteria**\n- Guía define línea de crédito: límite máximo de deuda permitida por empresa.\n- Pasos: acceder a empresa → sección Finanzas → Línea de Crédito → ingresar monto.\n- Documenta alertas: amarilla (80% del límite), roja (100%+).\n- Explica cálculo: deuda actual = facturas no pagadas + documentos pendientes.\n- Muestra dashboard con estado de línea de crédito (% usado, saldo disponible).\n\n**Definition of Done**\n- Documento redactado con ejemplos numéricos.\n- Capturas: formulario de línea de crédito, dashboard con alertas.\n- Publicada en Help Center.",
+          "checklist": [
+            "Redactar definición: línea de crédito y propósito",
+            "Documentar pasos: acceder a empresa → Finanzas → Línea de Crédito",
+            "Capturar: formulario de ingreso, dashboard con estado",
+            "Explicar alertas: umbral 80%, 100%, comportamiento cuando se excede",
+            "Incluir ejemplo: empresa con límite $500K, deuda actual $400K",
+            "Revisar cálculo con equipo de contabilidad",
+            "Publicar en Help Center"
+          ]
+        },
+        {
+          "name": "[User Guide P5] Importación de Clientes desde Excel",
+          "desc": "**Contexto / Problema**\nLa funcionalidad de importación masiva de clientes desde Excel reduce tiempos de onboarding, pero requiere una plantilla válida y validaciones específicas. Sin documentación, usuarios cargan archivos inválidos.\n\n**Acceptance Criteria**\n- Guía incluye: cómo descargar la plantilla oficial, qué columnas completar, validaciones que aplican.\n- Documenta columnas obligatorias: Nombre, RUT, Email, Empresa.\n- Explica validaciones: RUT único, email válido, empresa debe existir en el sistema.\n- Pasos: descargar plantilla → rellenar → importar → revisar errores → confirmar.\n- Casos de error: muestra ejemplos de filas rechazadas y cómo corregir.\n\n**Definition of Done**\n- Documento redactado con instrucciones claras.\n- Plantilla Excel disponible en Help Center (descargable).\n- Capturas del flujo de importación, pantalla de errores.\n- Publicada en Help Center.",
+          "checklist": [
+            "Redactar: cómo usar importación Excel, cuándo es útil",
+            "Documentar columnas: obligatorias (Nombre, RUT, Email, Empresa) y opcionales",
+            "Descargar/validar plantilla actual en `/resources/templates/clients_import.xlsx`",
+            "Capturar: wizard de importación, resumen de resultados, pantalla de errores",
+            "Incluir casos de error: RUT duplicado, email inválido, empresa no existe",
+            "Proporcionar ejemplo completo con 5-10 clientes válidos",
+            "Publicar en Help Center y añadir link a plantilla"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Perf] Paginacion en listas de alto volumen",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[Perf P1] Refactorizar patrón de paginación base + Backend",
+          "desc": "**Contexto / Problema**\nExisten dos implementaciones de paginación (BoletasList, DTERecepcionList) pero no hay un patrón reutilizable documentado. Backend puede no estar retornando metadata consistentemente. Sin base sólida, migración de 6 vistas será inconsistente y frágil.\n\n**Acceptance Criteria**\n- Hook `usePagination()` reutilizable documentado con ejemplos de uso.\n- Componente `<PaginationControls />` (Primera, Anterior, Siguiente, Última, selector de página).\n- Todos los endpoints de listado retornan: `{data: [], total: N, page: N, pageSize: N}`.\n- Backend respeta parámetros `skip` y `limit` en todas las rutas de listado.\n- Tests unitarios para hook y componente (edge cases: página 0, última página, etc).\n\n**Definition of Done**\n- Hook y componente en `src/hooks/usePagination.js` y `src/components/PaginationControls.jsx`.\n- Documentación en PR con ejemplos de integración.\n- Tests unitarios con ≥85% coverage.\n- Endpoints backend validados con Postman/curl.\n- Code review aprobado.\n\n**Notas tecnicas**\n- Analizar: `src/pages/boletas/BoletasList.jsx`, `src/pages/dteRecepcion/DTERecepcionList.jsx`.\n- Backend: rutas en `app.py` (o similar), validar `@app.route('/api/facturas?skip=0&limit=50')`.\n- Considerar caching con React Query si no existe.\n",
+          "checklist": [
+            "Analizar patrones existentes en BoletasList y DTERecepcionList",
+            "Crear hook usePagination() reutilizable",
+            "Crear componente PaginationControls",
+            "Verificar backend endpoints retornan metadata completa",
+            "Tests unitarios para hook y componente",
+            "Documentar con ejemplos de uso",
+            "Code review y merge a main"
+          ]
+        },
+        {
+          "name": "[Perf P2] Migrar Facturas, Cotizaciones, NotasVentas",
+          "desc": "**Contexto / Problema**\nTres vistas de alto volumen (FacturasList, CotizacionesList, NotasVentasList) aún renderizaban datasets completos. Migrar a patrón de paginación establecido en P1.\n\n**Acceptance Criteria**\n- FacturasList: paginación + page size selector funcional.\n- CotizacionesList: paginación funcional.\n- NotasVentasList: paginación funcional.\n- Filtros (estado, fecha, cliente) se preservan al cambiar página.\n- Búsqueda (si existe) reinicia a página 1.\n- Tests unitarios: navegación, filtro + paginación, búsqueda reset.\n\n**Definition of Done**\n- Tres componentes migrados usando hook de P1.\n- Tests E2E: cargar vista, aplicar filtro, navegar páginas.\n- Staging deployment validado con dataset >500 registros.\n- Code review aprobado.\n",
+          "checklist": [
+            "Refactorizar FacturasList con usePagination()",
+            "Refactorizar CotizacionesList con usePagination()",
+            "Refactorizar NotasVentasList con usePagination()",
+            "Tests: navegación + filtros + búsqueda reset",
+            "Tests E2E con >500 registros",
+            "Code review y merge",
+            "Deploy a staging y validar"
+          ]
+        },
+        {
+          "name": "[Perf P3] Migrar GuiasDespacho, OrdenesCompra, NotasCredito",
+          "desc": "**Contexto / Problema**\nTres vistas adicionales de alto volumen (GuiasDespachoList, OrdenesCompraList, NotasCreditoList) requieren migración al patrón de paginación para completar escala de refactor.\n\n**Acceptance Criteria**\n- GuiasDespachoList: paginación + page size selector funcional.\n- OrdenesCompraList: paginación funcional.\n- NotasCreditoList: paginación funcional.\n- Filtros (estado, fecha, proveedor/cliente) preservados al paginar.\n- Comportamiento consistente con P2.\n- Tests unitarios: navegación, estado de filtros, edge cases.\n\n**Definition of Done**\n- Tres componentes migrados usando hook de P1.\n- Tests E2E: flujo completo con >500 registros.\n- Staging deployment validado.\n- Code review aprobado.\n",
+          "checklist": [
+            "Refactorizar GuiasDespachoList con usePagination()",
+            "Refactorizar OrdenesCompraList con usePagination()",
+            "Refactorizar NotasCreditoList con usePagination()",
+            "Tests: navegación + filtros + edge cases",
+            "Tests E2E con >500 registros",
+            "Code review y merge",
+            "Deploy a staging"
+          ]
+        },
+        {
+          "name": "[Perf P4] Validación integral y métricas",
+          "desc": "**Contexto / Problema**\nAl concluir migraciones de P2 y P3, es necesario validar que paginación funciona en conjunto, medir mejoras de performance y documentar resultados.\n\n**Acceptance Criteria**\n- Todas las 6 vistas migradas funcionan sin errores en staging.\n- Navegación entre vistas no causa memory leaks.\n- Métricas comparadas: tiempo carga inicial, render time, bundle size.\n- Mejora de performance ≥40% en vistas migradas vs baseline.\n- Smoke tests pasan en todas las vistas.\n- Documentación de resultados en PR o Wiki.\n\n**Definition of Done**\n- Tests smoke ejecutados en staging para todas las vistas.\n- Métricas (Lighthouse, custom timers) documentadas.\n- Memory profiling (DevTools) validado.\n- PR final con resumen de cambios y resultados.\n- Trello card moved to In Review.\n",
+          "checklist": [
+            "Tests smoke en todas las 6 vistas migradas",
+            "Medir métricas de performance (Lighthouse, TTL, render time)",
+            "Validar no hay memory leaks",
+            "Documentar resultados vs baseline",
+            "Code review final",
+            "Deploy a staging completo",
+            "Mover Trello card a In Review"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[UX] Bulk actions en listas (multi-select)",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[UX Multi-select P1] Componente checkbox column + select-all",
+          "desc": "**Contexto / Problema**\nEl sistema de tablas no tiene soporte nativo para selección múltiple. Se necesita un componente reutilizable que permita marcar/desmarcar filas de forma eficiente.\n\n**Acceptance Criteria**\n- El componente CheckboxColumn se puede agregar a cualquier tabla (Facturas, Notas de Venta, etc.).\n- Incluye checkbox individual por fila y un \"Select All\" en el header.\n- Click en \"Select All\" marca/desmarca todos los registros visibles en la página actual.\n- El estado de selección se refleja visualmente (row highlight).\n- Emit events (onChange) cuando cambia la selección, con IDs de registros seleccionados.\n- El componente NO causa re-renders innecesarios (performance).\n\n**Definition of Done**\n- Componente ubicado en `src/components/Table/CheckboxColumn.tsx`.\n- Storybook story creada y documentada.\n- Unit tests: select/deselect, select-all, toggle, event emission (>80% coverage).\n- Integrado en tabla base del Design System.\n- Code review aprobado.",
+          "checklist": [
+            "Crear CheckboxColumn component con props (selectedIds, onChange, items)",
+            "Implementar select-all toggle en header",
+            "Agregar visual feedback (row highlight) al seleccionar",
+            "Escribir unit tests (select, deselect, select-all, events)",
+            "Crear Storybook story",
+            "Code review y merge"
+          ]
+        },
+        {
+          "name": "[UX Multi-select P2] Barra flotante de acciones bulk",
+          "desc": "**Contexto / Problema**\nCuando el usuario ha seleccionado registros, necesita una forma visible y accesible para invocar acciones bulk (exportar, enviar email, anular).\n\n**Acceptance Criteria**\n- La barra aparece cuando hay ≥1 registro seleccionado.\n- La barra desaparece cuando la selección se vacía.\n- Muestra el conteo de registros seleccionados (ej: \"3 registros seleccionados\").\n- Botones de acciones (Exportar, Enviar, Anular) están disabled/enabled según contexto (ej: no hay \"Anular\" en todas las listas).\n- La barra es sticky o flotante, no se pierde al scroll.\n- Responsive en mobile (stack vertical o collapse en icono).\n\n**Definition of Done**\n- Componente BulkActionBar en `src/components/Actions/BulkActionBar.tsx`.\n- Integrado en template base de listas.\n- Storybook story con estados (empty, 1 selected, 10 selected, mobile).\n- Unit tests: visibility, button states, event emitters.\n- E2E smoke test (select rows → bar appears/disappears).\n- Code review aprobado.",
+          "checklist": [
+            "Crear BulkActionBar component con props (selectedCount, actions, onAction)",
+            "Implementar sticky/floating positioning CSS",
+            "Agregar contador y botones de acciones (Exportar, Enviar, Anular)",
+            "Implementar disable/enable logic según contexto",
+            "Hacer responsive (mobile view)",
+            "Unit tests (visibility, button states)",
+            "E2E smoke test y code review"
+          ]
+        },
+        {
+          "name": "[UX Multi-select P3] Backend: endpoints /bulk/export y /bulk/send-email",
+          "desc": "**Contexto / Problema**\nLos endpoints bulk no existen. Se necesitan dos nuevos endpoints que permitan exportar y enviar emails masivamente con validaciones de autenticación y permisos.\n\n**Acceptance Criteria**\n- Endpoint POST `/api/v1/bulk/export` acepta {module, ids} y retorna un archivo (CSV o stream).\n- Validaciones: usuario autenticado, permisos de lectura en module, ids válidos.\n- Endpoint POST `/api/v1/bulk/send-email` acepta {module, ids, template?} y enqueue emails.\n- Validaciones: usuario autenticado, permisos de envío, emails válidos, DTE validado si aplica.\n- Ambos endpoints retornan 200 con metadata (ej: {exported_count, email_jobs_queued}).\n- Errores retornan 400/403/422 con mensaje claro.\n- Logs de auditoria registran qué usuario hizo qué bulk action.\n\n**Definition of Done**\n- Endpoints implementados en `app/api/v1/bulk.py` (o similar).\n- Tests unitarios: auth, permissions, validation, error cases.\n- Integration tests con datos reales (fixtures).\n- Logs auditados en DB (tabla audit_log).\n- Load test básico (1000 IDs) para asegurar performance.\n- Code review y merge a develop.",
+          "checklist": [
+            "Implementar POST /api/v1/bulk/export con validaciones y stream response",
+            "Implementar POST /api/v1/bulk/send-email con queue enqueue",
+            "Agregar middleware de autenticación y verificación de permisos",
+            "Validar IDs, emails, y datos DTE/SII donde aplique",
+            "Agregar logging de auditoría",
+            "Unit + integration tests (fixtures, mocks, error cases)",
+            "Load test (1000 IDs) y code review"
+          ]
+        },
+        {
+          "name": "[UX Multi-select P4] Bulk export: Facturas + Notas de Venta",
+          "desc": "**Contexto / Problema**\nLos usuarios necesitan exportar múltiples facturas o notas de venta de una sola vez, sin hacer click uno por uno.\n\n**Acceptance Criteria**\n- El usuario selecciona N facturas en la lista de Facturas.\n- Click en botón \"Exportar\" → abre modal o inicia descarga de archivo.\n- El archivo contiene todas las facturas seleccionadas (formato PDF, XLS, o CSV según módulo).\n- El usuario puede ver progreso si hay >10 registros.\n- El usuario recibe confirmación al terminar (toast o modal).\n- Igual para Notas de Venta.\n- Solo usuarios con permiso de exportación pueden acceder.\n\n**Definition of Done**\n- Frontend: modal o dialog de \"Exportar\" con opción de formato (PDF/CSV/XLS).\n- Frontend: llamada a POST /bulk/export con lista de IDs.\n- Frontend: manejo de respuesta (download file o error).\n- E2E tests: select 3 facturas → exportar → archivo descargado.\n- Manual test en staging con producto.\n- Trello sub-card movida a In Review.",
+          "checklist": [
+            "Crear modal/dialog de opciones de exportación (PDF, CSV, XLS)",
+            "Implementar frontend call a POST /api/v1/bulk/export",
+            "Manejar response y trigger download",
+            "Agregar toast de confirmación/error",
+            "E2E test: select → export → file received",
+            "Manual test en staging",
+            "Code review y merge"
+          ]
+        },
+        {
+          "name": "[UX Multi-select P5] Bulk send-email: Facturas + Boletas",
+          "desc": "**Contexto / Problema**\nLos usuarios power envían facturas y boletas por email frecuentemente. Necesitan enviar múltiples documentos a sus respectivos destinatarios sin repetir la acción N veces.\n\n**Acceptance Criteria**\n- El usuario selecciona N facturas en la lista de Facturas.\n- Click en botón \"Enviar por email\" → abre modal con resumen (N facturas, N emails).\n- Modal incluye opción de cambiar template o agregar mensaje personalizado.\n- Click en \"Enviar\" → enqueue emails y mostrar confirmación.\n- Usuario ve conteo de emails enviados/pendientes.\n- Mismo flujo para Boletas.\n- Solo usuarios con permisos de \"envío\" pueden acceder.\n- Email incluye archivo PDF adjunto (factura/boleta).\n\n**Definition of Done**\n- Frontend: modal de confirmación pre-envío con resumen.\n- Frontend: llamada a POST /bulk/send-email con IDs + metadata.\n- Frontend: feedback visual (toast, spinner) durante envío.\n- Backend: queue emails (RabbitMQ/Celery/SQS) con attachments.\n- Backend: genera PDF inline si es necesario.\n- Unit tests: email generation, queue enqueue.\n- E2E test: select 2 facturas → send email → emails en queue.\n- Manual test con email mock/Mailhog en staging.",
+          "checklist": [
+            "Crear modal de confirmación pre-envío con conteo y opción de template",
+            "Implementar frontend POST /api/v1/bulk/send-email",
+            "Agregar spinner/progress durante envío",
+            "Implementar backend: generate PDF + queue email job",
+            "Validar emails y DTE/SII antes de enviar",
+            "Unit + E2E tests (mock emails, queue, attachments)",
+            "Manual test con Mailhog y code review"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Core] Modulos habilitables/deshabilitables por empresa",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[Core P1] Modulos - Backend foundation (registro, DB, API gates)",
+          "desc": "**Contexto / Problema**\nNecesitamos cimentar la arquitectura de módulos: definir el registry, schema DB y gates en API.\n\n**Acceptance Criteria**\n- Existe registro central de módulos (slug, label, parent_slug, dependents) en código o DB.\n- Tabla/columna empresa_modulos_enabled con estado por módulo y empresa.\n- Migration Alembic backfill default (todos true) para empresas existentes.\n- Decorator FastAPI @require_modulo('slug') retorna 403 si deshabilitado; aplicado a >=5 routers opcionales.\n- Endpoint GET /empresas/{id}/modulos lista estado; PATCH actualiza y audita cambio.\n- Endpoint GET /me/modulos retorna módulos visibles al usuario (intersección company enabled + user permissions).\n- Audit log registra cada toggle con timestamp, usuario, empresa, módulo, estado anterior/nuevo.\n- Tests backend: 403 response, dependency resolution, audit trail.\n\n**Definition of Done**\n- PR mergeado a main.\n- Tests >80% coverage en módulo de gating.\n- Migración ejecutada en staging.\n- Endpoints validados en Postman/curl con y sin headers X-Company-Id.\n- Code review aprobado.\n\n**Notas tecnicas**\n- Tabla: `empresa_modulos(id, empresa_id, slug, enabled, created_at, updated_at)` o JSONB en empresas.\n- Registry: `/backend/core/modulos/registry.py` con dependency graph.\n- Decorator en `/backend/core/auth.py` o `/backend/core/modulos/gates.py`.\n- Endpoints en `/backend/api/v1/empresas.py`.\n- Audit via `/backend/core/audit.py` evento 'modulo_toggle'.",
+          "checklist": [
+            "Diseñar y codificar registry.py con slug, label, parent, dependents",
+            "Crear migration Alembic para tabla empresa_modulos o JSONB column",
+            "Backfill todas las empresas existentes con default (todos enabled=true)",
+            "Implementar @require_modulo decorator y aplicar a >=5 routers (facturas, boletas, inventario, etc)",
+            "Codificar endpoints GET/PATCH /empresas/{id}/modulos con validación de deps",
+            "Endpoint GET /me/modulos filtrando por user permissions",
+            "Audit log cada toggle en audit_log table",
+            "Tests unitarios (403 logic, dep resolution) + integración (POST/PATCH endpoints)",
+            "Deploy a staging y validar con curl"
+          ]
+        },
+        {
+          "name": "[Core P2] Modulos - Frontend gating (sidebar, routes, hooks)",
+          "desc": "**Contexto / Problema**\nFrontend necesita reaccionar a módulos deshabilitados: ocultar nav items, bloquear rutas, ocultar botones.\n\n**Acceptance Criteria**\n- Hook `useModulos()` fetches GET /me/modulos al mount y cachea en React Context/Zustand.\n- Helper `isModuloEnabled(slug)` consulta cache y retorna boolean.\n- Sidebar filtra items basado en módulos habilitados; ej: sin 'boletas' no muestra pestaña.\n- Routes con ProtectedModuleRoute redirect a /404 o /home si módulo off.\n- Botones 'Nueva Factura', 'Nueva Boleta', etc. hidden si módulo off.\n- Tests: nav items hidden, route guards bloquean acceso, buttons desaparecen.\n- No errores en console; UX amigable (no mostramos 403 crudo).\n\n**Definition of Done**\n- PR mergeado a main.\n- Cypress/Vitest tests >70% coverage.\n- Smoke test en staging: toggle boletas off/on, verifica sidebar en tiempo real.\n- Code review aprobado.\n\n**Notas tecnicas**\n- Hook: `/frontend/src/hooks/useModulos.ts` con Context/Zustand store.\n- Helper: `/frontend/src/lib/modulos.ts`.\n- ProtectedModuleRoute: `/frontend/src/components/ProtectedModuleRoute.tsx`.\n- Sidebar config: `/frontend/src/components/Sidebar.tsx` usa `isModuloEnabled()`.\n- Endpoints: GET /me/modulos.",
+          "checklist": [
+            "Crear hook useModulos() con fetch GET /me/modulos y cacheo en Context",
+            "Implementar helper isModuloEnabled(slug) boolean",
+            "Crear ProtectedModuleRoute component que redirige si modulo off",
+            "Filtrar Sidebar items basado en isModuloEnabled()",
+            "Ocultar botones CTAs (Nueva Factura, etc) si modulo off en pages principales",
+            "Tests: nav items hidden, route guards, button visibility",
+            "Smoke test en staging (toggle on/off, verifica UI)"
+          ]
+        },
+        {
+          "name": "[Core P3] Modulos - Admin UI (toggles, cascade, confirmaciones)",
+          "desc": "**Contexto / Problema**\nAdministradores necesitan UI intuitiva en /configuracion/empresa para gestionar módulos con confirmaciones cascade.\n\n**Acceptance Criteria**\n- Sección en /configuracion/empresa (o /admin/empresa/modulos) lista todos módulos con toggle on/off.\n- Cada módulo muestra label, descripción y dependencias.\n- Al apagar parent, modal confirm: 'Esto deshabilitará X, Y, Z. Continuar?'\n- Cascade atomic: si usuario confirma, parent + dependents apagan juntos en 1 transacción.\n- Módulos core (empresas, clientes, etc) muestran badge 'obligatorio' sin toggle.\n- Cambio es auditado y visible en audit log.\n- Auto-modules (dte_emission, caf_management) mostrados como info (auto-derivado), no editable.\n- Tests: toggle visual, cascade prompt, audit trail.\n\n**Definition of Done**\n- PR mergeado a main.\n- Cypress tests: toggle, cascade confirm, audit log.\n- UAT con product/ops team en staging.\n- Code review aprobado.\n\n**Notas tecnicas**\n- Page: `/frontend/src/pages/ConfiguracionEmpresa/ModulosTab.tsx`.\n- API: PATCH /empresas/{id}/modulos con payload `{slug, enabled, cascade: true}`.\n- Modal: `/frontend/src/components/CascadeConfirmModal.tsx`.\n- Dependency resolution en backend: resolve transitive deps, atomicidad vía transaction.\n- Audit: evento 'modulo_toggle_cascade'.",
+          "checklist": [
+            "Diseñar UI en /configuracion/empresa: tabla/cards con toggle, label, deps",
+            "Implementar modal CascadeConfirmModal para apagar parent",
+            "Codificar lógica PATCH endpoint: validar, resolver deps transitivos, atomic transaction",
+            "Marcar core modules como 'obligatorio' (no editable)",
+            "Mostrar auto-modules (dte_emission, etc) como info read-only",
+            "Tests: toggle visual, cascade UX, audit logs generados",
+            "Documentar matriz módulos en docs/architecture/modulos.md"
+          ]
+        },
+        {
+          "name": "[Core P4] Modulos - E2E smoke test + documentacion",
+          "desc": "**Contexto / Problema**\nAntes de cerrar la feature, necesitamos validación end-to-end con múltiples tenants y documentación clara.\n\n**Acceptance Criteria**\n- Smoke test E2E: Tenant A (Conico) con boletas off, Tenant B con boletas on; ambos funcionan sin cross-contamination.\n- Matriz de dependencias clara en docs/architecture/modulos.md (tabla o grafo).\n- Runbook interno para ops: cómo habilitar/deshabilitar módulos en producción.\n- Release notes documenta cambio (visible en /help o changelog).\n- No regressions en funcionalidad existente (boletas on, inventario on, etc).\n\n**Definition of Done**\n- Smoke test ejecutado y documentado.\n- docs/architecture/modulos.md mergeado.\n- Release notes published.\n- Feature flag (si aplica) documentado.\n- Card y todas las subtareas movidas a Done/In Review.\n\n**Notas tecnicas**\n- Smoke test script: `/tests/e2e/modulos_smoke.cy.ts` con 2 tenants fixtures.\n- Docs: markdown con tabla de módulos, deps, core vs optional.\n- Deployment: feature completo a production vía CI/CD.",
+          "checklist": [
+            "Crear fixture E2E con 2 tenants: Conico (boletas off) y Otro (boletas on)",
+            "Script smoke test: login each, toggle modulos, verifica sidebar/routes/botones",
+            "Documenta matriz en docs/architecture/modulos.md (tabla: slug | core? | dependencias | auto?)",
+            "Redacta release notes y runbook ops",
+            "Ejecuta smoke test 2+ veces, archiva resultados",
+            "Todos PRs mergeados, staging validated, ready para production"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Core] Modulos toggle - Phase 1: backend foundation",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[Modulos P1.1] Registro central de modulos + grafo de dependencias",
+          "desc": "**Contexto / Problema**\nFundación del sistema: definir qué módulos existen, cuáles son core (no toggleables) y cuáles opcionales, y cómo se relacionan via dependencias.\n\n**Acceptance Criteria**\n- Archivo backend/app/core/modulos.py expone:\n  - Set CORE_MODULES: {empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config}.\n  - Set OPTIONAL_MODULES con 20+ módulos opcionales (facturas, boletas, GD, NC, ND, OC, inventario, etc.).\n  - Registro (dict/dataclass) con {slug, label, categoria, requires: [], dependents: []} para cada opcional.\n- Función compute_effective_modulos(stored_dict: dict) -> dict que:\n  - Parte de modulos_enabled raw de empresa.\n  - Aplica dte_emission auto-on si >=1 of {facturas, boletas, GD, NC, ND}.\n  - Propaga dependencias (ej. si facturas=true, entonces pagos=true automáticamente).\n  - Retorna módulos efectivos.\n- Función validate_toggle(slug: str, action: 'enable'|'disable', current_effective: dict) -> (bool, str) que detecta violaciones (ej. desabilitar facturas si cobranza está on).\n\n**Definition of Done**\n- Unit tests al 100% para compute_effective_modulos y validate_toggle (cover all deps, cascades, auto-on).\n- Grafo de dependencias documentado (adjacency list o equivalente) en código.\n- Code review aprobada.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Usar dataclass o namedtuple para Modulo: @dataclass class Modulo: slug, label, categoria, requires, dependents.\n- Pre-calcular dependents inversos al startup.\n- Tests: pytest fixtures con diferentes escenarios de toggle (OK, cascade, violation).",
+          "checklist": [
+            "Definir sets CORE_MODULES y OPTIONAL_MODULES en modulos.py",
+            "Crear Modulo registry con {slug, label, categoria, requires[], dependents[]} para cada opcional",
+            "Implementar compute_effective_modulos con auto-on de dte_emission y propagación de deps",
+            "Implementar validate_toggle que detecta violaciones de dependencia",
+            "Tests: todos los casos de compute_effective_modulos (auto-on, cascades, conflicts)",
+            "Tests: validate_toggle retorna bool correcto y error message descriptivo",
+            "Code review y Trello -> In review"
+          ]
+        },
+        {
+          "name": "[Modulos P1.2] Migracion Alembic + Empresa.modulos_enabled + backfill",
+          "desc": "**Contexto / Problema**\nPersistir el estado de módulos por empresa en base de datos. Migración debe crear columna, backfill empresas existentes para mantener comportamiento actual (todos módulos on), y asegurar backward compatibility.\n\n**Acceptance Criteria**\n- Migración Alembic crea columna empresas.modulos_enabled JSONB NOT NULL DEFAULT '{}'.\n- Backfill: toda empresa existente recibe modulos_enabled con flags explícitos true para todos los opcional (version \"legacy all enabled\").\n- Modelo Empresa actualizado: campo modulos_enabled con validación Pydantic.\n- Post-backfill: cualquier query a Empresa.modulos_enabled retorna dict válido (sin null).\n- Tests verifican que empresas post-backfill pueden usar todos los módulos sin regresión.\n\n**Definition of Done**\n- Migración Alembic aplicada (migrate + downgrade probados en local).\n- Backfill script ejecutado en staging (resultado verificado en BD).\n- Schema Pydantic Empresa.modulos_enabled documentado.\n- Tests E2E: empresa existente accede a router de módulo y obtiene 200 (no 403).\n- Code review aprobada.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Archivo migración: alembic/versions/[timestamp]_add_empresa_modulos_enabled.py.\n- Backfill usa session.execute() con bulk UPDATE o script standalone.\n- Schema Pydantic: EmpresaModulosEnabled = Dict[str, bool].\n- Test fixture: crear empresa via ORM, verificar modulos_enabled no es None.",
+          "checklist": [
+            "Crear migración Alembic con columna empresas.modulos_enabled JSONB",
+            "Implementar backfill: todos las empresas existentes -> modulos_enabled con flags true",
+            "Actualizar modelo ORM Empresa con campo modulos_enabled",
+            "Tests: empresa post-backfill accede a router opcional sin 403",
+            "Tests: migración downgrade revierte schema correctamente",
+            "Ejecutar migración en local y verificar BD",
+            "Code review y Trello -> In review"
+          ]
+        },
+        {
+          "name": "[Modulos P1.3] require_modulo dependency + cascade calculator + unit tests",
+          "desc": "**Contexto / Problema**\nImplementar el mecanismo FastAPI que valida módulos en tiempo de request. Desarrollar dependency que consulta current_user.empresa_id, calcula módulos efectivos, y retorna 403 si el módulo solicitado está off.\n\n**Acceptance Criteria**\n- Dependency FastAPI require_modulo(slug: str) implementada:\n  - Consulta current_user (inyectado vía Depends(get_current_user)).\n  - Carga Empresa.modulos_enabled.\n  - Llama compute_effective_modulos().\n  - Valida que slug está en modulos efectivos (value=true).\n  - Retorna 403 HTTPException con detail descriptivo si no.\n  - Retorna None si válido (o similar marker).\n- Función compute_effective_modulos integrada con ORM (query Empresa, aplicar lógica, caché opcional).\n- Tests cobertura:\n  - require_modulo(\"facturas\") con facturas=true -> None (OK).\n  - require_modulo(\"facturas\") con facturas=false -> 403 (bloqueado).\n  - require_modulo con compute_effective_modulos cascades (ej. NC deshabilitado porque facturas off) -> 403.\n  - require_modulo con usuario de empresa diferente -> OK si empresa del usuario tiene módulo.\n\n**Definition of Done**\n- Dependency implementada en backend/app/core/dependencies.py o core/modulos.py.\n- Unit tests: 100% cobertura de require_modulo (OK, 403, cascades).\n- Integration test: aplicar dependency a router dummy, verificar 403 en request.\n- Code review aprobada.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Patrón: async def require_modulo(slug: str) -> None: ... en app.py o core/dependencies.py.\n- Usar Depends(require_modulo(\"facturas\")) en ruta.\n- Caché en memoria (lru_cache) para compute_effective_modulos por (empresa_id, timestamp) si performance es crítica.\n- Test: MockSession, mock current_user, mock Empresa object.",
+          "checklist": [
+            "Implementar FastAPI dependency require_modulo(slug) que consulta current_user y modulos_enabled",
+            "Integrar compute_effective_modulos en require_modulo con caché opcional",
+            "Retornar 403 HTTPException con detail descriptivo si módulo off",
+            "Tests: require_modulo OK (modulo on), require_modulo 403 (modulo off)",
+            "Tests: require_modulo cascades (modulo indirectamente off via deps)",
+            "Tests: require_modulo con usuarios de diferentes empresas",
+            "Code review y Trello -> In review"
+          ]
+        },
+        {
+          "name": "[Modulos P1.4] Wire require_modulo a routers de ventas DTE",
+          "desc": "**Contexto / Problema**\nAplicar require_modulo dependency a todos los routers relacionados con ventas y DTE: boletas, facturas, NC (Notas de Crédito), ND (Notas de Débito), GD (Guías de Despacho). Asegurar que requests a estos endpoints retornan 403 si el módulo está deshabilitado.\n\n**Acceptance Criteria**\n- Router /boletas: todos los endpoints (GET, POST, PATCH, DELETE) aplican Depends(require_modulo(\"boletas\")).\n- Router /facturas: todos los endpoints aplican Depends(require_modulo(\"facturas\")).\n- Router /nc: todos los endpoints aplican Depends(require_modulo(\"nc\")).\n- Router /nd: todos los endpoints aplican Depends(require_modulo(\"nd\")).\n- Router /gd: todos los endpoints aplican Depends(require_modulo(\"gd\")).\n- Tests E2E: request a boleta con boletas=false -> 403; request a boleta con boletas=true -> 200 (o esperado status).\n- No cambios a lógica business de routers; solo agregar dependency.\n\n**Definition of Done**\n- Dependency aplicada a 5 routers (boletas, facturas, nc, nd, gd).\n- Tests E2E para cada router: 403 cuando módulo off, OK cuando on.\n- Code review aprobada.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Aplicar a nivel de router (APIRouter) o endpoint individual (route decorator).\n- Ej: @router.get(\"/boletas\", dependencies=[Depends(require_modulo(\"boletas\"))]).\n- Verificar que 403 response schema está documentada en OpenAPI.\n- Tests: usar client.get(\"/boletas\") con diferentes contextos de Empresa.",
+          "checklist": [
+            "Agregar require_modulo(\"boletas\") a todos endpoints de /boletas router",
+            "Agregar require_modulo(\"facturas\") a todos endpoints de /facturas router",
+            "Agregar require_modulo(\"nc\") a todos endpoints de /nc router",
+            "Agregar require_modulo(\"nd\") a todos endpoints de /nd router",
+            "Agregar require_modulo(\"gd\") a todos endpoints de /gd router",
+            "Tests E2E: 403 cuando módulo off, OK cuando on para cada router",
+            "Code review y Trello -> In review"
+          ]
+        },
+        {
+          "name": "[Modulos P1.5] Wire require_modulo a procurement + inventario + finanzas",
+          "desc": "**Contexto / Problema**\nAplicar require_modulo a routers de compras, inventario e finanzas: proveedores, OC (Órdenes de Compra), facturas_compra, inventario, listas_precios, pagos, cobranza, bancos_receptores, aprobaciones (margen y costo).\n\n**Acceptance Criteria**\n- Router /proveedores: todos endpoints aplican Depends(require_modulo(\"proveedores\")).\n- Router /oc: todos endpoints aplican Depends(require_modulo(\"oc\")).\n- Router /facturas_compra: todos endpoints aplican Depends(require_modulo(\"facturas_compra\")).\n- Router /inventario: todos endpoints aplican Depends(require_modulo(\"inventario\")).\n- Router /listas_precios: todos endpoints aplican Depends(require_modulo(\"listas_precios\")).\n- Router /pagos: todos endpoints aplican Depends(require_modulo(\"pagos\")).\n- Router /cobranza: todos endpoints aplican Depends(require_modulo(\"cobranza\")).\n- Router /bancos_receptores: todos endpoints aplican Depends(require_modulo(\"bancos_receptores\")).\n- Routers /aprobaciones_margen y /aprobaciones_costo: todos endpoints aplican dependencies respectivas.\n- Tests E2E: request a inventario con inventario=false -> 403; request con inventario=true -> 200.\n- Verificar que dependencias en cascada funcionan (ej. si proveedores=true pero oc=false, GET /oc -> 403).\n\n**Definition of Done**\n- Dependency aplicada a 9+ routers (proveedores, oc, facturas_compra, inventario, listas_precios, pagos, cobranza, bancos_receptores, aprobaciones*).\n- Tests E2E para cada router: 403 cuando módulo off, OK cuando on.\n- Tests validan cascades (ej. facturas_compra depende de proveedores).\n- Code review aprobada.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Aplicar patrón idéntico a [Modulos P1.4].\n- Verificar que módulos de aprobaciones dependen de sus módulos padre (aprobaciones_margen -> facturas, aprobaciones_costo -> facturas_compra).\n- Tests: use fixtures que setean diferentes combinaciones de módulos.",
+          "checklist": [
+            "Agregar require_modulo a todos endpoints: proveedores, oc, facturas_compra, inventario, listas_precios",
+            "Agregar require_modulo a todos endpoints: pagos, cobranza, bancos_receptores, aprobaciones_margen, aprobaciones_costo",
+            "Tests E2E: 403 cuando módulo off para cada router",
+            "Tests: cascades (facturas_compra depende proveedores, etc.)",
+            "Tests: aprobaciones_* dependencies configuradas correctamente",
+            "Code review y Trello -> In review"
+          ]
+        },
+        {
+          "name": "[Modulos P1.6] Wire require_modulo a RRHH + CRM + libros + DTE recepcion + aprobaciones",
+          "desc": "**Contexto / Problema**\nAplicar require_modulo a routers restantes: RRHH (empleados, vacaciones, documentos), CRM (oportunidades), tareas (y reglas_tareas), libros, dte_recepcion.\n\n**Acceptance Criteria**\n- Router /rrhh_empleados: todos endpoints aplican Depends(require_modulo(\"rrhh_empleados\")).\n- Router /vacaciones: todos endpoints aplican Depends(require_modulo(\"vacaciones\")).\n- Router /documentos_empleados: todos endpoints aplican Depends(require_modulo(\"documentos_empleados\")).\n- Router /oportunidades: todos endpoints aplican Depends(require_modulo(\"oportunidades\")).\n- Router /tareas: todos endpoints aplican Depends(require_modulo(\"tareas\")).\n- Router /reglas_tareas: todos endpoints aplican Depends(require_modulo(\"reglas_tareas\")).\n- Router /libros: todos endpoints aplican Depends(require_modulo(\"libros\")).\n- Router /dte_recepcion: todos endpoints aplican Depends(require_modulo(\"dte_recepcion\")).\n- Tests E2E: request a rrhh_empleados con rrhh_empleados=false -> 403; request con rrhh_empleados=true -> 200.\n- Verificar cascades (ej. vacaciones requiere rrhh_empleados, reglas_tareas requiere tareas).\n\n**Definition of Done**\n- Dependency aplicada a 8 routers (rrhh_empleados, vacaciones, documentos_empleados, oportunidades, tareas, reglas_tareas, libros, dte_recepcion).\n- Tests E2E: 403 cuando módulo off, OK cuando on.\n- Tests cascades validadas.\n- Code review aprobada.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Patrón idéntico a [Modulos P1.4] y [Modulos P1.5].\n- Notar que libros depende de facturas (no tiene su propio módulo toggle, solo accesible si facturas on).\n- dte_recepcion es auto-on si >=1 of {facturas, boletas, GD, NC, ND} (similar a dte_emission).",
+          "checklist": [
+            "Agregar require_modulo a todos endpoints: rrhh_empleados, vacaciones, documentos_empleados",
+            "Agregar require_modulo a todos endpoints: oportunidades, tareas, reglas_tareas, libros, dte_recepcion",
+            "Tests E2E: 403 cuando módulo off para cada router",
+            "Tests: cascades (vacaciones requires rrhh_empleados, etc.)",
+            "Tests: libros depende facturas, dte_recepcion auto-on",
+            "Code review y Trello -> In review"
+          ]
+        },
+        {
+          "name": "[Modulos P1.7] Endpoints admin + auditoria + docs + E2E tests",
+          "desc": "**Contexto / Problema**\nImplementar endpoints admin para consultar y cambiar módulos, integrar auditoria de cambios, y documentar la matriz de dependencias. Finalizar Phase 1 con suite E2E.\n\n**Acceptance Criteria**\n- Endpoint GET /empresas/{id}/modulos (admin only) retorna:\n  - modulos_enabled (raw): dict con flags explícitos de BD.\n  - modulos_efectivos: dict calculado post-cascades y auto-ons.\n  - modulos_core: list de módulos no toggleables.\n- Endpoint PATCH /empresas/{id}/modulos (admin only) acepta body {modulos: {slug: bool, ...}} y:\n  - Valida cada toggle con validate_toggle().\n  - Rechaza 400 si algún toggle viola dependencias (con detail).\n  - Aplica cambios atomicamente (transacción DB).\n  - Registra auditoria (ver siguiente).\n  - Retorna 200 con modulos_efectivos post-cambio.\n- Auditoria:\n  - Tabla audit_logs registra: tipo_evento='modulo_toggle', empresa_id, actor_id (admin), timestamp, data={slugs_changed: {slug: {before, after}}}.\n  - Query GET /empresas/{id}/modulos/audit (admin) retorna últimos 50 cambios.\n- Docs:\n  - docs/architecture/modulos.md documenta matriz de dependencias (tabla o grafo).\n  - Endpoints incluyen descriptions en OpenAPI.\n- Tests E2E:\n  - Admin toggle facturas on/off + cascades son aplicados (pagos, cobranza también on/off).\n  - Admin toggle inválido (ej. desabilitar facturas con cobranza on) -> 400.\n  - Auditoria registra cambio correctamente.\n  - Current user GET /me/modulos retorna modulos_efectivos.\n\n**Definition of Done**\n- Endpoints implementados y testeados.\n- Auditoria integrada (BD + queries).\n- docs/architecture/modulos.md redactado con matriz y ejemplos.\n- Tests E2E: suite completa (toggles válidos, inválidos, cascades, auditoria).\n- Documentación OpenAPI generada y reviewed.\n- Code review aprobada.\n- Trello card movida a \"In review\", listo para merge a develop.\n\n**Notas tecnicas**\n- Endpoints en nuevo router app/api/v1/endpoints/admin/modulos.py o en admin.py existente.\n- Schema Pydantic para request/response: EmpresaModulosUpdateRequest, EmpresaModulosResponse.\n- Auditoria usa session.add(AuditLog(...)) con transacción de PATCH.\n- Tests: usar client.patch(\"/empresas/{id}/modulos\", json={...}), verificar 200/400/403 según caso.\n- Documentación matriz: tabla markdown con columnas (Módulo, Categoria, Requiere, Dependientes, Auto-on).",
+          "checklist": [
+            "Implementar GET /empresas/{id}/modulos (admin) retornando modulos_enabled, efectivos, core",
+            "Implementar PATCH /empresas/{id}/modulos (admin) con validación atomica y error 400 si deps violadas",
+            "Integrar auditoria: registro en audit_logs de cada cambio (tipo_evento, diff, actor, timestamp)",
+            "Implementar GET /empresas/{id}/modulos/audit (admin) retornando histórico",
+            "Implementar GET /me/modulos (user) retornando modulos_efectivos",
+            "Tests E2E: valid toggles + cascades, invalid toggles -> 400, auditoria registro correcto",
+            "Documentar matriz de deps en docs/architecture/modulos.md + OpenAPI descriptions, Trello -> In review"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Core] Modulos toggle - Phase 2: frontend gating",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[Modulos P2.1] Hook useModulos + helpers + constante MODULOS",
+          "desc": "**Contexto / Problema**\nFrontend necesita acceso reactivo al estado de módulos habilitados y helpers para consultar si un módulo está activo.\n\n**Acceptance Criteria**\n- Hook `useModulos()` carga datos de `/me/modulos` con react-query (cache 5min, refetch on focus).\n- Helper `isModuloEnabled(slug)` retorna booleano síncrono.\n- Hook `useModuloEnabled(slug)` retorna `{ isEnabled, isLoading, error }`.\n- Constante `MODULOS` en `frontend/src/lib/modulos.ts` espeja exactamente el backend.\n- Hook maneja errores y fallback a todos los módulos OFF si falla la query.\n\n**Definition of Done**\n- Archivo creado: `frontend/src/lib/modulos.ts` (constante + helpers).\n- Hook creado: `frontend/src/hooks/useModulos.ts`.\n- Tests unitarios: mock useQuery, verifica cache, refetch on focus.\n- Constante MODULOS auditada contra backend.\n- Merge a develop.\n\n**Notas tecnicas**\n- Endpoint: GET `/me/modulos` retorna `{ modulos: Record<string, boolean> }`.\n- react-query config: `staleTime: 5*60*1000`, `refetchOnWindowFocus: true`.\n- Fallback: si error, `isEnabled = false` para todos.",
+          "checklist": [
+            "Crear archivo frontend/src/lib/modulos.ts con constante MODULOS",
+            "Implementar helpers isModuloEnabled() y useModuloEnabled()",
+            "Crear hook useModulos() con react-query, cache 5min",
+            "Tests unitarios: mock query, cache, refetch on focus",
+            "Auditoria constante contra backend",
+            "Merge a develop"
+          ]
+        },
+        {
+          "name": "[Modulos P2.2] Componente ModuloGuard + envolver rutas",
+          "desc": "**Contexto / Problema**\nRutas de módulos opcionales (Boletas, Facturas, etc.) deben bloquearse si el módulo está deshabilitado, redirigiendo a /404 con mensaje claro.\n\n**Acceptance Criteria**\n- Componente `<ModuloGuard slug=\"boletas\">` envuelve contenido protegido.\n- Si módulo OFF: redirige a /404 con query param `?razon=modulo_deshabilitado`.\n- /404 muestra mensaje 'Módulo no habilitado, contacta admin'.\n- Rutas `/facturas/*`, `/boletas/*`, `/inventario/*`, `/nc/*`, `/nd/*`, `/oc/*`, `/listas-precios/*`, `/pagos/*`, `/cobranza/*`, `/rrhh/*`, `/pipeline/*`, `/tareas/*`, `/libros/*`, `/dte-recepcion/*` usan ModuloGuard.\n- Si loading: muestra spinner/skeleton.\n\n**Definition of Done**\n- Componente creado: `frontend/src/components/ModuloGuard.tsx`.\n- Todas las rutas opcionales envueltas con ModuloGuard.\n- Página /404 muestra lógica condicional para razón 'modulo_deshabilitado'.\n- E2E: navegar a `/boletas` con boletas OFF → redirige a /404.\n- Tests E2E smoke.\n- Merge a develop.\n\n**Notas tecnicas**\n- Componente props: `{ slug: string; children: ReactNode }`.\n- Usa `useModuloEnabled(slug)` internamente.\n- useNavigate() para redirigir a `/404?razon=modulo_deshabilitado`.",
+          "checklist": [
+            "Crear componente ModuloGuard.tsx",
+            "Envolver rutas de módulos opcionales (15+ rutas)",
+            "Actualizar página /404 para mostrar razón modulo_deshabilitado",
+            "Tests E2E: navegar a módulo OFF → /404",
+            "Merge a develop"
+          ]
+        },
+        {
+          "name": "[Modulos P2.3] Filtrar Sidebar por módulos habilitados",
+          "desc": "**Contexto / Problema**\nSidebar muestra items para módulos deshabilitados, confundiendo al usuario. Debe filtrar dinámicamente según `/me/modulos`.\n\n**Acceptance Criteria**\n- Items de Sidebar se renderizan solo si `isModuloEnabled(slug) === true`.\n- Mientras `useModulos()` está loading: muestra skeleton (3-5 placeholder items).\n- Items CORE (empresas, clientes, contactos, etc.) siempre visibles.\n- Items OPTIONAL (Boletas, Facturas, GD, Inventario, etc.) se ocultan si OFF.\n- Usuario ve cambio instantáneo al cambiar empresa (modulos diferentes).\n\n**Definition of Done**\n- Sidebar.tsx actualizado con filtrado y skeleton en loading.\n- Tests: mock useModulos() ON/OFF, verifica visibilidad items.\n- E2E: empresa boletas OFF → Boletas no en sidebar; empresa boletas ON → Boletas visible.\n- Merge a develop.\n\n**Notas tecnicas**\n- Sidebar item: añadir prop `moduloSlug?: string`.\n- Usar `useModuloEnabled(moduloSlug)` en condicional render.\n- Skeleton: ContentLoader o similar, 3-5 items placebos.",
+          "checklist": [
+            "Identificar items CORE vs OPTIONAL en Sidebar.tsx",
+            "Añadir filtrado con useModuloEnabled()",
+            "Implementar skeleton loading state",
+            "Tests: items visibles/ocultos según módulos",
+            "E2E: empresa boletas OFF → sidebar correcto",
+            "Merge a develop"
+          ]
+        },
+        {
+          "name": "[Modulos P2.4] Ocultar CTAs Dashboard + filtrar tabs Reportes",
+          "desc": "**Contexto / Problema**\nDashboard muestra botones 'Nueva Factura', 'Nueva Boleta', etc., y Reportes contiene tabs para módulos deshabilitados. Deben filtrarse según estado de módulos.\n\n**Acceptance Criteria**\n- Dashboard: botones rápidos ('Nueva X') se ocultan si módulo OFF.\n- Dashboard: widgets (ej: 'Facturas por cobrar') se ocultan si facturas OFF.\n- Reportes: tabs para módulos OFF (Boletas, Inventario, etc.) se ocultan.\n- Tooltips opcionalmente explican 'Este módulo está deshabilitado'.\n- Usuario ve cambio reactivo al habilitar/deshabilitar módulo (si es posible admin UI más tarde).\n\n**Definition of Done**\n- Dashboard.tsx actualizado: botones + widgets filtrados.\n- Reportes.tsx actualizado: tabs filtrados.\n- Tests: mock useModulos(), verifica visibilidad CTAs.\n- E2E: empresa facturas OFF → Dashboard no muestra 'Nueva Factura', Reportes no muestra tab Facturas.\n- Merge a develop.\n\n**Notas tecnicas**\n- CTA items mapear slug → `useModuloEnabled(slug)`.\n- Reportes tabs: filter array según módulos activos.\n- Considerar tooltip: 'Módulo no habilitado'.",
+          "checklist": [
+            "Filtrar CTAs (botones Nueva X) en Dashboard.tsx",
+            "Filtrar widgets Dashboard según módulos",
+            "Filtrar tabs en Reportes.tsx",
+            "Tests: CTAs visibles/ocultos",
+            "E2E: Dashboard + Reportes con módulos OFF",
+            "Merge a develop"
+          ]
+        },
+        {
+          "name": "[Modulos P2.5] Ocultar acciones cross-module en detalles",
+          "desc": "**Contexto / Problema**\nDetalles de documentos (ej: NV, Boleta, GD) exponen acciones para crear documentos relacionados (ej: 'Crear Factura desde NV', 'Crear NC'). Si el módulo destino está OFF, estas acciones confunden o fallan.\n\n**Acceptance Criteria**\n- En detalle NV: botón 'Crear Factura' oculto si facturas OFF.\n- En detalle Factura: botón 'Crear Nota Crédito' oculto si nc OFF.\n- En detalle Boleta: botón 'Crear Nota Crédito' oculto si nc OFF.\n- En detalle GD: botones relacionados ocultos si módulos deps OFF.\n- Menu contextual (tres puntitos) en listados: items relacionados filtrados según módulos.\n- Usuario navega sin encontrar acciones 'rotas'.\n\n**Definition of Done**\n- Identificar todas las acciones cross-module en detalles.\n- Envolver cada acción con condicional `useModuloEnabled(depSlug)`.\n- Tests: acciones visibles/ocultas según deps.\n- E2E: NV con facturas OFF → botón 'Crear Factura' no renderiza.\n- Merge a develop.\n\n**Notas tecnicas**\n- Detalle NV: facturas dep.\n- Detalle Factura: {NC, ND, Pagos, Cobranza, Libros, Aprobaciones Margen} deps.\n- Detalle Boleta: {NC} deps.\n- Detalle GD: {NC, Inventario} deps (backward + forward deps).\n- Consultar graph de deps en descripción parent.",
+          "checklist": [
+            "Mapear acciones cross-module en todos los detalles",
+            "Envolver acciones con condicionales useModuloEnabled()",
+            "Tests: acciones aparecen/desaparecen",
+            "E2E: NV + Factura + GD con deps OFF",
+            "Merge a develop"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Core] Modulos toggle - Phase 3: admin UI",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[Modulos P3.1] Tab 'Modulos' en /configuracion/empresa (read-only listado)",
+          "desc": "Crear tab 'Modulos' en `/configuracion/empresa` visible solo para admins. Implementar listado estático agrupado por 8 categorías: Ventas, Compras, Inventario y Precios, Finanzas, DTE/SII, CRM, RRHH, Aprobaciones. Cada módulo muestra label, descripción y estado actual (active/inactive). Incluir botones 'Habilitar todos' y 'Apagar todos los opcionales' al tope. Diseño consistente con rest of `/configuracion`.",
+          "checklist": [
+            "Crear componente `ModulosTab.tsx` en `/src/pages/configuracion/empresa`",
+            "Implementar 8 grupos de categorías con mapeo de módulos",
+            "Mostrar label, descripción, estado por módulo",
+            "Agregar botones 'Habilitar todos' / 'Apagar opcionales'",
+            "Tests: tab renderiza, datos grupal correctos, acceso admin-only",
+            "Deploy staging y verificar UI"
+          ]
+        },
+        {
+          "name": "[Modulos P3.2] Toggle interactivo + dependency-aware disable visual",
+          "desc": "Implementar toggle interactivo por módulo. Cada toggle debe enviar PATCH a `/api/v1/empresa/{id}/modulos/{modulo_key}`. Validar grafo de dependencias en frontend; deshabilitar visualmente (grayed out, cursor: not-allowed) toggles cuyo parent esté off. Mostrar tooltip 'Requiere X módulo activo' en toggles deshabilitados. Reflejar cambios inmediatamente en sidebar invalidando `useModulos()`.",
+          "checklist": [
+            "Crear componente `ModuleToggle.tsx` con lógica de validación de deps",
+            "Integrar endpoint PATCH `/api/v1/empresa/{id}/modulos/{modulo_key}`",
+            "Implementar grafo de dependencias (const DEPENDENCIES) en formato TS",
+            "Disable visual + tooltips para módulos sin parent active",
+            "Invalidar `useModulos()` query al cambiar estado",
+            "Tests: toggle simple, disable visual correcto, sidebar se actualiza",
+            "Deploy staging"
+          ]
+        },
+        {
+          "name": "[Modulos P3.3] Modal cascade-confirm al apagar parent con dependents on",
+          "desc": "Al intentar desactivar un módulo que tiene dependientes activos, mostrar modal de confirmación con: título 'Desactivar [módulo] también desactivará:', lista de módulos dependientes que se apagarán, botón 'Cancelar', botón 'Desactivar' (variante danger). Si usuario confirma, hacer PATCH en cascada para todos los dependientes. Bloquear operación si validación falla.",
+          "checklist": [
+            "Crear componente `CascadeConfirmModal.tsx`",
+            "Detectar dependientes activos al intentar desactivar",
+            "Mostrar modal si hay dependientes on",
+            "Implementar cascada PATCH secuencial o bulk endpoint",
+            "Tests: modal aparece, cascada aplica, cancel cierra sin cambios",
+            "Deploy staging"
+          ]
+        },
+        {
+          "name": "[Modulos P3.4] Auditoría visible per-módulo + acciones bulk",
+          "desc": "Mostrar auditoría por módulo: quién cambió y cuándo. Agregar columna o expandible con timestamps y nombres de usuarios. Implementar acciones bulk: 'Habilitar todos' y 'Apagar todos los opcionales' (excluyendo CORE). Al hacer bulk, mostrar modal de confirmación similar a cascade. Registrar auditoría para cada módulo afectado.",
+          "checklist": [
+            "Agregar columna/expandible 'Últimamente cambió' con usuario + timestamp",
+            "Implementar acción 'Habilitar todos' con confirmación",
+            "Implementar acción 'Apagar opcionales' con confirmación",
+            "Hacer bulk PATCH y registrar auditoría granular",
+            "Tests: auditoría se actualiza, bulk actions funcionan, confirmación bloquea si se cancela",
+            "Deploy staging"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Telemetry] Cost & performance observability",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[Telemetry P1.1] RequestLogger: agregar empresa_id, query_count, response_size",
+          "desc": "**Contexto / Problema**\nEl middleware actual no captura empresa_id (necesario para cost attribution), query_count (para detectar N+1), ni response_size (para optimizar payloads). Sin estos campos no podemos atribuir costos por empresa.\n\n**Acceptance Criteria**\n- Cada log de request incluye empresa_id extraído del JWT o contexto de autenticación.\n- query_count se extrae del contexto SQLAlchemy después de ejecutar la request.\n- response_size se mide en bytes del body JSON antes de enviar.\n- Los campos se almacenan en Sentry y logs estructurados.\n- Logs de prueba muestran todos los campos presentes.\n\n**Definition of Done**\n- Código en `middleware/request_logger.py` actualizado.\n- Tests unitarios verifican extracción correcta de empresa_id y query_count.\n- Deploy a staging funciona sin errores.\n- Trello card movida a Done.",
+          "checklist": [
+            "Modificar RequestLoggerMiddleware para capturar empresa_id del contexto",
+            "Integrar SQLAlchemy event listener para contar queries",
+            "Medir response_size antes de enviar response",
+            "Tests: verificar campos en Sentry y logs",
+            "Desplegar a staging"
+          ]
+        },
+        {
+          "name": "[Telemetry P1.2] SQLAlchemy slow query tracking (>500ms)",
+          "desc": "**Contexto / Problema**\nNo detectamos queries lentas ni capturamos stack traces de su origen. Las queries lententes pueden ser indicadores de índices faltantes o N+1s.\n\n**Acceptance Criteria**\n- Queries que tarden >500ms se registran automáticamente con stack trace.\n- Stack trace incluye file, line, function que disparó la query.\n- Datos se envían a Sentry como breadcrumbs o eventos.\n- No afecta performance: listener tiene overhead <5%.\n\n**Definition of Done**\n- Event listener en `lib/database.py` o `models/__init__.py`.\n- Tests con queries mock >500ms verifican captura y stack trace.\n- Staging test: ejecutar query lenta y validar en Sentry.",
+          "checklist": [
+            "Crear SQLAlchemy event listener para `after_cursor_execute`",
+            "Capturar stack trace con traceback.extract_stack()",
+            "Enviar a Sentry si duration > 500ms",
+            "Tests: simular query lenta, verificar evento",
+            "Medir overhead, desplegar"
+          ]
+        },
+        {
+          "name": "[Telemetry P1.3] Lioren API instrumentation: latencia y costo",
+          "desc": "**Contexto / Problema**\nLas llamadas a Lioren (proveedor externo) no registran latencia ni costo, imposibilitando análisis de qué empresas/operaciones generan mayor gasto externo.\n\n**Acceptance Criteria**\n- Cada llamada a Lioren registra inicio, fin, latencia_ms, y costo estimado.\n- Costo se extrae del response header o se calcula según tarifa conocida.\n- Logs incluyen endpoint de Lioren y empresa_id.\n- Datos accesibles en Sentry y logs estructurados.\n\n**Definition of Done**\n- Wrapper en `lib/lioren_client.py` instrumentado.\n- Tests verifican logging de latencia y costo.\n- Staging: ejecutar operación que call Lioren, validar en Sentry.",
+          "checklist": [
+            "Crear wrapper instrumentado para cliente Lioren",
+            "Registrar timestamp_start, timestamp_end, latencia_ms",
+            "Parsear costo del response o calcular según tarifa",
+            "Incluir empresa_id en log",
+            "Tests: mock Lioren call, verificar campos",
+            "Desplegar a staging"
+          ]
+        },
+        {
+          "name": "[Telemetry P1.4] Celery tasks: duración, estado, empresa_id",
+          "desc": "**Contexto / Problema**\nLas tareas Celery no reportan métricas. No sabemos qué tareas consumen más tiempo ni cuáles fallan frecuentemente por empresa.\n\n**Acceptance Criteria**\n- Cada task registra duración, estado (success/retry/failure), y empresa_id.\n- Task name y args se loguean para trazabilidad.\n- Datos enviados a Sentry como eventos o breadcrumbs.\n- Failures incluyen exception message y traceback.\n\n**Definition of Done**\n- Signal handlers en `celery_config.py` o `tasks/__init__.py`.\n- Tests verifica logging para success, retry, failure.\n- Staging test: ejecutar task de prueba, validar en Sentry.",
+          "checklist": [
+            "Implementar signal handlers: before_task_publish, task_success, task_failure",
+            "Registrar empresa_id desde task kwargs o contexto",
+            "Capturar duración y estado",
+            "Enviar a Sentry",
+            "Tests: simular task success/failure",
+            "Desplegar a staging"
+          ]
+        },
+        {
+          "name": "[Telemetry P1.5] Sentry Performance sampling config (low sample rate prod)",
+          "desc": "**Contexto / Problema**\nPara capturar trazas detalladas sin sobrecargar Sentry en producción, necesitamos configurar sample rates bajos en prod y altos en dev/staging.\n\n**Acceptance Criteria**\n- Sample rate en prod es 5% (configurable).\n- Sample rate en dev/staging es 100%.\n- Trazas capturan operaciones lentas prioritariamente (higher sample rate para >1s).\n- Config documentada en .env y docs.\n\n**Definition of Done**\n- Sentry client config actualizado con integrations y sample rate.\n- Tests verifican sample rate según environment.\n- Staging validación: trazas visibles en Sentry.",
+          "checklist": [
+            "Configurar Sentry Performance integrations (Flask, SQLAlchemy, Celery, Requests)",
+            "Set traces_sample_rate según environment",
+            "Implementar before_send para custom sampling logic",
+            "Documentar en .env.example",
+            "Tests: verificar sample rate",
+            "Desplegar a staging"
+          ]
+        },
+        {
+          "name": "[Telemetry P2.1] Rollup engine: agregación horaria en DB",
+          "desc": "**Contexto / Problema**\nLos logs sin-agregar son voluminosos. Necesitamos rollups horarios en DB para que dashboards sean rápidos.\n\n**Acceptance Criteria**\n- Tabla `telemetry_rollups` almacena: empresa_id, route, method, period (hora), p50_latency, p95_latency, call_count, avg_response_size, total_cost_lioren.\n- Job cron cada hora agrega logs de la hora anterior.\n- Rollups para últimas 90 días se retienen; más antiguos se purgan.\n- No hay duplicados si job se ejecuta dos veces.\n\n**Definition of Done**\n- Migration SQL crea tabla y índices.\n- Job en `tasks/rollup_telemetry.py`.\n- Tests verifican agregación correcta con datos mock.\n- Staging: ejecutar job, validar tabla.",
+          "checklist": [
+            "Crear migration: tabla telemetry_rollups con índices (empresa_id, period, route)",
+            "Implementar job rollup: lectura desde logs/Sentry, agregación, insert con upsert",
+            "Configurar cron job cada hora (ej. Celery beat)",
+            "Tests: datos mock, verificar p50/p95, sin duplicados",
+            "Desplegar migration y job a staging"
+          ]
+        },
+        {
+          "name": "[Telemetry P2.2] Admin endpoint GET /admin/telemetry/metrics",
+          "desc": "**Contexto / Problema**\nNo hay forma de consultar agregados programáticamente. El endpoint permite filtros y es base para dashboard.\n\n**Acceptance Criteria**\n- GET `/admin/telemetry/metrics?empresa_id=X&start_date=YYYY-MM-DD&end_date=...&route=...` retorna JSON de rollups.\n- Response incluye p50, p95, call_count, avg_response_size, total_cost_lioren por fila.\n- Autenticación: solo admins.\n- Respuesta es rápida (<500ms) con índices adecuados.\n\n**Definition of Done**\n- Endpoint en `api/admin/telemetry.py`.\n- Tests verifica filtros y respuesta.\n- Staging: ejecutar queries de prueba.",
+          "checklist": [
+            "Crear endpoint GET /admin/telemetry/metrics en blueprint admin",
+            "Implementar filtros: empresa_id, start_date, end_date, route, method",
+            "Query rollups table con ORDER BY period DESC",
+            "Proteger con @admin_required decorator",
+            "Tests: verificar respuesta y filtros",
+            "Desplegar a staging"
+          ]
+        },
+        {
+          "name": "[Telemetry P2.3] Cost attribution per empresa: query helpers",
+          "desc": "**Contexto / Problema**\nPara futura facturación por uso, necesitamos helpers para calcular costo total por empresa (API calls, Lioren, storage).\n\n**Acceptance Criteria**\n- Función `get_total_cost_by_empresa(empresa_id, start_date, end_date)` suma: API call cost (si aplica), Lioren cost, y otros.\n- Resultado es numérico (ej. CLP).\n- Helper reutilizable desde admin API y dashboard.\n\n**Definition of Done**\n- Función en `lib/cost_calculator.py`.\n- Tests con datos mock.\n- Endpoint `/admin/telemetry/metrics` usa este helper.",
+          "checklist": [
+            "Crear lib/cost_calculator.py con get_total_cost_by_empresa()",
+            "Query rollups, suma total_cost_lioren y otros componentes",
+            "Tests: verificar cálculo con datos variados",
+            "Integrar en endpoint admin"
+          ]
+        },
+        {
+          "name": "[Telemetry P3.1] Web Vitals frontend: LCP, FID, CLS reporte",
+          "desc": "**Contexto / Problema**\nSin Web Vitals no tenemos visibilidad sobre UX real de los usuarios. Necesitamos reporte automatizado al backend.\n\n**Acceptance Criteria**\n- Frontend captura LCP (Largest Contentful Paint), FID (First Input Delay), CLS (Cumulative Layout Shift) usando web-vitals.js.\n- POST a `/api/metrics/web-vitals` con {metric, value, timestamp, page_url}.\n- Datos se almacenan en tabla `web_vitals` o Sentry.\n- Sampling: 10% de sesiones en prod.\n\n**Definition of Done**\n- Código frontend integra web-vitals.js y envía POST.\n- Endpoint `/api/metrics/web-vitals` recibe y almacena.\n- Tests verifica ingestion.\n- Staging: abrir app, validar requests en DevTools.",
+          "checklist": [
+            "Instalar web-vitals npm package",
+            "Implementar reporte POST a /api/metrics/web-vitals en main layout",
+            "Crear endpoint backend para recibir métricas",
+            "Almacenar en web_vitals table o Sentry",
+            "Tests: mock web-vitals, verificar POST",
+            "Desplegar a staging"
+          ]
+        },
+        {
+          "name": "[Telemetry P3.2] Frontend performance sampling config",
+          "desc": "**Contexto / Problema**\nWeb Vitals no deben reportarse al 100% en prod para evitar spam. Necesitamos sampling inteligente.\n\n**Acceptance Criteria**\n- Prod: 10% de sesiones reportan Web Vitals.\n- Dev/staging: 100%.\n- Config via .env variable.\n\n**Definition of Done**\n- Config en frontend env.\n- Tests verifica sampling logic.\n- Staging validación.",
+          "checklist": [
+            "Configurar VITE_VITALS_SAMPLE_RATE en .env",
+            "Implementar random sampling antes de POST",
+            "Tests: verificar sample rate",
+            "Desplegar"
+          ]
+        },
+        {
+          "name": "[Telemetry P4.1] Admin UI dashboard: costo, latencia, top operaciones",
+          "desc": "**Contexto / Problema**\nAdmins necesitan visualización clara de costos y performance sin acceso directo a Sentry.\n\n**Acceptance Criteria**\n- Página `/admin/telemetry` muestra:\n  - Total cost (CLP) por empresa, filtrable por rango de fechas.\n  - Gráfico de latencia P95 por ruta (últimas 24h).\n  - Tabla de top 10 operaciones más costosas.\n  - Tabla de top 10 operaciones más lentas.\n- Filtros: empresa, fecha start/end, ruta.\n- Carga rápida (<2s).\n\n**Definition of Done**\n- Vue/React component en `frontend/views/admin/Telemetry.vue`.\n- Tests de componente.\n- Staging: navegar a página, validar datos.",
+          "checklist": [
+            "Crear admin telemetry page con Filters (empresa, date range)",
+            "Implementar total cost widget (llamar GET /admin/telemetry/metrics)",
+            "Graficar P95 latency por ruta",
+            "Mostrar tablas: top costly ops, top slow ops",
+            "Tests: mock API responses",
+            "Desplegar a staging"
+          ]
+        },
+        {
+          "name": "[Telemetry P4.2] Runbook: interpretación de métricas y troubleshooting",
+          "desc": "**Contexto / Problema**\nAdmins y devs necesitan guía para interpretar dashboards y diagnosticar problemas de cost/performance.\n\n**Acceptance Criteria**\n- Documento en markdown con secciones:\n  - Qué significa cada métrica (LCP, FID, CLS, P95, cost).\n  - Cómo leer el dashboard.\n  - Troubleshooting: si cost sube, si latencia sube, si queries lentas, etc.\n  - Links a Sentry traces para investigación profunda.\n- Publicado en docs internas.\n\n**Definition of Done**\n- Runbook escrito y revisado.\n- Link en README.\n- Documentación accesible al equipo.",
+          "checklist": [
+            "Escribir runbook.md con secciones: métricas, dashboard, troubleshooting",
+            "Incluir ejemplos de escenarios (cost spike, latency spike)",
+            "Documentar cómo acceder a Sentry traces desde dashboard",
+            "Revisar con team",
+            "Publicar en docs"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Telemetry] Phase 1: backend data collection",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[Telemetry T1.1] RequestLoggerMiddleware: enriquecimiento de logs",
+          "desc": "**Contexto / Problema**\nLos logs HTTP actuales no capturan metadatos de negocio (empresa_id) ni métricas de desempeño (response_size, query_count) necesarias para análisis de costo y performance por cliente.\n\n**Acceptance Criteria**\n- Todo request HTTP registra empresa_id extraído del contexto autenticado.\n- response_size (bytes) se captura y loguea en cada request.\n- query_count (número de queries SQL ejecutadas) se captura y loguea.\n- Logs se emiten en formato estructurado (JSON) con estos campos.\n- Tests verifican que cada campo está presente y es correcto en logs.\n\n**Definition of Done**\n- Código implementado en app/middleware/logging.py.\n- Tests unitarios pasan (fixtures para request con empresa_id, response_size).\n- Deploy a staging; logs verificables vía tail de aplicación.\n- Trello card movido a In review.",
+          "checklist": [
+            "Modificar RequestLoggerMiddleware para inyectar empresa_id, response_size, query_count",
+            "Usar structlog para serializar logs como JSON",
+            "Escribir tests unitarios para captura de datos",
+            "Validar en staging que logs contienen todos los campos",
+            "Mover Trello a In review"
+          ]
+        },
+        {
+          "name": "[Telemetry T1.2] SQLAlchemy slow-query listener (>200ms)",
+          "desc": "**Contexto / Problema**\nQueries lentas impactan costo (Lioren, bandwidth) y UX. Sin visibilidad, no sabemos cuáles son las queries problemáticas ni en qué contexto ocurren.\n\n**Acceptance Criteria**\n- SQLAlchemy emite evento cada vez que una query tarda >200ms.\n- El evento captura query fingerprint (tabla, operación), duración exacta (ms) y contexto (empresa_id si aplica).\n- Eventos se loguean estructurados y accesibles para análisis.\n- Tests verifican que queries >200ms generan eventos, queries <200ms no.\n\n**Definition of Done**\n- Event listener implementado en app/db.py.\n- Tests con queries mock de diferente duración.\n- Deploy a staging; queries lentas verificables en logs.\n- Trello card movido a In review.",
+          "checklist": [
+            "Implementar SQLAlchemy event listener para after_cursor_execute",
+            "Capturar query text, duration, empresa_id en evento",
+            "Loguear eventos >200ms con structlog",
+            "Escribir tests con query mocks de diferente duración",
+            "Validar en staging",
+            "Mover Trello a In review"
+          ]
+        },
+        {
+          "name": "[Telemetry T1.3] Lioren client wrapper: instrumentación (count, latency, cost)",
+          "desc": "**Contexto / Problema**\nCalls a Lioren (API de DTE/SII) generan costos que deben ser rastreables por cliente y operación. Sin datos de latencia y costo, no podemos optimizar ni facturar con precisión.\n\n**Acceptance Criteria**\n- Cada call a Lioren captura: empresa_id, operación (tipo de DTE), latencia (ms), costo unitario (USD).\n- Datos se loguean estructurados inmediatamente post-call.\n- Tests verifican que wrapper captura todos los datos sin alterar respuesta de Lioren.\n- Costo agregado por empresa es calculable desde logs.\n\n**Definition of Done**\n- Lioren client wrapper implementado en app/services/lioren_client.py.\n- Tests unitarios para captura de latencia y costo.\n- Integration tests contra Lioren (o mock).\n- Deploy a staging; logs muestran captura correcta de datos.\n- Trello card movido a In review.",
+          "checklist": [
+            "Crear wrapper para Lioren client que intercepte calls",
+            "Medir latencia e inyectar empresa_id en contexto",
+            "Extraer costo de respuesta Lioren (si disponible)",
+            "Loguear structlog con (empresa_id, operacion, latency_ms, cost_usd)",
+            "Escribir tests unitarios e integración",
+            "Validar en staging",
+            "Mover Trello a In review"
+          ]
+        },
+        {
+          "name": "[Telemetry T1.4] Celery task metrics vía signals",
+          "desc": "**Contexto / Problema**\nTareas asincrónicas (Celery) son críticas para batch processing de DTEs, notificaciones, etc. Sin métricas, no sabemos si tareas fallan, reintenten o degradan el sistema.\n\n**Acceptance Criteria**\n- Cada tarea Celery loguea: task_name, empresa_id, duración (ms), retry_count, estado final (success/failure).\n- Eventos se capturan vía Celery signals (task_prerun, task_postrun, task_failure) sin modificar código de tarea.\n- Tests verifican que métricas se emiten correctamente para casos de éxito, fallo y retry.\n\n**Definition of Done**\n- Signal handlers implementados en app/tasks/__init__.py.\n- Tests unitarios con task mocks de diferente resultado.\n- Deploy a staging; logs muestran métricas de tareas ejecutadas.\n- Trello card movido a In review.",
+          "checklist": [
+            "Implementar signal handlers para task_prerun, task_postrun, task_failure",
+            "Capturar task_name, empresa_id, duración, retry_count, estado",
+            "Loguear con structlog en cada etapa",
+            "Escribir tests para éxito, fallo, y retry scenarios",
+            "Validar en staging",
+            "Mover Trello a In review"
+          ]
+        },
+        {
+          "name": "[Telemetry T1.5] Sentry Performance: per-route traces y dashboards",
+          "desc": "**Contexto / Problema**\nSentry es nuestra plataforma de monitoreo central. Sin configuración de tracing y dashboards, no podemos correlacionar errores con performance degradation ni analizar patrones de costo en tiempo real.\n\n**Acceptance Criteria**\n- Sentry captura traces de HTTP requests con sample rate diferenciado: 100% en dev/staging, 10% en prod.\n- Traces incluyen spans para DB, Lioren, Celery (si aplica).\n- Dashboard Sentry muestra latency, throughput y error rate por ruta.\n- Tests verifican que traces se reportan correctamente sin overhead significativo.\n\n**Definition of Done**\n- Sentry SDK configurado en app/config.py con traces_sample_rate por entorno.\n- Integraciones de DB, Celery y requests habilitadas.\n- Dashboards Sentry creados y compartidos con team.\n- Deploy a staging; traces verificables en Sentry UI.\n- Trello card movido a In review.",
+          "checklist": [
+            "Configurar Sentry integrations (sqlalchemy, celery, requests) en config.py",
+            "Establecer traces_sample_rate: dev=1.0, staging=1.0, prod=0.1",
+            "Crear dashboards Sentry para latency, throughput, error_rate por ruta",
+            "Escribir tests para verificar traces se reportan",
+            "Deploy a staging y validar traces en Sentry",
+            "Mover Trello a In review"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Telemetry] Phase 2: aggregation + admin API",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[Telemetry T2.1] perf_rollup table + Celery hourly aggregator",
+          "desc": "**Contexto / Problema**\nLos logs Phase 1 son granulares pero no consultables eficientemente. Necesitamos una tabla rollup agregada por hora y un job Celery que ejecute cada hora.\n\n**Acceptance Criteria**\n- Tabla `perf_rollup` creada con campos (empresa_id, ruta, timestamp_hora, latency_p50, latency_p95, latency_p99, error_count, request_count).\n- Índices en (empresa_id, timestamp_hora, ruta) para queries rápidas.\n- Celery task `aggregate_perf_logs_hourly()` lee logs de última hora, calcula percentiles con numpy/pandas, inserta en rollup.\n- Task corre cada hora sin errores; recupera silenciosamente si hay reintento.\n- Tests unitarios para agregación (mock logs → esperado rollup) + integration (Celery mock/en-memory).\n\n**Definition of Done**\n- Migración Alembic aplicada y reversible.\n- Task ejecutable en local sin Redis (usando `CELERY_ALWAYS_EAGER=true`).\n- Tests pasan y cobertura ≥80%.\n- Tarjeta movida a \"In Review\".",
+          "checklist": [
+            "Crear migración Alembic para tabla perf_rollup",
+            "Definir índices y constraints",
+            "Implementar función agregador (lecturas + cálculo percentiles)",
+            "Registrar task Celery con schedule horario",
+            "Tests unitarios del agregador",
+            "Tests Celery con always_eager",
+            "Deploy a staging"
+          ]
+        },
+        {
+          "name": "[Telemetry T2.2] GET /admin/telemetry/routes",
+          "desc": "**Contexto / Problema**\nLos gerentes operacionales necesitan ver qué rutas son lentas, populares o con errores para priorizar optimizaciones. Endpoint API que consuma tabla `perf_rollup`.\n\n**Acceptance Criteria**\n- `GET /admin/telemetry/routes?empresa_id=X&sort_by=latency&limit=10&start_date=...&end_date=...` devuelve JSON con top rutas.\n- Cada fila: {ruta, latency_p50, latency_p95, latency_p99, error_count, request_count, error_rate}.\n- Ordenable por latency, request_count, error_rate.\n- Responde en <200ms incluso con 100k+ registros.\n- Requiere autenticación admin.\n\n**Definition of Done**\n- Endpoint implementado en `/admin/telemetry/routes`.\n- Query optimizada con índices existentes.\n- Tests: mock perf_rollup, verificar sort + limit.\n- Documentado en Swagger con parámetros y ejemplos.\n- Tarjeta en \"In Review\".",
+          "checklist": [
+            "Implementar ruta GET /admin/telemetry/routes",
+            "Parsear query params (empresa_id, sort_by, limit, fecha)",
+            "Query a perf_rollup con filtros",
+            "Calcular error_rate en respuesta",
+            "Tests unitarios (mock perf_rollup)",
+            "Documentar en Swagger",
+            "Deploy a staging"
+          ]
+        },
+        {
+          "name": "[Telemetry T2.3] GET /admin/telemetry/cost",
+          "desc": "**Contexto / Problema**\nPara facturación y alertas de overages, Product necesita costo acumulado por empresa basado en request count y tarifa Lioren. Endpoint que agregue costo desde `perf_rollup`.\n\n**Acceptance Criteria**\n- `GET /admin/telemetry/cost?empresa_id=X&start_date=...&end_date=...` devuelve total costo en UF/CLP.\n- Cálculo: sum(request_count) × (tarifa_base_por_1k_requests) + (componente Lioren si aplica).\n- Filtrable por rango de fechas y empresa.\n- Responde en <200ms.\n- Requiere autenticación admin.\n\n**Definition of Done**\n- Endpoint implementado en `/admin/telemetry/cost`.\n- Tarifa Lioren consumida de tabla `empresa_cost_config` o env var.\n- Tests: mock perf_rollup + tarifa, verificar cálculo de costo.\n- Documentado en Swagger.\n- Tarjeta en \"In Review\".",
+          "checklist": [
+            "Implementar ruta GET /admin/telemetry/cost",
+            "Parsear query params (empresa_id, rango de fechas)",
+            "Consultar tarifa Lioren desde config",
+            "Sumar request_count de perf_rollup y calcular costo",
+            "Tests unitarios (mock tarifa + agregación)",
+            "Documentar en Swagger",
+            "Deploy a staging"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Telemetry] Phase 3: frontend metrics",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[Telemetry P1] T3.1: Web Vitals capture & POST",
+          "desc": "**Contexto / Problema**\nNecesitamos capturar Core Web Vitals (LCP, FID, CLS, INP) en el navegador del cliente y enviarlos a nuestro backend para análisis de desempeño.\n\n**Acceptance Criteria**\n- Web Vitals se capturan automáticamente en cada sesión sin intervención del usuario.\n- Cada métrica incluye timestamp y session_id.\n- POST request se envía a /api/telemetry/metrics con payload estructurado.\n- Métricas se registran en logs del servidor.\n- Fallos de POST no bloquean la experiencia del usuario (fire-and-forget).\n\n**Definition of Done**\n- Código merged en develop con tests unitarios >80%.\n- Validación en staging: métricas aparecen en logs.\n- Trello card movida a In Review.",
+          "checklist": [
+            "[ ] Instalar web-vitals npm package",
+            "[ ] Implementar listener de Web Vitals en main.ts/app.tsx",
+            "[ ] Crear payload con session_id, timestamp, LCP/FID/CLS/INP",
+            "[ ] Implementar POST a /api/telemetry/metrics con retry logic",
+            "[ ] Agregar unit tests para capture y POST",
+            "[ ] Validar en staging",
+            "[ ] Mover a In Review"
+          ]
+        },
+        {
+          "name": "[Telemetry P2] T3.2: Bundle analyzer & perf budget",
+          "desc": "**Contexto / Problema**\nDebemos detectar regresiones de tamaño de bundle antes de que lleguen a producción. Implementaremos análisis automático en CI y estableceremos un presupuesto que bloquee merges que lo excedan.\n\n**Acceptance Criteria**\n- Bundle analyzer se ejecuta en cada CI run (GitHub Actions / similar).\n- Se genera reporte de tamaño por chunk/librería.\n- Existe perf-budget.json con límites (ej: main bundle <=250KB).\n- Merge se bloquea si el bundle excede el presupuesto.\n- Equipo recibe notificación clara con delta de tamaño.\n\n**Definition of Done**\n- Perf budget configurado y documentado en README.\n- CI pipeline falla si se excede (y lo notifica).\n- Análisis disponible como artefacto descargable.\n- Trello card movida a In Review.",
+          "checklist": [
+            "[ ] Elegir bundler analyzer (webpack-bundle-analyzer o esbuild plugin)",
+            "[ ] Crear perf-budget.json con límites iniciales",
+            "[ ] Integrar en GitHub Actions workflow",
+            "[ ] Configurar fail condition si se excede presupuesto",
+            "[ ] Agregar step de upload de artefactos",
+            "[ ] Documentar en README el proceso",
+            "[ ] Mover a In Review"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Telemetry] Phase 4: admin UI",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[Telemetry T4.1] Routes tab: latencia y errores",
+          "desc": "**Contexto / Problema**\nAdministradores necesitan visualizar performance de rutas (latencia, tasa de errores) en tiempo real para identificar cuellos de botella.\n\n**Acceptance Criteria**\n- Pestaña Routes disponible en `/configuracion/telemetry`.\n- Tabla muestra ruta, latencia promedio, p95, p99, cantidad de errores, tasa de error %.\n- Filtros por rango de fecha y búsqueda de ruta funcionan correctamente.\n- Datos actualizan al cambiar filtros sin recargar página.\n- Columnas ordenables (por latencia, errores, etc.).\n\n**Definition of Done**\n- Componente React/Vue funcional integrado con endpoint `/api/telemetry/routes`.\n- Tests unitarios de renderizado y filtros.\n- Tests de integración con mock del endpoint.\n- Validado visualmente con Design System.\n- PR mergeado a rama staging.",
+          "checklist": [
+            "Crear componente Routes tab con tabla y filtros",
+            "Conectar a GET /api/telemetry/routes",
+            "Implementar ordenamiento y búsqueda",
+            "Escribir tests unitarios (componente + filtros)",
+            "Escribir tests de integración (API mock)",
+            "Validar con Design System",
+            "Mergear a staging"
+          ]
+        },
+        {
+          "name": "[Telemetry T4.2] Cost & Usage tab: consumo por empresa",
+          "desc": "**Contexto / Problema**\nAdministradores requieren visibilidad del costo de infraestructura y uso de recursos segmentado por empresa cliente para auditoría interna y facturación.\n\n**Acceptance Criteria**\n- Pestaña Cost & Usage disponible en `/configuracion/telemetry`.\n- Tabla muestra empresa, solicitudes totales, data transferida (GB), costo estimado USD, período.\n- Filtros por rango de fecha, empresa, y período de facturación.\n- Gráfico opcional de tendencia de costos en el tiempo.\n- Datos actualizan sin recargar página.\n\n**Definition of Done**\n- Componente React/Vue funcional integrado con endpoint `/api/telemetry/cost-usage`.\n- Tests unitarios de renderizado, filtros y cálculos.\n- Tests de integración con mock del endpoint.\n- Validado visualmente con Design System.\n- PR mergeado a rama staging.",
+          "checklist": [
+            "Crear componente Cost & Usage tab con tabla y filtros",
+            "Conectar a GET /api/telemetry/cost-usage",
+            "Implementar filtros por empresa, fecha y período",
+            "Agregar gráfico de tendencia de costos (opcional pero recomendado)",
+            "Escribir tests unitarios (componente + filtros + cálculos)",
+            "Escribir tests de integración (API mock)",
+            "Validar con Design System y mergear a staging"
+          ]
+        }
+      ]
+    },
+    {
+      "parent_name": "[Telemetry T2.1] perf_rollup table + Celery hourly aggregator",
+      "parent_list": "Feature requests",
+      "children": [
+        {
+          "name": "[Telemetry T2.1.A] Schema + Alembic migrations (perf_rollup, cost_rollup)",
+          "desc": "**Contexto / Problema**\nLas tablas agregadas `perf_rollup` y `cost_rollup` no existen. Sin schema definido, el agregador no puede escribir.\n\n**Acceptance Criteria**\n- Migración Alembic crea tabla `perf_rollup` (id PK, hour TIMESTAMPTZ, route VARCHAR, empresa_id, count INT, p50_ms FLOAT, p95_ms FLOAT, p99_ms FLOAT, errors INT, total_queries INT).\n- Migración crea índice compuesto (hour DESC, route).\n- Migración crea tabla `cost_rollup` (id PK, hour TIMESTAMPTZ, empresa_id, total_cost_clp NUMERIC, count INT).\n- Migración crea índice compuesto (hour DESC, empresa_id).\n- Ambas tablas están en alembic/versions/ y pasan `alembic upgrade head` en staging.\n\n**Definition of Done**\n- Archivos de migración versionados en Git.\n- `psql` verifica ambas tablas + índices existen.\n- Migración reversa (`downgrade`) funciona sin errores.\n- Trello card movido a 'In review'.",
+          "checklist": "- [ ] Crear archivo migración perf_rollup (schema + índice)\n- [ ] Crear archivo migración cost_rollup (schema + índice)\n- [ ] Validar sintaxis SQL, probar upgrade/downgrade local\n- [ ] Ejecutar en staging, verificar con psql\n- [ ] Commit + PR review\n- [ ] Deploy staging, Trello → In review"
+        },
+        {
+          "name": "[Telemetry T2.1.B] Arquitectura fuente datos: logs vs Redis sink (decisión)",
+          "desc": "**Contexto / Problema**\nDos opciones para alimentar agregador: (1) parsear logs JSON archivados cada hora (batch simple, sin infra nueva), o (2) emitir eventos mínimos a Redis stream desde middleware (real-time ready, complejo). Decisión impacta arquitectura de T2.1.C y T2.1.D.\n\n**Acceptance Criteria**\n- Opción elegida documentada en README.md sección 'Telemetry'.\n- Si Redis: middleware instruido con push (request_id, route, empresa_id, latency_ms, status_code, query_count) a Redis list `perf_events_buffer`.\n- Si logs: ejemplos JSON y parsing regex/schema en notas técnicas.\n- Prototipo funcional (mock data) implementado en test_telemetry.py.\n- Decision aprobada por tech lead (Slack o PR comment).\n\n**Definition of Done**\n- Documento ADR (Architecture Decision Record) en docs/adr/ con pros/cons.\n- Test Mock coverage ≥80%.\n- Trello card 'Blocker' removido; T2.1.C y T2.1.D pueden proceder.",
+          "checklist": "- [ ] Documentar 2 opciones (logs vs Redis) con trade-offs\n- [ ] Implementar mock prototipo en test_telemetry.py\n- [ ] Code review con tech lead\n- [ ] Decisión final documentada en ADR\n- [ ] Unblock T2.1.C + T2.1.D"
+        },
+        {
+          "name": "[Telemetry T2.1.C] Agregador perf_rollup: Celery hourly task",
+          "desc": "**Contexto / Problema**\nCada hora (UTC), se debe consolidar datos de performance de la ventana anterior en tabla `perf_rollup`. Agregador lee fuente elegida (T2.1.B), calcula percentiles (p50, p95, p99), cuenta errores, y escribe fila por (route, empresa_id, hour).\n\n**Acceptance Criteria**\n- Celery beat ejecuta tarea `aggregate_perf_hourly` a cada minuto 0 (UTC).\n- Tarea agrega datos de ventana T-1h (ej: si corre a 14:00 UTC, agrega 13:00–13:59).\n- Calcula correctamente: count, p50_ms, p95_ms, p99_ms, errors (status != 200), total_queries.\n- Upsert: si fila (route, empresa_id, hour) existe, se actualiza; else INSERT.\n- Log estructurado: tarea registra timestamp inicio, count rows agregado, timestamp fin.\n- Con fixture sintético (100 eventos, 3 rutas, 2 empresas): percentiles coinciden con numpy.percentile(latencies, [50,95,99]).\n\n**Definition of Done**\n- Task definida en conico_crm/celery_app/tasks/telemetry.py.\n- Test unitario con fixture sintético: `test_aggregate_perf_hourly_happy_path`.\n- Test edge case: ventana vacía → row no se crea (o se crea con nulls si requerido).\n- Staging: tarea ejecutada manualmente (Celery inspect / flower) y verificada en DB.\n- Trello → In review.",
+          "checklist": "- [ ] Implementar task `aggregate_perf_hourly` (lee fuente, calcula percentiles, upsert a perf_rollup)\n- [ ] Celery beat task schedule a cada hora (crontab UTC)\n- [ ] Test fixture sintético, verificar percentiles\n- [ ] Test caso vacío (no hay datos en ventana)\n- [ ] Log estructurado (inicio, count, fin)\n- [ ] Deploy staging, validar ejecución manual\n- [ ] Trello → In review"
+        },
+        {
+          "name": "[Telemetry T2.1.D] Agregador cost_rollup: Lioren consumption + weekly retention",
+          "desc": "**Contexto / Problema**\nParalela a perf_rollup, se requiere tabla `cost_rollup` que agrega total_cost_clp (de Lioren) por empresa_id por hora. Además, ambas tablas deben purgar registros > 90 días semanalmente para no crecer sin límite.\n\n**Acceptance Criteria**\n- Task Celery `aggregate_cost_hourly` (análoga a perf_rollup) agrega Lioren cost data cada hora.\n- Fila (empresa_id, hour) en cost_rollup: total_cost_clp, count transacciones.\n- Task Celery `purge_rollup_old_data` (ejecuta cada lunes 00:00 UTC) borra perf_rollup y cost_rollup donde hour < NOW() - 90 días.\n- Log purge: timestamp inicio, rows deletados (perf_rollup count, cost_rollup count), timestamp fin.\n- Test: purge con fixture (rows con diferentes timestamped), verificar solo > 90d se borran.\n\n**Definition of Done**\n- Tasks `aggregate_cost_hourly` + `purge_rollup_old_data` definidas en conico_crm/celery_app/tasks/telemetry.py.\n- Test unitario purge: fixture con rows 60d old (debe quedar), 100d old (debe borrar).\n- Staging: purge ejecutado manualmente (testing schedule), DB verificada.\n- Trello → In review.",
+          "checklist": "- [ ] Implementar task `aggregate_cost_hourly` (consume Lioren, upsert cost_rollup)\n- [ ] Implementar task `purge_rollup_old_data` (delete > 90d, log count)\n- [ ] Celery beat: purge cada lunes 00:00 UTC\n- [ ] Test purge con fixtures timestamped\n- [ ] Deploy staging, validar ejecuciones\n- [ ] Trello → In review"
+        },
+        {
+          "name": "[Telemetry T2.1.E] Testing + staging validation",
+          "desc": "**Contexto / Problema**\nAntes de merge a prod, agregadores deben validarse: tests unitarios + integración, y ejecuciones reales en staging contra datos de prueba.\n\n**Acceptance Criteria**\n- Test suite `tests/telemetry/test_aggregators.py` cubre:\n  - `test_aggregate_perf_hourly_happy_path`: 100 eventos, 3 rutas, 2 empresas, percentiles correctos.\n  - `test_aggregate_perf_hourly_empty_window`: ventana sin datos.\n  - `test_aggregate_cost_hourly_happy_path`: Lioren mock data agrega correctamente.\n  - `test_purge_rollup_old_data`: fixture con filas 60d y 100d; solo 100d se borran.\n- Coverage ≥85% para conico_crm/celery_app/tasks/telemetry.py.\n- Staging: manual test ejecución de `aggregate_perf_hourly` + `aggregate_cost_hourly` + `purge_rollup_old_data`; datos verificados en psql.\n- No hay errores de SQL, de tipo, ni warnings de logs.\n\n**Definition of Done**\n- Todos tests pasan: `pytest tests/telemetry/test_aggregators.py -v --cov`.\n- Coverage report mostrado en PR.\n- Staging execution log limpio (sin errores).\n- Trello → In review.",
+          "checklist": "- [ ] Escribir tests unitarios (happy path, empty, edge cases)\n- [ ] Coverage ≥85%\n- [ ] Pytest all tests pasa\n- [ ] Deploy staging\n- [ ] Ejecutar tasks manualmente, verificar DB\n- [ ] Logs clean (sin errores)\n- [ ] Trello → In review"
+        }
+      ]
+    }
+  ]
+}

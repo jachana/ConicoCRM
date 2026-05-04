@@ -63,6 +63,16 @@ import urllib.request
 import urllib.error
 
 
+# Windows cp1252 stdout chokes on non-Latin-1 chars (arrows, Spanish accents,
+# emoji). Force utf-8 at startup so prints from refined LLM output don't crash.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
+
 API_BASE = "https://api.trello.com/1"
 SCRIPT_DIR = Path(__file__).resolve().parent
 CARDS_FILE = SCRIPT_DIR / "trello_cards.json"
@@ -80,6 +90,7 @@ PROVIDER_MODELS = {
         "gpt-mini": "openai/gpt-4.1-mini",
         "qwen-coder": "qwen/qwen3-coder",
         "qwen-72b": "qwen/qwen-2.5-72b-instruct",
+        "qwen": "qwen/qwen3.6-35b-a3b",
     },
     "openrouter": {
         "haiku": "anthropic/claude-haiku-4.5",
@@ -89,9 +100,30 @@ PROVIDER_MODELS = {
         "gpt-mini": "openai/gpt-4.1-mini",
         "qwen-coder": "qwen/qwen3-coder",
         "qwen-72b": "qwen/qwen-2.5-72b-instruct",
+        "qwen": "qwen/qwen3.6-35b-a3b",
     },
 }
 DONE_LISTS = {"Friendly Beta 0.1", "Live Beta 0.2", "Live 1.0", "In review"}
+
+# Lists eligible for backlog refinement (everything that is "to be groomed").
+REFINE_LISTS = {"Ideas", "Feature requests", "Bugs", "Client feedback"}
+
+# Size labels assigned by --refine-backlog. Color order S->XL = green->red.
+SIZE_LABELS: dict[str, str] = {
+    "Size:S": "green",
+    "Size:M": "yellow",
+    "Size:L": "orange",
+    "Size:XL": "red",
+}
+
+# Hidden marker appended to refined card descriptions so re-runs can skip them
+# unless --force is passed. Round-trips through pull/apply because it lives
+# inside the desc (Trello stores it verbatim).
+REFINED_MARKER = "<!-- conico-refined -->"
+
+# Default file where --refine-backlog stores XL breakdown proposals for human
+# review before they are pushed via --apply-breakdowns.
+BREAKDOWNS_FILE = SCRIPT_DIR / "triage_breakdowns.json"
 
 # Rough public list-pricing in USD per 1M tokens (input, output).
 # These are estimates for budgeting only; actual billing varies by provider markup.
@@ -904,6 +936,9 @@ def _provider_candidates(provider: str) -> list[str]:
     return [provider]
 
 
+_PROVIDER_BLACKLIST: set[str] = set()
+
+
 def prompt_json(system: str, user: str, model_alias: str,
                 provider: str = "auto") -> Any:
     """Send one system+user prompt, expect JSON, with provider fallback.
@@ -911,19 +946,37 @@ def prompt_json(system: str, user: str, model_alias: str,
     Public helper for callers outside the card-triage flow (e.g. the
     backlog groomer). Returns whatever the JSON parses to (dict or list).
     Strips ``` fences.
+
+    A provider that returns 422 (typically Straico content moderation) is
+    blacklisted for the remainder of the process so we don't retry it card
+    after card. It comes back on the next process invocation.
     """
-    candidates = _provider_candidates(provider)
+    raw_candidates = _provider_candidates(provider)
+    candidates = [p for p in raw_candidates if p not in _PROVIDER_BLACKLIST]
+    if not candidates:
+        # Everything got blacklisted — reset for this call so we at least try.
+        candidates = raw_candidates
+
     last_err: Exception | None = None
     for p in candidates:
         try:
-            print(f"  llm: trying {p} ({PROVIDER_MODELS[p].get(model_alias, model_alias)})")
+            print(f"  llm: trying {p} ({PROVIDER_MODELS[p].get(model_alias, model_alias)})",
+                  flush=True)
             text = _provider_send(p, model_alias, system, user)
             text = (text or "").strip()
             if text.startswith("```"):
                 text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
             return json.loads(text)
+        except urllib.error.HTTPError as e:
+            print(f"  llm: {p} failed: HTTP Error {e.code}: {e.reason}",
+                  file=sys.stderr, flush=True)
+            if e.code in (400, 422, 401, 403):
+                _PROVIDER_BLACKLIST.add(p)
+                print(f"  llm: blacklisting {p} for the rest of this run "
+                      f"(client error {e.code})", file=sys.stderr, flush=True)
+            last_err = e
         except Exception as e:
-            print(f"  llm: {p} failed: {e}", file=sys.stderr)
+            print(f"  llm: {p} failed: {e}", file=sys.stderr, flush=True)
             last_err = e
     raise RuntimeError(f"all providers failed; last error: {last_err}")
 
@@ -1067,6 +1120,300 @@ def enrich(spec: dict, cards_path: Path, model_alias: str,
     return 0
 
 
+def _strip_refined_marker(desc: str) -> str:
+    if not desc:
+        return ""
+    return desc.replace(REFINED_MARKER, "").strip()
+
+
+def is_refined(card: dict) -> bool:
+    """Cards whose desc contains the refined marker have already been groomed."""
+    return REFINED_MARKER in (card.get("desc") or "")
+
+
+def _build_refine_prompt(card: dict, spec: dict) -> tuple[str, str]:
+    """Build prompt for one card. Asks LLM to size + rewrite desc with AC/DoD."""
+    label_names = [n for n in spec.get("labels", {}).keys() if not n.startswith("Size:")]
+
+    system = (
+        "You are a backlog refiner for Conico CRM (Chilean SaaS for SMEs, es-CL).\n\n"
+        "For the given Trello card, produce a refined version with:\n"
+        "  * size  - one of S | M | L | XL (judgment based on title + desc + checklist).\n"
+        "      S  = atomic, <=2h, single file or trivial change.\n"
+        "      M  = half- to one-day task, single feature, one module.\n"
+        "      L  = 1-3 days, one feature with backend+frontend+tests.\n"
+        "      XL = multi-feature umbrella that MUST be broken down. Provide breakdown.\n"
+        "  * desc_refined  - es-CL markdown using EXACTLY this structure:\n"
+        "      **Contexto / Problema**\n"
+        "      one or two sentences explaining the problem and motivation.\n\n"
+        "      **Acceptance Criteria**\n"
+        "      - bullet list of observable behaviours that prove the work is done.\n"
+        "      - written from the user's perspective when applicable.\n\n"
+        "      **Definition of Done**\n"
+        "      - bullet list of process gates: tests pass, migration applied,\n"
+        "        deployed to staging, Trello card moved to In review, etc.\n\n"
+        "      **Notas tecnicas** (OPTIONAL, only if helpful)\n"
+        "      - file paths, endpoints, libraries, schema hints.\n"
+        "  * checklist_refined  - 3-7 short imperative steps a developer can tick\n"
+        "    off while implementing (in es-CL). Mirror the Acceptance Criteria but\n"
+        "    phrase as actions (verbs). Include 'Tests' and 'Deploy/Trello' steps.\n"
+        "  * breakdown  - REQUIRED when size=='XL'. Array of 2-6 child cards. Each\n"
+        "    child has its own {name, desc, checklist}. Child names MUST start with\n"
+        "    a short tag derived from the parent (eg. parent '[Inventario] Bodegas'\n"
+        "    -> children '[Inventario P1] ...', '[Inventario P2] ...'). For S/M/L\n"
+        "    return an empty array.\n\n"
+        f"Available domain labels (do NOT invent new ones): {label_names}\n\n"
+        "Rules:\n"
+        "- Preserve technical jargon and DTE/SII terminology if present.\n"
+        "- NEVER change the card 'name' field; the caller relies on it as ID.\n"
+        "- Be concrete. Avoid vague phrases like 'mejorar UX' or 'revisar codigo'.\n"
+        "- If the card is already a Bug, AC must include the exact reproduction\n"
+        "  steps and the expected vs actual behaviour.\n"
+        "- Return ONLY a JSON object. No prose, no markdown fences.\n"
+    )
+    user = (
+        "Refine this card.\n\n"
+        f"{json.dumps(card, ensure_ascii=False, indent=2)}\n\n"
+        'Return: {"name", "size", "reasoning", "desc_refined", '
+        '"checklist_refined", "breakdown"}.\n'
+    )
+    return system, user
+
+
+def refine_backlog(spec: dict, cards_path: Path, model_alias: str,
+                   board_id: str, push: bool, provider: str,
+                   dry_run: bool, force: bool,
+                   only_list: str | None,
+                   breakdowns_path: Path) -> int:
+    """LLM-driven backlog grooming: size + AC/DoD desc + checklist + XL breakdown."""
+
+    # Make sure Size:* labels exist in the spec so apply_spec creates them on the
+    # board. Idempotent.
+    spec_labels = spec.setdefault("labels", {})
+    for lname, color in SIZE_LABELS.items():
+        spec_labels.setdefault(lname, color)
+
+    target_lists = REFINE_LISTS
+    if only_list:
+        needle = only_list.lower()
+        target_lists = {l for l in REFINE_LISTS if needle in l.lower()}
+        if not target_lists:
+            print(f"error: --only-list {only_list!r} matches no refinable list "
+                  f"({sorted(REFINE_LISTS)})", file=sys.stderr)
+            return 2
+
+    candidates = [
+        c for c in spec["cards"]
+        if c["list"] in target_lists
+        and (force or not is_refined(c))
+    ]
+    if not candidates:
+        print(f"No cards to refine in {sorted(target_lists)} "
+              f"(use --force to re-refine already-refined cards).")
+        return 0
+
+    print(f"Refining {len(candidates)} card(s) "
+          f"(model={model_alias}, provider={provider}, "
+          f"dry_run={dry_run}, force={force}).")
+
+    breakdowns: list[dict] = []
+    refined_count = 0
+    failed: list[tuple[str, str]] = []
+
+    for idx, card in enumerate(candidates, 1):
+        name = card["name"]
+        slim = {
+            "name": name,
+            "list": card["list"],
+            "labels": [l for l in (card.get("labels") or [])
+                       if not l.startswith("Size:")],
+            "desc": _strip_refined_marker(card.get("desc") or "")[:4000],
+            "checklist": card.get("checklist") or [],
+        }
+        print(f"\n[{idx}/{len(candidates)}] {name!r}  [{card['list']}]")
+        try:
+            system, user = _build_refine_prompt(slim, spec)
+            payload = prompt_json(system, user, model_alias, provider=provider)
+        except Exception as e:
+            print(f"  ! LLM failed: {e}", file=sys.stderr)
+            failed.append((name, str(e)))
+            continue
+
+        if not isinstance(payload, dict):
+            print(f"  ! unexpected payload shape: {type(payload).__name__}",
+                  file=sys.stderr)
+            failed.append((name, "non-dict response"))
+            continue
+
+        size = (payload.get("size") or "").upper().strip()
+        if size not in {"S", "M", "L", "XL"}:
+            print(f"  ! invalid size {size!r}, skipping", file=sys.stderr)
+            failed.append((name, f"invalid size {size!r}"))
+            continue
+
+        new_desc = (payload.get("desc_refined") or "").strip()
+        new_checklist = [s.strip() for s in (payload.get("checklist_refined") or [])
+                         if s and s.strip()]
+        if not new_desc or not new_checklist:
+            print(f"  ! empty desc/checklist, skipping", file=sys.stderr)
+            failed.append((name, "empty desc or checklist"))
+            continue
+
+        # Replace any prior Size:* label with the new one.
+        labels = [l for l in (card.get("labels") or [])
+                  if not l.startswith("Size:")]
+        labels.append(f"Size:{size}")
+        card["labels"] = labels
+
+        # Append the marker so a future run skips this card unless --force.
+        card["desc"] = f"{new_desc}\n\n{REFINED_MARKER}"
+        card["checklist"] = new_checklist
+        refined_count += 1
+
+        # Persist after every card so a crash mid-run doesn't lose progress.
+        # Re-runs without --force will skip cards that already carry the marker.
+        cards_path.write_text(
+            json.dumps(spec, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        reasoning = payload.get("reasoning") or ""
+        print(f"  ~ size={size}  {reasoning[:120]}")
+
+        if size == "XL":
+            children = payload.get("breakdown") or []
+            if not children:
+                print(f"  ! XL but no breakdown; flagging for manual review",
+                      file=sys.stderr)
+                failed.append((name, "XL without breakdown"))
+            else:
+                breakdowns.append({
+                    "parent_name": name,
+                    "parent_list": card["list"],
+                    "children": children,
+                })
+                breakdowns_path.write_text(
+                    json.dumps({"breakdowns": breakdowns}, indent=2,
+                               ensure_ascii=False) + "\n",
+                    encoding="utf-8",
+                )
+                print(f"  + breakdown: {len(children)} child card(s) proposed")
+
+    cards_path.write_text(
+        json.dumps(spec, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(f"\nRefined {refined_count} card(s); JSON updated at {cards_path}.")
+
+    if breakdowns:
+        breakdowns_path.write_text(
+            json.dumps({"breakdowns": breakdowns}, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        print(f"Wrote {len(breakdowns)} breakdown(s) to {breakdowns_path}.")
+        print("Review and run --apply-breakdowns to create child cards on Trello.")
+    elif breakdowns_path.exists():
+        # Stale breakdowns file — leave it but warn.
+        print(f"(no new breakdowns; existing {breakdowns_path} left untouched)")
+
+    if failed:
+        print(f"\nFailed/skipped {len(failed)} card(s):")
+        for n, why in failed:
+            print(f"  ? {n!r}: {why}")
+
+    print("\n" + usage_summary())
+
+    if dry_run:
+        print("\n--dry-run set: JSON updated locally but NOT pushed to Trello.")
+        return 0
+
+    if push and board_id and refined_count > 0:
+        print("\n--- Pushing refined JSON to Trello ---")
+        spec = json.loads(cards_path.read_text(encoding="utf-8"))
+        return apply_spec(spec, board_id, dry_run=False)
+
+    if not push:
+        print("\n--no-push set: review JSON diff, then run --apply to push.")
+    return 0
+
+
+def apply_breakdowns(spec: dict, cards_path: Path, breakdowns_path: Path,
+                     board_id: str, push: bool, dry_run: bool) -> int:
+    """Read pending breakdowns and inject child cards into the spec, then push."""
+    if not breakdowns_path.exists():
+        print(f"error: no breakdowns file at {breakdowns_path}", file=sys.stderr)
+        return 2
+    payload = json.loads(breakdowns_path.read_text(encoding="utf-8"))
+    breakdowns = payload.get("breakdowns") or []
+    if not breakdowns:
+        print(f"{breakdowns_path} has no breakdowns. Nothing to apply.")
+        return 0
+
+    by_name = {c["name"]: c for c in spec["cards"]}
+    created = 0
+    skipped: list[tuple[str, str]] = []
+
+    for bd in breakdowns:
+        parent_name = bd.get("parent_name")
+        parent = by_name.get(parent_name)
+        if not parent:
+            skipped.append((parent_name or "<unknown>", "parent not in JSON"))
+            continue
+        for child in bd.get("children") or []:
+            cname = (child.get("name") or "").strip()
+            if not cname:
+                skipped.append((parent_name, "child with empty name"))
+                continue
+            if cname in by_name:
+                skipped.append((cname, "already exists"))
+                continue
+            entry = {
+                "list": "Feature requests",
+                "name": cname,
+                "labels": [
+                    l for l in (child.get("labels") or [])
+                    if l in spec.get("labels", {})
+                ] or [l for l in (parent.get("labels") or [])
+                      if not l.startswith("Size:")],
+                "desc": (
+                    f"Parte de **{parent_name}**.\n\n"
+                    + (child.get("desc") or "").strip()
+                    + f"\n\n{REFINED_MARKER}"
+                ),
+                "checklist": [s.strip() for s in (child.get("checklist") or [])
+                              if s and s.strip()],
+            }
+            spec["cards"].append(entry)
+            by_name[cname] = entry
+            created += 1
+            print(f"  + child: {cname}  (parent: {parent_name})")
+
+    cards_path.write_text(
+        json.dumps(spec, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(f"\nInjected {created} child card(s) into JSON.")
+
+    if skipped:
+        print(f"Skipped {len(skipped)}:")
+        for n, why in skipped:
+            print(f"  ? {n!r}: {why}")
+
+    if dry_run:
+        print("\n--dry-run set: JSON updated but NOT pushed.")
+        return 0
+    if push and created > 0:
+        print("\n--- Pushing breakdowns to Trello ---")
+        spec = json.loads(cards_path.read_text(encoding="utf-8"))
+        rc = apply_spec(spec, board_id, dry_run=False)
+        if rc == 0:
+            # Move processed breakdowns aside so a re-run does not duplicate.
+            archive = breakdowns_path.with_suffix(".applied.json")
+            breakdowns_path.replace(archive)
+            print(f"Archived breakdowns -> {archive}")
+        return rc
+    return 0
+
+
 def link_commit(spec: dict, cards_path: Path, sha_arg: str, card_needle: str,
                 board_id: str, push: bool) -> int:
     """Resolve sha (HEAD ok), find card by name substring, append to commits, write JSON."""
@@ -1187,14 +1534,30 @@ def main() -> int:
     parser.add_argument("--enrich", action="store_true",
                         help="LLM triage: pull -> fill desc/checklist/labels/list "
                              "for bare cards (skips done lists) -> push back to Trello.")
+    parser.add_argument("--refine-backlog", action="store_true",
+                        help="LLM backlog refinement: rewrite desc with AC/DoD, "
+                             "trim/grow checklist, assign Size:S/M/L/XL label, "
+                             "and propose XL breakdowns (written to "
+                             "scripts/triage_breakdowns.json for review).")
+    parser.add_argument("--apply-breakdowns", action="store_true",
+                        help="Read scripts/triage_breakdowns.json, inject the "
+                             "proposed child cards into JSON, and push to Trello. "
+                             "Run after reviewing the breakdowns file.")
+    parser.add_argument("--force", action="store_true",
+                        help="with --refine-backlog: re-refine even cards that "
+                             "are already marked refined.")
+    parser.add_argument("--breakdowns-file", default=str(BREAKDOWNS_FILE),
+                        help="path to triage_breakdowns.json (default: "
+                             "scripts/triage_breakdowns.json)")
     parser.add_argument("--no-push", action="store_true",
                         help="with --enrich: stop after writing enriched JSON, "
                              "do not auto-push to Trello.")
-    parser.add_argument("--model", default="haiku",
-                        help="LLM alias for --enrich: "
-                             "haiku|sonnet|opus|gemini-flash|gpt-mini, "
-                             "or any full provider slug like 'anthropic/claude-haiku-4.5' "
-                             "(default: haiku)")
+    parser.add_argument("--model", default="qwen",
+                        help="LLM alias for --enrich/--refine-backlog/--ship-review: "
+                             "qwen|qwen-coder|qwen-72b|haiku|sonnet|opus|gemini-flash|gpt-mini, "
+                             "or any full provider slug like 'anthropic/claude-haiku-4.5'. "
+                             "Default 'qwen' (qwen/qwen3.6-35b-a3b on openrouter) is the "
+                             "cheapest option for routine grooming.")
     parser.add_argument("--provider", default="auto",
                         choices=["auto", "straico", "openrouter"],
                         help="LLM provider for --enrich. "
@@ -1222,10 +1585,12 @@ def main() -> int:
     args = parser.parse_args()
 
     modes = sum([args.dry_run, args.apply, args.pull, args.enrich,
-                 bool(args.link_commit), args.ship_review])
+                 bool(args.link_commit), args.ship_review,
+                 args.refine_backlog, args.apply_breakdowns])
     if modes != 1:
         print("error: pass exactly one of "
-              "--dry-run / --apply / --pull / --enrich / --link-commit / --ship-review",
+              "--dry-run / --apply / --pull / --enrich / --refine-backlog / "
+              "--apply-breakdowns / --link-commit / --ship-review",
               file=sys.stderr)
         return 2
 
@@ -1269,6 +1634,25 @@ def main() -> int:
         return enrich(spec, cards_path, args.model,
                       board_id=board_id, push=not args.no_push,
                       provider=args.provider)
+
+    if args.refine_backlog:
+        print("Pulling Trello -> JSON before refinement...")
+        pull(board_id, cards_path)
+        spec = json.loads(cards_path.read_text(encoding="utf-8"))
+        return refine_backlog(
+            spec, cards_path, args.model,
+            board_id=board_id, push=not args.no_push,
+            provider=args.provider, dry_run=False, force=args.force,
+            only_list=args.only_list,
+            breakdowns_path=Path(args.breakdowns_file),
+        )
+
+    if args.apply_breakdowns:
+        spec = json.loads(cards_path.read_text(encoding="utf-8"))
+        return apply_breakdowns(
+            spec, cards_path, Path(args.breakdowns_file),
+            board_id=board_id, push=not args.no_push, dry_run=False,
+        )
 
     spec = json.loads(cards_path.read_text(encoding="utf-8"))
     return apply_spec(spec, board_id, dry_run=args.dry_run,
