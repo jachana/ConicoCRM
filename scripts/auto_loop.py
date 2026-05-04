@@ -59,6 +59,7 @@ ELIGIBLE_LIST = "Feature requests"
 CLAIMED_LIST = "In progress"
 SHIPPED_LIST = "In review"
 SKIP_LABELS = {"Blocked"}
+SKIP_NAME_PREFIXES = ("onboarding", "import ", "migra")  # case-insensitive prefix filter
 
 DEFAULT_TRIAGE_MODEL = "qwen-coder"
 DEFAULT_PROVIDER = "auto"  # straico -> openrouter
@@ -468,6 +469,10 @@ def candidates(spec: dict) -> list[dict]:
         if c["list"] != ELIGIBLE_LIST:
             continue
         if any(l in SKIP_LABELS for l in c.get("labels", [])):
+            continue
+        name_lower = c["name"].lower()
+        if any(name_lower.startswith(p) for p in SKIP_NAME_PREFIXES):
+            print(f"  skip {c['name']!r}  deprioritized (onboarding/migration)")
             continue
         if not (c.get("desc") or "").strip():
             continue
