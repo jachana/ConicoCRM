@@ -32,22 +32,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "delete the RUT no oficial  RUT no oficial (informativo)  from the form, the\" RUTs Adicionales \"does the thing",
+      "list": "In progress",
+      "name": "en las normas o especificaciones tecnicas del producto, quiero que se formen \"capsulas\" para los tags separados por coma, y que sean filtrables por esas categorias",
       "labels": [
-        "Core",
+        "Design System",
         "Goal: UX Polish",
         "Size:M"
       ],
-      "desc": "**Resumen** — Se elimina el campo 'RUT no oficial' del formulario de empresa, ya que 'RUTs Adicionales' cubre su funcionalidad.\n\n**Cambios / Decisiones** —\n- Se removió `enterprise.rut_no_oficial` del modelo (`backend/app/models/empresa.py`), esquemas (`backend/app/schemas/empresa.py`) y endpoints API (`backend/app/api/empresas.py`).\n- Se eliminó el campo en frontend: formularios y vistas (`frontend/src/components/EmpresaTabResumen.tsx`, `frontend/src/pages/Empresas.tsx`).\n- Se creó migración para eliminar la columna de la base de datos (`revisions/h2i3j4k5l6m7_drop_rut_no_oficial_empresa.py`).\n- Se actualizaron y limpiaron tests relacionados (`backend/tests/test_empresas.py`).\n- Se ajustó el tipado frontend (`frontend/src/types/index.ts`).",
+      "desc": "**Contexto / Problema**\nActualmente, los tags en normas y especificaciones técnicas se muestran como texto plano separado por comas, lo que dificulta su lectura y no permite filtrar rápidamente por categoría. El cliente requiere una presentación visual mejorada (cápsulas/chips) y capacidad de filtrado interactivo para mejor UX.\n\n**Acceptance Criteria**\n- Los tags se renderizan como cápsulas visuales (chips) en la vista de normas/specs, cada uno en su propio contenedor.\n- Al hacer clic en una cápsula, se activa un filtro que muestra solo las normas que contienen ese tag.\n- Es posible limpiar el filtro activo con un botón o clic en el chip nuevamente.\n- El componente chip es reutilizable en otros módulos del sistema (Design System).\n- Los tags largos o especiales (comillas, espacios) se parsean correctamente sin causar errores de renderizado.\n- El filtrado es instantáneo sin recarga de página.\n\n**Definition of Done**\n- Componente chip/cápsula creado en Design System y documentado.\n- Lógica de parseo de tags (comma-separated → array) implementada y testeada.\n- Filtro por tags funcional en lista de normas y specs.\n- Unit tests y tests de integración pasan (parseo, renderizado, filtrado).\n- Componente agregado a Storybook o documentación del DS.\n- Card movida a \"In review\" después de QA en staging.\n\n**Notas tecnicas**\n- Ubicación: `src/components/Chip.tsx` (Design System), `src/modules/norms/NormsList.tsx`.\n- Parser: `src/utils/tagParser.ts` - función que convierte string con comas a array, trimea espacios.\n- Estado: usar Context o Zustand para almacenar tag activo de filtro.\n- Tests: Jest + React Testing Library para chip interacción, parseo edge cases.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir formulario de empresa y verificar que no aparezca 'RUT no oficial'",
-        "Crear o editar una empresa y validar éxito sin campo 'RUT no oficial'",
-        "Ver detalles de una empresa existente y confirmar ausencia del campo",
-        "Confirmar que 'RUTs Adicionales' se muestra correctamente",
-        "Validar que el campo ya no aparezca en respuestas GET/PATCH de API",
-        "Ejecutar migración y verificar eliminación de columna en DB",
-        "Correr tests unitarios de empresa y verificar éxito"
+        "Diseñar componente chip/cápsula reutilizable",
+        "Actualizar form specs para input multi-tag (comma-separated → array)",
+        "Implementar filtro por tags en lista normas",
+        "Testear con tags largos / especiales (comillas, etc)",
+        "Agregar a Design System",
+        "Diseñar e implementar componente Chip reutilizable con estados (default, active, hover)",
+        "Crear parser de tags: string separado por comas → array limpio",
+        "Integrar Chip en lista de normas; mostrar tags como cápsulas",
+        "Implementar estado y lógica de filtro: clic en chip → filtrar lista",
+        "Testear parseo con tags especiales (comillas, espacios, caracteres especiales)",
+        "Agregar componente a Design System (Storybook, si existe)",
+        "Tests unitarios e integración pasan; desplegar a staging y mover a In review"
       ]
     }
   ]
