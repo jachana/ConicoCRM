@@ -32,27 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "GET https://crm.conico.juliocode.com/api/dte_recepcion?limit=50&offset=0 404 (Not Found)",
       "labels": [
         "DTE/SII",
         "Blocked",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nEl endpoint GET `/api/dte_recepcion` retorna 404 (Not Found), impidiendo que los clientes carguen la lista de DTE recibidos. Esto bloquea la funcionalidad core de recepción de documentos tributarios.\n\n**Acceptance Criteria**\n- El endpoint GET `/api/dte_recepcion?limit=50&offset=0` responde con status 200 y un JSON válido.\n- La respuesta contiene un array de DTE recibidos o un array vacío si no hay registros.\n- Los parámetros `limit` y `offset` se aplican correctamente en la paginación.\n- Solo usuarios autenticados con token válido pueden acceder (se rechaza 401 sin token o token inválido).\n- Los logs backend no muestran errores críticos después de la corrección.\n\n**Definition of Done**\n- El archivo de routing backend se ha revisado y el endpoint está registrado correctamente.\n- Se ha validado que el método HTTP es GET (no confundido con POST).\n- Se han ejecutado tests unitarios e integración para el endpoint; todos pasan.\n- Se ha probado manualmente en staging con y sin parámetros de paginación.\n- La tarjeta Trello se ha movido a «In review».\n- Se ha desplegado a staging exitosamente sin errores.\n\n**Notas tecnicas**\n- Ruta esperada: `src/routes/api/dte_recepcion.js` o similar según estructura.\n- Controlador asociado: verificar que exista handler para GET en ese endpoint.\n- Auth: validar middleware de autenticación aplica correctamente (JWT, bearer token).\n- Revisar logs backend (stderr, logs de aplicación) para stack trace de 404.\n- Query params: `limit` (int, default 50), `offset` (int, default 0).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — El endpoint GET `/api/dte_recepcion` respondía 404 debido a un mal alineamiento de rutas entre frontend y backend. Se corrigió la ruta para que coincida con lo esperado.\n\n**Cambios / Decisiones** —\n- Se ajustó la ruta en `backend/app/main.py` de `/api/dte/recepcion` a `/api/dte_recepcion` para alinear con el frontend.\n- Se actualizaron los tests en `backend/tests/test_api_dte_recepcion.py` con los nuevos paths.\n- El endpoint ahora responde correctamente con 200 y JSON paginado cuando se accede con token válido.",
       "checklist": [
-        "Verificar endpoint existe en API (routing backend)",
-        "Confirmar método HTTP (GET vs POST)",
-        "Validar auth token cliente",
-        "Revisar logs backend para causa 404",
-        "Testear con query params correctos",
-        "Revisar routing backend: confirmar que GET /api/dte_recepcion existe en tabla de rutas",
-        "Validar controlador y método HTTP: verificar que no está definido como POST o falta implementación",
-        "Revisar middleware de autenticación: confirmar que token se valida correctamente y no rechaza prematuro",
-        "Revisar logs backend: identificar causa raíz del 404 y stack trace asociado",
-        "Implementar/corregir endpoint: asegurar respuesta JSON con paginación (limit, offset)",
-        "Escribir/ejecutar tests: unitario del endpoint + integración con query params",
-        "Desplegar a staging y verificar: GET `/api/dte_recepcion?limit=50&offset=0` retorna 200"
+        "Hacer GET a /api/dte_recepcion?limit=50&offset=0 con token válido y verificar 200",
+        "Verificar que la respuesta contiene un JSON con array de DTE o array vacío",
+        "Probar sin token y confirmar que responde 401 (no 404)",
+        "Validar que limit y offset se aplican en la paginación devuelta",
+        "Revisar logs backend: no deben haber errores 404 en esa ruta ya",
+        "Ejecutar tests unitarios del endpoint para confirmar funcionamiento",
+        "Verificar en staging que el endpoint responde sin errores críticos"
       ]
     }
   ]
