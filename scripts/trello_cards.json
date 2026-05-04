@@ -32,27 +32,21 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "revision de digito verificador debe aplicar a todas las instancias de RUT",
       "labels": [
         "Core",
         "DTE/SII",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nActualmente la validación de dígito verificador RUT no se aplica de forma consistente en todas las instancias de RUT del sistema (empresa, contactos, personas). Esto permite datos inválidos que causan rechazos en DTE y errores en integración SII.\n\n**Acceptance Criteria**\n- El sistema rechaza cualquier RUT con dígito verificador inválido en todos los formularios de captura (empresa, contacto, persona).\n- La validación ocurre tanto en frontend (feedback inmediato) como en backend (seguridad).\n- Un RUT válido chileno (ej: 12.345.678-5) pasa validación.\n- Un RUT extranjero sin dígito verificador se rechaza o maneja según política vigente.\n- La función de validación es única y reutilizable en todo el codebase.\n- Se incluye cobertura de tests para RUT válidos, inválidos y casos especiales.\n\n**Definition of Done**\n- Auditoría completada: todos los campos RUT identificados en schema.\n- Función `validate_dv_rut()` centralizada en módulo compartido de validación.\n- Validación aplicada en todos los endpoints POST/PUT que acepten RUT.\n- Validación aplicada en todos los formularios (HTML5 pattern + JS).\n- Tests unitarios cubren: RUT válido, DV incorrecto, RUT extranjero, formato malformado.\n- Documentación actualizada en Docs con ejemplos de uso.\n- Tests pasan en CI/CD.\n- Cambios desplegados a staging.\n- Card movida a \"In review\".\n\n**Notas tecnicas**\n- Campos RUT a auditar: `empresa.rut`, `empresa.dv`, `contacto.rut`, `persona.rut`, potencialmente en tablas de relación.\n- Algoritmo DV estándar chileno: módulo 11 con secuencia 2-7.\n- Validar que campo `dv` existe separado o está en formato `12.345.678-5`.\n- Endpoints afectados: `/api/empresas`, `/api/contactos`, `/api/personas`.\n- Considerar validación en migrations si existen datos históricos inválidos.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Aplicar validación de dígito verificador RUT en todos los formularios y APIs donde se ingresa un RUT, rechazando valores inválidos tanto en frontend como en backend.\n\n**Cambios / Decisiones** — Se añadió `@field_validator(\"rut\")` en schemas `ClienteBase`, `ClienteUpdate`, `ProveedorBase` y `ProveedorUpdate` para validar DV antes de guardar. En frontend, se agregó feedback inmediato en `Clientes.tsx` y `Proveedores.tsx` con validación en `onBlur` y al enviar. Se actualizaron tests existentes y se agregaron casos para RUT inválido (`test_crear_cliente_rut_invalido_rechazado`, etc).",
       "checklist": [
-        "Auditar campos RUT en schema (empresa, personas, contactos)",
-        "Centralizar función validar_dv_rut()",
-        "Aplicar en form validators + API backend",
-        "Testear casos borde (RUT inválido, extranjero)",
-        "Documentar en Docs",
-        "Auditar schema: identificar todos los campos RUT (empresa, contacto, persona, relaciones)",
-        "Crear función centralizada `validate_dv_rut()` en módulo de validación compartida",
-        "Aplicar validación en validators de formularios frontend",
-        "Aplicar validación en endpoints backend POST/PUT correspondientes",
-        "Escribir tests: RUT válido, DV incorrecto, RUT extranjero, formato malformado",
-        "Ejecutar tests y verificar cobertura; actualizar Docs con ejemplos",
-        "Deploy a staging y mover card a In review"
+        "Ingresar RUT 12.345.678-0 en formulario de cliente y verificar error",
+        "Enviar POST /api/clientes con RUT inválido y verificar HTTP 422",
+        "Editar proveedor con RUT malformado y confirmar rechazo en guardado",
+        "Probar RUT 1-9 en contacto y verificar error de DV inmediato",
+        "Revisar que formularios muestren error sin recargar la página",
+        "Ejecutar tests de cliente y proveedor con RUT inválido y confirmar fallo controlado"
       ]
     }
   ]
