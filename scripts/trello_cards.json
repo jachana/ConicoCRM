@@ -32,27 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "delete the RUT no oficial  RUT no oficial (informativo)  from the form, the\" RUTs Adicionales \"does the thing",
       "labels": [
         "Core",
         "Goal: UX Polish",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nEl formulario de empresa contiene un campo 'RUT no oficial' (informativo) que es redundante, ya que 'RUTs Adicionales' cumple la misma función. Se requiere eliminar este campo para simplificar la UX y reducir confusión del usuario.\n\n**Acceptance Criteria**\n- El campo 'RUT no oficial' ya no aparece en el formulario de creación/edición de empresas.\n- El campo 'RUT no oficial' ya no aparece en la visualización de datos de la empresa.\n- Los datos existentes de 'RUT no oficial' se migran correctamente a 'RUTs Adicionales' (si aplica) o se preservan en base de datos.\n- El formulario de empresa valida correctamente sin este campo.\n- La documentación técnica se actualiza para reflejar la remoción.\n\n**Definition of Done**\n- Tests unitarios y de integración pasan para el formulario de empresa.\n- Migración de base de datos ejecutada en staging.\n- Card movida a 'In review' con validación de cliente (si es necesario).\n- Deployment a staging completado.\n- Confirmación de que 'RUTs Adicionales' funciona correctamente post-migración.\n\n**Notas tecnicas**\n- Campo a remover: enterprise.rut_no_oficial (verificar modelo y tabla).\n- Validación backend: revisar endpoints POST/PATCH /enterprises/{id}.\n- Migración: script SQL para copiar datos de rut_no_oficial a additional_ruts si es necesario.\n- Formulario frontend: remover campo en vistas de empresa y actualizar esquema de validación.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Se elimina el campo 'RUT no oficial' del formulario de empresa, ya que 'RUTs Adicionales' cubre su funcionalidad.\n\n**Cambios / Decisiones** —\n- Se removió `enterprise.rut_no_oficial` del modelo (`backend/app/models/empresa.py`), esquemas (`backend/app/schemas/empresa.py`) y endpoints API (`backend/app/api/empresas.py`).\n- Se eliminó el campo en frontend: formularios y vistas (`frontend/src/components/EmpresaTabResumen.tsx`, `frontend/src/pages/Empresas.tsx`).\n- Se creó migración para eliminar la columna de la base de datos (`revisions/h2i3j4k5l6m7_drop_rut_no_oficial_empresa.py`).\n- Se actualizaron y limpiaron tests relacionados (`backend/tests/test_empresas.py`).\n- Se ajustó el tipado frontend (`frontend/src/types/index.ts`).",
       "checklist": [
-        "Confirmar con cliente que RUTs Adicionales reemplaza RUT no oficial",
-        "Remover field form + validación backend",
-        "Migrar datos existentes (si aplica)",
-        "Testear form empresa sin campo",
-        "Actualizar docs",
-        "Confirmar con cliente que RUTs Adicionales reemplaza funcionalmente RUT no oficial",
-        "Remover campo RUT no oficial del modelo, form frontend y validaciones backend",
-        "Crear y ejecutar migración de datos (rut_no_oficial → additional_ruts o backup)",
-        "Escribir y ejecutar tests para formulario de empresa sin el campo",
-        "Actualizar documentación técnica y comentarios de código",
-        "Deployar a staging y validar con cliente",
-        "Mover card a In review"
+        "Abrir formulario de empresa y verificar que no aparezca 'RUT no oficial'",
+        "Crear o editar una empresa y validar éxito sin campo 'RUT no oficial'",
+        "Ver detalles de una empresa existente y confirmar ausencia del campo",
+        "Confirmar que 'RUTs Adicionales' se muestra correctamente",
+        "Validar que el campo ya no aparezca en respuestas GET/PATCH de API",
+        "Ejecutar migración y verificar eliminación de columna en DB",
+        "Correr tests unitarios de empresa y verificar éxito"
       ]
     }
   ]
