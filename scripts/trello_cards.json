@@ -32,7 +32,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Ops] Banner de alerta CAF: folios bajos / vencimiento proximo",
       "labels": [
         "Core",
@@ -40,20 +40,14 @@
         "Goal: Operations",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nLos administradores no tienen visibilidad del consumo de folios CAF hasta que se agotan, bloqueando la emisión de DTE. Es crítico alertar proactivamente cuando el consumo ≥90% o quedan <30 días para vencimiento.\n\n**Acceptance Criteria**\n- El banner de alerta es visible en el dashboard principal cuando existe un CAF en estado crítico (consumo ≥90% O vencimiento <30 días).\n- El banner muestra: tipo de DTE, folios restantes, días al vencimiento, y un botón directo a configuración CAF.\n- El banner persiste en pantalla (sticky) hasta que el usuario lo cierre o resuelva la alerta.\n- Cada administrador recibe un email diario (máximo uno por día) listando todos los CAFs en alerta, con fecha/hora del envío.\n- El endpoint `/api/cafs/alerts/` retorna lista de CAFs en estado crítico ordenados por urgencia (vencimiento primero).\n- Los tests unitarios cubren la lógica de cálculo de alertas (consumo %, días al vencimiento) y el endpoint.\n\n**Definition of Done**\n- Endpoint GET `/api/cafs/alerts/` implementado y testado.\n- Modelo CAF tiene métodos `is_low_stock()` e `is_expiring_soon()` con tests.\n- Componente Banner (React/Vue) renderizado condicionalmente en layout principal.\n- Task Celery diaria ejecutándose: `send_caf_alerts_email()` sin duplicados por admin.\n- Todos los tests pasan (backend + frontend).\n- Cambios deployados a staging y validados en DB con datos reales.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Modelo: `app/models/caf.py` ya tiene `folios_usados`, `folios_totales`, `fecha_vencimiento`.\n- Backend: `app/api/routes/cafs.py` → nuevo endpoint con filtros de alerta.\n- Frontend: componente reutilizable `Banner.jsx` o similar en sistema de diseño.\n- Task: `app/celery_tasks.py` → `send_caf_alerts_email()` con templates de email.\n- Considerar: un CAF puede estar en ambas condiciones; email debe consolidar por admin, no por CAF.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Se implementó un sistema proactivo para alertar a los administradores sobre CAFs con consumo ≥90% o vencimiento <30 días, mediante un banner persistente en el dashboard y un reporte email diario consolidado.\n\n**Cambios / Decisiones**\n- Añadido campo `fecha_vencimiento` a la tabla `caf` y métodos `is_low_stock()` / `is_expiring_soon()` en `backend/app/models/caf.py`.\n- Endpoint `GET /api/cafs/alerts/` en `backend/app/api/cafs.py`: filtra por `empresa_id` del token, ordena por urgencia (vencimiento primero, luego stock) y expone folios/días restantes.\n- Tarea Celery `send_caf_alerts_email()` en `backend/app/tasks/caf.py`: ejecutada a las 08:30 (hora Chile), consolida alertas por administrador (1 email/día) sin duplicados.\n- Componente `CAFAlertBanner.tsx` integrado en `AppLayout.tsx`. Llama a `frontend/src/api/cafs.ts`, muestra tipo DTE, folios, días y enlace a configuración. Persiste estado cerrado en `sessionStorage`.\n- Tests unitarios cubren modelo, endpoint y task en `backend/tests/`.",
       "checklist": [
-        "Endpoint backend: CAFs en estado de alerta (consumo o vencimiento)",
-        "Componente Banner global persistente",
-        "Mostrar tipo DTE + folios restantes + dias al vencimiento",
-        "Link a configuracion CAF",
-        "Email de aviso a admins (Celery diario)",
-        "Implementar métodos `is_low_stock()` e `is_expiring_soon()` en modelo CAF con tests",
-        "Crear endpoint GET `/api/cafs/alerts/` que retorne CAFs críticos ordenados por urgencia",
-        "Diseñar e implementar componente Banner persistente en layout principal",
-        "Configurar Banner para mostrar DTE, folios restantes, vencimiento, y link a configuración",
-        "Crear task Celery diaria `send_caf_alerts_email()` con deduplicación por admin",
-        "Escribir tests unitarios para lógica de alertas, endpoint, y task",
-        "Desplegar a staging, validar en DB, mover Trello a In review"
+        "Verificar endpoint: `curl` a `/api/cafs/alerts/` y confirmar respuesta 200 con lista ordenada.",
+        "Simular estado crítico en DB y verificar que el endpoint incluya el CAF correspondiente.",
+        "Validar componente frontend: abrir dashboard y confirmar aparición del banner con datos reales.",
+        "Probar persistencia de cierre: cerrar banner y recargar; debe permanecer oculto en la sesión.",
+        "Forzar ejecución de `send_caf_alerts_email()` y verificar bandeja del admin por consolidación.",
+        "Revisar logs de Celery para confirmar schedule diario a las 08:30 hora Chile."
       ]
     }
   ]
