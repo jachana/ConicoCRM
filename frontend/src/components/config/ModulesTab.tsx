@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { api } from '../../lib/api'
@@ -66,9 +66,9 @@ function IndeterminateCheckbox({
   const ref = useRef<HTMLInputElement>(null)
 
   // Set indeterminate property imperatively — React doesn't support it as a prop
-  if (ref.current) {
-    ref.current.indeterminate = indeterminate ?? false
-  }
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = indeterminate ?? false
+  }, [indeterminate])
 
   return (
     <input
@@ -84,7 +84,10 @@ function IndeterminateCheckbox({
 
 export default function ModulesTab({ empresaId }: { empresaId: number }) {
   const qc = useQueryClient()
-  const [pendingOff, setPendingOff] = useState<{ parent: string; cascade: string[]; bulkSlugs?: Record<string, boolean> } | null>(null)
+  type PendingOff =
+    | { kind: 'single'; parent: string; cascade: string[] }
+    | { kind: 'bulk'; cascade: string[]; bulkSlugs: Record<string, boolean> }
+  const [pendingOff, setPendingOff] = useState<PendingOff | null>(null)
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set())
 
   const { data, isLoading, isError } = useQuery<ModulosResponse>({
@@ -211,12 +214,13 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
     const workingEffective = { ...data.effective }
     for (const s of onSlugs) workingEffective[s] = false
 
+    const onSlugSet = new Set(onSlugs)
     const allCascadeSet = new Set<string>()
     for (const slug of onSlugs) {
-      const cascade = computeCascadeOff(data.registry, data.effective, slug)
+      const cascade = computeCascadeOff(data.registry, workingEffective, slug)
       // Only include cascades that aren't already in the selected set being turned off
       for (const c of cascade) {
-        if (!onSlugs.includes(c)) allCascadeSet.add(c)
+        if (!onSlugSet.has(c)) allCascadeSet.add(c)
       }
     }
 
@@ -228,9 +232,9 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
       for (const s of onSlugs) bulkSlugs[s] = false
       for (const s of allCascade) bulkSlugs[s] = false
 
-      // Use pendingOff with a synthetic parent representing the bulk operation
+      // Use pendingOff with kind='bulk' representing the bulk operation
       setPendingOff({
-        parent: '__bulk__',
+        kind: 'bulk',
         cascade: allCascade,
         bulkSlugs,
       })
@@ -280,7 +284,7 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
                   if (!newVal) {
                     const cascade = computeCascadeOff(data.registry, data.effective, entry.slug)
                     if (cascade.length > 0) {
-                      setPendingOff({ parent: entry.slug, cascade })
+                      setPendingOff({ kind: 'single', parent: entry.slug, cascade })
                       return
                     }
                   }
@@ -403,7 +407,7 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
     )}
 
     {/* Single-toggle cascade-confirm Modal */}
-    {pendingOff && pendingOff.parent !== '__bulk__' && (
+    {pendingOff && pendingOff.kind === 'single' && (
       <Modal open onOpenChange={(open) => { if (!open && !mutation.isPending) setPendingOff(null) }}>
         <ModalContent size="sm" hideClose={mutation.isPending}>
           <ModalHeader>
@@ -450,7 +454,7 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
     )}
 
     {/* Bulk disable cascade-confirm Modal */}
-    {pendingOff && pendingOff.parent === '__bulk__' && (
+    {pendingOff && pendingOff.kind === 'bulk' && (
       <Modal open onOpenChange={(open) => { if (!open && !mutation.isPending) setPendingOff(null) }}>
         <ModalContent size="sm" hideClose={mutation.isPending}>
           <ModalHeader>
@@ -482,7 +486,7 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
               size="sm"
               loading={mutation.isPending}
               onClick={() => {
-                mutation.mutate({ slugs: pendingOff.bulkSlugs! }, {
+                mutation.mutate({ slugs: pendingOff.bulkSlugs }, {
                   onSettled: () => {
                     setPendingOff(null)
                     clearSelection()
