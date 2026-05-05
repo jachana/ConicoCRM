@@ -32,21 +32,28 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Perf] Hook useDebounce + aplicar a busquedas en listas",
+      "list": "In progress",
+      "name": "[Ops] Health endpoint expandido (DB + Celery + Lioren)",
       "labels": [
         "Core",
-        "Goal: Performance",
-        "Size:L"
+        "Goal: Operations",
+        "Size:M"
       ],
-      "desc": "**Resumen** — Implementar un hook `useDebounce` reutilizable para reducir los requests al backend en búsquedas de listas, aplicándolo a Facturas, Cotizaciones, Notas de Venta, Productos, Clientes y Empresas.\n\n**Cambios / Decisiones**\n- Creado hook `useDebounce` en `frontend/src/hooks/useDebounce.ts` con tests unitarios (`useDebounce.test.ts`).\n- Reemplazado debounce manual en `Facturas`, `Cotizaciones`, `NotaVentas`, `Clientes`, `Empresas` por el nuevo hook.\n- Agregado debounce a búsqueda en `Productos` (antes no tenía).\n- Reducción de código boilerplate eliminando `setTimeout`/`clearTimeout` repetidos.\n- Hook genérico acepta `value` y `delay` (por defecto 300ms).\n- `searchParams` en URL ahora se actualiza usando `debouncedValue`.",
+      "desc": "**Contexto / Problema**\nActualmente solo existe un health endpoint minimalista. Los servicios de monitoreo de uptime (Coolify, UptimeRobot) y el equipo de operaciones necesitan visibilidad del estado de componentes críticos (DB, Celery, Lioren API) para diagnosticar rápidamente incidentes sin acceder a logs.\n\n**Acceptance Criteria**\n- GET `/health/live` responde siempre 200 OK con `{\"status\": \"alive\"}` (para liveness probe).\n- GET `/health/full` retorna JSON con subchecks de cada componente: `db`, `celery`, `lioren`.\n- Cada subcheck incluye `status` (ok|error), `latency_ms` y opcionalmente `message`.\n- DB check ejecuta una query simple con timeout ≤2s y reporta latencia.\n- Celery check hace broadcast a workers y confirma al menos 1 worker activo, con timeout ≤5s.\n- Lioren check hace GET a endpoint sandbox de Lioren con timeout ≤5s.\n- Respuesta global `/health/full` es 200 si todos los checks pasan, 503 si alguno falla.\n- Los tiempos de respuesta se registran en logs operacionales (no en app logs).\n\n**Definition of Done**\n- Endpoint `GET /health/live` y `GET /health/full` implementados en `health.py`.\n- Tests unitarios para cada check (mocks de DB, Celery, Lioren).\n- Tests de integración que verifican latencias y códigos de estado HTTP.\n- Documentación en README: ejemplos de respuesta y uso en monitoreo.\n- Migración (si aplica, p. ej. agregar variable de entorno LIOREN_SANDBOX_URL) ejecutada.\n- Deployado a staging y validado con uptime monitor simulado.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Archivos: `apps/core/health.py` (lógica), `tests/test_health.py` (tests), `apps/core/urls.py` (routes).\n- DB check: `from django.db import connection; connection.ensure_connection()`.\n- Celery check: `from celery.app.control import Inspect; inspect().active()` con timeout.\n- Lioren check: `requests.get(LIOREN_SANDBOX_URL + '/health', timeout=5)`.\n- Variables de entorno: `LIOREN_SANDBOX_URL`, `HEALTH_CHECK_TIMEOUT_SECS`.\n- No requiere cambios en BD; es solo lógica de health.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Escribir rápidamente en barra de búsqueda de /facturas y verificar request solo al detenerse 300ms",
-        "Repetir prueba en /cotizaciones, /notas-venta, /productos, /clientes, /empresas",
-        "Verificar resultados previos se mantienen durante escritura (sin loader)",
-        "Correr tests unitarios del hook: `npm run test useDebounce`",
-        "Ejecutar E2E tests de búsqueda para validar comportamiento debounce",
-        "Ver métricas de requests reducidos ≥60% en staging (si disponible)"
+        "GET /health/full con subchecks",
+        "DB ping con timeout corto",
+        "Celery: ping a workers via broadcast",
+        "Lioren: ping a endpoint sandbox",
+        "Respuesta estructurada con latencias",
+        "Endpoint /health/live (siempre 200) para liveness",
+        "Implementar GET /health/live que retorna {\"status\": \"alive\"} con 200 OK",
+        "Implementar GET /health/full con checks de DB (ping + latencia con timeout 2s)",
+        "Agregar check de Celery: broadcast a workers y capturar latencia (timeout 5s)",
+        "Agregar check de Lioren: GET a sandbox endpoint y capturar latencia (timeout 5s)",
+        "Estructurar respuesta JSON con status global (200/503) y subchecks con latencias",
+        "Escribir tests unitarios e integración (mocks de componentes externos)",
+        "Desplegar a staging y validar con uptime monitor; mover Trello a In review"
       ]
     }
   ]
