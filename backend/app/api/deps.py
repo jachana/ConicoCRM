@@ -33,7 +33,7 @@ def require_modulo(slug: str):
         empresa = db.get(Empresa, current_user.empresa_id) if current_user.empresa_id else None
         stored: dict[str, bool] = (empresa.modulos_enabled or {}) if empresa else {}
         effective = compute_effective_modulos(stored)
-        if not effective.get(slug, False):
+        if not effective.get(slug, True):
             spec = OPTIONAL_MODULES.get(slug)
             label = spec.label if spec else slug
             raise HTTPException(
