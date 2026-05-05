@@ -3,10 +3,18 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import GuiaDespachoDetalle from './GuiaDespachoDetalle'
-import * as apiGuias from '../api/guiasDespacho'
+
+vi.mock('../hooks/useModulos', () => ({
+  useModuloEnabled: vi.fn().mockReturnValue(true),
+}))
 
 vi.mock('../api/guiasDespacho')
+
+import GuiaDespachoDetalle from './GuiaDespachoDetalle'
+import * as apiGuias from '../api/guiasDespacho'
+import { useModuloEnabled } from '../hooks/useModulos'
+
+const mockUseModuloEnabled = useModuloEnabled as ReturnType<typeof vi.fn>
 
 function makeGuia(overrides: Partial<apiGuias.GuiaDespacho> = {}): apiGuias.GuiaDespacho {
   return {
@@ -45,6 +53,7 @@ function renderPage(id = 42) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockUseModuloEnabled.mockReturnValue(true)
 })
 
 describe('GuiaDespachoDetalle', () => {
@@ -77,6 +86,14 @@ describe('GuiaDespachoDetalle', () => {
     window.confirm = vi.fn(() => true)
     await userEvent.click(screen.getByRole('button', { name: /anular/i }))
     await waitFor(() => expect(screen.getByText('nc-nueva-stub')).toBeInTheDocument())
+  })
+
+  it('hides Anular when nota_credito module is off', async () => {
+    mockUseModuloEnabled.mockReturnValue(false)
+    vi.mocked(apiGuias.getGuiaDespacho).mockResolvedValue(makeGuia({ dte_estado: 'aceptada' }))
+    renderPage()
+    await waitFor(() => expect(screen.getByText(/N°00100/i)).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: /anular/i })).not.toBeInTheDocument()
   })
 
   it('shows "Emitir DTE" when dte_estado=no_emitida', async () => {

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useModuloEnabled } from '../hooks/useModulos'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Download, Mail, Send, Trash2, Edit, ArrowLeft } from 'lucide-react'
@@ -46,6 +47,7 @@ export default function GuiaDespachoDetalle() {
   const [emailEnvio, setEmailEnvio] = useState('')
   const [confirmAnular, setConfirmAnular] = useState(false)
   const [confirmEliminar, setConfirmEliminar] = useState(false)
+  const isNotaCreditoEnabled = useModuloEnabled('nota_credito')
 
   const { data: guia, isLoading, isError } = useQuery<GuiaDespacho>({
     queryKey: ['guia-despacho', guiaId],
@@ -300,7 +302,7 @@ export default function GuiaDespachoDetalle() {
             </Button>
           </>
         )}
-        {canAnular && (
+        {isNotaCreditoEnabled && canAnular && (
           <Button variant="danger" leftIcon={<Trash2 />} onClick={handleAnular}>
             Anular
           </Button>

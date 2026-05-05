@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { FileText, Mail, ArrowLeft, ExternalLink, Pencil, Plus, Trash2, Lock, RotateCcw } from 'lucide-react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
+import { useModuloEnabled } from '../hooks/useModulos'
 import type { Factura, FacturaLinea, Cliente, User, Empresa, Pago, BancoReceptor } from '../types'
 import DteBadge from '../components/DteBadge'
 import TareasRelacionadas from '../components/TareasRelacionadas'
@@ -78,6 +79,7 @@ export default function FacturaDetalle() {
   const qc = useQueryClient()
   const currentUser = useAuthStore(s => s.user)
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'subadmin'
+  const isPagosEnabled = useModuloEnabled('pagos')
 
   // Header edit state
   const [editing, setEditing] = useState(false)
@@ -885,7 +887,7 @@ export default function FacturaDetalle() {
                 </span>
               )}
             </div>
-            {factura.estado !== 'pagada' && (
+            {isPagosEnabled && factura.estado !== 'pagada' && (
               <Button size="xs" leftIcon={<Plus />} onClick={() => setShowPagoModal(true)}>
                 Registrar abono
               </Button>

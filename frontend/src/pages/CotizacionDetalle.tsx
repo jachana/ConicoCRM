@@ -9,6 +9,7 @@ import { api } from '../lib/api'
 import { METODOS_PAGO, METODO_PAGO_LABELS, PLAZO_OPTIONS, isPlazoForzadoCero, formatMetodoPlazo } from '../lib/metodo_pago'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
+import { useModuloEnabled } from '../hooks/useModulos'
 import type { Cotizacion, CotizacionLinea, Cliente, User, Producto, Empresa, NotaVenta, NotaAlerta } from '../types'
 import AlertNotesModal from '../components/AlertNotesModal'
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
@@ -117,6 +118,7 @@ export default function CotizacionDetalle() {
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'subadmin'
   const { role: effectiveRole } = useEffectivePermissions()
   const isVendedor = (effectiveRole ?? currentUser?.role) === 'vendedor'
+  const isNotasVentaEnabled = useModuloEnabled('notas_venta')
 
   const [clienteId, setClienteId] = useState<number | ''>('')
   const [vendedorId, setVendedorId] = useState<number | ''>(currentUser?.id ?? '')
@@ -820,17 +822,19 @@ export default function CotizacionDetalle() {
               >
                 Email
               </Button>
-              <Button
-                size="sm"
-                variant="success"
-                leftIcon={<Plus />}
-                onClick={() => checkCredit(total, 'request', () => crearNvMut.mutate(), { empresa_id: Number(empresaId), total, origen: 'cotizacion', cotizacion_id: Number(id) })}
-                disabled={crearNvMut.isPending || lineasErrors.length > 0 || isDirty || cotizacion?.estado === 'cerrada_fv' || isExpired}
-                loading={crearNvMut.isPending}
-                title={crearNvDisabledTitle}
-              >
-                Crear NV
-              </Button>
+              {isNotasVentaEnabled && (
+                <Button
+                  size="sm"
+                  variant="success"
+                  leftIcon={<Plus />}
+                  onClick={() => checkCredit(total, 'request', () => crearNvMut.mutate(), { empresa_id: Number(empresaId), total, origen: 'cotizacion', cotizacion_id: Number(id) })}
+                  disabled={crearNvMut.isPending || lineasErrors.length > 0 || isDirty || cotizacion?.estado === 'cerrada_fv' || isExpired}
+                  loading={crearNvMut.isPending}
+                  title={crearNvDisabledTitle}
+                >
+                  Crear NV
+                </Button>
+              )}
               {cotizacion?.nv_id && (
                 <Button
                   size="sm"

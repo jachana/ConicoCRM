@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useModuloEnabled } from '../hooks/useModulos'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { ArrowLeft, FileText, Mail, Trash2 } from 'lucide-react'
@@ -68,6 +69,7 @@ export default function BoletaDetalle() {
 
   const [showAnular, setShowAnular] = useState(false)
   const [showEmail, setShowEmail] = useState(false)
+  const isNotaCreditoEnabled = useModuloEnabled('nota_credito')
 
   const boletaId = id ? Number(id) : 0
 
@@ -173,7 +175,7 @@ export default function BoletaDetalle() {
           <Button variant="outline" size="sm" leftIcon={<Mail />} onClick={handleSendEmail} loading={emailMut.isPending}>
             {emailMut.isPending ? 'Enviando...' : 'Enviar email'}
           </Button>
-          {canAnular && (
+          {isNotaCreditoEnabled && canAnular && (
             <Button
               variant="outline"
               size="sm"

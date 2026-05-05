@@ -8,6 +8,7 @@ import { api } from '../lib/api'
 import { METODOS_PAGO, METODO_PAGO_LABELS, PLAZO_OPTIONS, isPlazoForzadoCero, formatMetodoPlazo } from '../lib/metodo_pago'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
+import { useModuloEnabled } from '../hooks/useModulos'
 import type { NotaVenta, NotaVentaLinea, Cliente, User, Producto, Empresa, SedeDespacho } from '../types'
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 import UnsavedChangesModal from '../components/UnsavedChangesModal'
@@ -125,6 +126,8 @@ export default function NotaVentaDetalle() {
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'subadmin'
   const { role: effectiveRole } = useEffectivePermissions()
   const isVendedor = (effectiveRole ?? currentUser?.role) === 'vendedor'
+  const isFacturasEnabled = useModuloEnabled('facturas')
+  const isGuiasDespachoEnabled = useModuloEnabled('guias_despacho')
 
   const [clienteId, setClienteId] = useState<number | ''>('')
   const [vendedorId, setVendedorId] = useState<number | ''>(currentUser?.id ?? '')
@@ -588,7 +591,7 @@ export default function NotaVentaDetalle() {
               >
                 Email
               </Button>
-              {nv?.factura_id == null && (
+              {isFacturasEnabled && nv?.factura_id == null && (
                 <Button
                   size="sm"
                   leftIcon={<Receipt />}
@@ -597,7 +600,7 @@ export default function NotaVentaDetalle() {
                   Generar Factura
                 </Button>
               )}
-              {nv && nv.estado !== 'cancelada' && (
+              {isGuiasDespachoEnabled && nv && nv.estado !== 'cancelada' && (
                 <Button
                   size="sm"
                   leftIcon={<Truck />}

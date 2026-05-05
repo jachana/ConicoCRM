@@ -1,6 +1,7 @@
 import { openPdf } from '../lib/pdf'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useModuloEnabled } from '../hooks/useModulos'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Trash2, FileText, Mail, ArrowLeft, PackageCheck, Save, Ban } from 'lucide-react'
@@ -54,6 +55,8 @@ export default function OrdenCompraDetalle() {
   const isNew = !id || id === 'nueva'
   const navigate = useNavigate()
   const qc = useQueryClient()
+
+  const isInventarioEnabled = useModuloEnabled('inventario')
 
   const [proveedorId, setProveedorId] = useState<number | ''>('')
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
@@ -421,7 +424,7 @@ export default function OrdenCompraDetalle() {
             Ver PDF
           </Button>
         )}
-        {!isNew && canReceive && (
+        {isInventarioEnabled && !isNew && canReceive && (
           <Button
             leftIcon={<PackageCheck />}
             onClick={() => setShowRecepcionModal(true)}
@@ -433,7 +436,7 @@ export default function OrdenCompraDetalle() {
       </div>
 
       {/* Reception inline panel (also accessible via modal) */}
-      {!isNew && canReceive && (
+      {isInventarioEnabled && !isNew && canReceive && (
         <Card className="border-warning-200 dark:border-warning-800">
           <CardContent className="p-5">
             <h2 className="text-sm font-semibold text-warning-700 dark:text-warning-400 mb-3 flex items-center gap-2">
