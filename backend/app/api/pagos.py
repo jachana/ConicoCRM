@@ -4,14 +4,14 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.database import get_db
 from app.models.factura import Factura
 from app.models.pago import Pago
 from app.models.user import User
 from app.schemas.pago import PagoCreate, PagoOut
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("pagos")])
 
 from app.schemas.metodo_pago import METODOS_PAGO as _METODOS_PAGO
 

@@ -3,7 +3,7 @@ from datetime import date
 from decimal import Decimal
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.models.cobranza_config import CobranzaConfig
 from app.models.empresa import Empresa
 from app.models.user import User
@@ -18,7 +18,7 @@ from app.schemas.cobranza import (
     RecordatorioItemOut,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("cobranza")])
 
 _PENDIENTES = ("emitida", "parcial")
 

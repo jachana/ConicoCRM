@@ -4,12 +4,13 @@ from sqlalchemy.orm import Session
 
 from app.api.auth import get_current_user
 from app.api.config import require_admin
+from app.api.deps import require_modulo
 from app.database import get_db
 from app.models.banco_receptor import BancoReceptor
 from app.models.user import User
 from app.schemas.banco_receptor import BancoReceptorCreate, BancoReceptorOut, BancoReceptorPatch
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("bancos_receptores")])
 
 
 @router.get("/", response_model=list[BancoReceptorOut])

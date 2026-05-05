@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.database import get_db
 from app.models.movimiento_inventario import MovimientoInventario
 from app.models.orden_compra import OrdenCompra, OrdenCompraLinea
@@ -28,7 +28,7 @@ from app.services.email import EmailNotConfiguredError, enviar_orden_compra
 from app.services.pdf import generar_pdf_orden_compra
 from app.utils.logo import empresa_logo_data_uri
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("ordenes_compra")])
 
 
 def _get_config_dict(db: Session) -> dict:

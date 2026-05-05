@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.models.dte_emision import DteEmision
 from app.models.factura_compra import FacturaCompra, FacturaCompraLinea
 from app.models.system_config import SystemConfig
@@ -19,7 +19,7 @@ from app.schemas.dte import DteEmisionOut
 from app.services.pdf import generar_pdf_factura_compra
 from app.tasks.dte import emit_dte
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("facturas_compra")])
 
 IVA_RATE = Decimal("0.19")
 

@@ -7,6 +7,7 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.config import require_admin
+from app.api.deps import require_modulo
 from app.models.lista_precios import ListaPrecios, ListaPreciosItem
 from app.models.producto import Producto
 from app.models.user import User
@@ -18,7 +19,7 @@ from app.schemas.lista_precios import (
 )
 from app.services.lista_precios_parser import ParseError, parse_lista_precios
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("listas_precios")])
 
 UPLOAD_DIR = Path("uploads") / "listas_precios"
 

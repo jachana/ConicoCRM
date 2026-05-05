@@ -2,13 +2,13 @@ from datetime import date, datetime, time, timezone
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.models.movimiento_inventario import MovimientoInventario
 from app.models.producto import Producto
 from app.models.user import User
 from app.schemas.movimiento_inventario import AjusteCreate, MovimientoListOut, MovimientoOut, StockBajoItem
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("inventario")])
 
 
 def _load_movimiento(db: Session, mov_id: int) -> MovimientoInventario:
