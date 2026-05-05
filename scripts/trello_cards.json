@@ -32,32 +32,21 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Perf] Hook useDebounce + aplicar a busquedas en listas",
       "labels": [
         "Core",
         "Goal: Performance",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nActualmente 62 páginas disparan requests al backend en cada keystroke durante búsqueda, saturando la API y degradando UX. Es necesario implementar debouncing centralizado y reutilizable en las listas críticas para reducir carga y mejorar responsividad.\n\n**Acceptance Criteria**\n- Hook `useDebounce` exportado desde `frontend/src/hooks/useDebounce.ts` acepta `value`, `delay` (ms) y retorna `debouncedValue`.\n- Al escribir en las barras de búsqueda de Facturas, Cotizaciones, Notas de Venta, Productos, Clientes y Empresas, solo se dispara fetch después de 300ms sin cambios en el input.\n- Las listas muestran resultados anteriores mientras se espera el debounce (sin skeleton o loader bloqueante).\n- Requests al backend reducen ≥60% en escenarios de búsqueda rápida (keystroke por keystroke).\n- Todos los tests (unitarios del hook + E2E por lista) pasan en CI.\n\n**Definition of Done**\n- Hook implementado con tests unitarios (>80% coverage).\n- Aplicado en las 7 listas con tests E2E verificando comportamiento de debounce.\n- Métricas de backend (request count) validadas en staging.\n- Code review aprobado.\n- Desplegado a staging.\n- Card movida a In review.\n\n**Notas tecnicas**\n- Usar `useState` + `useEffect` con cleanup para cancelar timers en unmount.\n- Hook debe ser agnóstico del tipo de búsqueda (texto, filtros).\n- Aplicar en: `pages/Facturas/index.tsx`, `pages/Cotizaciones/index.tsx`, `pages/NotasVenta/index.tsx`, `pages/Productos/index.tsx`, `pages/Clientes/index.tsx`, `pages/Empresas/index.tsx`.\n- Verificar que `searchParams` query en URL se actualice solo con `debouncedValue`.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Implementar un hook `useDebounce` reutilizable para reducir los requests al backend en búsquedas de listas, aplicándolo a Facturas, Cotizaciones, Notas de Venta, Productos, Clientes y Empresas.\n\n**Cambios / Decisiones**\n- Creado hook `useDebounce` en `frontend/src/hooks/useDebounce.ts` con tests unitarios (`useDebounce.test.ts`).\n- Reemplazado debounce manual en `Facturas`, `Cotizaciones`, `NotaVentas`, `Clientes`, `Empresas` por el nuevo hook.\n- Agregado debounce a búsqueda en `Productos` (antes no tenía).\n- Reducción de código boilerplate eliminando `setTimeout`/`clearTimeout` repetidos.\n- Hook genérico acepta `value` y `delay` (por defecto 300ms).\n- `searchParams` en URL ahora se actualiza usando `debouncedValue`.",
       "checklist": [
-        "Crear frontend/src/hooks/useDebounce.ts",
-        "Aplicar en Facturas list",
-        "Aplicar en Cotizaciones list",
-        "Aplicar en NotaVentas list",
-        "Aplicar en Productos list",
-        "Aplicar en Clientes list",
-        "Aplicar en Empresas list",
-        "Crear hook `useDebounce` en `frontend/src/hooks/useDebounce.ts` con tests unitarios",
-        "Aplicar hook a barra de búsqueda en Facturas list",
-        "Aplicar hook a barra de búsqueda en Cotizaciones list",
-        "Aplicar hook a barra de búsqueda en Notas de Venta list",
-        "Aplicar hook a barra de búsqueda en Productos list",
-        "Aplicar hook a barra de búsqueda en Clientes y Empresas lists",
-        "Escribir E2E tests verificando que fetch solo ocurre después de 300ms",
-        "Validar en staging que requests al backend se reducen ≥60% en búsquedas rápidas",
-        "Code review + merge",
-        "Desplegar a staging y mover card a In review"
+        "Escribir rápidamente en barra de búsqueda de /facturas y verificar request solo al detenerse 300ms",
+        "Repetir prueba en /cotizaciones, /notas-venta, /productos, /clientes, /empresas",
+        "Verificar resultados previos se mantienen durante escritura (sin loader)",
+        "Correr tests unitarios del hook: `npm run test useDebounce`",
+        "Ejecutar E2E tests de búsqueda para validar comportamiento debounce",
+        "Ver métricas de requests reducidos ≥60% en staging (si disponible)"
       ]
     }
   ]
