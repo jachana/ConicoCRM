@@ -13,7 +13,11 @@ import { api } from '../../lib/api'
 import MisPendientesWidget from '../MisPendientesWidget'
 import { useEffectivePermissions } from '../../hooks/useEffectivePermissions'
 import { usePreferencesStore } from '../../stores/preferences'
+import { useModulos } from '../../hooks/useModulos'
+import { isModuloEnabled } from '../../lib/modulos'
+import { Skeleton } from '../ui/Skeleton'
 import type { Module } from '../../types'
+import type { Modulo } from '../../lib/modulos'
 
 interface SidebarProps {
   collapsed: boolean
@@ -26,6 +30,7 @@ interface NavItem {
   icon: React.ElementType
   label: string
   module?: Module
+  moduleSlug?: Modulo
   adminOnly?: boolean
   end?: boolean
 }
@@ -41,7 +46,7 @@ const SECTIONS: NavSection[] = [
     items: [
       { to: '/',             icon: LayoutDashboard, label: 'Dashboard',    module: 'dashboard' },
       { to: '/aprobaciones', icon: ClipboardList,   label: 'Aprobaciones', adminOnly: true },
-      { to: '/tareas',       icon: CheckSquare,     label: 'Tareas' },
+      { to: '/tareas',       icon: CheckSquare,     label: 'Tareas',       moduleSlug: 'tareas' },
     ],
   },
   {
@@ -49,55 +54,55 @@ const SECTIONS: NavSection[] = [
     items: [
       { to: '/clientes',     icon: Contact,      label: 'Clientes',       module: 'clientes' },
       { to: '/empresas',     icon: Building2,    label: 'Empresas',       module: 'empresas' },
-      { to: '/pipeline',     icon: Target,       label: 'Pipeline',       module: 'cotizaciones' },
-      { to: '/cotizaciones', icon: FileText,     label: 'Cotizaciones',   module: 'cotizaciones' },
-      { to: '/notas-venta',  icon: ShoppingCart, label: 'Notas de Venta', module: 'nota_venta' },
+      { to: '/pipeline',     icon: Target,       label: 'Pipeline',       module: 'cotizaciones', moduleSlug: 'cotizaciones' },
+      { to: '/cotizaciones', icon: FileText,     label: 'Cotizaciones',   module: 'cotizaciones', moduleSlug: 'cotizaciones' },
+      { to: '/notas-venta',  icon: ShoppingCart, label: 'Notas de Venta', module: 'nota_venta',   moduleSlug: 'notas_venta' },
     ],
   },
   {
     label: 'Catálogo',
     items: [
       { to: '/catalogo',                  icon: Package,   label: 'Catálogo',          module: 'catalogo' },
-      { to: '/inventario',                icon: Warehouse, label: 'Inventario',        module: 'inventario', end: true },
-      { to: '/inventario/listas-precios', icon: FileText,  label: 'Listas de precios', adminOnly: true },
+      { to: '/inventario',                icon: Warehouse, label: 'Inventario',        module: 'inventario', moduleSlug: 'inventario', end: true },
+      { to: '/inventario/listas-precios', icon: FileText,  label: 'Listas de precios', adminOnly: true,      moduleSlug: 'listas_precios' },
     ],
   },
   {
     label: 'Cobranza',
     items: [
-      { to: '/cobranza',       icon: Banknote,   label: 'Cobranza',           adminOnly: true },
-      { to: '/facturas',       icon: Receipt,    label: 'Facturas',           module: 'facturas' },
-      { to: '/boletas',        icon: ScrollText, label: 'Boletas',            module: 'boletas' },
-      { to: '/libros',         icon: BookOpen,   label: 'Libros',             module: 'libros' },
-      { to: '/dte-recepcion',  icon: Mail,       label: 'DTE Recepción',      module: 'dte_recepcion' },
-      { to: '/guias-despacho', icon: Truck,      label: 'Guías de Despacho',  module: 'guias_despacho' },
-      { to: '/notas-credito',  icon: FileMinus,  label: 'Notas de Crédito',   adminOnly: true },
-      { to: '/notas-debito',   icon: FilePlus,   label: 'Notas de Débito',    adminOnly: true },
-      { to: '/pagos',          icon: CreditCard, label: 'Pagos',              adminOnly: true },
+      { to: '/cobranza',       icon: Banknote,   label: 'Cobranza',           adminOnly: true,              moduleSlug: 'cobranza' },
+      { to: '/facturas',       icon: Receipt,    label: 'Facturas',           module: 'facturas',            moduleSlug: 'facturas' },
+      { to: '/boletas',        icon: ScrollText, label: 'Boletas',            module: 'boletas',             moduleSlug: 'boletas' },
+      { to: '/libros',         icon: BookOpen,   label: 'Libros',             module: 'libros',              moduleSlug: 'libros' },
+      { to: '/dte-recepcion',  icon: Mail,       label: 'DTE Recepción',      module: 'dte_recepcion',       moduleSlug: 'dte_recepcion' },
+      { to: '/guias-despacho', icon: Truck,      label: 'Guías de Despacho',  module: 'guias_despacho',      moduleSlug: 'guias_despacho' },
+      { to: '/notas-credito',  icon: FileMinus,  label: 'Notas de Crédito',   adminOnly: true,               moduleSlug: 'nota_credito' },
+      { to: '/notas-debito',   icon: FilePlus,   label: 'Notas de Débito',    adminOnly: true,               moduleSlug: 'nota_debito' },
+      { to: '/pagos',          icon: CreditCard, label: 'Pagos',              adminOnly: true,               moduleSlug: 'pagos' },
     ],
   },
   {
     label: 'Compras',
     items: [
-      { to: '/ordenes-compra',   icon: ShoppingCart, label: 'Órdenes de Compra',     module: 'ordenes_compra' },
-      { to: '/facturas-compra',  icon: Receipt,      label: 'Facturas de Compra',     adminOnly: true },
-      { to: '/proveedores',      icon: Truck,        label: 'Proveedores',            module: 'proveedores' },
+      { to: '/ordenes-compra',   icon: ShoppingCart, label: 'Órdenes de Compra',  module: 'ordenes_compra', moduleSlug: 'ordenes_compra' },
+      { to: '/facturas-compra',  icon: Receipt,      label: 'Facturas de Compra', adminOnly: true,          moduleSlug: 'facturas_compra' },
+      { to: '/proveedores',      icon: Truck,        label: 'Proveedores',        module: 'proveedores',    moduleSlug: 'proveedores' },
     ],
   },
   {
     label: 'Operación',
     items: [
       { to: '/reportes', icon: BarChart2, label: 'Reportes', adminOnly: true },
-      { to: '/rrhh',     icon: UserCog,   label: 'RRHH',     module: 'rrhh' },
+      { to: '/rrhh',     icon: UserCog,   label: 'RRHH',     module: 'rrhh', moduleSlug: 'rrhh_empleados' },
     ],
   },
   {
     label: 'Administración',
     items: [
-      { to: '/usuarios',            icon: Users,      label: 'Usuarios',         module: 'usuarios' },
-      { to: '/configuracion',       icon: Settings,   label: 'Configuración',    adminOnly: true },
-      { to: '/admin/tareas/config', icon: AlarmClock, label: 'Reglas de tareas', adminOnly: true },
-      { to: '/admin/auditoria',     icon: ShieldCheck, label: 'Auditoría',       adminOnly: true },
+      { to: '/usuarios',            icon: Users,       label: 'Usuarios',          module: 'usuarios' },
+      { to: '/configuracion',       icon: Settings,    label: 'Configuración',     adminOnly: true },
+      { to: '/admin/tareas/config', icon: AlarmClock,  label: 'Reglas de tareas',  adminOnly: true },
+      { to: '/admin/auditoria',     icon: ShieldCheck, label: 'Auditoría',         adminOnly: true },
       { to: '/admin/migracion',     icon: Download,    label: 'Migración inicial', adminOnly: true },
     ],
   },
@@ -112,6 +117,8 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
   const { permissions: myPermissions, role: effectiveRole } = useEffectivePermissions()
   const isAdminUser = effectiveRole === 'admin' || effectiveRole === 'subadmin'
   const sidebarHidden = usePreferencesStore(s => s.preferencias.sidebar_hidden ?? [])
+
+  const { effective: modulosState, isLoading: modulosLoading } = useModulos()
 
   const canViewInventario = !!user && effectiveRole !== 'vendedor' && myPermissions?.inventario?.view !== false
 
@@ -135,7 +142,8 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
   const isVisible = (item: NavItem) =>
     (item.to === '/configuracion' || !sidebarHidden.includes(item.to)) &&
     (!item.module || myPermissions?.[item.module]?.view !== false) &&
-    (!item.adminOnly || isAdminUser)
+    (!item.adminOnly || isAdminUser) &&
+    (!item.moduleSlug || isModuloEnabled(modulosState, item.moduleSlug))
 
   const visibleSections = SECTIONS
     .map(s => ({ ...s, items: s.items.filter(isVisible) }))
@@ -178,29 +186,33 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
 
       {/* Nav sections */}
       <nav className="flex-1 overflow-y-auto py-2">
-        {visibleSections.map((section, sIdx) => (
-          <div key={section.label} className={sIdx > 0 ? 'mt-3' : ''}>
-            {!collapsed ? (
-              <div className="px-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-                {section.label}
-              </div>
-            ) : sIdx > 0 ? (
-              <div className="border-t border-white/5 mx-3 mb-2" aria-hidden />
-            ) : null}
+        {modulosLoading ? (
+          <SidebarSkeleton collapsed={collapsed} />
+        ) : (
+          visibleSections.map((section, sIdx) => (
+            <div key={section.label} className={sIdx > 0 ? 'mt-3' : ''}>
+              {!collapsed ? (
+                <div className="px-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                  {section.label}
+                </div>
+              ) : sIdx > 0 ? (
+                <div className="border-t border-white/5 mx-3 mb-2" aria-hidden />
+              ) : null}
 
-            <div className="space-y-0.5">
-              {section.items.map(item => (
-                <NavRow
-                  key={item.to}
-                  item={item}
-                  collapsed={collapsed}
-                  onClose={onClose}
-                  badge={badgeFor(item.to)}
-                />
-              ))}
+              <div className="space-y-0.5">
+                {section.items.map(item => (
+                  <NavRow
+                    key={item.to}
+                    item={item}
+                    collapsed={collapsed}
+                    onClose={onClose}
+                    badge={badgeFor(item.to)}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </nav>
 
       <MisPendientesWidget collapsed={collapsed} onClose={onClose} />
@@ -230,6 +242,33 @@ export default function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) 
         </button>
       </div>
     </aside>
+  )
+}
+
+const SKELETON_SECTIONS = [3, 5, 3, 9, 3, 2, 5] // item counts per section (mirrors SECTIONS)
+
+function SidebarSkeleton({ collapsed }: { collapsed: boolean }) {
+  return (
+    <>
+      {SKELETON_SECTIONS.map((count, sIdx) => (
+        <div key={sIdx} className={sIdx > 0 ? 'mt-3' : ''} aria-hidden>
+          {!collapsed && (
+            <div className="px-4 pb-1">
+              <Skeleton shape="text" className="w-16 h-2.5" />
+            </div>
+          )}
+          {collapsed && sIdx > 0 && <div className="border-t border-white/5 mx-3 mb-2" />}
+          <div className="space-y-0.5">
+            {Array.from({ length: count }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-3 py-2.5 mx-1.5">
+                <Skeleton shape="circle" className="size-[18px] flex-shrink-0" />
+                {!collapsed && <Skeleton shape="text" className="flex-1 h-3" />}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </>
   )
 }
 
