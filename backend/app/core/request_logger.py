@@ -1,15 +1,14 @@
 """Per-request structured logging middleware.
 
 Emits one log line per HTTP request with:
-    request_id, user_id, route (path template), method, status, latency_ms
-
-Lives separately from `logging.py` so the configuration entry-point stays
-small and the middleware can be tested in isolation.
+    request_id, user_id, empresa_id, route, method, status,
+    latency_ms, query_count, response_size
 """
 from __future__ import annotations
 
 import time
 import uuid
+from contextvars import ContextVar
 from typing import Any
 
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -21,16 +20,37 @@ from app.core.logging import logger
 
 try:
     from jose import jwt as _jwt  # type: ignore
-except ImportError:  # pragma: no cover — jose is a hard dep in prod, optional here
+except ImportError:  # pragma: no cover
     _jwt = None  # type: ignore[assignment]
+
+# Per-request SQL query counter (ContextVar so it's scoped to the current asyncio task).
+_query_count: ContextVar[int] = ContextVar("_query_count", default=0)
+_query_counter_installed = False
+
+
+def _install_query_counter() -> None:
+    """Register a SQLAlchemy before_cursor_execute listener to count queries per request.
+
+    Called lazily on first dispatch to avoid circular imports at module load time.
+    Guarded by a module-level flag so the listener is registered exactly once.
+    """
+    global _query_counter_installed
+    if _query_counter_installed:
+        return
+    _query_counter_installed = True  # Set before import so errors don't cause infinite retry.
+    try:
+        from app.database import engine
+        from sqlalchemy import event as sa_event
+
+        @sa_event.listens_for(engine, "before_cursor_execute")
+        def _on_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+            _query_count.set(_query_count.get() + 1)
+    except Exception:
+        pass
 
 
 def _extract_user_id(request: Request) -> Any:
-    """Best-effort user_id extraction from the JWT in Authorization header.
-
-    We don't want to introduce a hard dependency on auth middleware ordering
-    or DB lookups for logging — decode-only, fail silent.
-    """
+    """Best-effort user_id from JWT sub claim. Decode-only, no DB hit."""
     auth = request.headers.get("authorization") or ""
     if not auth.lower().startswith("bearer "):
         return None
@@ -48,11 +68,36 @@ def _extract_user_id(request: Request) -> Any:
         return None
 
 
+def _extract_empresa_id(request: Request) -> Any:
+    """Best-effort empresa_id from JWT claim or request.state user. No DB hit."""
+    # Fast path: user already loaded into request.state by some upstream middleware.
+    for attr in ("current_user", "user"):
+        user = getattr(request.state, attr, None)
+        if user is not None and hasattr(user, "empresa_id"):
+            return user.empresa_id
+
+    # JWT claim path.
+    auth = request.headers.get("authorization") or ""
+    if not auth.lower().startswith("bearer "):
+        return None
+    token = auth.split(" ", 1)[1].strip()
+    if not token or _jwt is None:
+        return None
+    try:
+        from app.config import settings
+
+        payload = _jwt.decode(
+            token, settings.secret_key, algorithms=["HS256"], options={"verify_exp": False}
+        )
+        return payload.get("empresa_id")
+    except Exception:
+        return None
+
+
 def _resolve_route(request: Request) -> str:
     """Return the matched route's path template, or the literal path if unmatched."""
     route = request.scope.get("route")
     if route is not None:
-        # Starlette Route exposes `.path`; Mount uses `.path` too.
         path = getattr(route, "path", None)
         if path:
             return path
@@ -63,8 +108,13 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
     """Adds request_id + structured access log to every request."""
 
     async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+        _install_query_counter()
+
         request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
         request.state.request_id = request_id
+
+        # Reset per-request query counter.
+        query_token = _query_count.set(0)
 
         start = time.perf_counter()
         status_code = 500
@@ -74,24 +124,39 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             status_code = response.status_code
             return response
-        except BaseException as e:  # noqa: BLE001 — re-raised after logging
+        except BaseException as e:  # noqa: BLE001
             exc = e
             raise
         finally:
             latency_ms = round((time.perf_counter() - start) * 1000, 2)
+            query_count_val = _query_count.get()
+            _query_count.reset(query_token)
+
             user_id = _extract_user_id(request)
+            empresa_id = _extract_empresa_id(request)
             route = _resolve_route(request)
+
+            response_size: int | None = None
+            if response is not None:
+                cl = response.headers.get("content-length")
+                if cl:
+                    try:
+                        response_size = int(cl)
+                    except (ValueError, TypeError):
+                        pass
 
             log = logger.bind(
                 request_id=request_id,
                 user_id=user_id,
+                empresa_id=empresa_id,
                 route=route,
                 method=request.method,
                 status=status_code,
                 latency_ms=latency_ms,
+                query_count=query_count_val,
+                response_size=response_size,
             )
 
-            # Add request_id to the response so clients can correlate.
             if response is not None:
                 response.headers["x-request-id"] = request_id
 
@@ -105,7 +170,6 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
 
 def install(app: ASGIApp) -> None:
     """Attach the middleware to a FastAPI/Starlette app."""
-    # Late import to avoid hard FastAPI dependency at import time
     from fastapi import FastAPI
 
     if isinstance(app, FastAPI):

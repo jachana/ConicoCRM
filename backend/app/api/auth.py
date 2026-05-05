@@ -57,9 +57,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 
 def _issue_tokens(user: User) -> Token:
+    claims = {"sub": user.email, "empresa_id": str(user.empresa_id) if user.empresa_id else None}
     return Token(
-        access_token=create_access_token({"sub": user.email}),
-        refresh_token=create_refresh_token({"sub": user.email}),
+        access_token=create_access_token(claims),
+        refresh_token=create_refresh_token(claims),
     )
 
 
