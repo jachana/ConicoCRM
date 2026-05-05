@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from app.config import settings
 from app.core.logging import configure_logging
 from app.core.observability import init_sentry
@@ -123,6 +124,7 @@ app.add_middleware(
 # log line is the outermost wrapper and audit context is set before any handler.
 app.add_middleware(AuditContextMiddleware)
 app.add_middleware(RequestLoggerMiddleware)
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 register_audit_listeners()
 
 # Health endpoints — no prefix, no auth.

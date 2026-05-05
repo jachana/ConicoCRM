@@ -89,6 +89,6 @@ export interface CAFAlertsResponse {
 }
 
 export async function getCAFAlerts(): Promise<CAFAlertsResponse> {
-  const { data } = await api.get<CAFAlertsResponse>('/api/cafs/alerts')
+  const { data } = await api.get<CAFAlertsResponse>('/api/cafs/alerts/')
   return data
 }
