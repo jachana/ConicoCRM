@@ -32,7 +32,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Telemetry T1.3] Lioren client wrapper instrumentado (count, latency, cost)",
       "labels": [
         "Core",
@@ -40,24 +40,15 @@
         "Goal: Operations",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nLioren cobra por call DTE. Actualmente no capturamos latencia, volumen ni costo por empresa, imposibilitando análisis de rentabilidad y auditoría de consumo. Necesitamos instrumentar cada call para visibilidad operacional y atribución de costos.\n\n**Acceptance Criteria**\n- Cada call a Lioren (factura, nota crédito, nota débito, guía despacho, boleta, libro envío) registra en log estructurado: endpoint, método, latencia_ms, status_http, tamaño_request, tamaño_response, empresa_id, dte_tipo, costo_estimado_clp.\n- Tabla `CostTariff` con campos (slug, descripción, costo_clp) alimenta el cálculo de costo por tipo de DTE según contrato actual.\n- Al emitir un DTE de prueba, el log contiene cost no-cero y correlaciona con tarifa configurada.\n- Documentación incluye cómo actualizar tarifas cuando Lioren modifique precios.\n\n**Definition of Done**\n- Tests unitarios y E2E pasan (mock de Lioren incluido).\n- Wrapper implementado y todos los call-sites refactorizados.\n- Tabla de tarifas iniciales cargada en migración.\n- Logs fluyen a stdout/observability stack (verificable en staging).\n- Documentación en docs/ con instrucciones de mantenimiento.\n- Trello card movida a In review.\n\n**Notas técnicas**\n- Archivo: `backend/app/services/lioren_metrics.py` (wrapper o decorador @lioren_instrumented).\n- Schema: Tabla `cost_tariff` (id, slug, descripcion, costo_clp, created_at, updated_at). Índice en slug.\n- Log format: JSON con campos {timestamp, empresa_id, dte_tipo, endpoint, latency_ms, status, req_size, resp_size, cost_clp}.\n- Inicializar tarifas: factura_emision, nota_credito, nota_debito, guia_despacho, boleta, libro_envio.\n- Mock en tests: fixture de Lioren que retorna response fija con size controlado.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Instrumentar el cliente Lioren para registrar latencia, volumen y costo por llamada, con visibilidad por empresa y tipo de DTE.\n\n**Cambios / Decisiones** — Se creó `backend/app/services/lioren_metrics.py` con el contexto `lioren_call()` que captura métricas en cada llamada. Se añadió la tabla `CostTariff` con migración inicial (`k3l4m5n6o7p8`) y 9 tarifas (inicialmente en cero). Los puntos de llamada en `DteService` y tasks fueron instrumentados. Se actualizaron `api/libros.py` y `tasks/dte.py` para pasar `empresa_id` y `dte_tipo`. Se agregaron logs estructurados JSON y documentación en `docs/operations/lioren_cost_maintenance.md`.",
       "checklist": [
-        "Identificar todos los call-sites del cliente Lioren actual",
-        "Wrapper en backend/app/services/lioren_metrics.py o decorador",
-        "Capturar: endpoint, method, latency_ms, http_status, request_size, response_size, empresa_id, dte_tipo, est_cost_clp",
-        "Tabla CostTariff (slug, descripcion, costo_clp) para cost lookup",
-        "Tarifas iniciales segun contrato Lioren actual (factura emit, NC, ND, GD, boleta, libro envio)",
-        "Log line lioren.call con todos los campos",
-        "Test: emitir factura test mockea Lioren y verifica log con cost no-cero",
-        "Documentar como actualizar tarifas si Lioren cambia precios",
-        "Auditar todos los call-sites de cliente Lioren en codebase (grep + manual review).",
-        "Crear wrapper/decorador en backend/app/services/lioren_metrics.py que capture (endpoint, method, latency_ms, http_status, req_size, resp_size, empresa_id, dte_tipo).",
-        "Diseñar tabla CostTariff e implementar migración con tarifas iniciales del contrato Lioren.",
-        "Integrar lookup de costo en wrapper según dte_tipo; emitir log JSON estructurado.",
-        "Refactorizar todos los call-sites para usar wrapper (sin cambiar lógica, solo decorar/wrappear).",
-        "Escribir tests: E2E emitir factura, verificar log contiene cost>0 y matches tarifa. Mock de Lioren incluido.",
-        "Documentar procedimiento de actualización de tarifas en docs/operations/lioren_cost_maintenance.md.",
-        "Desplegar a staging, verificar logs en observability, mover Trello a In review."
+        "Emitir DTE de prueba y verificar log con campos: latency_ms, cost_clp, empresa_id",
+        "Consultar endpoint /api/dte/status y confirmar logs lioren.call con JSON válido",
+        "Revisar tabla cost_tariff en DB contiene slugs de factura, NC, ND, GD, etc.",
+        "Ver logs en staging contienen costo>0 al usar tarifas configuradas",
+        "Actualizar tarifa en DB y verificar nuevo cost_clp en logs de prueba",
+        "Validar tamaño request/response en logs contra payload real de DTE",
+        "Ejecutar tests unitarios en backend/tests/test_lioren_metrics.py"
       ]
     }
   ]
