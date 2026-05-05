@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal
-from sqlalchemy import ForeignKey, String, Text, DateTime, Numeric, text
+from sqlalchemy import ForeignKey, String, Text, DateTime, Numeric, JSON, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -34,6 +34,7 @@ class Empresa(Base):
     nota_cobranza: Mapped[str | None] = mapped_column(Text, nullable=True)
     ubicacion: Mapped[str | None] = mapped_column(String(500), nullable=True)
     logo_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    modulos_enabled: Mapped[dict] = mapped_column(JSON, default=dict, server_default=text("'{}'"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
