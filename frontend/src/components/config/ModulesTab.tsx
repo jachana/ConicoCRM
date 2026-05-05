@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { api } from '../../lib/api'
-import { Skeleton } from '../ui'
+import { Skeleton, Tooltip } from '../ui'
 
 interface RegistryEntry {
   slug: string
@@ -28,9 +29,37 @@ const CATEGORIA_LABELS: Record<string, string> = {
 }
 
 export default function ModulesTab({ empresaId }: { empresaId: number }) {
+  const qc = useQueryClient()
+
   const { data, isLoading, isError } = useQuery<ModulosResponse>({
     queryKey: ['empresa-modulos', empresaId],
     queryFn: () => api.get(`/api/empresas/${empresaId}/modulos`).then(r => r.data),
+  })
+
+  const mutation = useMutation({
+    mutationFn: (vars: { slug: string; enabled: boolean }) =>
+      api.patch(`/api/empresas/${empresaId}/modulos`, { modulos: { [vars.slug]: vars.enabled } }).then(r => r.data),
+    onMutate: async (vars) => {
+      await qc.cancelQueries({ queryKey: ['empresa-modulos', empresaId] })
+      const prev = qc.getQueryData<ModulosResponse>(['empresa-modulos', empresaId])
+      if (prev) {
+        qc.setQueryData<ModulosResponse>(['empresa-modulos', empresaId], {
+          ...prev,
+          stored: { ...prev.stored, [vars.slug]: vars.enabled },
+          effective: { ...prev.effective, [vars.slug]: vars.enabled },
+        })
+      }
+      return { prev }
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['empresa-modulos', empresaId], ctx.prev)
+      toast.error('No se pudo actualizar el módulo')
+    },
+    onSuccess: (serverData: ModulosResponse) => {
+      qc.setQueryData(['empresa-modulos', empresaId], serverData)
+      toast.success('Módulo actualizado')
+      qc.invalidateQueries({ queryKey: ['empresa-modulos', empresaId] })
+    },
   })
 
   if (isLoading) {
@@ -78,6 +107,30 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
             {byCategory[cat].map(entry => {
               const isOn = data.effective[entry.slug] ?? false
               const missingReqs = entry.requires.filter(r => !(data.effective[r] ?? false))
+              const isBlocked = missingReqs.length > 0
+              const blockingLabel = missingReqs
+                .map(r => data.registry.find(e => e.slug === r)?.label ?? r)
+                .join(', ')
+
+              const switchBtn = (
+                <button
+                  role="switch"
+                  aria-checked={isOn}
+                  aria-label={entry.label}
+                  disabled={isBlocked}
+                  onClick={isBlocked ? undefined : () => mutation.mutate({ slug: entry.slug, enabled: !isOn })}
+                  className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors ${
+                    isOn ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-600'
+                  } ${isBlocked ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                      isOn ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              )
+
               return (
                 <div
                   key={entry.slug}
@@ -110,20 +163,11 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
                     }`}>
                       {isOn ? 'Activo' : 'Inactivo'}
                     </span>
-                    <button
-                      disabled
-                      aria-checked={isOn}
-                      role="switch"
-                      className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors ${
-                        isOn ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-600'
-                      } opacity-60`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                          isOn ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
+                    {isBlocked ? (
+                      <Tooltip label={`Requiere ${blockingLabel}`} side="left">
+                        <span>{switchBtn}</span>
+                      </Tooltip>
+                    ) : switchBtn}
                   </div>
                 </div>
               )

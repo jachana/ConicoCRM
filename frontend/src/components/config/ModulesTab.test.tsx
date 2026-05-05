@@ -1,10 +1,12 @@
 import { it, expect, vi, describe } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import ModulesTab from './ModulesTab'
 import * as apiModule from '../../lib/api'
+import * as toastModule from 'sonner'
 
-vi.mock('../../lib/api', () => ({ api: { get: vi.fn() } }))
+vi.mock('../../lib/api', () => ({ api: { get: vi.fn(), patch: vi.fn() } }))
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 const REGISTRY = [
   { slug: 'cotizaciones', label: 'Cotizaciones', categoria: 'ventas', requires: [], dependents: ['notas_venta'] },
@@ -26,13 +28,15 @@ const RESPONSE_WITH_ENABLED = {
 
 function wrap(ui: React.ReactNode) {
   return render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}>
       {ui}
     </QueryClientProvider>
   )
 }
 
 describe('ModulesTab', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
   it('renders modules grouped by category', async () => {
     vi.mocked(apiModule.api.get).mockResolvedValue({ data: RESPONSE })
     wrap(<ModulesTab empresaId={1} />)
@@ -83,11 +87,59 @@ describe('ModulesTab', () => {
     await waitFor(() => expect(apiModule.api.get).toHaveBeenCalledWith('/api/empresas/42/modulos'))
   })
 
-  it('switches are visually disabled', async () => {
+  it('blocked switch (parent disabled) is disabled; free switches are enabled', async () => {
     vi.mocked(apiModule.api.get).mockResolvedValue({ data: RESPONSE })
     wrap(<ModulesTab empresaId={1} />)
     await waitFor(() => expect(screen.getByText('Cotizaciones')).toBeInTheDocument())
-    const switches = document.querySelectorAll('[role="switch"]')
-    switches.forEach(sw => expect(sw).toBeDisabled())
+    // notas_venta requires cotizaciones (which is off) → blocked
+    expect(screen.getByRole('switch', { name: 'Notas de Venta' })).toBeDisabled()
+    // cotizaciones and inventario have no unsatisfied requirements
+    expect(screen.getByRole('switch', { name: 'Cotizaciones' })).not.toBeDisabled()
+    expect(screen.getByRole('switch', { name: 'Inventario' })).not.toBeDisabled()
+  })
+
+  it('clicking a free switch sends PATCH and shows success toast', async () => {
+    const toggled = { ...RESPONSE, stored: { ...RESPONSE.stored, cotizaciones: true }, effective: { ...RESPONSE.effective, cotizaciones: true } }
+    vi.mocked(apiModule.api.get).mockResolvedValue({ data: RESPONSE })
+    vi.mocked(apiModule.api.patch).mockResolvedValue({ data: toggled })
+    wrap(<ModulesTab empresaId={1} />)
+    await waitFor(() => expect(screen.getByText('Cotizaciones')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Cotizaciones' }))
+
+    await waitFor(() =>
+      expect(apiModule.api.patch).toHaveBeenCalledWith(
+        '/api/empresas/1/modulos',
+        { modulos: { cotizaciones: true } }
+      )
+    )
+    await waitFor(() => expect(toastModule.toast.success).toHaveBeenCalled())
+  })
+
+  it('clicking a blocked switch does NOT send PATCH', async () => {
+    vi.mocked(apiModule.api.get).mockResolvedValue({ data: RESPONSE })
+    vi.mocked(apiModule.api.patch).mockResolvedValue({ data: RESPONSE })
+    wrap(<ModulesTab empresaId={1} />)
+    await waitFor(() => expect(screen.getByText('Notas de Venta')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Notas de Venta' }))
+
+    // give time for any async effects
+    await new Promise(r => setTimeout(r, 50))
+    expect(apiModule.api.patch).not.toHaveBeenCalled()
+  })
+
+  it('reverts optimistic update and shows error toast on PATCH failure', async () => {
+    vi.mocked(apiModule.api.get).mockResolvedValue({ data: RESPONSE })
+    vi.mocked(apiModule.api.patch).mockRejectedValue(new Error('network'))
+    wrap(<ModulesTab empresaId={1} />)
+    await waitFor(() => expect(screen.getByText('Cotizaciones')).toBeInTheDocument())
+
+    const sw = screen.getByRole('switch', { name: 'Cotizaciones' })
+    fireEvent.click(sw)
+
+    await waitFor(() => expect(toastModule.toast.error).toHaveBeenCalled())
+    // After rollback the switch reverts to original state (off)
+    expect(sw).toHaveAttribute('aria-checked', 'false')
   })
 })
