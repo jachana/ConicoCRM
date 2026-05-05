@@ -32,22 +32,29 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Modulos P1.7] Endpoints admin /empresas/{id}/modulos + /me/modulos + audit",
+      "list": "In progress",
+      "name": "[Modulos P2.1] Mirror modulos.ts + useModulos hook + helpers",
       "labels": [
         "Core",
         "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Resumen** — Se implementan endpoints para que administradores gestionen módulos por empresa y usuarios vean sus módulos efectivos, con registro de auditoría detallado.\n\n**Cambios / Decisiones** — Se crea `backend/app/api/modulos.py` con rutas: `GET /empresas/{id}/modulos` (admin), `PATCH /empresas/{id}/modulos` (admin) y `GET /me/modulos` (usuario). Se agregan esquemas Pydantic `EmpresaModulosResponse` y `EmpresaModulosUpdate`. El PATCH valida dependencias, aplica cambios atómicamente y genera entradas en `audit_log` con diff por slug. Se registró el router en `main.py` y se añadieron tests unitarios e integración en `test_api_modulos.py`.",
+      "desc": "**Contexto / Problema**\nLa UI necesita un espejo TypeScript del registro de módulos del backend con metadata (label, categoría, descripción) para renderizar dinámicamente permisos y accesos. Actualmente no existe una fuente única de verdad en frontend, bloqueando features P2.2–P2.5.\n\n**Acceptance Criteria**\n- Frontend expone const `MODULO_SLUGS` con tuple tipado de slugs de módulos y type `Modulo`.\n- Frontend expone `MODULO_META` con label, categoría y descripción para cada módulo.\n- Hook `useModulos()` retorna `{ effective: Record<Modulo, boolean>, isLoading, error }` consumiendo `/me/modulos` vía react-query.\n- Helper `isModuloEnabled(state, slug)` devuelve boolean indicando si un módulo está activo.\n- Hook `useModuloEnabled(slug)` retorna boolean basado en estado del hook `useModulos()`.\n- Al refetch (window focus o manual trigger), cambios en backend se reflejan en UI.\n- Loading y error states son accesibles desde el hook para manejo en componentes.\n\n**Definition of Done**\n- Código implementado en `frontend/src/lib/modulos.ts`, `frontend/src/api/modulos.ts`, `frontend/src/hooks/useModulos.ts`.\n- Tests unitarios verifican que el hook retorna `effective` correcto y que `isModuloEnabled` funciona con loading state.\n- Tests verifican que cambios en backend se reflejan al refetch.\n- CI/CD pasa (tests + linting).\n- Trello card movida a **In review**.\n- Desplegado a staging (no requiere migración).\n\n**Notas tecnicas**\n- Depende de P1.7 (endpoint `/me/modulos` disponible en backend).\n- react-query config: `staleTime: 5 * 60 * 1000`, `refetchOnWindowFocus: true`.\n- `MODULO_META` debe ser const assertion para preservar tipos literales en tuple.\n- Endpoint esperado: `GET /me/modulos` → `{ effective: Record<string, boolean> }`.\n- Bloqueador de P2.2, P2.3, P2.4, P2.5, P3.*.\n\n<!-- conico-refined -->",
       "checklist": [
-        "GET /empresas/{id}/modulos como admin y verificar {stored,effective,registry}",
-        "GET /me/modulos como usuario vendedor y verificar solo módulos efectivos",
-        "PATCH /empresas/{id}/modulos con {modulos:{slug:true}} y verificar 200",
-        "Verificar en DB que audit_log registró entrada con action='modulos.toggle'",
-        "Intentar PATCH inválido (dependencia rota) y verificar 400 con 'dependency_violation'",
-        "Repetir mismo PATCH y confirmar idempotencia (misma respuesta, sin nuevo audit)",
-        "Ejecutar pytest y validar que todos los tests de modulos pasen"
+        "frontend/src/lib/modulos.ts: MODULO_SLUGS const tuple + type Modulo + MODULO_META {label, categoria, descripcion}",
+        "frontend/src/api/modulos.ts: fetchMyModulos() -> {effective: Record<Modulo, boolean>}",
+        "frontend/src/hooks/useModulos.ts: useModulos() con react-query (staleTime 5min, refetchOnWindowFocus true)",
+        "Helper isModuloEnabled(state, slug) y hook useModuloEnabled(slug)",
+        "Loading state + error state expuestos por el hook",
+        "Test: hook devuelve effective; isModuloEnabled funciona con loading",
+        "Test: cambio en backend se refleja al refetch",
+        "Implementar `MODULO_SLUGS` tuple + type `Modulo` + `MODULO_META` en `frontend/src/lib/modulos.ts`",
+        "Implementar `fetchMyModulos()` en `frontend/src/api/modulos.ts` consumiendo `GET /me/modulos`",
+        "Implementar hook `useModulos()` en `frontend/src/hooks/useModulos.ts` con react-query (staleTime 5min, refetchOnWindowFocus true)",
+        "Implementar helpers `isModuloEnabled(state, slug)` e hook `useModuloEnabled(slug)` con loading/error states",
+        "Escribir tests: hook retorna effective; isModuloEnabled funciona con loading state; refetch refleja cambios backend",
+        "Verificar CI/CD (tests + linting) en verde",
+        "Mover card a **In review** y desplegar a staging"
       ]
     }
   ]
