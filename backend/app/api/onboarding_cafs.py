@@ -314,6 +314,15 @@ def _process_single_caf_file(
 
     # Persist to database with transaction per file
     try:
+        from datetime import date as date_type
+        vigencia_str = first_tipo.get("folio_vigencia")
+        fecha_venc = None
+        if vigencia_str:
+            try:
+                fecha_venc = date_type.fromisoformat(vigencia_str)
+            except ValueError:
+                pass
+
         caf = CAF(
             empresa_id=empresa_id,
             tipo_dte=report.tipo_dte,
@@ -322,6 +331,7 @@ def _process_single_caf_file(
             archivo_xml=xml_content,
             vigente=True,
             consumido=0,
+            fecha_vencimiento=fecha_venc,
         )
         db.add(caf)
         db.flush()  # Flush to get the id without committing
