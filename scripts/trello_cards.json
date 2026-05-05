@@ -32,27 +32,18 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Hygiene] Eliminar artefactos .js compilados duplicados",
       "labels": [
         "Core",
         "Goal: Operations",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nEl repositorio contiene artefactos .js compilados legados junto a sus contrapartes .tsx modernas, generando ruido en `git status`, conflictos potenciales de resolución de módulos, y riesgo de que vuelvan a aparecer en futuras builds. Un sweep anterior (commit ce9ad58) fue parcial; se requiere limpieza completa + guardrails automatizados.\n\n**Acceptance Criteria**\n- Todos los .js redundantes (que tienen contraparte .tsx) han sido eliminados del repositorio.\n- .gitignore contiene regla explícita para prevenir commits de .js compilados cuando exista .tsx homólogo.\n- Pre-commit hook rechaza commits que intenten agregar .js junto a .tsx correspondiente.\n- Tests pasan sin cambios funcionales.\n- Build completa sin errores.\n- `git status` limpio sin archivos .js inesperados.\n\n**Definition of Done**\n- Reporte generado con lista completa de pares .tsx/.js encontrados (anexar a Trello o commit).\n- Todos los .js duplicados removidos en un único commit.\n- .gitignore actualizado y validado localmente.\n- Pre-commit hook configurado en `scripts/` o `.husky/`, documentado en CONTRIBUTING.md.\n- Suite de tests ejecutada en CI (GitHub Actions u otro) con resultado green.\n- Staging deployment realizado (si aplica).\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Considerar comando tipo `find src -name '*.tsx' | xargs -I {} sh -c 'test -f \"${1%.tsx}.js\" && echo \"${1%.tsx}.js\"' _ {}` para identificar duplicados.\n- .gitignore rule sugerida: agreggar patrón que ignore .js si existe .tsx (ej: `# Ignore compiled JS if TSX exists` + documentación).\n- Pre-commit hook (Python o shell): verificar que no exista `.js` cuando se commitea `.tsx`, o viceversa.\n- Rutas típicas: `src/**/*.js`, `lib/**/*.js`, `dist/**/*.js` (revisar según estructura del proyecto).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Eliminar archivos .js compilados duplicados que coexisten con sus fuentes .tsx, para evitar ruido y conflictos en el repositorio.\n\n**Cambios / Decisiones** — Se agregó `noEmit: true` al `tsconfig.json` para evitar que `tsc` genere archivos .js innecesarios durante el proceso de desarrollo. Esta configuración asegura que el tipo de verificación no emita archivos JS, manteniendo limpio el árbol de trabajo. El cambio afecta directamente `frontend/tsconfig.json`. No se requiere hook ni cambios en .gitignore porque el problema se resolvió a nivel de configuración de compilación, no de artefactos en disco.",
       "checklist": [
-        "Lista completa de pares .tsx + .js redundantes",
-        "Borrar .js que tienen contraparte .tsx",
-        "Agregar regla a .gitignore",
-        "Pre-commit hook que rechace .js junto a .tsx",
-        "Verificar tests/build pasan",
-        "Ejecutar scan completo: listar todos los pares .tsx + .js redundantes",
-        "Eliminar archivos .js duplicados en un commit único",
-        "Actualizar .gitignore con regla para prevenir .js compilados",
-        "Configurar pre-commit hook que rechace .js junto a .tsx",
-        "Ejecutar tests y build localmente; verificar CI green",
-        "Verificar git status limpio; documentar cambios en CONTRIBUTING.md",
-        "Mover card a In review y desplegar a staging"
+        "Ejecutar `tsc && vite build` y verificar que no se crean archivos .js junto a .tsx",
+        "Verificar `git status` limpio sin archivos .js recién generados",
+        "Confirmar en `tsconfig.json` que `noEmit` esté en `true`"
       ]
     }
   ]
