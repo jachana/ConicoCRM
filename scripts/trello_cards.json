@@ -32,34 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Modulos P1.5] Wire require_modulo a procurement + inventario + finanzas",
       "labels": [
         "Core",
         "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nContinuación del P1.4: aplicar el middleware require_modulo a los routers de procurement, inventario y finanzas para reforzar la validación de módulos habilitados en operaciones críticas de compras, inventario y finanzas.\n\n**Acceptance Criteria**\n- El router de proveedores rechaza con 403 cuando el módulo 'proveedores' está deshabilitado y responde 200 cuando está habilitado.\n- El router de órdenes de compra rechaza con 403 cuando 'ordenes_compra' está off y procesa normalmente cuando está on.\n- El router de facturas de compra valida 'facturas_compra' correctamente (403 off, 200 on).\n- El router de inventario valida 'inventario' correctamente (403 off, 200 on).\n- El router de listas de precios valida 'listas_precios' correctamente.\n- El sub-endpoint o router separado de precios especiales valida 'precios_especiales' correctamente.\n- El router de pagos valida 'pagos' correctamente (403 off, 200 on).\n- El router de cobranza valida 'cobranza' correctamente (403 off, 200 on).\n- El router de bancos receptores valida 'bancos_receptores' correctamente (403 off, 200 on).\n- Cada router tiene test integral que verifica 403 cuando módulo está off y 200 cuando está on.\n\n**Definition of Done**\n- Todos los routers listados tienen require_modulo aplicado con el módulo correcto.\n- Tests integrales para cada router pasan (mock de módulos on/off).\n- No hay regresiones en tests existentes.\n- Código revisado y aprobado en PR.\n- Desplegado a staging.\n- Trello card movida a In review.\n\n**Notas tecnicas**\n- Seguir el mismo patrón de P1.4 para consistencia.\n- Routers a modificar: /routes/proveedores, /routes/ordenes_compra, /routes/facturas_compra, /routes/inventario, /routes/listas_precios, /routes/precios_especiales, /routes/pagos, /routes/cobranza, /routes/bancos_receptores.\n- Middleware require_modulo debe validar contra feature_flags o módulos_habilitados del tenant.\n- Tests: usar fixtures con módulos habilitados y deshabilitados.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Aplicar middleware require_modulo a routers de procurement, inventario y finanzas para validar módulos habilitados.\n\n**Cambios / Decisiones** — Se aplicó require_modulo a los routers: proveedores, ordenes_compra, facturas_compra, inventario, listas_precios, pagos, cobranza y bancos_receptores. Cada endpoint ahora rechaza con 403 si su módulo asociado está deshabilitado. Se agregaron 16 tests integrales en tests/integration/test_modulo_gating_procurement_inventario_finanzas.py que validan el comportamiento 403/200 según estado del módulo. Se usó el mismo patrón de P1.4 para mantener consistencia.",
       "checklist": [
-        "proveedores router -> require_modulo('proveedores')",
-        "ordenes_compra router -> require_modulo('ordenes_compra')",
-        "facturas_compra router -> require_modulo('facturas_compra')",
-        "inventario router -> require_modulo('inventario')",
-        "listas_precios router -> require_modulo('listas_precios')",
-        "(precios especiales) listas_precios sub-endpoints o router separado -> require_modulo('precios_especiales')",
-        "pagos router -> require_modulo('pagos')",
-        "cobranza router -> require_modulo('cobranza')",
-        "bancos_receptores router -> require_modulo('bancos_receptores')",
-        "Test integral por router: 403 cuando off, 200 cuando on",
-        "Aplicar require_modulo('proveedores') al router de proveedores",
-        "Aplicar require_modulo('ordenes_compra') al router de órdenes de compra",
-        "Aplicar require_modulo('facturas_compra') al router de facturas de compra",
-        "Aplicar require_modulo('inventario') al router de inventario",
-        "Aplicar require_modulo('listas_precios') al router de listas de precios y require_modulo('precios_especiales') al sub-endpoint",
-        "Aplicar require_modulo('pagos') al router de pagos, require_modulo('cobranza') a cobranza, require_modulo('bancos_receptores') a bancos receptores",
-        "Escribir tests integrales: verificar 403 cuando módulo off, 200 cuando módulo on para cada router",
-        "Ejecutar suite completa de tests y confirmar pases",
-        "Desplegar a staging y mover Trello a In review"
+        "POST a /api/proveedores con modulo 'proveedores' off → verificar 403",
+        "POST a /api/proveedores con modulo 'proveedores' on → verificar 200",
+        "POST a /api/ordenes_compra con modulo off → verificar 403",
+        "POST a /api/ordenes_compra con modulo on → verificar 200",
+        "POST a /api/facturas_compra con modulo off → verificar 403",
+        "POST a /api/facturas_compra con modulo on → verificar 200",
+        "POST a /api/inventario con modulo off → verificar 403"
       ]
     }
   ]
