@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.cotizaciones import _asignar_numero
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.api.shared import enforce_al_contado
 from app.database import get_db  # noqa: F401  (re-export pattern parity)
 from app.models.cotizacion import Cotizacion
@@ -26,7 +26,7 @@ from app.schemas.oportunidad import (
     ReporteConversionOut,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("oportunidades")])
 
 
 def _serialize(o: Oportunidad) -> dict:

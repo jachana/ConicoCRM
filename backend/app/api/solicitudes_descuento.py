@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.auth import get_current_user
+from app.api.deps import require_modulo
 from app.database import get_db
 from app.models.cotizacion import Cotizacion, CotizacionLinea
 from app.models.producto import Producto
@@ -27,7 +28,7 @@ from app.schemas.solicitud_descuento import (
 )
 from app.services.notifications import create_for_users, create_notification
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("aprobaciones_descuento")])
 
 
 def get_umbral_libre_pct(db: Session) -> Decimal:

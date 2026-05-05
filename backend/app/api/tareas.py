@@ -5,14 +5,14 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import case
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.core.permissions import has_permission
 from app.models.tarea import Tarea
 from app.models.user import User
 from app.schemas.tarea import DescartarIn, MisPendientesOut, ReasignarIn, TareaIn, TareaOut, TareaPatch
 from app.services.notifications import create_notification
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("tareas")])
 
 
 ENTIDAD_FK_MAP = {

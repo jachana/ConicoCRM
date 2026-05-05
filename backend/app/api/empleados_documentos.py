@@ -5,13 +5,13 @@ from fastapi import APIRouter, Form, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.models.empleado import Empleado
 from app.models.empleado_documento import EmpleadoDocumento
 from app.models.user import User
 from app.schemas.empleado_documento import EmpleadoDocumentoOut
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("rrhh_documentos")])
 
 UPLOAD_DIR = Path("uploads")
 TIPOS_VALIDOS = {"contrato", "liquidacion", "otro"}

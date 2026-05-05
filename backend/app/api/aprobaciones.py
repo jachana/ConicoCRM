@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.auth import get_current_user
+from app.api.deps import require_modulo
 from app.database import get_db
 from app.models.aprobacion_credito import AprobacionCredito
 from app.models.cotizacion import Cotizacion
@@ -14,7 +15,7 @@ from app.models.user import User
 from app.schemas.aprobacion import AprobacionAccion, AprobacionCreate, AprobacionOut
 from app.schemas.nota_venta import NotaVentaCreate, NotaVentaLineaCreate
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("aprobaciones_costo")])
 
 
 def _load_aprobacion(db: Session, aprobacion_id: int) -> AprobacionCredito:

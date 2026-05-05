@@ -1,14 +1,14 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.models.movimiento_inventario import MovimientoInventario
 from app.models.nota_venta import NotaVenta
 from app.models.producto import Producto
 from app.models.user import User
 from app.schemas.nota_venta import NotaVentaOut
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("aprobaciones_costo")])
 
 
 @router.post("/{nv_id}/aprobar", response_model=NotaVentaOut)

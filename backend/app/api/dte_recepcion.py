@@ -4,13 +4,13 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.database import get_db
 from app.models.libro import DteRecepcion
 from app.models.user import User
 from app.schemas.libro import DteRecepcionCreate, DteRecepcionRead
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("dte_recepcion")])
 
 
 class DteRechazoRequest(BaseModel):

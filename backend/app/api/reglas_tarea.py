@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.models.user import User
 from app.models.regla_tarea import ReglaTarea
 from app.schemas.regla_tarea import ReglaTareaOut, ReglaTareaPatch
 
-router = APIRouter(prefix="/tareas/reglas", tags=["tareas"])
+router = APIRouter(prefix="/tareas/reglas", tags=["tareas"], dependencies=[require_modulo("reglas_tareas")])
 
 
 @router.get("", response_model=list[ReglaTareaOut])

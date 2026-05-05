@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.models.empleado import Empleado
 from app.models.empleado_vacacion import EmpleadoVacacion
 from app.models.user import User
 from app.schemas.empleado_vacacion import EmpleadoVacacionCreate, EmpleadoVacacionOut, EmpleadoVacacionUpdate
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("rrhh_vacaciones")])
 
 
 def _get_empleado_or_404(db: Session, empleado_id: int) -> Empleado:

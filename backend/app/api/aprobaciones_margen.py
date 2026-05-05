@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.auth import get_current_user
+from app.api.deps import require_modulo
 from app.database import get_db
 from app.models.aprobacion_margen import AprobacionMargen
 from app.models.cotizacion import Cotizacion
@@ -16,7 +17,7 @@ from app.schemas.aprobacion_margen import (
     AprobacionMargenOut,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("aprobaciones_margen")])
 
 
 def _load(db: Session, aprobacion_id: int) -> AprobacionMargen:

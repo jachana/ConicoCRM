@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, numbers
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.database import get_db
 from app.models.libro import LibroVentas, LibroCompras
 from app.models.user import User
@@ -20,7 +20,7 @@ from app.schemas.libro import (
 from app.services.libro_service import LibroService
 from app.services.dte_service import get_dte_service
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("libros")])
 
 # Valid sort fields for libros endpoints
 VALID_SORT_FIELDS = {"id", "periodo", "estado", "monto_total", "total_registros", "created_at"}

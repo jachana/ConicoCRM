@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.models.empleado import Empleado
 from app.models.user import User
 from app.schemas.empleado import EmpleadoCreate, EmpleadoOut, EmpleadoUpdate
 from app.utils.search import unaccent_ilike
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("rrhh_empleados")])
 
 
 @router.get("/", response_model=list[EmpleadoOut])
