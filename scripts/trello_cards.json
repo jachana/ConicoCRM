@@ -32,22 +32,32 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Modulos P1.2] Migracion Alembic + Empresa.modulos_enabled + backfill",
+      "list": "In progress",
+      "name": "[Modulos P1.3] require_modulo dependency + cascade calculator + unit tests",
       "labels": [
         "Core",
         "Goal: SaaS-ready",
-        "Size:M"
+        "Size:L"
       ],
-      "desc": "**Resumen** — Agregar campo `modulos_enabled` tipo JSONB a la tabla de empresas, con un valor por defecto de `{}` y backfill para empresas existentes con todos los módulos habilitados.\n\n**Cambios / Decisiones** — Se añadió `modulos_enabled: Mapped[dict] = mapped_column(JSONB, server_default='{}')` en `app/models/empresa.py`. Se generó la migración Alembic en `alembic/versions/...add_modulos_enabled_to_empresas.py`, que incluye el backfill: `UPDATE empresas SET modulos_enabled = '{...}'`. Se creó un test específico en `tests/test_empresa_modulos_enabled.py` para validar el comportamiento del nuevo campo y su población automática.",
+      "desc": "**Contexto / Problema**\nConico necesita validar permisos de módulos a nivel API mediante una dependencia FastAPI reutilizable. Actualmente no existe lógica centralizada que compute el estado efectivo de módulos (incluyendo auto-activación de dte_emission), detecte violaciones de dependencias, ni bloquee requests cuando un módulo está deshabilitado.\n\n**Acceptance Criteria**\n- `compute_effective_modulos(stored: dict) → dict` auto-activa dte_emission cuando cualquier documento DTE (factura, boleta, GD, NC, ND) está on.\n- `validate_toggle(current: dict, slug: str, target: bool)` lanza excepción si intenta activar un módulo sin su padre activo, o desactivar un padre que tiene dependientes activos.\n- `compute_cascade(current: dict, slug: str, target: bool) → dict[slug, bool]` retorna el diff completo tras aplicar cascade (ej: apagar facturas desactiva pagos, cobranza, NC, ND, libros, aprobaciones_margen).\n- `require_modulo(slug)` es una dependencia FastAPI en `backend/app/api/deps.py` que lee `user.empresa.modulos`, computa estado efectivo, y retorna 403 con payload `{error: 'modulo_disabled', slug, label}` si módulo está off.\n- Todos los casos de prueba pasan: estados on/off mixtos, validaciones de dependencias, cascadas complejas, y control de acceso en endpoint.\n\n**Definition of Done**\n- Las tres funciones de lógica pura se implementan en `backend/app/services/modulo_calculator.py`.\n- La dependencia `require_modulo(slug)` se implementa en `backend/app/api/deps.py` y es reutilizable en cualquier router.\n- Suite de 10 tests unitarios pasa 100%: `tests/unit/services/test_modulo_calculator.py` + `tests/unit/api/test_deps_modulo.py`.\n- Tests cubren: auto-on de dte_emission, validación de dependencias (activar sin padre, apagar padre con dependents), cascade correcto, 403 estructurado en require_modulo.\n- Código commiteado a rama feature, PR reviewado y aprobado.\n- No se wirean aún a routers reales (solo unit tests y dependency definition).\n\n**Notas tecnicas**\n- Ubicación: `backend/app/services/modulo_calculator.py` (funciones), `backend/app/api/deps.py` (dependencia FastAPI).\n- Estructura de módulos: parent → children (ej: dte_emission → [factura, boleta, GD, NC, ND], facturas → [pagos, cobranza, libros]).\n- Modelos: usar `UserModulos` y `EmpresaModulos` existentes; payload 403 debe incluir `error`, `slug`, `label` (ES-CL).\n- Tests: pytest + fixtures de estado de módulos mixtos; verificar raise de ValidationError en validate_toggle; mock user.empresa en require_modulo.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Aplicar migración Alembic y verificar que no hay errores.",
-        "Ejecutar `SELECT COUNT(*) FROM empresas WHERE modulos_enabled = '{}'` y confirmar 0 resultados.",
-        "Leer una empresa existente vía API o consola y verificar `modulos_enabled` poblado correctamente.",
-        "Crear nueva empresa vía API/factory y validar que recibe defaults 'all-on' en `modulos_enabled`.",
-        "Ejecutar tests unitarios en `test_empresa_modulos_enabled.py` y verificar que pasan.",
-        "Verificar único head Alembic con `alembic heads`.",
-        "Iniciar backend y asegurar que arranca sin errores relacionados al nuevo campo."
+        "compute_effective_modulos(stored: dict) -> dict — aplica auto-on de dte_emission/caf si cualquier doc DTE on",
+        "validate_toggle(current: dict, slug: str, target: bool) -> raise si activar sin parent o apagar parent con dependents on",
+        "compute_cascade(current: dict, slug: str, target: bool) -> dict[slug, bool] — devuelve diff resultante con cascade",
+        "FastAPI dependency require_modulo(slug) en backend/app/api/deps.py: lee user.empresa, computa efectivo, 403 con detail estructurado {error: 'modulo_disabled', slug, label}",
+        "Test: efectivo correcto para empresas con todo on / con boletas off / con facturas off (NC/ND/pagos/cobranza/libros tambien off)",
+        "Test: validate_toggle bloquea activar nota_credito sin facturas/boletas/GD",
+        "Test: validate_toggle bloquea apagar facturas si pagos on",
+        "Test: cascade calcula correctamente al apagar facturas (apaga pagos, cobranza, NC, ND, libros, aprobaciones_margen)",
+        "Test: require_modulo retorna 403 cuando user empresa tiene modulo off",
+        "Test: require_modulo permite paso cuando on",
+        "Implementar compute_effective_modulos: auto-activa dte_emission si factura/boleta/GD/NC/ND on",
+        "Implementar validate_toggle: lanza excepción si activar sin parent o apagar parent con dependents on",
+        "Implementar compute_cascade: retorna diff con módulos desactivados en cascada (ej: apagar facturas → apaga pagos, cobranza, NC, ND, libros, aprobaciones_margen)",
+        "Implementar require_modulo(slug) como dependencia FastAPI en deps.py: lee user.empresa, computa efectivo, retorna 403 estructurado si off",
+        "Escribir tests: efectivo correcto (todo on, boletas off, facturas off, etc.) + validate_toggle bloquea violaciones + cascade calcula diff + require_modulo retorna 403/permite paso",
+        "Verificar tests pasan 100% (suite unitaria completa)",
+        "Mover Trello a 'In review', mergear a rama main tras aprobación"
       ]
     }
   ]
