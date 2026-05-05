@@ -32,30 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Telemetry T1.4] Celery task metrics via signals",
       "labels": [
         "Core",
         "Goal: Operations",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nActualmente no se capturan métricas de ejecución de tareas Celery (latencia, status, errores). Es crítico para observabilidad operacional y detección de cuellos de botella en procesos asíncronos.\n\n**Acceptance Criteria**\n- Al ejecutarse una tarea Celery, se emite un log con `task_name`, `latencia_ms`, `status` (success|failure|revoked|retried), `empresa_id` (cuando esté disponible en kwargs).\n- Tareas exitosas registran latencia total desde `task_prerun` hasta `task_postrun`.\n- Tareas fallidas registran `exception_class`, traceback resumido y latencia antes del fallo.\n- Los logs incluyen timestamp ISO-8601 y son parseables para agregación en stack de observabilidad.\n- Los handlers se cargan automáticamente al inicializar `celery_app`.\n\n**Definition of Done**\n- Módulo `backend/app/core/celery_metrics.py` implementado con handlers de signals.\n- Handlers conectados en `backend/app/celery_app.py` durante boot.\n- Suite de tests unitarios valida captura de métrica en cada scenario (success, failure, revoked, retried).\n- Tests ejecutan sin errores (`pytest backend/tests/core/test_celery_metrics.py`).\n- Cambios mergeados a `develop` y desplegados a staging.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Usar signals de Celery: `before_task_publish`, `task_prerun`, `task_postrun`, `task_failure`, `task_revoked`, `task_retry`.\n- Almacenar `start_ts` en `task.request` o contexto thread-local para calcular latencia.\n- `empresa_id` es best-effort: extraer de `task.kwargs.get('empresa_id')` si existe.\n- Logs con `structlog` o `logging` estándar, fields: `{task_name, latency_ms, status, empresa_id, exception_class, traceback}`.\n- Queue depth (Redis LLEN) es out-of-scope; documentar como future improvement.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Se implementan métricas de tareas Celery mediante signals para observabilidad operacional, registrando latencia, estado y errores en logs estructurados.\n\n**Cambios / Decisiones** — Se crea `backend/app/core/celery_metrics.py` con handlers para `task_prerun`, `task_postrun`, `task_failure`, `task_revoked` y `task_retry`. Se captura `start_ts` para calcular latencia, se extrae `empresa_id` de kwargs cuando está disponible, y se emite log estructurado con `structlog`. Los handlers se conectan en `backend/app/celery_app.py`. Se agregan 11 tests unitarios en `backend/tests/test_celery_metrics.py` que validan todos los escenarios (success, failure, revoked, retry).",
       "checklist": [
-        "backend/app/core/celery_metrics.py con handlers de signals",
-        "task_prerun captura start_ts en task.request",
-        "task_postrun emite log: task_name, latency_ms, status=success, empresa_id (best-effort)",
-        "task_failure emite log con exception_class y traceback corto",
-        "task_revoked / task_retried tambien (opcional, para cobertura completa)",
-        "Conectar handlers en backend/app/celery_app.py al boot",
-        "Test: task sintetica produce logs con campos correctos",
-        "Documentar: queue depth se mide aparte (Redis LLEN) si hace falta",
-        "Crear backend/app/core/celery_metrics.py con funciones handler para task_prerun, task_postrun, task_failure",
-        "Implementar captura de start_ts en task_prerun y cálculo de latencia_ms en task_postrun",
-        "Extraer empresa_id desde task.kwargs (best-effort) y agregarlo al log",
-        "Emitir log estructurado con task_name, latency_ms, status, empresa_id, exception_class (si aplica)",
-        "Conectar handlers en backend/app/celery_app.py al momento de inicializar signals",
-        "Escribir tests unitarios que validen logs en scenarios: success, failure, revoked, retried",
-        "Ejecutar tests y verificar cobertura; mergear a develop y desplegar a staging"
+        "Ejecutar tarea Celery síncrona y verificar log con status=success",
+        "Forzar excepción en tarea y validar log con exception_class y traceback",
+        "Reintentar tarea y confirmar log con status=retried emitido",
+        "Revocar tarea y comprobar log con status=revoked",
+        "Verificar que logs incluyen task_name, latency_ms y empresa_id (si presente)",
+        "Correr `pytest backend/tests/test_celery_metrics.py` y validar pass",
+        "Confirmar handlers registrados en backend/app/celery_app.py"
       ]
     }
   ]
