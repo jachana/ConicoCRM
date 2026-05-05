@@ -32,23 +32,30 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Telemetry T1.3] Lioren client wrapper instrumentado (count, latency, cost)",
+      "list": "In progress",
+      "name": "[Telemetry T1.4] Celery task metrics via signals",
       "labels": [
         "Core",
-        "DTE/SII",
         "Goal: Operations",
         "Size:M"
       ],
-      "desc": "**Resumen** — Instrumentar el cliente Lioren para registrar latencia, volumen y costo por llamada, con visibilidad por empresa y tipo de DTE.\n\n**Cambios / Decisiones** — Se creó `backend/app/services/lioren_metrics.py` con el contexto `lioren_call()` que captura métricas en cada llamada. Se añadió la tabla `CostTariff` con migración inicial (`k3l4m5n6o7p8`) y 9 tarifas (inicialmente en cero). Los puntos de llamada en `DteService` y tasks fueron instrumentados. Se actualizaron `api/libros.py` y `tasks/dte.py` para pasar `empresa_id` y `dte_tipo`. Se agregaron logs estructurados JSON y documentación en `docs/operations/lioren_cost_maintenance.md`.",
+      "desc": "**Contexto / Problema**\nActualmente no se capturan métricas de ejecución de tareas Celery (latencia, status, errores). Es crítico para observabilidad operacional y detección de cuellos de botella en procesos asíncronos.\n\n**Acceptance Criteria**\n- Al ejecutarse una tarea Celery, se emite un log con `task_name`, `latencia_ms`, `status` (success|failure|revoked|retried), `empresa_id` (cuando esté disponible en kwargs).\n- Tareas exitosas registran latencia total desde `task_prerun` hasta `task_postrun`.\n- Tareas fallidas registran `exception_class`, traceback resumido y latencia antes del fallo.\n- Los logs incluyen timestamp ISO-8601 y son parseables para agregación en stack de observabilidad.\n- Los handlers se cargan automáticamente al inicializar `celery_app`.\n\n**Definition of Done**\n- Módulo `backend/app/core/celery_metrics.py` implementado con handlers de signals.\n- Handlers conectados en `backend/app/celery_app.py` durante boot.\n- Suite de tests unitarios valida captura de métrica en cada scenario (success, failure, revoked, retried).\n- Tests ejecutan sin errores (`pytest backend/tests/core/test_celery_metrics.py`).\n- Cambios mergeados a `develop` y desplegados a staging.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Usar signals de Celery: `before_task_publish`, `task_prerun`, `task_postrun`, `task_failure`, `task_revoked`, `task_retry`.\n- Almacenar `start_ts` en `task.request` o contexto thread-local para calcular latencia.\n- `empresa_id` es best-effort: extraer de `task.kwargs.get('empresa_id')` si existe.\n- Logs con `structlog` o `logging` estándar, fields: `{task_name, latency_ms, status, empresa_id, exception_class, traceback}`.\n- Queue depth (Redis LLEN) es out-of-scope; documentar como future improvement.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Emitir DTE de prueba y verificar log con campos: latency_ms, cost_clp, empresa_id",
-        "Consultar endpoint /api/dte/status y confirmar logs lioren.call con JSON válido",
-        "Revisar tabla cost_tariff en DB contiene slugs de factura, NC, ND, GD, etc.",
-        "Ver logs en staging contienen costo>0 al usar tarifas configuradas",
-        "Actualizar tarifa en DB y verificar nuevo cost_clp en logs de prueba",
-        "Validar tamaño request/response en logs contra payload real de DTE",
-        "Ejecutar tests unitarios en backend/tests/test_lioren_metrics.py"
+        "backend/app/core/celery_metrics.py con handlers de signals",
+        "task_prerun captura start_ts en task.request",
+        "task_postrun emite log: task_name, latency_ms, status=success, empresa_id (best-effort)",
+        "task_failure emite log con exception_class y traceback corto",
+        "task_revoked / task_retried tambien (opcional, para cobertura completa)",
+        "Conectar handlers en backend/app/celery_app.py al boot",
+        "Test: task sintetica produce logs con campos correctos",
+        "Documentar: queue depth se mide aparte (Redis LLEN) si hace falta",
+        "Crear backend/app/core/celery_metrics.py con funciones handler para task_prerun, task_postrun, task_failure",
+        "Implementar captura de start_ts en task_prerun y cálculo de latencia_ms en task_postrun",
+        "Extraer empresa_id desde task.kwargs (best-effort) y agregarlo al log",
+        "Emitir log estructurado con task_name, latency_ms, status, empresa_id, exception_class (si aplica)",
+        "Conectar handlers en backend/app/celery_app.py al momento de inicializar signals",
+        "Escribir tests unitarios que validen logs en scenarios: success, failure, revoked, retried",
+        "Ejecutar tests y verificar cobertura; mergear a develop y desplegar a staging"
       ]
     }
   ]
