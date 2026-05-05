@@ -32,22 +32,28 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Ops] Health endpoint expandido (DB + Celery + Lioren)",
+      "list": "In progress",
+      "name": "[Ops] Banner de alerta CAF: folios bajos / vencimiento proximo",
       "labels": [
         "Core",
+        "DTE/SII",
         "Goal: Operations",
-        "Size:M"
+        "Size:L"
       ],
-      "desc": "**Resumen** — Se implementaron dos endpoints de salud: uno básico `/health/live` que siempre responde 200, y otro completo `/health/full` que verifica el estado de DB, Celery y Lioren con tiempos de latencia.\n\n**Cambios / Decisiones** — Se creó `backend/app/api/health.py` con lógica para checks de base de datos (con timeout), Celery (mediante broadcast a workers) y Lioren (GET a su endpoint sandbox). Cada check reporta `status`, `latency_ms` y opcionalmente `message`. La respuesta global es 200 si todo pasa, 503 si falla alguno. Se mantienen `/healthz` y `/readyz` como alias compatibles. Se agregaron tests unitarios en `backend/tests/test_health.py` y se registran logs operacionales con latencias. Se usan variables de entorno `LIOREN_SANDBOX_URL` y `HEALTH_CHECK_TIMEOUT_SECS`.",
+      "desc": "**Contexto / Problema**\nLos administradores no tienen visibilidad del consumo de folios CAF hasta que se agotan, bloqueando la emisión de DTE. Es crítico alertar proactivamente cuando el consumo ≥90% o quedan <30 días para vencimiento.\n\n**Acceptance Criteria**\n- El banner de alerta es visible en el dashboard principal cuando existe un CAF en estado crítico (consumo ≥90% O vencimiento <30 días).\n- El banner muestra: tipo de DTE, folios restantes, días al vencimiento, y un botón directo a configuración CAF.\n- El banner persiste en pantalla (sticky) hasta que el usuario lo cierre o resuelva la alerta.\n- Cada administrador recibe un email diario (máximo uno por día) listando todos los CAFs en alerta, con fecha/hora del envío.\n- El endpoint `/api/cafs/alerts/` retorna lista de CAFs en estado crítico ordenados por urgencia (vencimiento primero).\n- Los tests unitarios cubren la lógica de cálculo de alertas (consumo %, días al vencimiento) y el endpoint.\n\n**Definition of Done**\n- Endpoint GET `/api/cafs/alerts/` implementado y testado.\n- Modelo CAF tiene métodos `is_low_stock()` e `is_expiring_soon()` con tests.\n- Componente Banner (React/Vue) renderizado condicionalmente en layout principal.\n- Task Celery diaria ejecutándose: `send_caf_alerts_email()` sin duplicados por admin.\n- Todos los tests pasan (backend + frontend).\n- Cambios deployados a staging y validados en DB con datos reales.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Modelo: `app/models/caf.py` ya tiene `folios_usados`, `folios_totales`, `fecha_vencimiento`.\n- Backend: `app/api/routes/cafs.py` → nuevo endpoint con filtros de alerta.\n- Frontend: componente reutilizable `Banner.jsx` o similar en sistema de diseño.\n- Task: `app/celery_tasks.py` → `send_caf_alerts_email()` con templates de email.\n- Considerar: un CAF puede estar en ambas condiciones; email debe consolidar por admin, no por CAF.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Hacer GET a /health/live y verificar 200 con {\"status\": \"alive\"}",
-        "Hacer GET a /health/full y revisar estructura con db, celery, lioren",
-        "Verificar que cada subcheck tenga status, latency_ms y message (si aplica)",
-        "Probar timeout en DB mockeando conexión lenta",
-        "Probar timeout en Lioren forzando demora en request",
-        "Verificar que /healthz y /readyz funcionen como alias de /health/full",
-        "Ejecutar tests en backend/tests/test_health.py"
+        "Endpoint backend: CAFs en estado de alerta (consumo o vencimiento)",
+        "Componente Banner global persistente",
+        "Mostrar tipo DTE + folios restantes + dias al vencimiento",
+        "Link a configuracion CAF",
+        "Email de aviso a admins (Celery diario)",
+        "Implementar métodos `is_low_stock()` e `is_expiring_soon()` en modelo CAF con tests",
+        "Crear endpoint GET `/api/cafs/alerts/` que retorne CAFs críticos ordenados por urgencia",
+        "Diseñar e implementar componente Banner persistente en layout principal",
+        "Configurar Banner para mostrar DTE, folios restantes, vencimiento, y link a configuración",
+        "Crear task Celery diaria `send_caf_alerts_email()` con deduplicación por admin",
+        "Escribir tests unitarios para lógica de alertas, endpoint, y task",
+        "Desplegar a staging, validar en DB, mover Trello a In review"
       ]
     }
   ]
