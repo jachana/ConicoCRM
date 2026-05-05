@@ -32,22 +32,28 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Modulos P2.2] Componente <ModuloGuard> + envolver rutas opcionales",
+      "list": "In progress",
+      "name": "[Modulos P2.3] Filtrar Sidebar por modulos habilitados",
       "labels": [
         "Core",
         "Goal: SaaS-ready",
-        "Size:L"
+        "Size:M"
       ],
-      "desc": "**Resumen** — Crear un componente `<ModuloGuard>` que envuelva rutas opcionales y muestre un estado de carga, una página de fallback o el contenido según el estado del módulo.\n\n**Cambios / Decisiones** — Se creó `frontend/src/components/ModuloGuard.tsx` que acepta `slug`, `children` y `fallback`. Muestra skeleton mientras carga `useModulesContext`, renderiza `children` si el módulo está habilitado o `fallback` (por defecto `ModuloNoDisponible`) si está deshabilitado. Se creó `frontend/src/pages/ModuloNoDisponible.tsx` con mensaje en es-CL. Se envolvieron más de 30 rutas opcionales en `frontend/src/router.tsx`. Se agregaron 5 tests unitarios para cubrir distintos estados del guard.",
+      "desc": "**Contexto / Problema**\nActualmente el Sidebar muestra todos los items de navegación independientemente del estado de habilitación de módulos. Los usuarios deben ver solo los módulos que tienen activos en su plan/tenant, reduciendo confusión y mejorando la experiencia SaaS.\n\n**Acceptance Criteria**\n- Items del Sidebar etiquetados con un slug de módulo se ocultan si el módulo no está habilitado para el tenant.\n- Items core (Dashboard CRM, Configuración, Perfil) son siempre visibles sin importar estado de módulos.\n- Durante la carga inicial, se muestra un skeleton loader por cada sección del Sidebar mientras se resuelve el estado de módulos.\n- Un usuario sin permisos de admin no ve el link a '/configuracion/empresa' aunque sea admin del tenant.\n- Al cambiar habilitación de módulos (admin), el Sidebar se actualiza sin recargar la página.\n\n**Definition of Done**\n- Código en Sidebar.tsx implementa filtrado usando hook useModulos.\n- Campo nuevo 'moduleSlug' agregado a config de navegación donde aplique.\n- Tests unitarios verifican render correcto con diferentes combinaciones de módulos habilitados/deshabilitados.\n- Tests verifican que items core siempre aparecen.\n- Tests verifican que /configuracion/empresa no aparece para usuarios sin permiso de admin.\n- Pull request revisado y aprobado.\n- Cambios desplegados a staging y Trello movido a 'In review'.\n\n**Notas tecnicas**\n- Archivo: `src/components/Sidebar.tsx`\n- Hook: `useModulos()` (verificar que retorna array de módulos activos con propiedad 'slug').\n- Config nav: `src/config/navigationConfig.ts` o similar (agregar campo `moduleSlug?: string`).\n- Skeleton: usar componente existente de Design System o Shadcn.\n- Bloqueador: P2.1 debe estar merged (feature flag o infrastructure de módulos base).\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir `/boletas` con módulo deshabilitado y ver página 'Este módulo no está habilitado'",
-        "Abrir `/facturas` mientras cargan permisos y verificar skeleton antes del contenido",
-        "Acceder a `/inventario` con módulo habilitado y ver contenido normal",
-        "Probar ruta sin envolver (ej: dashboard) y confirmar que no se ve afectada",
-        "Ejecutar tests unitarios de ModuloGuard con `npm test ModuloGuard`",
-        "Verificar en router.tsx que rutas como /rrhh/* están envueltas en <ModuloGuard>",
-        "Revisar unit test que valida render de fallback cuando módulo está off"
+        "Anotar items del Sidebar con su slug de modulo correspondiente (campo nuevo en config de nav)",
+        "Filtrar items en render usando useModulos",
+        "Skeleton loader por seccion durante loading inicial",
+        "Items sin slug (CRM dashboard, configuracion, perfil) siempre visibles",
+        "Test: render con modulos partial; verificar visibilidad correcta",
+        "Verificar que un usuario sin permiso de admin tampoco ve link a /configuracion/empresa modulos",
+        "Agregar campo 'moduleSlug' a config de navegación para items opcionales",
+        "Implementar filtrado en Sidebar.tsx usando useModulos hook",
+        "Renderizar skeleton loader por sección durante carga inicial de módulos",
+        "Validar que items core (Dashboard, Config, Perfil) siempre aparecen",
+        "Validar que /configuracion/empresa oculto para usuarios sin permisos de admin",
+        "Tests: render con diferentes combinaciones de módulos habilitados",
+        "Deploy a staging y mover Trello a In review"
       ]
     }
   ]
