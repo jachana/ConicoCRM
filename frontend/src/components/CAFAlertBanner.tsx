@@ -18,9 +18,16 @@ function buildMessage(alerts: CAFAlert[]): string {
 }
 
 export default function CAFAlertBanner() {
-  const [dismissed, setDismissed] = useState(false)
+  const [dismissed, setDismissed] = useState(() =>
+    sessionStorage.getItem('caf-alert-dismissed') === '1'
+  )
   const navigate = useNavigate()
   const user = useAuthStore(s => s.user)
+
+  const handleDismiss = () => {
+    sessionStorage.setItem('caf-alert-dismissed', '1')
+    setDismissed(true)
+  }
 
   const { data } = useQuery({
     queryKey: ['caf-alerts'],
@@ -44,6 +51,7 @@ export default function CAFAlertBanner() {
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
           type="button"
+          aria-label="Ver configuración de CAFs"
           onClick={() => navigate('/configuracion')}
           className="px-2 py-1 rounded-md text-xs font-medium bg-warning-200 hover:bg-warning-300 dark:bg-warning-800 dark:hover:bg-warning-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning-500 whitespace-nowrap"
         >
@@ -52,7 +60,7 @@ export default function CAFAlertBanner() {
         <button
           type="button"
           aria-label="Cerrar alerta CAF"
-          onClick={() => setDismissed(true)}
+          onClick={handleDismiss}
           className="p-1 rounded-md hover:bg-warning-200 dark:hover:bg-warning-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning-500"
         >
           <X size={14} />
