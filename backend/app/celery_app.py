@@ -1,6 +1,7 @@
 from celery import Celery
 from celery.schedules import crontab
 from app.config import settings
+from app.core import celery_metrics
 
 celery_app = Celery(
     "conico",
@@ -34,3 +35,5 @@ celery_app.conf.update(
         },
     },
 )
+
+celery_metrics.connect(celery_app)
