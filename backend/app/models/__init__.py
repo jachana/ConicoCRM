@@ -42,3 +42,4 @@ from app.models.nota_alerta import NotaAlerta  # noqa: F401
 from app.models.caf import CAF  # noqa: F401
 from app.models.bodega import Bodega  # noqa: F401
 from app.models.precio_especial_cliente import PrecioEspecialCliente  # noqa: F401
+from app.models.telemetry import PerfRollup, CostRollup  # noqa: F401

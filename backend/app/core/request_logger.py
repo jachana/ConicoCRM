@@ -16,8 +16,22 @@ from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
+from app.config import settings
 from app.core.logging import logger
 from app.core import db_metrics as _db_metrics
+
+_redis_client = None
+
+
+def _get_redis():
+    global _redis_client
+    if _redis_client is None:
+        try:
+            import redis as _redis_lib
+            _redis_client = _redis_lib.from_url(settings.redis_url, decode_responses=True, socket_connect_timeout=0.5)
+        except Exception:
+            pass
+    return _redis_client
 
 try:
     from jose import jwt as _jwt  # type: ignore
@@ -172,6 +186,22 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
             else:
                 log.info("request.completed")
 
+            # Push telemetry event to Redis for T2.1 aggregation
+            try:
+                import json as _json
+                _r = _get_redis()
+                if _r is not None:
+                    _r.rpush("conico:perf_events", _json.dumps({
+                        "ts": int(time.time()),
+                        "route": route,
+                        "empresa_id": empresa_id,
+                        "latency_ms": latency_ms,
+                        "status": status_code,
+                        "queries": query_count_val,
+                    }))
+            except Exception:
+                pass  # never fail a request because of telemetry
+
 
 def install(app: ASGIApp) -> None:
     """Attach the middleware to a FastAPI/Starlette app."""
@@ -181,4 +211,4 @@ def install(app: ASGIApp) -> None:
         app.add_middleware(RequestLoggerMiddleware)
 
 
-__all__ = ["RequestLoggerMiddleware", "install"]
+__all__ = ["RequestLoggerMiddleware", "install", "_get_redis"]

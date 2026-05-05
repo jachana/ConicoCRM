@@ -7,7 +7,7 @@ celery_app = Celery(
     "conico",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["app.tasks.dte", "app.tasks.tareas", "app.tasks.cobranza", "app.tasks.caf"],
+    include=["app.tasks.dte", "app.tasks.tareas", "app.tasks.cobranza", "app.tasks.caf", "app.tasks.telemetry"],
 )
 
 celery_app.conf.update(
@@ -32,6 +32,18 @@ celery_app.conf.update(
         "enviar-alertas-caf": {
             "task": "app.tasks.caf.send_caf_alerts_email",
             "schedule": crontab(hour=8, minute=30),
+        },
+        "aggregate-perf-hourly": {
+            "task": "app.tasks.telemetry.aggregate_perf_hourly",
+            "schedule": crontab(minute=5),  # 5 min past each hour
+        },
+        "aggregate-cost-hourly": {
+            "task": "app.tasks.telemetry.aggregate_cost_hourly",
+            "schedule": crontab(minute=10),
+        },
+        "cleanup-old-rollups": {
+            "task": "app.tasks.telemetry.cleanup_old_rollups",
+            "schedule": crontab(hour=3, minute=0, day_of_week=0),  # weekly Sunday 3am
         },
     },
 )

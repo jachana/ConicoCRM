@@ -70,6 +70,19 @@ def lioren_call(
             dte_tipo=dte_tipo,
             cost_clp=cost_clp,
         ).info("lioren.call")
+        try:
+            from app.core.request_logger import _get_redis as _get_perf_redis
+            import json as _json
+            import time as _time
+            _r = _get_perf_redis()
+            if _r is not None:
+                _r.rpush("conico:cost_events", _json.dumps({
+                    "ts": int(_time.time()),
+                    "empresa_id": empresa_id,
+                    "cost_clp": cost_clp,
+                }))
+        except Exception:
+            pass
 
 
 def _lookup_cost(db, slug: str) -> int:
