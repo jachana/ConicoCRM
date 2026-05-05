@@ -13,11 +13,6 @@ def _check_rut(v: str | None) -> str | None:
 class ClienteBase(BaseModel):
     nombre: str
     rut: str | None = None
-
-    @field_validator("rut")
-    @classmethod
-    def validar_rut(cls, v: str | None) -> str | None:
-        return _check_rut(v)
     email: str | None = None
     telefono: str | None = None
     direccion_despacho: str | None = None
@@ -34,7 +29,10 @@ class ClienteBase(BaseModel):
 
 
 class ClienteCreate(ClienteBase):
-    pass
+    @field_validator("rut")
+    @classmethod
+    def validar_rut(cls, v: str | None) -> str | None:
+        return _check_rut(v)
 
 
 class ClienteUpdate(BaseModel):

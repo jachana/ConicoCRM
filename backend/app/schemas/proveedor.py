@@ -12,11 +12,6 @@ def _check_rut(v: str | None) -> str | None:
 class ProveedorBase(BaseModel):
     nombre: str
     rut: str | None = None
-
-    @field_validator("rut")
-    @classmethod
-    def validar_rut(cls, v: str | None) -> str | None:
-        return _check_rut(v)
     razon_social: str | None = None
     giro: str | None = None
     direccion: str | None = None
@@ -29,7 +24,10 @@ class ProveedorBase(BaseModel):
 
 
 class ProveedorCreate(ProveedorBase):
-    pass
+    @field_validator("rut")
+    @classmethod
+    def validar_rut(cls, v: str | None) -> str | None:
+        return _check_rut(v)
 
 
 class ProveedorUpdate(BaseModel):
