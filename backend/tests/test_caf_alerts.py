@@ -71,16 +71,6 @@ def _make_caf(
     return caf
 
 
-def _auth_override(user: User):
-    """Return a dependency override that yields the given user."""
-    from app.api.auth import get_current_user
-
-    def _get_user():
-        return user
-
-    return get_current_user, _get_user
-
-
 # ---------------------------------------------------------------------------
 # Unit tests for CAF model helpers (no HTTP needed)
 # ---------------------------------------------------------------------------
@@ -143,11 +133,8 @@ def _client_and_user(db, _test_password_hash):
     """Return (TestClient, empresa, user, auth_headers) with DB override."""
     from app.database import get_db
     from app.api.auth import get_current_user
-    from tests.conftest import TestingSession  # reuse the session factory
 
     empresa = _make_empresa(db, rut="76.111.111-1")
-    db.commit()
-
     user = _make_user(db, empresa.id, _hash=_test_password_hash, email="caf_user@test.cl")
     db.commit()
     db.refresh(user)
@@ -284,7 +271,6 @@ class TestCAFAlertsEndpoint:
         """User with no empresa_id gets empty alerts, not 400."""
         from app.database import get_db
         from app.api.auth import get_current_user
-        from tests.conftest import TestingSession
 
         user = User(
             email="noempresa@caf.cl",

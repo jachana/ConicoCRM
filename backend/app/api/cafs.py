@@ -1,15 +1,6 @@
-"""
-CAF Alerts API
-
-Endpoint for retrieving CAFs in alert state (low stock or expiring soon)
-for the current user's empresa.
-
-Endpoints:
-  GET /api/cafs/alerts/ - List CAFs in alert state for current user's empresa
-"""
-
-from datetime import date
+from datetime import date, timedelta
 from fastapi import APIRouter, Depends
+from sqlalchemy import or_, and_
 from sqlalchemy.orm import Session
 
 from app.api.auth import get_current_user
@@ -20,30 +11,26 @@ from app.models.user import User
 router = APIRouter()
 
 _URGENCY_ORDER = {"ambos": 0, "vencimiento": 1, "stock": 2}
+_EXPIRY_DAYS = 30
+_LOW_STOCK_RATIO = 0.9
 
 
-def _days_to_expiry(fecha_vencimiento: date | None) -> int | None:
-    if fecha_vencimiento is None:
-        return None
-    return (fecha_vencimiento - date.today()).days
-
-
-def _build_alert(caf: CAF) -> dict:
-    low_stock = caf.is_low_stock()
-    expiring = caf.is_expiring_soon()
-
-    if low_stock and expiring:
+def _build_alert(caf: CAF, today=None):
+    if today is None:
+        today = date.today()
+    total = caf.num_fin - caf.num_inicio + 1
+    consumido = caf.consumido
+    folios_restantes = total - consumido
+    porcentaje = round(consumido / total * 100, 2) if total else 0.0
+    dias = (caf.fecha_vencimiento - today).days if caf.fecha_vencimiento else None
+    low = caf.is_low_stock()
+    exp = caf.is_expiring_soon()
+    if low and exp:
         urgencia = "ambos"
-    elif expiring:
+    elif exp:
         urgencia = "vencimiento"
     else:
         urgencia = "stock"
-
-    total = caf.num_fin - caf.num_inicio + 1
-    folios_restantes = total - caf.consumido
-    porcentaje = round((caf.consumido / total * 100) if total else 0.0, 2)
-    dias = _days_to_expiry(caf.fecha_vencimiento)
-
     return {
         "id": caf.id,
         "tipo_dte": caf.tipo_dte,
@@ -52,8 +39,8 @@ def _build_alert(caf: CAF) -> dict:
         "porcentaje_consumido": porcentaje,
         "fecha_vencimiento": caf.fecha_vencimiento.isoformat() if caf.fecha_vencimiento else None,
         "dias_al_vencimiento": dias,
-        "is_low_stock": low_stock,
-        "is_expiring_soon": expiring,
+        "is_low_stock": low,
+        "is_expiring_soon": exp,
         "urgencia": urgencia,
     }
 
@@ -61,7 +48,6 @@ def _build_alert(caf: CAF) -> dict:
 def _sort_key(alert: dict):
     urgency_rank = _URGENCY_ORDER.get(alert["urgencia"], 99)
     dias = alert["dias_al_vencimiento"]
-    # Nulls last for days-to-expiry sort
     dias_sort = dias if dias is not None else float("inf")
     return (urgency_rank, dias_sort)
 
@@ -71,19 +57,22 @@ def get_caf_alerts(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Returns CAFs in alert state for the current user's empresa, sorted by urgency."""
     empresa_id = current_user.empresa_id
     if not empresa_id:
         return {"count": 0, "alerts": []}
 
-    cafs = (
-        db.query(CAF)
-        .filter(CAF.empresa_id == empresa_id, CAF.vigente == True)  # noqa: E712
-        .all()
-    )
+    today = date.today()
+    soon = today + timedelta(days=_EXPIRY_DAYS)
+    total_expr = CAF.num_fin - CAF.num_inicio + 1
 
-    alert_cafs = [caf for caf in cafs if caf.is_low_stock() or caf.is_expiring_soon()]
-    alerts = [_build_alert(caf) for caf in alert_cafs]
-    alerts.sort(key=_sort_key)
+    cafs = db.query(CAF).filter(
+        CAF.empresa_id == empresa_id,
+        CAF.vigente == True,  # noqa: E712
+        or_(
+            (CAF.consumido * 1.0 / total_expr) >= _LOW_STOCK_RATIO,
+            and_(CAF.fecha_vencimiento.isnot(None), CAF.fecha_vencimiento < soon),
+        ),
+    ).all()
 
+    alerts = sorted([_build_alert(c, today) for c in cafs], key=_sort_key)
     return {"count": len(alerts), "alerts": alerts}
