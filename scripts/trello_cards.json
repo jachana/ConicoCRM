@@ -32,7 +32,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Modulos P3.1] Tab 'Modulos' en /configuracion/empresa (read-only listado)",
       "labels": [
         "Core",
@@ -40,22 +40,15 @@
         "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nLos administradores necesitan visualizar el catálogo completo de módulos opcionales en Conico CRM, incluyendo sus dependencias y estado actual, antes de poder habilitarlos/deshabilitarlos. Este card crea la estructura de presentación (read-only) que será base para P3.2 (interactividad de toggles).\n\n**Acceptance Criteria**\n- Tab 'Módulos' aparece en `/configuracion/empresa` y es visible solo para usuarios con rol admin.\n- GET `/empresas/{empresa_id}/modulos` se ejecuta al montar el componente, trayendo registry, stored y effective state.\n- Los módulos se agrupan por categoría, cada categoría moestra título y descripción.\n- Cada módulo renderiza: label, descripción, badge de estado (on/off), texto 'Requiere: X' si depende de módulo deshabilitado, texto 'Habilita: Y' si tiene dependents.\n- Los switches son visualmente deshabilitados (sin onClick ni hover interactivo).\n- Estados loading (spinner) y error (mensaje) se muestran correctamente.\n- No-admin users no ven el tab.\n\n**Definition of Done**\n- Componente `ModulesTab` implementado en `/src/pages/configuracion/empresa/ModulesTab.tsx`.\n- Tests unitarios cubren: rendering condicional por rol, fetch y mapeo de datos, grupos por categoría, estados loading/error.\n- PR revisado y aprobado.\n- Desplegado a staging.\n- Card movida a 'In Review'.\n\n**Notas tecnicas**\n- Endpoint: `GET /empresas/{empresa_id}/modulos` responde con `{registry, stored, effective}`.\n- Estructura de módulo en response: `{id, label, description, category, dependencies, dependents, currentState}`.\n- Usar `useAdminGate()` o similar para restringir visibilidad del tab.\n- Switch component debe tener `disabled={true}` y `cursor: not-allowed`.\n- Archivo: `/src/pages/configuracion/empresa/ModulesTab.tsx`; o integrar en existing `/configuracion/empresa` si ya existe estructura de tabs.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Se implementa el tab 'Módulos' read-only en la página de configuración de empresa, visible solo para admins. Muestra el catálogo de módulos con estado, dependencias y agrupación por categoría.\n\n**Cambios / Decisiones** — Se añade `empresa_id` al schema `UserOut` y tipo frontend para acceder al endpoint de módulos. Se crea `ModulesTab.tsx` que agrupa módulos por categoría, renderiza badges de estado, texto de dependencias ('Requiere: X', 'Habilita: Y') y switches deshabilitados visualmente. El tab se integra en `Configuracion.tsx` con gate de admin. Se incluyen estados de loading/error y 8 tests unitarios para cubrir fetch, agrupación y render condicional.",
       "checklist": [
-        "Pagina/tab Modulos en Configuracion (admin only)",
-        "Fetch GET /empresas/{empresa_id}/modulos (incluye registry y stored y effective)",
-        "Render agrupado por categoria con titulo y descripcion",
-        "Cada modulo muestra: label, descripcion, estado (on/off badge), 'requiere: X' si tiene parent off, 'habilita: Y' si tiene dependents",
-        "Switch visualmente disabled (sin onClick todavia)",
-        "Estado loading + error",
-        "Hide tab para non-admin",
-        "Crear tab 'Módulos' en `/configuracion/empresa` con gate de admin",
-        "Implementar fetch GET `/empresas/{empresa_id}/modulos` en hook o effect",
-        "Agrupar módulos por categoría y renderizar con título + descripción",
-        "Renderizar cada módulo: label, descripción, badge estado, dependencias (Requiere/Habilita)",
-        "Deshabilitar visualmente switches y agregar estados loading/error",
-        "Escribir tests: rol admin, fetch, agrupación, estados UI",
-        "Deploy a staging y mover card a In Review"
+        "Ingresar como admin a /configuracion/empresa y ver tab 'Módulos'",
+        "Hacer clic en tab Módulos y verificar spinner mientras carga lista",
+        "Ver módulos agrupados por categoría con label, descripción y badge estado",
+        "Revisar que módulos con dependencias muestren 'Requiere: X' o 'Habilita: Y'",
+        "Ver switches deshabilitados sin interacción onClick/hover",
+        "Ingresar como non-admin y verificar que tab Módulos no se muestra",
+        "Ver mensaje de error si falla el fetch de /empresas/{id}/modulos"
       ]
     }
   ]
