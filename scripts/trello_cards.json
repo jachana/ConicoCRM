@@ -621,27 +621,22 @@
       ]
     },
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[UX] Replace native window.alert/confirm with toast/Modal",
       "labels": [
         "Design System",
         "Goal: UX Polish",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nActualmente Conico CRM utiliza alert() y window.confirm() nativos del navegador en 13 lugares distribuidos en 8 archivos. Esto genera una experiencia inconsistente con el Design System y dificulta mantener un tono/estilo visual coherente.\n\n**Acceptance Criteria**\n- No existen llamadas a window.alert() en los 8 archivos objetivo; todas reemplazadas con toast.error() o toast.success().\n- No existen llamadas a window.confirm() en los archivos objetivo; todas reemplazadas con Modal (variante danger) con botones Cancelar/Confirmar.\n- Los mensajes mostrados en toast/Modal están en español (es-CL).\n- Los flujos críticos de confirmación (eliminación, cambios destructivos) muestran Modal y respetan la acción del usuario.\n- Los mensajes de éxito/error muestran toast con duración automática.\n- Todos los flujos afectados funcionan correctamente en navegadores Chrome, Firefox, Safari (smoke test manual).\n\n**Definition of Done**\n- Todos los alert()/window.confirm() reemplazados en: EmpresaTabResumen.tsx, FacturaAdjuntos.tsx, NotaVentaAdjuntos.tsx, ProductoDocumentos.tsx, FacturaDetalle.tsx, GuiaDespachoDetalle.tsx, GuiasDespachoList.tsx, Pipeline.tsx.\n- Tests unitarios verifican que toast/Modal se disparan con mensajes correctos.\n- Pull request revisado y aprobado.\n- Cambios desplegados a staging.\n- Tarjeta movida a 'In review'.\n\n**Notas tecnicas**\n- Importar useToast (si no existe, verificar hook en src/hooks/useToast.tsx).\n- Importar Modal/useModal desde Design System (src/components/Modal).\n- Toast.error(), toast.success() para mensajes no-destructivos.\n- Modal danger variant para confirmaciones destructivas (delete, cambios críticos).\n- Patrones esperados:\n  - alert('Error') → useToast().error('Error')\n  - window.confirm('¿Eliminar?') → useModal().open({type: 'danger', onConfirm: ...})\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Reemplazar alert() y window.confirm() nativos por componentes del Design System (toast y Modal) en 8 archivos para mantener consistencia UX.\n\n**Cambios / Decisiones** — Se creó ConfirmModal.tsx para confirmaciones destructivas. Se reemplazaron alert() con toast.error() en EmpresaTabResumen.tsx, FacturaAdjuntos.tsx, NotaVentaAdjuntos.tsx, ProductoDocumentos.tsx y FacturaDetalle.tsx. Se reemplazaron window.confirm() con ConfirmModal en TareaDrawer.tsx, FacturaDetalle.tsx, GuiaDespachoDetalle.tsx, GuiasDespachoList.tsx y Pipeline.tsx. Se usaron toast.success() para mensajes positivos y se respetó idioma es-CL en todos los mensajes.",
       "checklist": [
-        "Inventariar todas las llamadas alert() y window.confirm()",
-        "Reemplazar alert() de error con toast.error()",
-        "Reemplazar window.confirm() destructivos con Modal danger",
-        "Verificar mensajes en espanol",
-        "Smoke test cada flujo afectado",
-        "Inventariar todas las llamadas alert() y window.confirm() en los 8 archivos",
-        "Reemplazar alert() con toast.error() o toast.success() según contexto",
-        "Reemplazar window.confirm() destructivos con Modal variante danger",
-        "Verificar que todos los mensajes están en español (es-CL)",
-        "Escribir tests unitarios para toast/Modal dispatch",
-        "Smoke test: validar flujos de confirmación y mensajes en navegadores principales",
-        "Mover tarjeta a 'In review' y desplegar a staging"
+        "Abrir factura y eliminar adjunto, verificar toast error en español",
+        "En Pipeline, intentar eliminar etapa y confirmar con Modal danger",
+        "En Guías de despacho, borrar registro y validar Modal de confirmación",
+        "Verificar mensajes en español en todos los toasts y modales",
+        "Probar flujo de éxito (toast.success) al guardar cambios en formulario",
+        "Validar en 3 navegadores que toasts y modales se muestran correctamente",
+        "Revisar que no queden alert() o window.confirm() en los 8 archivos"
       ]
     },
     {
