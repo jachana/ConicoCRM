@@ -32,29 +32,20 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Telemetry T1.2] SQLAlchemy slow-query event listener (>200ms)",
       "labels": [
         "Core",
         "Goal: Operations",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nEn producción necesitamos visibilidad sobre queries lentas (>200ms) para diagnóstico de performance. Actualmente no hay forma de detectarlas sin APM externo. Se requiere captura estructurada vía SQLAlchemy event listeners sin alertas activas en Phase 1—solo logs consumibles por Phase 2.\n\n**Acceptance Criteria**\n- Cuando una query tarda >200ms, se registra en logs estructurados con: request_id, SQL normalizado, duración en ms, cantidad de parámetros.\n- Queries más rápidas que el threshold NO generan logs.\n- SQL truncado a máximo 1KB para evitar saturar logs.\n- Threshold configurable vía variable de entorno SLOW_QUERY_MS (default 200).\n- Feature se activa/desactiva vía DB_METRICS_ENABLED (default false en dev, true en prod).\n- No genera overhead en transacciones anidadas ni en contextos async.\n\n**Definition of Done**\n- Código escrito en backend/app/core/db_metrics.py con event listeners de before_cursor_execute / after_cursor_execute.\n- Tests unitarios validan que queries lentas disparan log y queries rápidas no.\n- Tests validan comportamiento en transacciones anidadas.\n- PR revisado y aprobado.\n- Merge a rama develop.\n- Trello card movida a In review.\n\n**Notas tecnicas**\n- Usar SQLAlchemy events: `event.listen(Engine, 'before_cursor_execute', ...)` y `event.listen(Engine, 'after_cursor_execute', ...)`.\n- Logger estructurado (recomendación: use contextvars para request_id).\n- Normalizar SQL (remover newlines, espacios múltiples) para agregación en logs.\n- Considerar context storage (thread-local o contextvars) para tracking request_id en listener.\n- Archivos: backend/app/core/db_metrics.py, backend/tests/unit/core/test_db_metrics.py.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Se implementa un listener de SQLAlchemy para registrar en logs estructurados las queries que superan un umbral de tiempo (>200ms por defecto), incluyendo request_id, SQL normalizado, duración y cantidad de parámetros. La funcionalidad es configurable y se activa mediante una variable de entorno.\n\n**Cambios / Decisiones** — Se añadió `backend/app/core/db_metrics.py` con listeners `before_cursor_execute` y `after_cursor_execute` para medir duración de queries. Se usa `contextvars` para propagar `request_id` desde `RequestLoggerMiddleware`. Se trunca el SQL a 1KB y se logea solo si supera el umbral. Configurado vía `SLOW_QUERY_MS` y activable con `DB_METRICS_ENABLED`. Se agregaron tests en `backend/tests/test_db_metrics.py` validando logs, thresholds y transacciones.",
       "checklist": [
-        "Crear backend/app/core/db_metrics.py con event listeners",
-        "Threshold configurable via SLOW_QUERY_MS (default 200)",
-        "Log line slow_query: request_id, sql_normalized, duration_ms, params_count",
-        "Truncar SQL > 1KB para no llenar logs",
-        "Setting opt-in via env (DB_METRICS_ENABLED) para evitar overhead en dev",
-        "Test: query lenta dispara log; query rapida no",
-        "Verificar que no rompe en transacciones anidadas o async",
-        "Crear backend/app/core/db_metrics.py con event listeners de before/after_cursor_execute",
-        "Implementar threshold configurable vía SLOW_QUERY_MS (default 200ms)",
-        "Loguear structured log: request_id, sql_normalized, duration_ms, params_count; truncar SQL >1KB",
-        "Añadir feature flag DB_METRICS_ENABLED (default false); verificar sin overhead en dev",
-        "Escribir tests: query lenta dispara log, query rápida no dispara, comportamiento en transacciones anidadas",
-        "Code review y merge a develop",
-        "Mover Trello card a In review"
+        "Setear DB_METRICS_ENABLED=true y SLOW_QUERY_MS=100 en .env",
+        "Ejecutar una query lenta (>100ms) y verificar log 'slow_query'",
+        "Ejecutar query rápida (<100ms) y confirmar que NO hay log",
+        "Verificar request_id en logs usando un header X-Request-ID conocido",
+        "Probar dentro de transacción anidada y confirmar comportamiento"
       ]
     }
   ]
