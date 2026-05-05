@@ -26,6 +26,13 @@ const RESPONSE_WITH_ENABLED = {
   registry: REGISTRY,
 }
 
+// cotizaciones ON, notas_venta ON → turning off cotizaciones cascades to notas_venta
+const RESPONSE_BOTH_ON = {
+  stored: { cotizaciones: true, notas_venta: true, inventario: false },
+  effective: { cotizaciones: true, notas_venta: true, inventario: false },
+  registry: REGISTRY,
+}
+
 function wrap(ui: React.ReactNode) {
   return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}>
@@ -141,5 +148,53 @@ describe('ModulesTab', () => {
     await waitFor(() => expect(toastModule.toast.error).toHaveBeenCalled())
     // After rollback the switch reverts to original state (off)
     expect(sw).toHaveAttribute('aria-checked', 'false')
+  })
+
+  it('turning off parent with active dependents opens cascade modal with correct list', async () => {
+    vi.mocked(apiModule.api.get).mockResolvedValue({ data: RESPONSE_BOTH_ON })
+    wrap(<ModulesTab empresaId={1} />)
+    await waitFor(() => expect(screen.getByText('Cotizaciones')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Cotizaciones' }))
+
+    await waitFor(() => expect(screen.getByText(/Apagar Cotizaciones/)).toBeInTheDocument())
+    expect(screen.getByText(/Esto también apagará/)).toBeInTheDocument()
+    expect(screen.getByText(/Notas de Venta/, { selector: 'span.font-medium' })).toBeInTheDocument()
+    expect(apiModule.api.patch).not.toHaveBeenCalled()
+  })
+
+  it('confirming cascade modal sends PATCH with parent and all dependent slugs', async () => {
+    const after = { ...RESPONSE_BOTH_ON, stored: { cotizaciones: false, notas_venta: false, inventario: false }, effective: { cotizaciones: false, notas_venta: false, inventario: false } }
+    vi.mocked(apiModule.api.get).mockResolvedValue({ data: RESPONSE_BOTH_ON })
+    vi.mocked(apiModule.api.patch).mockResolvedValue({ data: after })
+    wrap(<ModulesTab empresaId={1} />)
+    await waitFor(() => expect(screen.getByText('Cotizaciones')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Cotizaciones' }))
+    await waitFor(() => expect(screen.getByText('Continuar')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByText('Continuar'))
+
+    await waitFor(() =>
+      expect(apiModule.api.patch).toHaveBeenCalledWith(
+        '/api/empresas/1/modulos',
+        { modulos: { cotizaciones: false, notas_venta: false } }
+      )
+    )
+  })
+
+  it('canceling cascade modal does not send PATCH', async () => {
+    vi.mocked(apiModule.api.get).mockResolvedValue({ data: RESPONSE_BOTH_ON })
+    wrap(<ModulesTab empresaId={1} />)
+    await waitFor(() => expect(screen.getByText('Cotizaciones')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Cotizaciones' }))
+    await waitFor(() => expect(screen.getByText('Cancelar')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByText('Cancelar'))
+
+    await new Promise(r => setTimeout(r, 50))
+    expect(apiModule.api.patch).not.toHaveBeenCalled()
+    expect(screen.queryByText('Continuar')).not.toBeInTheDocument()
   })
 })

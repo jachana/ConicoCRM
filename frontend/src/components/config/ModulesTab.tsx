@@ -1,7 +1,11 @@
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { api } from '../../lib/api'
-import { Skeleton, Tooltip } from '../ui'
+import {
+  Button, Modal, ModalContent, ModalHeader, ModalTitle, ModalBody, ModalFooter,
+  Skeleton, Tooltip,
+} from '../ui'
 
 interface RegistryEntry {
   slug: string
@@ -28,8 +32,26 @@ const CATEGORIA_LABELS: Record<string, string> = {
   aprobaciones: 'Aprobaciones',
 }
 
+function computeCascadeOff(registry: RegistryEntry[], effective: Record<string, boolean>, slug: string): string[] {
+  const queue = [...(registry.find(e => e.slug === slug)?.dependents ?? [])]
+  const visited = new Set([slug])
+  const cascade: string[] = []
+  while (queue.length) {
+    const dep = queue.pop()!
+    if (visited.has(dep)) continue
+    visited.add(dep)
+    if (effective[dep]) {
+      cascade.push(dep)
+      const depEntry = registry.find(e => e.slug === dep)
+      if (depEntry) queue.push(...depEntry.dependents)
+    }
+  }
+  return cascade
+}
+
 export default function ModulesTab({ empresaId }: { empresaId: number }) {
   const qc = useQueryClient()
+  const [pendingOff, setPendingOff] = useState<{ parent: string; cascade: string[] } | null>(null)
 
   const { data, isLoading, isError } = useQuery<ModulosResponse>({
     queryKey: ['empresa-modulos', empresaId],
@@ -37,16 +59,16 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
   })
 
   const mutation = useMutation({
-    mutationFn: (vars: { slug: string; enabled: boolean }) =>
-      api.patch(`/api/empresas/${empresaId}/modulos`, { modulos: { [vars.slug]: vars.enabled } }).then(r => r.data),
+    mutationFn: (vars: { slugs: Record<string, boolean> }) =>
+      api.patch(`/api/empresas/${empresaId}/modulos`, { modulos: vars.slugs }).then(r => r.data),
     onMutate: async (vars) => {
       await qc.cancelQueries({ queryKey: ['empresa-modulos', empresaId] })
       const prev = qc.getQueryData<ModulosResponse>(['empresa-modulos', empresaId])
       if (prev) {
         qc.setQueryData<ModulosResponse>(['empresa-modulos', empresaId], {
           ...prev,
-          stored: { ...prev.stored, [vars.slug]: vars.enabled },
-          effective: { ...prev.effective, [vars.slug]: vars.enabled },
+          stored: { ...prev.stored, ...vars.slugs },
+          effective: { ...prev.effective, ...vars.slugs },
         })
       }
       return { prev }
@@ -97,6 +119,7 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
   ].filter(cat => byCategory[cat]?.length)
 
   return (
+    <>
     <div className="space-y-6">
       {orderedCategories.map(cat => (
         <div key={cat}>
@@ -112,13 +135,26 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
                 .map(r => data.registry.find(e => e.slug === r)?.label ?? r)
                 .join(', ')
 
+              const handleToggle = () => {
+                if (isBlocked) return
+                const newVal = !isOn
+                if (!newVal) {
+                  const cascade = computeCascadeOff(data.registry, data.effective, entry.slug)
+                  if (cascade.length > 0) {
+                    setPendingOff({ parent: entry.slug, cascade })
+                    return
+                  }
+                }
+                mutation.mutate({ slugs: { [entry.slug]: newVal } })
+              }
+
               const switchBtn = (
                 <button
                   role="switch"
                   aria-checked={isOn}
                   aria-label={entry.label}
                   disabled={isBlocked}
-                  onClick={isBlocked ? undefined : () => mutation.mutate({ slug: entry.slug, enabled: !isOn })}
+                  onClick={handleToggle}
                   className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors ${
                     isOn ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-600'
                   } ${isBlocked ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}`}
@@ -176,5 +212,52 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
         </div>
       ))}
     </div>
+
+    {pendingOff && (
+      <Modal open onOpenChange={(open) => { if (!open && !mutation.isPending) setPendingOff(null) }}>
+        <ModalContent size="sm" hideClose={mutation.isPending}>
+          <ModalHeader>
+            <ModalTitle className="text-danger-700 dark:text-danger-400">
+              Apagar {data.registry.find(e => e.slug === pendingOff.parent)?.label ?? pendingOff.parent}
+            </ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              Esto también apagará:{' '}
+              <span className="font-medium">
+                {pendingOff.cascade
+                  .map(s => data.registry.find(e => e.slug === s)?.label ?? s)
+                  .join(', ')}
+              </span>
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={mutation.isPending}
+              onClick={() => setPendingOff(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              loading={mutation.isPending}
+              onClick={() => {
+                const slugs: Record<string, boolean> = { [pendingOff.parent]: false }
+                for (const s of pendingOff.cascade) slugs[s] = false
+                mutation.mutate({ slugs }, {
+                  onSettled: () => setPendingOff(null),
+                })
+              }}
+            >
+              Continuar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    )}
+    </>
   )
 }
