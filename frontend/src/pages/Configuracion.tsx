@@ -11,9 +11,11 @@ import { usePreferencesStore } from '../stores/preferences'
 import { patchPreferencias, type AtajoBusqueda } from '../api/preferencias'
 import { atajoLabel } from '../components/search/SearchButton'
 import TwoFASection from '../components/config/TwoFASection'
+import ModulesTab from '../components/config/ModulesTab'
 import {
   Button, Input, FormField, Card, Skeleton,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Tabs, TabsList, TabsTrigger, TabsContent,
 } from '../components/ui'
 
 const COMPANY_FIELDS = [
@@ -103,118 +105,141 @@ export default function Configuracion() {
 
       {isAdmin && <SidebarSection />}
 
-      {isAdmin && isLoading ? (
-        <div className="space-y-5">
-          {[0, 1, 2].map(i => (
-            <Card key={i} padded>
-              <Skeleton className="h-4 w-40 mb-4" />
-              <div className="space-y-3">
-                <Skeleton className="h-9 w-full" />
-                <Skeleton className="h-9 w-full" />
-                <Skeleton className="h-9 w-full" />
-              </div>
-            </Card>
-          ))}
-        </div>
-      ) : isAdmin ? (
-        <>
-          <Card padded>
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Datos de la Empresa</h2>
-            <div className="grid grid-cols-1 gap-4">
-              {COMPANY_FIELDS.map(f => (
-                <FormField key={f.key} label={f.label}>
-                  <Input
-                    type="text"
-                    value={form[f.key] ?? ''}
-                    onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                  />
-                </FormField>
-              ))}
-              <LogoSection config={config} />
-            </div>
-          </Card>
+      {isAdmin && (
+        <Tabs defaultValue="general">
+          <TabsList variant="underline">
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="modulos">Módulos</TabsTrigger>
+          </TabsList>
 
-          <Card padded>
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Alertas de inventario</h2>
-            <FormField
-              label="Días para considerar un costo desactualizado"
-              hint="Los productos cuyo costo no se haya actualizado en este número de días aparecerán marcados en rojo en Inventario y en el modal de producto."
-            >
-              <Input
-                type="number"
-                min={1}
-                value={form.dias_alerta_costo_desactualizado ?? '60'}
-                onChange={e => setForm(prev => ({ ...prev, dias_alerta_costo_desactualizado: e.target.value }))}
-              />
-            </FormField>
-          </Card>
-
-          <Card padded>
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Datos Bancarios</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Aparecen en el PDF de cotizaciones como información para transferencias y cheques.</p>
-            <div className="grid grid-cols-1 gap-4">
-              {BANKING_FIELDS.map(f => (
-                <FormField key={f.key} label={f.label}>
-                  <Input
-                    type="text"
-                    value={form[f.key] ?? ''}
-                    onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                  />
-                </FormField>
-              ))}
-            </div>
-          </Card>
-
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={saveMut.isPending}>
-              {saveMut.isPending ? 'Guardando...' : 'Guardar configuración'}
-            </Button>
-          </div>
-
-          <IntegracionesSection />
-
-          <Card padded>
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-              Bancos de recepción de pagos
-            </h2>
-            <div className="space-y-1 mb-4">
-              {bancos.map(b => (
-                <div key={b.id} className="flex items-center justify-between text-sm py-1">
-                  <span className={b.activo ? 'text-gray-900 dark:text-gray-100' : 'line-through text-gray-400'}>
-                    {b.nombre}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => toggleBanco.mutate({ id: b.id, activo: !b.activo })}
-                  >
-                    {b.activo ? 'Desactivar' : 'Activar'}
-                  </Button>
+          <TabsContent value="general">
+            <div className="space-y-5">
+              {isLoading ? (
+                <div className="space-y-5">
+                  {[0, 1, 2].map(i => (
+                    <Card key={i} padded>
+                      <Skeleton className="h-4 w-40 mb-4" />
+                      <div className="space-y-3">
+                        <Skeleton className="h-9 w-full" />
+                        <Skeleton className="h-9 w-full" />
+                        <Skeleton className="h-9 w-full" />
+                      </div>
+                    </Card>
+                  ))}
                 </div>
-              ))}
-              {bancos.length === 0 && <p className="text-xs text-gray-500 dark:text-gray-400">Sin bancos configurados</p>}
+              ) : (
+                <>
+                  <Card padded>
+                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Datos de la Empresa</h2>
+                    <div className="grid grid-cols-1 gap-4">
+                      {COMPANY_FIELDS.map(f => (
+                        <FormField key={f.key} label={f.label}>
+                          <Input
+                            type="text"
+                            value={form[f.key] ?? ''}
+                            onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                          />
+                        </FormField>
+                      ))}
+                      <LogoSection config={config} />
+                    </div>
+                  </Card>
+
+                  <Card padded>
+                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Alertas de inventario</h2>
+                    <FormField
+                      label="Días para considerar un costo desactualizado"
+                      hint="Los productos cuyo costo no se haya actualizado en este número de días aparecerán marcados en rojo en Inventario y en el modal de producto."
+                    >
+                      <Input
+                        type="number"
+                        min={1}
+                        value={form.dias_alerta_costo_desactualizado ?? '60'}
+                        onChange={e => setForm(prev => ({ ...prev, dias_alerta_costo_desactualizado: e.target.value }))}
+                      />
+                    </FormField>
+                  </Card>
+
+                  <Card padded>
+                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Datos Bancarios</h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Aparecen en el PDF de cotizaciones como información para transferencias y cheques.</p>
+                    <div className="grid grid-cols-1 gap-4">
+                      {BANKING_FIELDS.map(f => (
+                        <FormField key={f.key} label={f.label}>
+                          <Input
+                            type="text"
+                            value={form[f.key] ?? ''}
+                            onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                          />
+                        </FormField>
+                      ))}
+                    </div>
+                  </Card>
+
+                  <div className="flex justify-end">
+                    <Button onClick={handleSave} disabled={saveMut.isPending}>
+                      {saveMut.isPending ? 'Guardando...' : 'Guardar configuración'}
+                    </Button>
+                  </div>
+
+                  <IntegracionesSection />
+
+                  <Card padded>
+                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      Bancos de recepción de pagos
+                    </h2>
+                    <div className="space-y-1 mb-4">
+                      {bancos.map(b => (
+                        <div key={b.id} className="flex items-center justify-between text-sm py-1">
+                          <span className={b.activo ? 'text-gray-900 dark:text-gray-100' : 'line-through text-gray-400'}>
+                            {b.nombre}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => toggleBanco.mutate({ id: b.id, activo: !b.activo })}
+                          >
+                            {b.activo ? 'Desactivar' : 'Activar'}
+                          </Button>
+                        </div>
+                      ))}
+                      {bancos.length === 0 && <p className="text-xs text-gray-500 dark:text-gray-400">Sin bancos configurados</p>}
+                    </div>
+                    <div className="flex gap-2 items-end">
+                      <FormField className="flex-1" label="Agregar banco">
+                        <Input
+                          type="text"
+                          value={nuevoBanco}
+                          onChange={e => setNuevoBanco(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && nuevoBanco.trim() && addBanco.mutate(nuevoBanco.trim())}
+                          placeholder="Nombre del banco"
+                        />
+                      </FormField>
+                      <Button
+                        onClick={() => nuevoBanco.trim() && addBanco.mutate(nuevoBanco.trim())}
+                        disabled={!nuevoBanco.trim() || addBanco.isPending}
+                        leftIcon={<Plus />}
+                      >
+                        Agregar
+                      </Button>
+                    </div>
+                  </Card>
+                </>
+              )}
             </div>
-            <div className="flex gap-2 items-end">
-              <FormField className="flex-1" label="Agregar banco">
-                <Input
-                  type="text"
-                  value={nuevoBanco}
-                  onChange={e => setNuevoBanco(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && nuevoBanco.trim() && addBanco.mutate(nuevoBanco.trim())}
-                  placeholder="Nombre del banco"
-                />
-              </FormField>
-              <Button
-                onClick={() => nuevoBanco.trim() && addBanco.mutate(nuevoBanco.trim())}
-                disabled={!nuevoBanco.trim() || addBanco.isPending}
-                leftIcon={<Plus />}
-              >
-                Agregar
-              </Button>
-            </div>
-          </Card>
-        </>
-      ) : null}
+          </TabsContent>
+
+          <TabsContent value="modulos">
+            {user?.empresa_id ? (
+              <ModulesTab empresaId={user.empresa_id} />
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                No hay empresa asociada a tu cuenta.
+              </p>
+            )}
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   )
 }

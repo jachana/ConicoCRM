@@ -12,6 +12,7 @@ class UserOut(BaseModel):
     role: str
     is_active: bool
     created_at: datetime
+    empresa_id: int | None = None
     model_config = {"from_attributes": True}
 
 

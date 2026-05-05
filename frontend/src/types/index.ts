@@ -5,6 +5,7 @@ export interface User {
   role: 'admin' | 'subadmin' | 'vendedor'
   is_active: boolean
   created_at: string
+  empresa_id: number | null
 }
 
 export type Module =

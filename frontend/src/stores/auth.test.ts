@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useAuthStore } from './auth'
 
-const fakeUser = { id: 1, email: 'a@b.cl', name: 'A', role: 'admin' as const, is_active: true, created_at: '' }
+const fakeUser = { id: 1, email: 'a@b.cl', name: 'A', role: 'admin' as const, is_active: true, created_at: '', empresa_id: null }
 
 describe('auth store', () => {
   beforeEach(() => {
