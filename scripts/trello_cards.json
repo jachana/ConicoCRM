@@ -32,22 +32,34 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Modulos P1.3] require_modulo dependency + cascade calculator + unit tests",
+      "list": "In progress",
+      "name": "[Modulos P1.4] Wire require_modulo a routers de ventas DTE",
       "labels": [
         "Core",
         "Goal: SaaS-ready",
         "Size:L"
       ],
-      "desc": "**Resumen** — Implementar lógica reutilizable para validar y controlar el acceso a módulos en base a dependencias, incluyendo cálculo de estado efectivo, validaciones y bloqueo de requests cuando un módulo está deshabilitado.\n\n**Cambios / Decisiones** — Se creó `backend/app/services/modulo_calculator.py` con `compute_effective_modulos` (auto-activa dte_emission), `validate_toggle` (valida dependencias) y `compute_cascade` (calcula apagado en cascada). Se implementó la dependencia FastAPI `require_modulo(slug)` en `backend/app/api/deps.py` que retorna 403 estructurado si el módulo está off. Se agregaron 24 tests unitarios en `backend/tests/test_modulo_calculator.py` cubriendo todos los casos de uso definidos.",
+      "desc": "**Contexto / Problema**\nActualmente, los routers de documentos de venta (boletas, facturas, guías de despacho, notas de crédito/débito, cotizaciones, notas de venta) no validan si el cliente empresa tiene habilitado el módulo correspondiente. Esto permite acceso a funcionalidades que no debería tener según su suscripción. Se requiere aplicar el middleware `require_modulo(...)` a todos estos routers para garantizar control de acceso basado en permisos de módulo.\n\n**Acceptance Criteria**\n- Empresa sin módulo 'boletas' habilitado recibe 403 en cualquier GET/POST a `/api/boletas/*`.\n- Empresa sin módulo 'facturas' habilitado recibe 403 en cualquier GET/POST a `/api/facturas/*` y `/api/facturas_adjuntos/*`.\n- Empresa sin módulo 'guias_despacho' habilitado recibe 403 en GET/POST a `/api/guias_despacho/*`.\n- Empresa sin módulo 'nota_credito' habilitado recibe 403 en `/api/notas_credito/*`; análogamente para 'nota_debito'.\n- Empresa sin módulo 'cotizaciones' habilitado recibe 403 en `/api/cotizaciones/*`.\n- Empresa sin módulo 'notas_venta' habilitado recibe 403 en `/api/notas_venta/*` y `/api/notas_venta_adjuntos/*`.\n- Empresa con módulo habilitado realiza operaciones CRUD sin cambio en comportamiento ni latencia.\n- Endpoint de audit_log sigue registrando intentos rechazados correctamente.\n- Notificaciones transversales (si existen) continúan funcionando sin error.\n\n**Definition of Done**\n- Todos los routers mencionados llevan `Depends(require_modulo(...))` en su definición.\n- Tests integrales pasan (fixtures con cliente empresa con/sin módulo).\n- Migración no aplica (cambio de código únicamente).\n- Revisión de código aprobada.\n- Deployed a staging y validado manualmente.\n- Trello card movido a 'In review'.\n\n**Notas tecnicas**\n- Ubicación: `src/api/routers/` (boletas.py, facturas.py, guias_despacho.py, etc.).\n- Función base: `require_modulo()` en `src/dependencies/auth.py` o módulo similar.\n- Aplicar a nivel `APIRouter` o en cada ruta según arquitectura existente.\n- Tests: `tests/integration/test_modulo_access_control.py` o equivalente.\n- Verificar que `audit_log` y servicios de notificación no dependan de estado posterior al rechazo 403.\n- Schema: no cambios en BD; es validación en aplicación.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Verificar auto-on de dte_emission activando cualquier documento DTE (factura, boleta, etc.)",
-        "Probar que activar un módulo sin su padre lanza ValidationError",
-        "Validar que desactivar un padre con hijos activos lanza excepción",
-        "Apagar 'facturas' y verificar cascada desactiva pagos, cobranza, NC, ND, libros",
-        "Usar require_modulo('pagos') con módulo off y verificar 403 {error, slug, label}",
-        "Usar require_modulo('facturas') con módulo on y permitir paso normal",
-        "Ejecutar tests unitarios y confirmar 100% pass (24 tests en total)"
+        "boletas router -> require_modulo('boletas')",
+        "facturas + facturas_adjuntos router -> require_modulo('facturas')",
+        "guias_despacho router -> require_modulo('guias_despacho')",
+        "nota_credito + nota_debito routers -> require_modulo segun corresponda",
+        "cotizaciones router -> require_modulo('cotizaciones')",
+        "nota_ventas + nota_ventas_adjuntos router -> require_modulo('notas_venta')",
+        "Test integral por router: empresa con modulo off recibe 403 en GET/POST",
+        "Test integral por router: empresa con modulo on funciona como antes",
+        "Verificar audit_log y notifications cross-module no se rompen",
+        "Aplicar require_modulo('boletas') a router boletas.py",
+        "Aplicar require_modulo('facturas') a routers facturas.py y facturas_adjuntos.py",
+        "Aplicar require_modulo('guias_despacho') a router guias_despacho.py",
+        "Aplicar require_modulo('nota_credito') y require_modulo('nota_debito') a routers correspondientes",
+        "Aplicar require_modulo('cotizaciones') a router cotizaciones.py",
+        "Aplicar require_modulo('notas_venta') a routers notas_venta.py y notas_venta_adjuntos.py",
+        "Escribir e integrar tests: empresa sin módulo recibe 403; empresa con módulo funciona normal",
+        "Validar audit_log y notificaciones no se quiebran",
+        "Deploy a staging + validación manual",
+        "Mover a In review"
       ]
     }
   ]
