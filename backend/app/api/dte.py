@@ -76,7 +76,7 @@ def _recalcular_nd(nd: NotaDebito) -> None:
 
 # ── Factura DTE ────────────────────────────────────────────────────────────────
 
-@router.post("/facturas/{factura_id}/emitir", response_model=DteEmisionOut)
+@router.post("/facturas/{factura_id}/emitir", response_model=DteEmisionOut, dependencies=[require_modulo("facturas")])
 def emitir_factura(
     factura_id: int,
     perms: tuple[User, Session] = require_permission("facturas", "create"),
@@ -265,7 +265,7 @@ def emitir_nd(
 
 # ── Guías de Despacho ─────────────────────────────────────────────────────────
 
-@router.post("/guias-despacho/{guia_id}/emitir", response_model=DteEmisionOut)
+@router.post("/guias-despacho/{guia_id}/emitir", response_model=DteEmisionOut, dependencies=[require_modulo("guias_despacho")])
 def emitir_guia_despacho(
     guia_id: int,
     perms: tuple[User, Session] = require_permission("guias_despacho", "create"),
