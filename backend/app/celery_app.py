@@ -6,7 +6,7 @@ celery_app = Celery(
     "conico",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["app.tasks.dte", "app.tasks.tareas", "app.tasks.cobranza"],
+    include=["app.tasks.dte", "app.tasks.tareas", "app.tasks.cobranza", "app.tasks.caf"],
 )
 
 celery_app.conf.update(
@@ -27,6 +27,10 @@ celery_app.conf.update(
         "enviar-recordatorios": {
             "task": "app.tasks.cobranza.enviar_recordatorios_automaticos",
             "schedule": crontab(hour=8, minute=0),
+        },
+        "enviar-alertas-caf": {
+            "task": "app.tasks.caf.send_caf_alerts_email",
+            "schedule": crontab(hour=8, minute=30),
         },
     },
 )
