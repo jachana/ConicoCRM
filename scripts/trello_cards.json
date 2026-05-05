@@ -32,18 +32,30 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Hygiene] Eliminar artefactos .js compilados duplicados",
+      "list": "In progress",
+      "name": "[Modulos P1.1] Registro central de modulos + grafo de dependencias",
       "labels": [
         "Core",
-        "Goal: Operations",
+        "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Resumen** — Eliminar archivos .js compilados duplicados que coexisten con sus fuentes .tsx, para evitar ruido y conflictos en el repositorio.\n\n**Cambios / Decisiones** — Se agregó `noEmit: true` al `tsconfig.json` para evitar que `tsc` genere archivos .js innecesarios durante el proceso de desarrollo. Esta configuración asegura que el tipo de verificación no emita archivos JS, manteniendo limpio el árbol de trabajo. El cambio afecta directamente `frontend/tsconfig.json`. No se requiere hook ni cambios en .gitignore porque el problema se resolvió a nivel de configuración de compilación, no de artefactos en disco.",
+      "desc": "**Contexto / Problema**\nActualmente los módulos opcionales de Conico no tienen un registro centralizado de dependencias ni categorías. Esto impide automatizar la activación/desactivación coherente y dificulta la UI de configuración. Se necesita una única fuente de verdad (backend/app/core/modulos.py) que defina todos los módulos, sus categorías, dependencias y reglas de auto-activación, sin migración ni gating por ahora.\n\n**Acceptance Criteria**\n- El archivo backend/app/core/modulos.py define CORE_MODULES (set de slugs no toggleables) y OPTIONAL_MODULES (dict {slug: ModuloSpec}).\n- ModuloSpec contiene label, categoria, requires (lista de slugs), dependents (lista de slugs).\n- Las 8 categorías (ventas, compras, inventario_precios, finanzas, dte_sii, crm, rrhh, aprobaciones) están presentes.\n- Los 31 módulos iniciales están registrados con sus dependencias correctas.\n- Función all_modulo_slugs() retorna todos los slugs disponibles.\n- Función get_modulo(slug) retorna ModuloSpec o lanza ValueError si no existe.\n- Función modulos_by_categoria() agrupa módulos por categoría para UI.\n- No hay ciclos en el grafo de dependencias (validado por tests).\n- Todos los routers actuales (e.g. cotizaciones, facturas, rrhh_empleados) tienen su slug registrado.\n- El módulo es importable y contiene solo definiciones y funciones puras (sin I/O, sin base de datos).\n\n**Definition of Done**\n- backend/app/core/modulos.py creado con ModuloSpec dataclass y funciones puras.\n- Tests unitarios validan coherencia (cada 'requires' apunta a slug existente), ausencia de ciclos, cobertura de routers actuales.\n- Todos los tests pasan (100% coverage en modulos.py).\n- Código revisado por lead tech y mergeado a rama develop.\n- Trello card movida a 'In review'.\n\n**Notas tecnicas**\n- Usar dataclass ModuloSpec(label: str, categoria: str, requires: List[str], dependents: List[str]).\n- Archivo: backend/app/core/modulos.py.\n- Test file: backend/app/core/test_modulos.py (ej: test_no_cycles, test_requires_exist, test_all_routers_registered).\n- Considerar usar networkx o algoritmo de detección de ciclos simple (DFS) para grafo.\n- Sin validación en tiempo de activación todavía (P1.2 lo hará).\n\n<!-- conico-refined -->",
       "checklist": [
-        "Ejecutar `tsc && vite build` y verificar que no se crean archivos .js junto a .tsx",
-        "Verificar `git status` limpio sin archivos .js recién generados",
-        "Confirmar en `tsconfig.json` que `noEmit` esté en `true`"
+        "Crear backend/app/core/modulos.py",
+        "Constante CORE_MODULES (set de slugs no toggleable)",
+        "Constante OPTIONAL_MODULES como dict {slug: ModuloSpec(label, categoria, requires=[], dependents=[])}",
+        "Categorias: 'ventas', 'compras', 'inventario_precios', 'finanzas', 'dte_sii', 'crm', 'rrhh', 'aprobaciones'",
+        "Modulos iniciales: cotizaciones, notas_venta, facturas, boletas, guias_despacho, nota_credito, nota_debito, proveedores, ordenes_compra, facturas_compra, inventario, listas_precios, precios_especiales, pagos, cobranza, bancos_receptores, libros, dte_recepcion, oportunidades, tareas, reglas_tareas, rrhh_empleados, rrhh_vacaciones, rrhh_documentos, aprobaciones_descuento, aprobaciones_costo, aprobaciones_margen",
+        "Funcion all_modulo_slugs() y get_modulo(slug) (raise si no existe)",
+        "Funcion modulos_by_categoria() para UI agrupada",
+        "Tests: registro coherente (cada 'requires' apunta a slug existente), no hay ciclos de dependencia, todos los routers actuales tienen su slug",
+        "Crear backend/app/core/modulos.py con dataclass ModuloSpec",
+        "Definir CORE_MODULES y OPTIONAL_MODULES (31 módulos + 8 categorías)",
+        "Implementar all_modulo_slugs(), get_modulo(), modulos_by_categoria()",
+        "Añadir validaciones de grafo (sin ciclos, requires válidos)",
+        "Escribir tests: coherencia, ciclos, cobertura de routers",
+        "Tests pasan y coverage >= 95%",
+        "Mover Trello a 'In review' tras PR merge"
       ]
     }
   ]
