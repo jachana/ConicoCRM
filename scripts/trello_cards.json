@@ -32,23 +32,31 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Modulos P3.1] Tab 'Modulos' en /configuracion/empresa (read-only listado)",
+      "list": "In progress",
+      "name": "[Modulos P3.2] Toggle interactivo + dependency-aware disable visual",
       "labels": [
         "Core",
         "Design System",
         "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Resumen** — Se implementa el tab 'Módulos' read-only en la página de configuración de empresa, visible solo para admins. Muestra el catálogo de módulos con estado, dependencias y agrupación por categoría.\n\n**Cambios / Decisiones** — Se añade `empresa_id` al schema `UserOut` y tipo frontend para acceder al endpoint de módulos. Se crea `ModulesTab.tsx` que agrupa módulos por categoría, renderiza badges de estado, texto de dependencias ('Requiere: X', 'Habilita: Y') y switches deshabilitados visualmente. El tab se integra en `Configuracion.tsx` con gate de admin. Se incluyen estados de loading/error y 8 tests unitarios para cubrir fetch, agrupación y render condicional.",
+      "desc": "**Contexto / Problema**\nActualmente los toggles de módulos no son interactivos. Los usuarios necesitan activar/desactivar módulos vía clicks, pero deben ver claramente cuáles no pueden activarse porque su módulo padre está desactivado. Los cambios sin dependientes deben aplicarse inmediatamente; la lógica de cascada se maneja en P3.3.\n\n**Acceptance Criteria**\n- Al hacer clic en un toggle ON→OFF sin dependientes, el cambio se aplica inmediatamente con optimistic update y refetch del listado de módulos.\n- Al hacer clic en un toggle OFF→ON cuyo módulo padre está desactivado, el toggle permanece desactivado y se muestra un tooltip con el texto \"Requiere [Nombre del módulo padre]\".\n- Al hacer clic en un toggle OFF→ON cuyo módulo padre está activo, el cambio se aplica inmediatamente.\n- En caso de error de red durante la mutación, el optimistic update se revierte y se muestra un toast de error.\n- Al completar una mutación exitosa, se muestra un toast de confirmación y se invalida la caché de módulos para refrescar la barra lateral y dependientes.\n- Los toggles desactivados por dependencia muestran cursor `not-allowed` y opacity reducida.\n\n**Definition of Done**\n- La mutación PATCH a `/empresas/{empresa_id}/modulos` está implementada con react-query.\n- Los unit tests validan: toggle simple aplica el cambio, toggle bloqueado por parent muestra tooltip y NO envía request, rollback en error.\n- El componente refrescó los datos vía `invalidateQueries(['modulos'])` tras éxito.\n- La tarjeta se movió a \"In review\".\n- Funcionamiento verificado en staging.\n\n**Notas tecnicas**\n- Endpoint: `PATCH /empresas/{empresa_id}/modulos` (payload: `{id, enabled}`)\n- Hook de react-query: `useMutation` con optimistic update usando `setQueryData`.\n- Extraer parent_id de la estructura de dependencias (asumiendo schema de P3.1).\n- Tooltip via `<Tooltip title=\"Requiere {parent.label}\" />` (Design System).\n- Toast via `toast.success() / toast.error()`.\n- Invalidar query key `['modulos', empresa_id]`.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Ingresar como admin a /configuracion/empresa y ver tab 'Módulos'",
-        "Hacer clic en tab Módulos y verificar spinner mientras carga lista",
-        "Ver módulos agrupados por categoría con label, descripción y badge estado",
-        "Revisar que módulos con dependencias muestren 'Requiere: X' o 'Habilita: Y'",
-        "Ver switches deshabilitados sin interacción onClick/hover",
-        "Ingresar como non-admin y verificar que tab Módulos no se muestra",
-        "Ver mensaje de error si falla el fetch de /empresas/{id}/modulos"
+        "Mutation PATCH /empresas/{empresa_id}/modulos via react-query",
+        "Click en switch on->off: si no apaga ningun dependent, aplicar directo y refetch",
+        "Click en switch off->on: si parent off, no hacer nada (estaba disabled); si parent on, aplicar directo",
+        "Tooltip en toggle disabled: 'Requiere {label-de-parent}'",
+        "Optimistic update con rollback en error",
+        "Toast.success / toast.error en cada mutation",
+        "Invalidar useModulos en exito (sidebar etc. se refrescan)",
+        "Tests: toggle simple aplica; toggle bloqueado por parent muestra tooltip y no envia request",
+        "Implementar mutación PATCH /empresas/{empresa_id}/modulos con react-query y optimistic update",
+        "Agregar lógica: si toggle OFF→ON y parent_id está desactivado, bloquear y mostrar tooltip \"Requiere {parent.label}\"",
+        "Agregar lógica: si toggle OFF→ON y parent activo, o ON→OFF sin dependientes, aplicar directo vía PATCH",
+        "Implementar rollback en error (revertir optimistic update) y toast.error()",
+        "Mostrar toast.success() tras mutation exitosa e invalidar caché de módulos",
+        "Escribir tests: toggle simple aplica, toggle bloqueado muestra tooltip y no envía request, error revierte cambios",
+        "Mover a In review y verificar en staging"
       ]
     }
   ]
