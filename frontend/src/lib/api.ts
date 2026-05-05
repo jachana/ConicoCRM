@@ -3,6 +3,16 @@ import { useAuthStore } from '../stores/auth'
 
 export const api = axios.create({ baseURL: '' })
 
+/** Extract a human-readable message from an Axios error.
+ * Handles both string detail and structured {error,slug,label} objects. */
+export function extractApiError(error: unknown, fallback = 'Error desconocido'): string {
+  const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (detail && typeof detail === 'object' && 'label' in detail) return String((detail as { label: unknown }).label)
+  if (error instanceof Error) return error.message
+  return fallback
+}
+
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
   if (token) config.headers.Authorization = `Bearer ${token}`
