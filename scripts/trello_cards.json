@@ -32,21 +32,28 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Modulos P2.1] Mirror modulos.ts + useModulos hook + helpers",
+      "list": "In progress",
+      "name": "[Modulos P2.2] Componente <ModuloGuard> + envolver rutas opcionales",
       "labels": [
         "Core",
         "Goal: SaaS-ready",
-        "Size:M"
+        "Size:L"
       ],
-      "desc": "**Resumen** — Crear en frontend un espejo del registro de módulos del backend con metadata y hooks para consumirlos dinámicamente.\n\n**Cambios / Decisiones**\n- Agregado `frontend/src/lib/modulos.ts` con `MODULO_SLUGS`, tipo `Modulo`, `MODULO_META` y helper `isModuloEnabled()`.\n- Agregado `frontend/src/api/modulos.ts` con `fetchMyModulos()` que consume `GET /me/modulos`.\n- Agregado `frontend/src/hooks/useModulos.ts` con hook `useModulos()` usando react-query (staleTime 5min, refetchOnWindowFocus) y helper `useModuloEnabled(slug)`.\n- 11 tests unitarios verifican estados efectivos, loading/error, y comportamiento de helpers.\n- No se modificaron otros archivos, solo agregados nuevos.",
+      "desc": "**Contexto / Problema**\nConico permite habilitar/deshabilitar módulos por empresa. Actualmente no hay mecanismo visual para comunicar a usuarios cuando acceden a rutas de módulos deshabilitados, ni protección contra carga prematura. Necesitamos un wrapper reutilizable que maneje estos estados de forma consistente.\n\n**Acceptance Criteria**\n- Usuario intenta acceder a una ruta de módulo deshabilitado (ej: `/boletas`) y ve página 'Este módulo no está habilitado' en lugar de contenido vacío o error.\n- Mientras `/me/modulos` carga, rutas protegidas muestran skeleton loading (no redirigen ni fallan).\n- Usuario con módulo habilitado accede normalmente a la ruta y ve el contenido esperado.\n- Componente `<ModuloGuard>` acepta props `{slug, children, fallback?}` y es reutilizable.\n- Las ~15 rutas opcionales (boletas, facturas, guías, notas, OC, inventario, listas, pagos, cobranza, RRHH, pipeline, tareas, libros, DTE recepción) están envueltas con `<ModuloGuard>`.\n- E2E: empresa con boletas deshabilitadas intenta `/boletas` y ve fallback page.\n\n**Definition of Done**\n- Componente `ModuloGuard.tsx` creado con lógica de guard y skeleton.\n- Página `ModuloNoDisponible.tsx` creado con mensaje localizado es-CL.\n- Todas las rutas opcionales envueltas en router (verificar `src/router.tsx` o equivalente).\n- Tests unitarios: verifican render de skeleton, fallback y children según estado de módulo.\n- E2E smoke test ejecutado y pasado.\n- Migración (si aplica) documentada.\n- PR merged a rama de integración.\n- Trello moved to 'In review'.\n\n**Notas tecnicas**\n- Depende de P2.1: estado global `useModulesContext()` o hook similar debe estar disponible y retornar `{loading, modules: {[slug]: boolean}}`.\n- Rutas a envolver: `/boletas/*`, `/facturas/*`, `/guias-despacho/*`, `/notas-credito/*`, `/notas-debito/*`, `/ordenes-compra/*`, `/inventario`, `/listas-precios`, `/pagos`, `/cobranza`, `/rrhh/*`, `/pipeline`, `/tareas`, `/libros/*`, `/dte-recepcion`.\n- Skeleton: usar componente existente de Design System (ej: `<Skeleton />`) o crear uno minimalista.\n- Fallback: renderizar `<ModuloNoDisponible />` o componente inline pasado via prop.\n- No bloquear carga global; solo rutas que dependen de módulos opcionales.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir /src/lib/modulos.ts y verificar MODULO_SLUGS, Modulo y MODULO_META",
-        "Llamar fetchMyModulos() y verificar respuesta con módulos enabled/disabled",
-        "Usar useModulos() en componente y verificar effective, isLoading, error",
-        "Usar useModuloEnabled('some-module') y verificar boolean retornado",
-        "Simular focus window y verificar refetch automático de módulos",
-        "Correr tests unitarios del hook y helpers (11 tests)"
+        "frontend/src/components/ModuloGuard.tsx con props {slug, children, fallback?}",
+        "Pagina ModuloNoDisponible.tsx con mensaje 'Este modulo no esta habilitado para tu empresa, contacta al admin'",
+        "Envolver rutas: /boletas/*, /facturas/*, /guias-despacho/*, /notas-credito/*, /notas-debito/*, /ordenes-compra/*, /inventario, /listas-precios, /pagos, /cobranza, /rrhh/*, /pipeline, /tareas, /libros/*, /dte-recepcion",
+        "Skeleton state mientras /me/modulos carga (no redirigir prematuramente)",
+        "Test render: modulo off muestra fallback; modulo on muestra children",
+        "E2E smoke: empresa con boletas off intenta /boletas y ve mensaje",
+        "Crear componente `frontend/src/components/ModuloGuard.tsx` con props {slug, children, fallback?} y lógica de skeleton + guard",
+        "Crear página `frontend/src/pages/ModuloNoDisponible.tsx` con mensaje 'Este módulo no está habilitado para tu empresa, contacta al administrador'",
+        "Envolver rutas opcionales en router (boletas, facturas, guías, notas, OC, inventario, listas, pagos, cobranza, RRHH, pipeline, tareas, libros, DTE recepción)",
+        "Verificar skeleton state mientras `/me/modulos` carga; no redirigir prematuramente",
+        "Tests: módulo off → fallback, módulo on → children, loading → skeleton",
+        "E2E smoke: empresa con boletas off intenta `/boletas` y ve fallback page",
+        "Merge a rama de integración, mover Trello a 'In review'"
       ]
     }
   ]
