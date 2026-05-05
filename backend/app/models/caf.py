@@ -46,7 +46,6 @@ class CAF(Base):
     def is_expiring_soon(self) -> bool:
         if self.fecha_vencimiento is None:
             return False
-        from datetime import date
         return (self.fecha_vencimiento - date.today()).days < 30
 
     __table_args__ = (

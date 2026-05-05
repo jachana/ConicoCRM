@@ -11,6 +11,7 @@ Endpoints:
 """
 
 import hashlib
+from datetime import date
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
 from sqlalchemy.orm import Session
@@ -81,6 +82,7 @@ class CAFDetailOut:
         self.num_fin = caf.num_fin
         self.vigente = caf.vigente
         self.consumido = caf.consumido
+        self.fecha_vencimiento = caf.fecha_vencimiento
         self.fecha_carga = caf.fecha_carga
         self.created_at = caf.created_at
         self.updated_at = caf.updated_at
@@ -111,6 +113,7 @@ class CAFDetailOut:
             "num_fin": self.num_fin,
             "vigente": self.vigente,
             "consumido": self.consumido,
+            "fecha_vencimiento": self.fecha_vencimiento.isoformat() if self.fecha_vencimiento else None,
             "total_folios": self.total_folios,
             "folios_restantes": self.folios_restantes,
             "porcentaje_consumido": round(self.porcentaje_consumido, 2),
@@ -314,12 +317,11 @@ def _process_single_caf_file(
 
     # Persist to database with transaction per file
     try:
-        from datetime import date as date_type
         vigencia_str = first_tipo.get("folio_vigencia")
         fecha_venc = None
         if vigencia_str:
             try:
-                fecha_venc = date_type.fromisoformat(vigencia_str)
+                fecha_venc = date.fromisoformat(vigencia_str)
             except ValueError:
                 pass
 
