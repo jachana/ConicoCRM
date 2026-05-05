@@ -294,25 +294,22 @@ export default function BoletaDetalle() {
         </div>
       </div>
 
-      {/* Modals (legacy components — TODO: port BoletaAnularModal/BoletaEmailModal to ui/Modal) */}
-      {showAnular && (
-        <BoletaAnularModal
-          boleta={toListItem(boleta)}
-          onCancel={() => setShowAnular(false)}
-          onConfirm={(razon) => anularMut.mutate(razon)}
-          isPending={anularMut.isPending}
-          error={anularMut.error ? 'No se pudo anular' : null}
-        />
-      )}
-      {showEmail && (
-        <BoletaEmailModal
-          boleta={toListItem(boleta)}
-          onCancel={() => setShowEmail(false)}
-          onConfirm={(email) => emailMut.mutate(email)}
-          isPending={emailMut.isPending}
-          error={emailMut.error ? 'No se pudo enviar' : null}
-        />
-      )}
+      <BoletaAnularModal
+        isOpen={showAnular}
+        boleta={toListItem(boleta)}
+        onClose={() => setShowAnular(false)}
+        onConfirm={(razon) => anularMut.mutate(razon)}
+        isPending={anularMut.isPending}
+        error={anularMut.error ? 'No se pudo anular' : null}
+      />
+      <BoletaEmailModal
+        isOpen={showEmail}
+        boleta={toListItem(boleta)}
+        onClose={() => setShowEmail(false)}
+        onConfirm={(email) => emailMut.mutate(email)}
+        isPending={emailMut.isPending}
+        error={emailMut.error ? 'No se pudo enviar' : null}
+      />
     </div>
   )
 }

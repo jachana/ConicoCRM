@@ -359,22 +359,21 @@ export default function BoletasList() {
         </div>
       )}
 
-      {/* Anular modal */}
       {anularTarget && (
         <BoletaAnularModal
+          isOpen
           boleta={anularTarget}
-          onCancel={() => setAnularTarget(null)}
+          onClose={() => setAnularTarget(null)}
           onConfirm={(razon) => anularMut.mutate({ id: anularTarget.id, razon })}
           isPending={anularMut.isPending}
           error={anularMut.error ? 'No se pudo anular' : null}
         />
       )}
-
-      {/* Email modal */}
       {emailTarget && (
         <BoletaEmailModal
+          isOpen
           boleta={emailTarget}
-          onCancel={() => setEmailTarget(null)}
+          onClose={() => setEmailTarget(null)}
           onConfirm={(email) => sendEmailMut.mutate({ id: emailTarget.id, email })}
           isPending={sendEmailMut.isPending}
           error={sendEmailMut.error ? 'No se pudo enviar' : null}
