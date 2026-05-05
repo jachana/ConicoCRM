@@ -32,22 +32,26 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "en las normas o especificaciones tecnicas del producto, quiero que se formen \"capsulas\" para los tags separados por coma, y que sean filtrables por esas categorias",
+      "list": "In progress",
+      "name": "[UX] BoletaNueva: autocomplete productos + ClienteSelectModal",
       "labels": [
-        "Design System",
+        "Core",
         "Goal: UX Polish",
         "Size:M"
       ],
-      "desc": "**Resumen** — Mostrar tags de normas/especificaciones como cápsulas clickeables y permitir filtrar productos por esos tags.\n\n**Cambios / Decisiones**\n- Implementado componente de chips para mostrar tags de especificaciones de forma visual\n- Agregado parser automático de texto separado por comas a chips en ProductoModal\n- Añadido filtro por tags en la página de productos (/api/productos?spec=...)\n- Los chips en la tabla de productos son clickeables para activar filtros\n- Barra de filtros activos agregada encima de la tabla\n- Backend actualizado para soportar múltiples valores de `spec` en query param\n- Vista previa en tiempo real de chips en el modal de edición",
+      "desc": "**Contexto / Problema**\nBoletaNueva.tsx usa inputs genéricos (descripción en texto plano, cliente_id numérico) en lugar de componentes robustos ya disponibles en NV y Factura. Esto genera experiencia inconsistente y errores de entrada de usuario.\n\n**Acceptance Criteria**\n- El campo de descripción de producto es reemplazado por autocomplete que filtra productos existentes en tiempo real (mismo patrón usado en NV).\n- El campo cliente_id numérico es reemplazado por ClienteSelectModal con búsqueda y selección visual.\n- Los TODOs W1-04 en BoletaNueva.tsx:11-12 están eliminados.\n- Al seleccionar un producto, se completan automáticamente los campos de descripción y precio unitario.\n- Al seleccionar un cliente, se completan razón social y RUT.\n- Smoke test verde en BoletaNueva.test.tsx validando flujo completo de selección.\n\n**Definition of Done**\n- Componentes importados desde módulos existentes (NV/Factura) y sin duplicación de código.\n- Todos los tests pasan (unit + smoke).\n- Cambios desplegados a staging y validados con PM.\n- Trello card movida a In review.\n- Cero TODOs pendientes en el archivo.\n\n**Notas tecnicas**\n- Rutas relevantes: `src/modules/BoletaNueva/BoletaNueva.tsx:11-12`, `src/modules/NV/components/ProductoAutocomplete.tsx`, `src/components/ClienteSelectModal.tsx`.\n- Verificar esquema de producto y cliente para mapeo de props.\n- Importar hooks de validación de `useProductoAutocomplete` si existe.\n- Test file: `src/modules/BoletaNueva/BoletaNueva.test.tsx`.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir modal de producto y escribir tags separados por coma en campo specs",
-        "Ver chips generados debajo del input en tiempo real",
-        "Guardar producto y verificar chips en la fila de la tabla",
-        "Hacer clic en un chip de la tabla para activar filtro por ese tag",
-        "Ver barra de filtros activos encima de la tabla con el tag seleccionado",
-        "Ver que tabla se actualiza mostrando solo productos con ese tag",
-        "Probar varios tags clickeables y combinaciones de filtros"
+        "Reemplazar input descripcion por autocomplete productos (patron NV)",
+        "Reemplazar cliente_id numerico por ClienteSelectModal",
+        "Eliminar TODOs",
+        "Test de smoke en BoletaNueva.test.tsx",
+        "Importar ProductoAutocomplete desde NV y validar props",
+        "Reemplazar input descripción en BoletaNueva por autocomplete con lógica de selección",
+        "Importar ClienteSelectModal y reemplazar campo cliente_id numérico",
+        "Configurar mapeo de datos seleccionados (producto → descripción/precio; cliente → razón/RUT)",
+        "Eliminar TODOs W1-04 de BoletaNueva.tsx",
+        "Ejecutar tests smoke en BoletaNueva.test.tsx y verificar cobertura",
+        "Deploy a staging y mover Trello a In review"
       ]
     }
   ]
