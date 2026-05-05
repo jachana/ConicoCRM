@@ -53,6 +53,7 @@ from app.api import onboarding_payments
 from app.api import onboarding_clientes_empresas
 from app.api import onboarding_bodegas_sedes
 from app.api import onboarding_cafs
+from app.api import cafs
 from app.api import onboarding_usuarios
 from app.api import onboarding_stock
 from app.api import onboarding_categorias
@@ -177,6 +178,7 @@ app.include_router(onboarding_payments.router, prefix="/api/onboarding/payments"
 app.include_router(onboarding_clientes_empresas.router, prefix="/api/onboarding/clientes_empresas", tags=["onboarding"])
 app.include_router(onboarding_bodegas_sedes.router, prefix="/api/onboarding/bodegas-sedes", tags=["onboarding"])
 app.include_router(onboarding_cafs.router, prefix="/api/onboarding/cafs", tags=["onboarding"])
+app.include_router(cafs.router, prefix="/api/cafs", tags=["cafs"])
 app.include_router(onboarding_usuarios.router, prefix="/api/onboarding/usuarios", tags=["onboarding"])
 app.include_router(onboarding_stock.router, prefix="/api/onboarding/stock", tags=["onboarding"])
 app.include_router(onboarding_categorias.router, prefix="/api/onboarding/categorias", tags=["onboarding"])
