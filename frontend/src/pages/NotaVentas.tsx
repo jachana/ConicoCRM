@@ -1,5 +1,6 @@
 import { openPdf } from '../lib/pdf'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useDebounce } from '../hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Plus, FileText, Eye, Trash2, FileSpreadsheet, Inbox, Search } from 'lucide-react'
@@ -43,14 +44,9 @@ export default function NotaVentas() {
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
   const [busqueda, setBusqueda] = useState('')
-  const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
+  const debouncedBusqueda = useDebounce(busqueda, 300)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState('')
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
-    return () => clearTimeout(t)
-  }, [busqueda])
 
   const params = new URLSearchParams()
   if (estado) params.set('estado', estado)

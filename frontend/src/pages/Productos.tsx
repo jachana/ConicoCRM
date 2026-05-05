@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useDebounce } from '../hooks/useDebounce'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Search, FileSpreadsheet, Inbox, Pencil, Trash2, Tag, X, Check } from 'lucide-react'
@@ -30,6 +31,7 @@ export default function Productos() {
   const isVendedor = (effectiveRole ?? user?.role) === 'vendedor'
   const canEdit = !!permissions?.catalogo?.edit
   const [busqueda, setBusqueda] = useState('')
+  const debouncedBusqueda = useDebounce(busqueda, 300)
   const [tiposFiltro, setTiposFiltro] = useState<string[]>([])
   const [specsFiltro, setSpecsFiltro] = useState<string[]>([])
 
@@ -39,10 +41,10 @@ export default function Productos() {
   })
 
   const { data: productos = [], isLoading } = useQuery<Producto[]>({
-    queryKey: ['productos', busqueda, tiposFiltro, specsFiltro],
+    queryKey: ['productos', debouncedBusqueda, tiposFiltro, specsFiltro],
     queryFn: () => {
       const params = new URLSearchParams()
-      if (busqueda) params.set('q', busqueda)
+      if (debouncedBusqueda) params.set('q', debouncedBusqueda)
       for (const t of tiposFiltro) params.append('tipo', t)
       for (const s of specsFiltro) params.append('spec', s)
       return api.get(`/api/productos/?${params.toString()}`).then(r => r.data)

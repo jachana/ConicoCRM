@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useDebounce } from '../hooks/useDebounce'
 import { useAuthStore } from '../stores/auth'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
@@ -52,12 +53,7 @@ export default function Empresas() {
   const user = useAuthStore(s => s.user)
   const canEdit = user?.role !== 'vendedor'
   const [busqueda, setBusqueda] = useState('')
-  const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
-    return () => clearTimeout(t)
-  }, [busqueda])
+  const debouncedBusqueda = useDebounce(busqueda, 300)
 
   const [sector, setSector] = useState<string | null>(null)
   const [productoIds, setProductoIds] = useState<number[]>([])

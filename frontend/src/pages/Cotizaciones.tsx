@@ -1,5 +1,6 @@
 import { openPdf } from '../lib/pdf'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useDebounce } from '../hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
@@ -137,12 +138,7 @@ export default function Cotizaciones() {
   const [productos, setProductos] = useState<ProductoMin[]>([])
   const [productoSearch, setProductoSearch] = useState('')
   const [busqueda, setBusqueda] = useState('')
-  const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
-    return () => clearTimeout(t)
-  }, [busqueda])
+  const debouncedBusqueda = useDebounce(busqueda, 300)
 
   const [openPill, setOpenPill] = useState<string | null>(null)
   const filterBarRef = useRef<HTMLDivElement>(null)

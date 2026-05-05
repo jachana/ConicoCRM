@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useDebounce } from '../hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { Plus, Search, FileSpreadsheet, Inbox, Eye } from 'lucide-react'
 import { api } from '../lib/api'
@@ -30,12 +31,7 @@ const EMPTY_FORM: FormData = {
 export default function Clientes() {
   const qc = useQueryClient()
   const [busqueda, setBusqueda] = useState('')
-  const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
-    return () => clearTimeout(t)
-  }, [busqueda])
+  const debouncedBusqueda = useDebounce(busqueda, 300)
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editando, setEditando] = useState<Cliente | null>(null)
