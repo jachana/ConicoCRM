@@ -9,7 +9,7 @@ function buildMessage(alerts: CAFAlert[]): string {
   if (alerts.length === 1) {
     const a = alerts[0]
     let msg = `CAF tipo ${a.tipo_dte}: ${a.folios_restantes} folios restantes`
-    if (a.dias_al_vencimiento !== null && a.dias_al_vencimiento <= 30) {
+    if (a.dias_al_vencimiento !== null) {
       msg += `, vence en ${a.dias_al_vencimiento} días`
     }
     return msg
