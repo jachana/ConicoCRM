@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { api } from '../lib/api'
 import type { ProductoDocumento } from '../types'
 
@@ -24,7 +25,7 @@ export default function ProductoDocumentos({ productoId }: { productoId: number 
       })
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['producto-documentos', productoId] }),
-    onError: (e: any) => alert(e?.response?.data?.detail ?? 'Error al subir'),
+    onError: (e: any) => toast.error(e?.response?.data?.detail ?? 'Error al subir'),
   })
 
   const eliminar = useMutation({

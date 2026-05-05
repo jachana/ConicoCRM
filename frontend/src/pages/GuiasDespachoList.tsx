@@ -17,6 +17,7 @@ import {
 } from '../api/guiasDespacho'
 import { openPdf } from '../lib/pdf'
 import DteBadge from '../components/DteBadge'
+import ConfirmModal from '../components/ui/ConfirmModal'
 import {
   Button, Input, Badge, EmptyState, Skeleton, Card,
   Table, THead, TBody, TR, TH, TD,
@@ -72,6 +73,8 @@ export default function GuiasDespachoList() {
   const [motivo, setMotivo] = useState<MotivoTraslado | ''>('')
   const [vendedorId, setVendedorId] = useState('')
   const [page, setPage] = useState(1)
+  const [confirmEliminarId, setConfirmEliminarId] = useState<number | null>(null)
+  const [confirmEliminarNumero, setConfirmEliminarNumero] = useState<number | null>(null)
 
   const filters: GuiaListFilters = useMemo(() => ({
     fecha_desde: fechaDesde || undefined,
@@ -348,9 +351,7 @@ export default function GuiasDespachoList() {
                             variant="ghost"
                             disabled={!canDelete}
                             onClick={() => {
-                              if (window.confirm(`¿Eliminar guía N°${g.numero}? Solo posible si DTE no fue emitida.`)) {
-                                eliminarMut.mutate(g.id)
-                              }
+                              setConfirmEliminarId(g.id); setConfirmEliminarNumero(g.numero)
                             }}
                             aria-label="Eliminar guía"
                             className="text-gray-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
@@ -389,6 +390,15 @@ export default function GuiasDespachoList() {
           </Button>
         </div>
       )}
+      <ConfirmModal
+        open={confirmEliminarId !== null}
+        onOpenChange={(v) => { if (!v) { setConfirmEliminarId(null); setConfirmEliminarNumero(null) } }}
+        title={`¿Eliminar guía N°${confirmEliminarNumero}?`}
+        description="Solo posible si el DTE no fue emitido."
+        confirmLabel="Eliminar"
+        onConfirm={() => { const id = confirmEliminarId; setConfirmEliminarId(null); setConfirmEliminarNumero(null); if (id !== null) eliminarMut.mutate(id) }}
+        isPending={eliminarMut.isPending}
+      />
     </div>
   )
 }

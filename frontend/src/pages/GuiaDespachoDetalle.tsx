@@ -14,6 +14,7 @@ import {
 } from '../api/guiasDespacho'
 import { openPdf } from '../lib/pdf'
 import DteBadge from '../components/DteBadge'
+import ConfirmModal from '../components/ui/ConfirmModal'
 import {
   Button, Input, Badge, Card, CardContent,
   Table, THead, TBody, TR, TH, TD,
@@ -43,6 +44,8 @@ export default function GuiaDespachoDetalle() {
   const [direccion, setDireccion] = useState('')
   const [comuna, setComuna] = useState('')
   const [emailEnvio, setEmailEnvio] = useState('')
+  const [confirmAnular, setConfirmAnular] = useState(false)
+  const [confirmEliminar, setConfirmEliminar] = useState(false)
 
   const { data: guia, isLoading, isError } = useQuery<GuiaDespacho>({
     queryKey: ['guia-despacho', guiaId],
@@ -98,9 +101,13 @@ export default function GuiaDespachoDetalle() {
 
   function handleAnular() {
     if (!guia) return
-    if (window.confirm(`¿Crear NC tipo 61 para anular la guía N°${guia.numero}? La guía quedará anulada solo cuando la NC sea aceptada por SII.`)) {
-      navigate(`/notas-credito/nueva?guia_despacho_id=${guia.id}`)
-    }
+    setConfirmAnular(true)
+  }
+
+  function doAnular() {
+    if (!guia) return
+    setConfirmAnular(false)
+    navigate(`/notas-credito/nueva?guia_despacho_id=${guia.id}`)
   }
 
   function startEdit() {
@@ -303,7 +310,7 @@ export default function GuiaDespachoDetalle() {
             variant="outline"
             leftIcon={<Trash2 />}
             onClick={() => {
-              if (window.confirm('¿Eliminar guía? Solo posible si DTE no fue emitida.')) eliminarMut.mutate()
+              setConfirmEliminar(true)
             }}
             disabled={eliminarMut.isPending}
             loading={eliminarMut.isPending}
@@ -313,6 +320,23 @@ export default function GuiaDespachoDetalle() {
           </Button>
         )}
       </div>
+      <ConfirmModal
+        open={confirmAnular}
+        onOpenChange={setConfirmAnular}
+        title={`¿Anular guía N°${guia?.numero}?`}
+        description="Se creará una NC tipo 61. La guía quedará anulada solo cuando la NC sea aceptada por SII."
+        confirmLabel="Crear NC y anular"
+        onConfirm={doAnular}
+      />
+      <ConfirmModal
+        open={confirmEliminar}
+        onOpenChange={setConfirmEliminar}
+        title="¿Eliminar guía?"
+        description="Solo posible si el DTE no fue emitido."
+        confirmLabel="Eliminar"
+        onConfirm={() => { setConfirmEliminar(false); eliminarMut.mutate() }}
+        isPending={eliminarMut.isPending}
+      />
     </div>
   )
 }

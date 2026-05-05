@@ -10,6 +10,7 @@ import type { Factura, FacturaLinea, Cliente, User, Empresa, Pago, BancoReceptor
 import DteBadge from '../components/DteBadge'
 import TareasRelacionadas from '../components/TareasRelacionadas'
 import FacturaAdjuntos from '../components/FacturaAdjuntos'
+import ConfirmModal from '../components/ui/ConfirmModal'
 import {
   Button, Input, Textarea, FormField, Badge, Card, CardContent,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
@@ -87,6 +88,8 @@ export default function FacturaDetalle() {
   const [showPagoModal, setShowPagoModal] = useState(false)
   const [emitirOpen, setEmitirOpen] = useState(false)
   const [emitiendo, setEmitiendo] = useState(false)
+  const [confirmEliminarFactura, setConfirmEliminarFactura] = useState(false)
+  const [confirmEliminarPagoId, setConfirmEliminarPagoId] = useState<number | null>(null)
   const [pagoFecha, setPagoFecha] = useState(new Date().toISOString().split('T')[0])
   const [pagoMonto, setPagoMonto] = useState('')
   const [pagoMetodo, setPagoMetodo] = useState('transferencia')
@@ -343,7 +346,7 @@ export default function FacturaDetalle() {
       setEmitirOpen(false)
       window.location.reload()
     } catch {
-      alert('Error al emitir DTE. Intente de nuevo.')
+      toast.error('Error al emitir DTE. Intente de nuevo.')
     } finally {
       setEmitiendo(false)
     }
@@ -475,9 +478,7 @@ export default function FacturaDetalle() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => {
-                if (window.confirm('¿Eliminar esta factura?')) deleteMut.mutate()
-              }}
+              onClick={() => setConfirmEliminarFactura(true)}
               className="border-danger-300 text-danger-600 hover:bg-danger-50 dark:border-danger-700 dark:text-danger-400 dark:hover:bg-danger-500/10"
             >
               Eliminar
@@ -919,7 +920,7 @@ export default function FacturaDetalle() {
                             <Button
                               size="icon-xs"
                               variant="ghost"
-                              onClick={() => { if (window.confirm('¿Eliminar este abono?')) deletePagoMut.mutate(p.id) }}
+                              onClick={() => setConfirmEliminarPagoId(p.id)}
                               aria-label="Eliminar abono"
                               className="text-gray-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
                             >
@@ -1166,6 +1167,22 @@ export default function FacturaDetalle() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+      <ConfirmModal
+        open={confirmEliminarFactura}
+        onOpenChange={setConfirmEliminarFactura}
+        title="¿Eliminar esta factura?"
+        confirmLabel="Eliminar"
+        onConfirm={() => { setConfirmEliminarFactura(false); deleteMut.mutate() }}
+        isPending={deleteMut.isPending}
+      />
+      <ConfirmModal
+        open={confirmEliminarPagoId !== null}
+        onOpenChange={(v) => { if (!v) setConfirmEliminarPagoId(null) }}
+        title="¿Eliminar este abono?"
+        confirmLabel="Eliminar"
+        onConfirm={() => { const id = confirmEliminarPagoId; setConfirmEliminarPagoId(null); if (id !== null) deletePagoMut.mutate(id) }}
+        isPending={deletePagoMut.isPending}
+      />
     </div>
   )
 }

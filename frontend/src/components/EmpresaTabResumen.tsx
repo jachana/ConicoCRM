@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { Pencil, Upload } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import type { EmpresaListItem, Empresa } from '../types'
 import { Button, Card, CardContent } from './ui'
 import { api } from '../lib/api'
@@ -52,7 +53,7 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
       qc.invalidateQueries({ queryKey: ['empresa', empresa.id] })
       qc.invalidateQueries({ queryKey: ['empresas'] })
     },
-    onError: (e: any) => alert(e?.response?.data?.detail ?? 'Error al subir logo'),
+    onError: (e: any) => toast.error(e?.response?.data?.detail ?? 'Error al subir logo'),
   })
 
   const eliminarLogo = useMutation({
@@ -61,7 +62,7 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
       qc.invalidateQueries({ queryKey: ['empresa', empresa.id] })
       qc.invalidateQueries({ queryKey: ['empresas'] })
     },
-    onError: (e: any) => alert(e?.response?.data?.detail ?? 'Error al quitar logo'),
+    onError: (e: any) => toast.error(e?.response?.data?.detail ?? 'Error al quitar logo'),
   })
 
   return (

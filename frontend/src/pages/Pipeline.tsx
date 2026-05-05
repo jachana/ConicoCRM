@@ -8,6 +8,7 @@ import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '../components/ui/Modal'
+import ConfirmModal from '../components/ui/ConfirmModal'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Textarea } from '../components/ui/Textarea'
@@ -70,6 +71,7 @@ export default function PipelinePage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [draggedId, setDraggedId] = useState<number | null>(null)
   const [dragOverEtapa, setDragOverEtapa] = useState<number | null>(null)
+  const [confirmEliminar, setConfirmEliminar] = useState<{ id: number; titulo: string } | null>(null)
 
   const { data: pipeline, isLoading } = useQuery<Pipeline>({
     queryKey: ['pipeline'],
@@ -282,7 +284,7 @@ export default function PipelinePage() {
                     onDragEnd={() => setDraggedId(null)}
                     onEdit={() => openEdit(op)}
                     onDelete={() => {
-                      if (window.confirm(`¿Eliminar oportunidad "${op.titulo}"?`)) deleteMut.mutate(op.id)
+                      setConfirmEliminar({ id: op.id, titulo: op.titulo })
                     }}
                     onConvert={() => convertMut.mutate(op.id)}
                   />
@@ -396,6 +398,14 @@ export default function PipelinePage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+      <ConfirmModal
+        open={confirmEliminar !== null}
+        onOpenChange={(v) => { if (!v) setConfirmEliminar(null) }}
+        title={`¿Eliminar oportunidad "${confirmEliminar?.titulo}"?`}
+        confirmLabel="Eliminar"
+        onConfirm={() => { const item = confirmEliminar; setConfirmEliminar(null); if (item) deleteMut.mutate(item.id) }}
+        isPending={deleteMut.isPending}
+      />
     </div>
   )
 }

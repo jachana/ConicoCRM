@@ -4,6 +4,7 @@ import { completarTarea, descartarTarea, deleteTarea } from '../api/tareas';
 import type { Tarea } from '../types/tarea';
 import { useAuth } from '../hooks/useAuth';
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions';
+import ConfirmModal from './ui/ConfirmModal';
 
 function extractErrorDetail(e: unknown, fallback: string): string {
   const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
@@ -47,6 +48,7 @@ export default function TareaDrawer({ tarea, onClose, onChanged }: Props) {
   const isAdmin = (effectiveRole ?? user?.role) === 'admin';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmEliminar, setConfirmEliminar] = useState(false);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -93,7 +95,7 @@ export default function TareaDrawer({ tarea, onClose, onChanged }: Props) {
 
   async function handleEliminar() {
     if (busy) return;
-    if (!confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.')) return;
+    setConfirmEliminar(false);
     setBusy(true);
     setError(null);
     try {
@@ -108,6 +110,7 @@ export default function TareaDrawer({ tarea, onClose, onChanged }: Props) {
   }
 
   return (
+    <>
     <div
       role="dialog"
       aria-modal="true"
@@ -210,7 +213,7 @@ export default function TareaDrawer({ tarea, onClose, onChanged }: Props) {
             {puedeEliminar && (
               <button
                 type="button"
-                onClick={handleEliminar}
+                onClick={() => setConfirmEliminar(true)}
                 disabled={busy}
                 aria-label="Eliminar tarea"
                 className="inline-flex items-center gap-1.5 bg-danger-600 hover:bg-danger-700 text-white rounded-lg px-4 py-2 text-sm transition-colors disabled:opacity-50"
@@ -245,5 +248,15 @@ export default function TareaDrawer({ tarea, onClose, onChanged }: Props) {
         )}
       </aside>
     </div>
+    <ConfirmModal
+      open={confirmEliminar}
+      onOpenChange={setConfirmEliminar}
+      title="¿Eliminar esta tarea?"
+      description="Esta acción no se puede deshacer."
+      confirmLabel="Eliminar"
+      onConfirm={handleEliminar}
+      isPending={busy}
+    />
+    </>
   );
 }

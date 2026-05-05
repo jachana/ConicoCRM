@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { api } from '../lib/api'
 import type { FacturaAdjunto } from '../types'
 
@@ -25,7 +26,7 @@ export default function FacturaAdjuntos({ facturaId, disabled = false }: { factu
       })
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['factura-adjuntos', facturaId] }),
-    onError: (e: any) => alert(e?.response?.data?.detail ?? 'Error al subir'),
+    onError: (e: any) => toast.error(e?.response?.data?.detail ?? 'Error al subir'),
   })
 
   const eliminar = useMutation({
