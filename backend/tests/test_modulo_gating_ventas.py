@@ -7,18 +7,23 @@ For each gated module we verify:
 
 import pytest
 from tests.conftest import TestingSession
+from app.core.security import get_password_hash
+
+# Compute once at import time — bcrypt is intentionally slow; reusing the hash
+# across the 7 test invocations avoids 6 unnecessary rounds of key-stretching.
+_BLOCKED_HASH = get_password_hash("secret123")
 
 
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
 
+# NOTE: depends implicitly on setup_test_db via the `client` fixture chain.
 def _make_blocked_token(client, module_slug: str) -> str:
     """Create a user whose empresa has module_slug = False, return JWT token."""
     from app.models.empresa import Empresa
     from app.models.user import User
     from app.core.modulos import OPTIONAL_MODULES
-    from app.core.security import get_password_hash
 
     db = TestingSession()
     # All modules on except the target slug
@@ -33,7 +38,7 @@ def _make_blocked_token(client, module_slug: str) -> str:
     user = User(
         email=email,
         name="Blocked",
-        hashed_password=get_password_hash("secret123"),
+        hashed_password=_BLOCKED_HASH,
         role="admin",
         empresa_id=empresa.id,
     )
