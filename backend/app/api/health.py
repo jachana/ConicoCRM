@@ -8,6 +8,11 @@ for now; it shares the same handler so we have a single source of truth and
 no copy-paste drift. We can split them later (e.g., readyz could check warm
 caches) by registering separate functions if/when the semantics diverge.
 
+`/health/live` — always-200 liveness probe (no external calls).
+
+`/health/full` — comprehensive check: DB, Redis, Celery, Lioren.
+              Returns 200 if all ok/skipped, 503 if any "error".
+
 These endpoints MUST NOT require auth — they are consumed by infra.
 
 Important: the DB check uses a dedicated, short-lived engine with NullPool
@@ -19,8 +24,10 @@ of app DB pool state.
 """
 from __future__ import annotations
 
+import time
 from typing import Any
 
+import httpx
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from sqlalchemy import create_engine, text
@@ -57,18 +64,22 @@ _health_engine: Engine = _build_health_engine()
 
 
 def _check_db() -> dict[str, Any]:
+    t0 = time.perf_counter()
     try:
         with _health_engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-        return {"name": "db", "status": "ok"}
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+        return {"name": "db", "status": "ok", "latency_ms": latency_ms}
     except Exception as e:
-        return {"name": "db", "status": "error", "error": str(e)[:200]}
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+        return {"name": "db", "status": "error", "latency_ms": latency_ms, "error": str(e)[:200]}
 
 
 def _check_redis() -> dict[str, Any]:
     url = (settings.redis_url or "").strip()
     if not url:
-        return {"name": "redis", "status": "skipped", "reason": "not_configured"}
+        return {"name": "redis", "status": "skipped", "latency_ms": 0.0, "reason": "not_configured"}
+    t0 = time.perf_counter()
     try:
         import redis  # type: ignore
 
@@ -79,15 +90,59 @@ def _check_redis() -> dict[str, Any]:
             url, socket_connect_timeout=1, socket_timeout=1
         )
         client.ping()
-        return {"name": "redis", "status": "ok"}
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+        return {"name": "redis", "status": "ok", "latency_ms": latency_ms}
     except ImportError:
-        return {"name": "redis", "status": "skipped", "reason": "redis_pkg_missing"}
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+        return {"name": "redis", "status": "skipped", "latency_ms": latency_ms, "reason": "redis_pkg_missing"}
     except Exception as e:
-        return {"name": "redis", "status": "error", "error": str(e)[:200]}
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+        return {"name": "redis", "status": "error", "latency_ms": latency_ms, "error": str(e)[:200]}
+
+
+def _check_celery() -> dict[str, Any]:
+    url = (settings.redis_url or "").strip()
+    if not url:
+        return {"name": "celery", "status": "skipped", "latency_ms": 0.0, "reason": "redis_not_configured"}
+    t0 = time.perf_counter()
+    try:
+        from app.celery_app import celery_app  # local import to avoid circular deps
+
+        result = celery_app.control.ping(timeout=3)
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+        if not result:
+            return {"name": "celery", "status": "error", "latency_ms": latency_ms, "error": "no workers responded"}
+        return {"name": "celery", "status": "ok", "latency_ms": latency_ms}
+    except Exception as e:
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+        return {"name": "celery", "status": "error", "latency_ms": latency_ms, "error": str(e)[:200]}
+
+
+def _check_lioren() -> dict[str, Any]:
+    api_key = (settings.lioren_api_key or "").strip()
+    if not api_key:
+        return {"name": "lioren", "status": "skipped", "latency_ms": 0.0, "reason": "not_configured"}
+    t0 = time.perf_counter()
+    try:
+        url = settings.lioren_api_url or "https://api.lioren.cl/v1"
+        response = httpx.get(
+            url,
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=5.0,
+        )
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+        # Any HTTP response (even 4xx) means the service is reachable
+        return {"name": "lioren", "status": "ok", "latency_ms": latency_ms}
+    except httpx.ConnectError as e:
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+        return {"name": "lioren", "status": "error", "latency_ms": latency_ms, "error": str(e)[:200]}
+    except Exception as e:
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+        return {"name": "lioren", "status": "error", "latency_ms": latency_ms, "error": str(e)[:200]}
 
 
 def _build_health_response() -> JSONResponse:
-    checks = [_check_db(), _check_redis()]
+    checks = [_check_db(), _check_redis(), _check_celery(), _check_lioren()]
     # Only "error" is fatal — "skipped" must not 503 the service.
     unhealthy = any(c["status"] == "error" for c in checks)
     body = {"status": "error" if unhealthy else "ok", "checks": checks}
@@ -98,10 +153,23 @@ def healthz() -> JSONResponse:
     return _build_health_response()
 
 
-# Single source of truth: register the same handler under both paths.
-# Keeps semantics identical without duplicating code; we can split later.
+def health_live() -> JSONResponse:
+    """Liveness probe — always returns 200. No external checks."""
+    return JSONResponse(status_code=200, content={"status": "alive"})
+
+
+def health_full() -> JSONResponse:
+    """Full health check: DB, Redis, Celery, Lioren."""
+    return _build_health_response()
+
+
+# Single source of truth: register the same handler under both legacy paths.
 router.add_api_route("/healthz", healthz, methods=["GET"], include_in_schema=False)
 router.add_api_route("/readyz", healthz, methods=["GET"], include_in_schema=False)
+
+# New structured endpoints
+router.add_api_route("/health/live", health_live, methods=["GET"], include_in_schema=True)
+router.add_api_route("/health/full", health_full, methods=["GET"], include_in_schema=True)
 
 
 __all__ = ["router"]

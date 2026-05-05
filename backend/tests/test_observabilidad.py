@@ -18,16 +18,21 @@ from loguru import logger
 
 @pytest.fixture
 def stub_redis_ok():
-    """Local test envs don't run Redis; stub the redis check to 'ok'.
-
-    Prevents the real ping from timing out / 503-ing the health endpoint.
-    """
+    """Stub Redis, Celery, and Lioren checks for local test envs."""
     from app.api import health as health_module
 
     with patch.object(
         health_module,
         "_check_redis",
-        lambda: {"name": "redis", "status": "ok"},
+        lambda: {"name": "redis", "status": "ok", "latency_ms": 0.0},
+    ), patch.object(
+        health_module,
+        "_check_celery",
+        lambda: {"name": "celery", "status": "skipped", "latency_ms": 0.0, "reason": "test_env"},
+    ), patch.object(
+        health_module,
+        "_check_lioren",
+        lambda: {"name": "lioren", "status": "skipped", "latency_ms": 0.0, "reason": "test_env"},
     ):
         yield
 
@@ -71,9 +76,11 @@ def test_healthz_redis_unavailable_does_not_503(client):
     from app.api import health as health_module
 
     def _skipped_redis():
-        return {"name": "redis", "status": "skipped", "reason": "not_configured"}
+        return {"name": "redis", "status": "skipped", "latency_ms": 0.0, "reason": "not_configured"}
 
-    with patch.object(health_module, "_check_redis", _skipped_redis):
+    with patch.object(health_module, "_check_redis", _skipped_redis), \
+         patch.object(health_module, "_check_celery", lambda: {"name": "celery", "status": "skipped", "latency_ms": 0.0, "reason": "test_env"}), \
+         patch.object(health_module, "_check_lioren", lambda: {"name": "lioren", "status": "skipped", "latency_ms": 0.0, "reason": "test_env"}):
         resp = client.get("/healthz")
         assert resp.status_code == 200
         redis_check = next(c for c in resp.json()["checks"] if c["name"] == "redis")
