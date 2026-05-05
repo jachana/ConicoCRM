@@ -32,30 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Telemetry T1.1] RequestLoggerMiddleware: agregar empresa_id + response_size + query_count",
       "labels": [
         "Core",
         "Goal: Operations",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nActualmente el RequestLoggerMiddleware no captura información de atribución (empresa_id) ni métricas de carga de base de datos (query_count) por request. Esto dificulta el debugging de problemas de rendimiento y la auditoría multi-tenant. Se requiere enriquecer el log per-request con estos campos para detectar endpoints DB-heavy y asignar uso por empresa.\n\n**Acceptance Criteria**\n- El log per-request incluye `empresa_id` extraído del JWT claim (sin hit a DB) o del objeto user cargado en contexto.\n- El log per-request incluye `query_count`: cantidad de queries SQL ejecutadas durante el request.\n- El log per-request incluye `response_size`: tamaño en bytes del response (desde header Content-Length si disponible).\n- Requests autenticados emiten empresa_id como string; requests anónimos emiten `null` sin errores.\n- Campos null o faltantes no rompen la estructura JSON del log.\n- El overhead de captura de métricas es negligible (<1ms por request).\n\n**Definition of Done**\n- Código en `backend/app/core/request_logger.py` mergeado y pusheado a develop.\n- Tests unitarios pasan (incluyen casos: auth + empresa_id, anónimo, N+1 queries).\n- Benchmark de overhead ejecutado y documentado (tiempo de captura <1ms).\n- Trello card movido a \"In review\".\n- Deploy a staging completado; logs visibles en sistema de monitoreo.\n\n**Notas tecnicas**\n- Ruta: `backend/app/core/request_logger.py` (middleware existente).\n- JWT claim para empresa_id: verificar nombre exacto en config (ej. `org_id`, `empresa_id`, etc.).\n- SQLAlchemy: usar `event.listen(Engine, 'before_cursor_execute')` y `request.ctx.query_count` (contextvars) para conteo por request.\n- Response size: header `Content-Length` si presente; fallback a `len(response.body)` si aplica.\n- Formato log: JSON, agregar claves `empresa_id`, `query_count`, `response_size` al dict de atributos.\n- Tests: `test_request_logger_with_auth_empresa_id()`, `test_request_logger_anon_null()`, `test_query_count_n_plus_one()`.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Se enriquece el RequestLoggerMiddleware para incluir `empresa_id`, `query_count` y `response_size` en los logs de cada request, facilitando auditoría y monitoreo de performance.\n\n**Cambios / Decisiones** — Se añadió `_extract_empresa_id()` en `backend/app/core/request_logger.py` para obtener el ID desde el contexto o JWT sin acceso a DB. Se implementó conteo de queries usando `before_cursor_execute` y `ContextVar`. Se captura `response_size` desde el header `Content-Length`. Se agregaron campos al log JSON en `request.completed`. Se añadieron 9 tests en `backend/tests/test_request_logger.py` para cubrir casos auth, anónimos, y N+1.",
       "checklist": [
-        "Lookup empresa_id desde JWT claim (decode-only, sin DB hit) o desde user.empresa_id si ya cargado",
-        "Hook al engine SQLAlchemy para contar queries por request (request-scoped contextvar contador)",
-        "Capturar response Content-Length cuando este disponible",
-        "Agregar campos al log line: empresa_id, query_count, response_size",
-        "Verificar que campos null/missing no rompen el log JSON",
-        "Test: request autenticado emite log con empresa_id; request anonimo emite con null",
-        "Test: query_count refleja N+1 en endpoints conocidos",
-        "Verificar overhead negligible (<1ms) con benchmark simple",
-        "Extraer empresa_id del JWT claim (sin DB hit) o desde user context; manejar caso anónimo con null",
-        "Implementar hook SQLAlchemy (before_cursor_execute) + contextvars para contar queries por request",
-        "Capturar response Content-Length desde headers; agregar fallback si no disponible",
-        "Enriquecer log line con campos empresa_id, query_count, response_size en formato JSON",
-        "Validar que null/missing no rompen parsing JSON; test casos edge",
-        "Tests: autenticado emite empresa_id, anónimo emite null, query_count refleja N+1 conocido",
-        "Benchmark: medir overhead <1ms; test y deploy a staging"
+        "Enviar request autenticado y verificar log con empresa_id válido",
+        "Enviar request anónimo y verificar empresa_id es null en log",
+        "Hacer request a endpoint con N+1 queries y validar query_count > 1",
+        "Verificar response_size en log coincide con Content-Length del header",
+        "Revisar que logs se emiten en formato JSON válido con nuevos campos",
+        "Ejecutar tests unitarios en `test_request_logger.py`",
+        "Confirmar que no hay errores en requests sin headers o empresa_id"
       ]
     }
   ]
