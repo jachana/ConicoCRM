@@ -32,27 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[UX] Migrar BoletaAnularModal/BoletaEmailModal a ui/Modal",
       "labels": [
         "Design System",
         "Goal: UX Polish",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nBoletaAnularModal y BoletaEmailModal son componentes legacy ubicados fuera del sistema de diseño. Su migración a ui/Modal asegura consistencia visual en toda la aplicación y facilita mantenimiento futuro del Design System.\n\n**Acceptance Criteria**\n- Ambos modales usan ui/Modal como componente base.\n- BoletaAnularModal aplica variant='danger' para diferenciación visual.\n- Los flujos de anulación y envío de correo funcionan idénticamente que antes.\n- Los tests existentes pasan sin modificación de lógica de negocio.\n- Si quedan sin referencias tras la migración, los componentes legacy se eliminan.\n- El código en BoletaDetalle.tsx:297 refleja las nuevas importaciones.\n\n**Definition of Done**\n- Tests unitarios pasan (componentes y BoletaDetalle).\n- Cambios verificados en staging (comportamiento modal, validaciones, estilos).\n- PR revisado y aprobado por Design System owner.\n- Trello card movida a In review.\n- Si aplica, clean up de BoletaAnularModal.tsx y BoletaEmailModal.tsx.\n\n**Notas tecnicas**\n- Ubicación actual: probablemente `src/pages/Boleta/components/BoletaDetalle.tsx:297`.\n- Componente destino: `src/ui/Modal` con props `variant: 'default' | 'danger'`.\n- Revisar props de trigger, onConfirm, onCancel en cada modal legacy.\n- Considerar si existen custom footers o headers que necesiten adaptación.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Migrar BoletaAnularModal y BoletaEmailModal al componente ui/Modal para unificar el sistema de diseño y mejorar accesibilidad.\n\n**Cambios / Decisiones** — Se reemplazaron los modales legacy por `ui/Modal` con soporte de Radix para mejor manejo de foco y accesibilidad. `BoletaAnularModal` usa `variant='danger'`, ambos adoptan la interfaz `isOpen/onClose`. Se actualizaron las importaciones y llamadas en `BoletaDetalle.tsx` y `BoletasList.tsx`. Se eliminaron los componentes antiguos tras la migración.",
       "checklist": [
-        "Portar BoletaAnularModal a ui/Modal (variant danger)",
-        "Portar BoletaEmailModal a ui/Modal",
-        "Eliminar componentes legacy si quedan sin uso",
-        "Verificar tests",
-        "Revisar estructura y props de BoletaAnularModal",
-        "Portar BoletaAnularModal a ui/Modal con variant='danger'",
-        "Revisar estructura y props de BoletaEmailModal",
-        "Portar BoletaEmailModal a ui/Modal con variant='default'",
-        "Actualizar importaciones en BoletaDetalle.tsx:297",
-        "Ejecutar tests unitarios y e2e (anulación + envío correo)",
-        "Eliminar componentes legacy si no tienen referencias",
-        "Mover card a In review y desplegar a staging"
+        "Abrir detalle de boleta y clic en 'Anular' muestra modal con estilo danger",
+        "Enviar correo desde lista de boletas abre modal con estilo default",
+        "Verificar cierre con Escape y botón X en ambos modales",
+        "Confirmar flujo de anulación y envío de correo funciona igual",
+        "Revisar que focus se maneje correctamente en modales",
+        "Validar que no queden referencias a componentes legacy",
+        "Ejecutar tests unitarios de modales y BoletaDetalle"
       ]
     }
   ]
