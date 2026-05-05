@@ -18,25 +18,36 @@ interface DiffEntry {
 }
 
 function formatDate(iso: string): string {
-  const d = new Date(iso)
-  const dd = String(d.getDate()).padStart(2, '0')
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const yyyy = d.getFullYear()
-  const hh = String(d.getHours()).padStart(2, '0')
-  const min = String(d.getMinutes()).padStart(2, '0')
-  return `${dd}/${mm}/${yyyy} ${hh}:${min}`
+  try {
+    const d = new Date(iso)
+    return d.toLocaleString('es-CL', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    })
+  } catch {
+    return iso
+  }
 }
 
 function stateLabel(val: boolean): string {
   return val ? 'Activo' : 'Inactivo'
 }
 
+function isDiffEntry(x: unknown): x is DiffEntry {
+  return (
+    typeof x === 'object' && x !== null &&
+    typeof (x as DiffEntry).slug === 'string' &&
+    typeof (x as DiffEntry).before === 'boolean' &&
+    typeof (x as DiffEntry).after === 'boolean'
+  )
+}
+
 function extractDiff(log: AuditLog, slug: string): DiffEntry | null {
   if (!log.diff_json) return null
   const raw = log.diff_json as { diff?: unknown }
   if (!Array.isArray(raw.diff)) return null
-  const entry = (raw.diff as DiffEntry[]).find(d => d.slug === slug)
-  return entry ?? null
+  const entries = Array.isArray(raw.diff) ? raw.diff.filter(isDiffEntry) : []
+  return entries.find(d => d.slug === slug) ?? null
 }
 
 export default function ModuleAuditModal({ slug, label, empresaId, onClose }: Props) {
