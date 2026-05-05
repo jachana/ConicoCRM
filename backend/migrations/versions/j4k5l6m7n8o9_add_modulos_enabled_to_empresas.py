@@ -57,7 +57,7 @@ def upgrade() -> None:
     )
     bind = op.get_bind()
     bind.execute(
-        text("UPDATE empresas SET modulos_enabled = :v WHERE modulos_enabled = '{}'::jsonb OR modulos_enabled IS NULL"),
+        text("UPDATE empresas SET modulos_enabled = :v WHERE modulos_enabled::text = '{}' OR modulos_enabled IS NULL"),
         {"v": json.dumps(_ALL_ON)},
     )
 
