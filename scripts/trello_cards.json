@@ -32,21 +32,30 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Modulos P2.5] Ocultar acciones cross-module en detalles",
+      "list": "In progress",
+      "name": "[Modulos P3.1] Tab 'Modulos' en /configuracion/empresa (read-only listado)",
       "labels": [
         "Core",
+        "Design System",
         "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Resumen** — Se implementó la lógica condicional para ocultar botones de acciones cruzadas en las páginas de detalle cuando los módulos destino están desactivados por el administrador.\n\n**Cambios / Decisiones**\n- Se aplicaron condicionales en 6 componentes de detalle (`NotaVentaDetalle`, `FacturaDetalle`, `BoletaDetalle`, `GuiaDespachoDetalle`, `CotizacionDetalle`, `OrdenCompraDetalle`) en `frontend/src/pages/`.\n- Se consultan los flags de módulos del contexto P2.1 (`config.modulos.*`) antes de renderizar botones específicos: 'Generar Factura'/'Generar guía' en NV, 'Registrar abono' en Factura, 'Anular' en Boleta/GD, 'Crear NV' en Cotización y 'Recepcionar mercadería' en OC.\n- Se envolvió el panel inline de recepción de OC en la misma condicional para evitar estados inconsistentes.\n- Se añadieron tests unitarios en los archivos `.test.tsx` de cada componente para verificar comportamiento visible/oculto según los flags.\n- Se mantiene el patrón existente de consumo de contexto global sin introducir nuevas dependencias ni cambios de esquema.",
+      "desc": "**Contexto / Problema**\nLos administradores necesitan visualizar el catálogo completo de módulos opcionales en Conico CRM, incluyendo sus dependencias y estado actual, antes de poder habilitarlos/deshabilitarlos. Este card crea la estructura de presentación (read-only) que será base para P3.2 (interactividad de toggles).\n\n**Acceptance Criteria**\n- Tab 'Módulos' aparece en `/configuracion/empresa` y es visible solo para usuarios con rol admin.\n- GET `/empresas/{empresa_id}/modulos` se ejecuta al montar el componente, trayendo registry, stored y effective state.\n- Los módulos se agrupan por categoría, cada categoría moestra título y descripción.\n- Cada módulo renderiza: label, descripción, badge de estado (on/off), texto 'Requiere: X' si depende de módulo deshabilitado, texto 'Habilita: Y' si tiene dependents.\n- Los switches son visualmente deshabilitados (sin onClick ni hover interactivo).\n- Estados loading (spinner) y error (mensaje) se muestran correctamente.\n- No-admin users no ven el tab.\n\n**Definition of Done**\n- Componente `ModulesTab` implementado en `/src/pages/configuracion/empresa/ModulesTab.tsx`.\n- Tests unitarios cubren: rendering condicional por rol, fetch y mapeo de datos, grupos por categoría, estados loading/error.\n- PR revisado y aprobado.\n- Desplegado a staging.\n- Card movida a 'In Review'.\n\n**Notas tecnicas**\n- Endpoint: `GET /empresas/{empresa_id}/modulos` responde con `{registry, stored, effective}`.\n- Estructura de módulo en response: `{id, label, description, category, dependencies, dependents, currentState}`.\n- Usar `useAdminGate()` o similar para restringir visibilidad del tab.\n- Switch component debe tener `disabled={true}` y `cursor: not-allowed`.\n- Archivo: `/src/pages/configuracion/empresa/ModulesTab.tsx`; o integrar en existing `/configuracion/empresa` si ya existe estructura de tabs.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir detalle de Nota de Venta con módulos de factura y guía deshabilitados y verificar que no aparezcan sus botones.",
-        "Ir al detalle de Factura, desactivar el módulo de pagos y confirmar que el botón de registrar abono no se renderiza.",
-        "Revisar detalle de Boleta y Guía de Despacho con nota de crédito off para validar que 'Anular' está oculto en ambas.",
-        "Abrir detalle de Cotización y OC con notas de venta e inventario deshabilitados, verificando que 'Crear NV' y 'Recepcionar' no aparezcan.",
-        "Ejecutar los tests unitarios de las 6 pantallas de detalle con `npm run test` y confirmar que todos pasan sin errores.",
-        "Validar en staging que al activar un módulo destino, los botones afectados vuelvan a ser visibles inmediatamente."
+        "Pagina/tab Modulos en Configuracion (admin only)",
+        "Fetch GET /empresas/{empresa_id}/modulos (incluye registry y stored y effective)",
+        "Render agrupado por categoria con titulo y descripcion",
+        "Cada modulo muestra: label, descripcion, estado (on/off badge), 'requiere: X' si tiene parent off, 'habilita: Y' si tiene dependents",
+        "Switch visualmente disabled (sin onClick todavia)",
+        "Estado loading + error",
+        "Hide tab para non-admin",
+        "Crear tab 'Módulos' en `/configuracion/empresa` con gate de admin",
+        "Implementar fetch GET `/empresas/{empresa_id}/modulos` en hook o effect",
+        "Agrupar módulos por categoría y renderizar con título + descripción",
+        "Renderizar cada módulo: label, descripción, badge estado, dependencias (Requiere/Habilita)",
+        "Deshabilitar visualmente switches y agregar estados loading/error",
+        "Escribir tests: rol admin, fetch, agrupación, estados UI",
+        "Deploy a staging y mover card a In Review"
       ]
     }
   ]
