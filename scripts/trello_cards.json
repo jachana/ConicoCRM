@@ -32,22 +32,34 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Modulos P1.5] Wire require_modulo a procurement + inventario + finanzas",
+      "list": "In progress",
+      "name": "[Modulos P1.6] Wire require_modulo a RRHH + CRM + libros + DTE recepcion + aprobaciones",
       "labels": [
         "Core",
         "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Resumen** — Aplicar middleware require_modulo a routers de procurement, inventario y finanzas para validar módulos habilitados.\n\n**Cambios / Decisiones** — Se aplicó require_modulo a los routers: proveedores, ordenes_compra, facturas_compra, inventario, listas_precios, pagos, cobranza y bancos_receptores. Cada endpoint ahora rechaza con 403 si su módulo asociado está deshabilitado. Se agregaron 16 tests integrales en tests/integration/test_modulo_gating_procurement_inventario_finanzas.py que validan el comportamiento 403/200 según estado del módulo. Se usó el mismo patrón de P1.4 para mantener consistencia.",
+      "desc": "**Contexto / Problema**\nTercer batch del gateado de módulos por licencia. Se debe aplicar el patrón `require_modulo()` establecido en P1.3 a los routers restantes (RRHH, CRM, libros, DTE recepción, aprobaciones) para asegurar que solo usuarios con módulos activos puedan acceder a esos endpoints.\n\n**Acceptance Criteria**\n- Routers de empleados, empleados_documentos, empleados_vacaciones verifican `require_modulo('rrhh')` antes de responder.\n- Router de oportunidades verifica `require_modulo('oportunidades')`.\n- Routers de tareas y reglas_tarea verifican `require_modulo('tareas')`.\n- Router de libros verifica `require_modulo('libros')`.\n- Router de dte_recepcion verifica `require_modulo('dte_recepcion')`.\n- Routers de aprobaciones, aprobaciones_costo, aprobaciones_margen verifican `require_modulo('aprobaciones')`.\n- Router de solicitudes_descuento verifica `require_modulo('aprobaciones_descuento')`.\n- Endpoint de reportes.py NO está gateado (acceso universal; tabs se adaptan en Phase 2).\n- Tests integrales por router confirman el gateado y retorno de 403 sin módulo.\n\n**Definition of Done**\n- Todos los routers aplican `require_modulo()` en orden correcto.\n- Tests integrales por router pasan (incluyendo casos sin licencia).\n- `reportes.py` se verifica que sigue accesible sin gateado.\n- Cambios desplegados a staging.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Patrón establecido en P1.3; reutilizar middleware/decorator.\n- Archivos objetivo: `routers/empleados.py`, `routers/oportunidades.py`, `routers/tareas.py`, `routers/libros.py`, `routers/dte_recepcion.py`, `routers/aprobaciones.py`, `routers/solicitudes_descuento.py`.\n- Respuesta 403 Forbidden si módulo no está activo en licencia del usuario.\n- Verificar que `reportes.py` (endpoint summary/dashboard) no está envuelto con require_modulo.\n\n<!-- conico-refined -->",
       "checklist": [
-        "POST a /api/proveedores con modulo 'proveedores' off → verificar 403",
-        "POST a /api/proveedores con modulo 'proveedores' on → verificar 200",
-        "POST a /api/ordenes_compra con modulo off → verificar 403",
-        "POST a /api/ordenes_compra con modulo on → verificar 200",
-        "POST a /api/facturas_compra con modulo off → verificar 403",
-        "POST a /api/facturas_compra con modulo on → verificar 200",
-        "POST a /api/inventario con modulo off → verificar 403"
+        "empleados + empleados_documentos + empleados_vacaciones routers -> require_modulo correspondiente",
+        "oportunidades router -> require_modulo('oportunidades')",
+        "tareas + reglas_tarea routers -> require_modulo correspondiente",
+        "libros router -> require_modulo('libros')",
+        "dte_recepcion router -> require_modulo('dte_recepcion')",
+        "aprobaciones + aprobaciones_costo + aprobaciones_margen routers -> require_modulo correspondiente",
+        "solicitudes_descuento -> require_modulo('aprobaciones_descuento')",
+        "Test integral por router",
+        "Verificar reportes.py NO esta gateado (siempre on, tabs adaptan en Phase 2)",
+        "Aplicar require_modulo('rrhh') a empleados, empleados_documentos, empleados_vacaciones",
+        "Aplicar require_modulo('oportunidades') a oportunidades router",
+        "Aplicar require_modulo('tareas') a tareas y reglas_tarea routers",
+        "Aplicar require_modulo('libros') a libros router",
+        "Aplicar require_modulo('dte_recepcion') a dte_recepcion router",
+        "Aplicar require_modulo('aprobaciones') a aprobaciones, aprobaciones_costo, aprobaciones_margen routers",
+        "Aplicar require_modulo('aprobaciones_descuento') a solicitudes_descuento router",
+        "Tests: verificar 403 Forbidden sin módulo + acceso 200 con módulo por router",
+        "Verificar reportes.py sin gateado (acceso universal)",
+        "Deploy a staging + Trello a In review"
       ]
     }
   ]
