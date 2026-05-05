@@ -1,15 +1,16 @@
-import { useState, useEffect, FormEvent } from 'react'
+import { useState, useEffect, useCallback, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, X } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { crearBoleta, BoletaTipoDte, BoletaMetodoPago, BoletaCreatePayload } from '../api/boletas'
 import {
   Button, Input, FormField, Card, CardContent,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '../components/ui'
 import { cn } from '../lib/cn'
-
-// TODO(W1-04): integrar autocomplete de productos (Task 15/16) en lugar del input plano de descripción.
-// TODO(W1-04): integrar ClienteSelectModal en lugar del input numérico de cliente_id.
+import { api } from '../lib/api'
+import type { Producto, Cliente } from '../types'
+import ClienteSelectModal from '../components/ClienteSelectModal'
 
 interface LineaUI {
   descripcion: string
@@ -56,6 +57,9 @@ export default function BoletaNueva() {
   const [tipoDte, setTipoDte] = useState<BoletaTipoDte>('39')
   const [receptorMode, setReceptorMode] = useState<ReceptorMode>('anonimo')
   const [clienteId, setClienteId] = useState('')
+  const [clienteNombre, setClienteNombre] = useState('')
+  const [showClienteModal, setShowClienteModal] = useState(false)
+  const [empresaId, setEmpresaId] = useState<number>(0)
   const [nombreReceptor, setNombreReceptor] = useState('')
   const [rutReceptor, setRutReceptor] = useState('')
   const [patente, setPatente] = useState('')
@@ -65,6 +69,20 @@ export default function BoletaNueva() {
   const [lineas, setLineas] = useState<LineaUI[]>([emptyLinea()])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [autocompleteIdx, setAutocompleteIdx] = useState<number | null>(null)
+  const [autocompleteResults, setAutocompleteResults] = useState<Producto[]>([])
+
+  const { data: empresas = [] } = useQuery<{ id: number; nombre: string }[]>({
+    queryKey: ['empresas'],
+    queryFn: () => api.get('/api/empresas/').then(r => r.data),
+  })
+
+  // Auto-select default empresa when there is exactly one
+  useEffect(() => {
+    if (empresas.length === 1 && empresaId === 0) {
+      setEmpresaId(empresas[0].id)
+    }
+  }, [empresas, empresaId])
 
   // tipo 41 fuerza exenta=true en todas las líneas existentes
   useEffect(() => {
@@ -72,6 +90,41 @@ export default function BoletaNueva() {
       setLineas(ls => ls.map(l => (l.exenta ? l : { ...l, exenta: true })))
     }
   }, [tipoDte])
+
+  const fetchAutocomplete = useCallback(async (q: string) => {
+    try {
+      if (q.trim() !== '') {
+        const res = await api.get<Producto[]>(`/api/productos/buscar?q=${encodeURIComponent(q)}`)
+        setAutocompleteResults(res.data)
+        return
+      }
+      setAutocompleteResults([])
+    } catch {
+      setAutocompleteResults([])
+    }
+  }, [])
+
+  function handleDescripcionChange(idx: number, value: string) {
+    setAutocompleteIdx(idx)
+    fetchAutocomplete(value)
+    updateLinea(idx, { descripcion: value })
+  }
+
+  function selectProducto(idx: number, producto: Producto) {
+    updateLinea(idx, {
+      descripcion: producto.nombre,
+      precio_unitario: String(Number(producto.precio_venta)),
+    })
+    setAutocompleteIdx(null)
+    setAutocompleteResults([])
+  }
+
+  function handleClienteSelect(cliente: Cliente) {
+    setClienteId(String(cliente.id))
+    setClienteNombre(cliente.nombre)
+    setShowClienteModal(false)
+    if (cliente.empresa_id) setEmpresaId(cliente.empresa_id)
+  }
 
   function addLinea() {
     setLineas([...lineas, { ...emptyLinea(), exenta: tipoDte === '41' }])
@@ -175,8 +228,14 @@ export default function BoletaNueva() {
         </div>
 
         {receptorMode === 'cliente' ? (
-          <FormField label="ID Cliente">
-            <Input type="number" value={clienteId} onChange={e => setClienteId(e.target.value)} placeholder="ID Cliente" />
+          <FormField label="Cliente">
+            <button
+              type="button"
+              onClick={() => setShowClienteModal(true)}
+              className="w-full text-left px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
+            >
+              {clienteNombre || <span className="text-gray-400">Seleccionar cliente...</span>}
+            </button>
           </FormField>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -225,7 +284,30 @@ export default function BoletaNueva() {
           <div className="space-y-2">
             {lineas.map((l, i) => (
               <div key={i} className="grid grid-cols-[1fr_80px_120px_80px_60px_36px] gap-2 items-center">
-                <Input size="sm" placeholder="Descripción" value={l.descripcion} onChange={e => updateLinea(i, { descripcion: e.target.value })} />
+                <div className="relative">
+                  <Input
+                    size="sm"
+                    placeholder="Descripción"
+                    value={l.descripcion}
+                    onChange={e => handleDescripcionChange(i, e.target.value)}
+                    onBlur={() => setTimeout(() => { setAutocompleteIdx(null); setAutocompleteResults([]) }, 200)}
+                  />
+                  {autocompleteIdx === i && autocompleteResults.length > 0 && (
+                    <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                      {autocompleteResults.slice(0, 8).map(p => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onMouseDown={() => selectProducto(i, p)}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-brand-50 dark:hover:bg-brand-500/10 border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+                        >
+                          <div className="font-medium text-gray-900 dark:text-white">{p.nombre}</div>
+                          <div className="text-gray-500 dark:text-gray-400">{p.sku ? `SKU: ${p.sku}` : ''} · ${Number(p.precio_venta).toLocaleString('es-CL')}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <Input size="sm" type="number" placeholder="Cantidad" value={l.cantidad} onChange={e => updateLinea(i, { cantidad: e.target.value })} min="0.01" step="0.01" />
                 <Input size="sm" type="number" placeholder="Precio" value={l.precio_unitario} onChange={e => updateLinea(i, { precio_unitario: e.target.value })} min="0" />
                 <Input size="sm" type="number" placeholder="Desc %" value={l.descuento_pct} onChange={e => updateLinea(i, { descuento_pct: e.target.value })} min="0" max="100" />
@@ -281,6 +363,14 @@ export default function BoletaNueva() {
             Cancelar
           </Button>
         </div>
+
+        <ClienteSelectModal
+          open={showClienteModal}
+          empresaId={empresaId}
+          empresaNombre={empresas.find(e => e.id === empresaId)?.nombre ?? ''}
+          onSelect={handleClienteSelect}
+          onClose={() => setShowClienteModal(false)}
+        />
       </form>
     </div>
   )
