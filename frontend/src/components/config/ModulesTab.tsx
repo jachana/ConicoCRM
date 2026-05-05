@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { History } from 'lucide-react'
 import { api } from '../../lib/api'
 import {
   Button, Modal, ModalContent, ModalHeader, ModalTitle, ModalBody, ModalFooter,
   Skeleton, Tooltip,
 } from '../ui'
+import ModuleAuditModal from './ModuleAuditModal'
 
 interface RegistryEntry {
   slug: string
@@ -89,6 +91,7 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
     | { kind: 'bulk'; cascade: string[]; bulkSlugs: Record<string, boolean> }
   const [pendingOff, setPendingOff] = useState<PendingOff | null>(null)
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set())
+  const [auditSlug, setAuditSlug] = useState<{ slug: string; label: string } | null>(null)
 
   const { data, isLoading, isError } = useQuery<ModulosResponse>({
     queryKey: ['empresa-modulos', empresaId],
@@ -356,6 +359,16 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
                       }`}>
                         {isOn ? 'Activo' : 'Inactivo'}
                       </span>
+                      <Tooltip label="Ver historial" side="left">
+                        <button
+                          type="button"
+                          aria-label={`Historial de ${entry.label}`}
+                          onClick={() => setAuditSlug({ slug: entry.slug, label: entry.label })}
+                          className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
+                        >
+                          <History className="size-4" />
+                        </button>
+                      </Tooltip>
                       {isBlocked ? (
                         <Tooltip label={`Requiere ${blockingLabel}`} side="left">
                           <span>{switchBtn}</span>
@@ -499,6 +512,15 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
           </ModalFooter>
         </ModalContent>
       </Modal>
+    )}
+    {/* Per-module audit history modal */}
+    {auditSlug && (
+      <ModuleAuditModal
+        slug={auditSlug.slug}
+        label={auditSlug.label}
+        empresaId={empresaId}
+        onClose={() => setAuditSlug(null)}
+      />
     )}
     </>
   )
