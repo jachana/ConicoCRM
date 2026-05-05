@@ -67,6 +67,9 @@ DEFAULT_IMPLEMENTER_MODEL = "sonnet"
 
 CLAUDE_CLI = shutil.which("claude") or "claude"
 
+FAILURE_LOG_FILE = REPO_ROOT / ".claude" / "failure_log.json"
+CODEBASE_MAP_FILE = SCRIPT_DIR / "impl_codebase_map.md"
+
 
 # ----------------------------- triage prompt ------------------------------ #
 
@@ -82,8 +85,8 @@ For each card, estimate IMPLEMENTATION DIFFICULTY (1-10):
   10   spike: research-heavy, unclear scope, blocked on external decisions
 
 Suggest implementer MODEL based on difficulty:
-  1-4  -> "haiku"
-  5-7  -> "sonnet"
+  1-3  -> "haiku"
+  4-7  -> "sonnet"
   8-10 -> "opus"
 
 Mark FEASIBLE=false if:
@@ -459,6 +462,117 @@ def reconcile_already_done(spec: dict, board_id: str,
 # ------------------------------ triage ----------------------------------- #
 
 
+# ----------------------- failure gate ------------------------------------ #
+
+
+def _load_failure_log() -> list[dict]:
+    if not FAILURE_LOG_FILE.exists():
+        return []
+    try:
+        return json.loads(FAILURE_LOG_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+
+def _append_failure_log(card_name: str, reason: str) -> None:
+    entries = _load_failure_log()
+    entries.append({"date": time.strftime("%Y-%m-%d"), "card": card_name,
+                    "reason": reason[:300]})
+    entries = entries[-50:]
+    FAILURE_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    FAILURE_LOG_FILE.write_text(
+        json.dumps(entries, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
+
+FAILURE_GATE_SYSTEM = (
+    "You guard an autonomous coding agent from repeating known failures.\n\n"
+    "Given a new card and a log of recent failures, decide if this card is likely "
+    "to fail for the same reason. Be conservative: only block if there is a clear "
+    "specific match (same module, same error pattern, same ambiguity). Do not block "
+    "on superficial name similarity.\n\n"
+    'Return JSON only: {"block": true|false, "reason": "one-line explanation or empty"}'
+)
+
+
+def _check_failure_gate(card: dict) -> tuple[bool, str]:
+    entries = _load_failure_log()
+    if not entries:
+        return False, ""
+    user = (
+        f"New card:\n{json.dumps({'name': card['name'], 'desc': (card.get('desc') or '')[:500]}, ensure_ascii=False)}\n\n"
+        f"Recent failures:\n{json.dumps(entries[-20:], ensure_ascii=False, indent=2)}"
+    )
+    try:
+        result = ts.prompt_json(FAILURE_GATE_SYSTEM, user,
+                                model_alias="qwen", provider="openrouter")
+        return bool(result.get("block")), str(result.get("reason") or "")
+    except Exception as e:
+        print(f"  failure gate error: {e}", file=sys.stderr)
+        return False, ""
+
+
+# ----------------------- pre-scope targeting ----------------------------- #
+
+
+SCOPE_SYSTEM = (
+    "You help an autonomous coding agent find the right files to change.\n\n"
+    "Given a Trello card and a source file list, identify 5-15 files most likely "
+    "to need reading or editing. Include the main implementation files (backend router, "
+    "model, schema; or frontend page, component, api file), relevant existing tests "
+    "to understand patterns, and any migration file if schema changes are needed.\n\n"
+    'Return JSON only: {"files": ["path1", ...], "note": "one-line approach hint"}'
+)
+
+
+def _get_file_tree() -> str:
+    r = subprocess.run(
+        ["git", "ls-files", "backend/app", "frontend/src", "migrations"],
+        cwd=str(REPO_ROOT), capture_output=True, text=True, check=False,
+    )
+    lines = [l for l in r.stdout.splitlines()
+             if not any(l.endswith(s) for s in (".pyc", ".map", "__init__.py"))]
+    return "\n".join(lines[:600])
+
+
+def _scope_card_files(card: dict) -> str:
+    file_tree = _get_file_tree()
+    if not file_tree:
+        return ""
+    user = (
+        f"Card: {json.dumps({'name': card['name'], 'desc': (card.get('desc') or '')[:500], 'checklist': (card.get('checklist') or [])[:5]}, ensure_ascii=False)}\n\n"
+        f"Source files:\n{file_tree}"
+    )
+    try:
+        result = ts.prompt_json(SCOPE_SYSTEM, user,
+                                model_alias="qwen", provider="openrouter")
+        files = result.get("files") or []
+        note = result.get("note") or ""
+        if not files:
+            return ""
+        lines = ["LIKELY FILES TO TOUCH (pre-scoped):"]
+        for f in files[:15]:
+            lines.append(f"  - {f}")
+        if note:
+            lines.append(f"  Note: {note}")
+        return "\n".join(lines)
+    except Exception as e:
+        print(f"  pre-scope failed: {e}", file=sys.stderr)
+        return ""
+
+
+# ----------------------- codebase map ------------------------------------ #
+
+
+def _load_codebase_map() -> str:
+    if not CODEBASE_MAP_FILE.exists():
+        return ""
+    text = CODEBASE_MAP_FILE.read_text(encoding="utf-8")
+    if len(text) > 3000:
+        text = text[:3000] + "\n... [map truncated]"
+    return f"\nCODEBASE MAP:\n{text}\n"
+
+
 def candidates(spec: dict) -> list[dict]:
     # done = any list the groomer should treat as "satisfied" for dep checks.
     done_names = {c["name"] for c in spec["cards"]
@@ -494,6 +608,16 @@ def candidates(spec: dict) -> list[dict]:
                 continue
             c["_groom"] = groom
         out.append(c)
+
+    unrefined = [c["name"] for c in out if not ts.is_refined(c)]
+    if unrefined:
+        print(f"  warning: {len(unrefined)} candidate(s) not groomed — run "
+              f"--refine-backlog before the loop for better results:")
+        for n in unrefined[:5]:
+            print(f"    - {n}")
+        if len(unrefined) > 5:
+            print(f"    ... and {len(unrefined) - 5} more")
+
     return out
 
 
@@ -557,14 +681,12 @@ def pick_easiest(triaged: list[dict],
 IMPLEMENTER_PROMPT = """You are an autonomous implementer for the Conico CRM project.
 
 TASK: implement the Trello card below. Make ALL the changes (backend, frontend, migrations, tests as needed).
-
-BEFORE you commit anything, run the tests YOURSELF to confirm they pass:
-  - backend: `cd backend && ./run_tests.sh`  (or run only the relevant test files)
-  - frontend: `cd frontend && npm test -- --run`
-  - frontend build: `cd frontend && npm run build`
-After you commit, the loop will re-run the FULL suite. If it fails, the loop will
-hand the failure back to you for a fix attempt — but you should not rely on that;
-aim to ship green on the first try.
+{codebase_map}{file_scope}
+BEFORE you commit, run ONLY the specific test files you wrote or modified:
+  - backend: `cd backend && python -m pytest <your_test_file.py> -q`
+  - frontend: `cd frontend && npm test -- --run <your_test_file>`
+Do NOT run the full suite (./run_tests.sh or npm test -- --run without filters) —
+the loop runs the full suite after you commit. Running it inside the session wastes time.
 
 Work directly on the current branch. Commit your changes with a clear message
 referencing the card. You may make multiple commits. Do NOT push — the loop pushes.
@@ -587,12 +709,17 @@ Failure tail (last ~2000 chars of stdout+stderr):
 {failure}
 ---
 
+What you already changed (diff stat since pre-attempt):
+---
+{diff}
+---
+
 Original card you were implementing:
 {card_json}
 
 RULES:
   - Do NOT reset or revert. Add new commits on top to fix the failure.
-  - Run the failing tests yourself before committing your fix to confirm.
+  - Run only the failing test files yourself before committing your fix to confirm.
   - If after analysis the failure is unfixable in scope (wrong scope, missing
     spec, blocked on infra), exit with a message starting with "ABORT:" and explain.
   - Do NOT touch scripts/trello_cards.json or scripts/trello_sync.py.
@@ -714,15 +841,29 @@ def _run_claude_with_prompt(prompt: str, model: str, log_path: Path) -> tuple[in
 
 
 def spawn_claude(card: dict, model: str, log_path: Path) -> tuple[int, str]:
+    codebase_map = _load_codebase_map()
+    print("  pre-scoping files via qwen ...")
+    file_scope = _scope_card_files(card)
+    if file_scope:
+        n = sum(1 for l in file_scope.splitlines() if l.strip().startswith("-"))
+        print(f"  pre-scope: {n} file(s) targeted")
     prompt = IMPLEMENTER_PROMPT.format(
-        card_json=json.dumps(card, ensure_ascii=False, indent=2)
+        codebase_map=codebase_map,
+        file_scope=file_scope + "\n" if file_scope else "",
+        card_json=json.dumps(card, ensure_ascii=False, indent=2),
     )
     return _run_claude_with_prompt(prompt, model, log_path)
 
 
-def spawn_claude_fix(card: dict, model: str, failure: str, log_path: Path) -> tuple[int, str]:
+def spawn_claude_fix(card: dict, model: str, failure: str, pre_sha: str,
+                     log_path: Path) -> tuple[int, str]:
+    diff = subprocess.run(
+        ["git", "diff", "--stat", f"{pre_sha}..HEAD"],
+        cwd=str(REPO_ROOT), capture_output=True, text=True, check=False,
+    ).stdout[:2000] or "(no diff)"
     prompt = FIX_PROMPT.format(
         failure=failure[-2000:],
+        diff=diff,
         card_json=json.dumps(card, ensure_ascii=False, indent=2),
     )
     return _run_claude_with_prompt(prompt, model, log_path)
@@ -731,16 +872,25 @@ def spawn_claude_fix(card: dict, model: str, failure: str, log_path: Path) -> tu
 # ------------------------------- tests ----------------------------------- #
 
 
-def run_tests() -> tuple[bool, str]:
+def run_tests(pre_sha: str | None = None) -> tuple[bool, str]:
     backend = REPO_ROOT / "backend"
     frontend = REPO_ROOT / "frontend"
-    steps: list[tuple[str, list[str], Path]] = []
 
+    frontend_changed = True
+    if pre_sha:
+        r = subprocess.run(["git", "diff", "--name-only", pre_sha, "HEAD"],
+                           cwd=str(REPO_ROOT), capture_output=True, text=True, check=False)
+        frontend_changed = any(l.startswith("frontend/") for l in r.stdout.splitlines())
+
+    steps: list[tuple[str, list[str], Path]] = []
     if (backend / "run_tests.sh").exists():
         steps.append(("backend pytest", [BASH, "./run_tests.sh"], backend))
     if (frontend / "package.json").exists():
-        steps.append(("frontend test", [NPM, "test", "--", "--run"], frontend))
-        steps.append(("frontend build", [NPM, "run", "build"], frontend))
+        if frontend_changed:
+            steps.append(("frontend test", [NPM, "test", "--", "--run"], frontend))
+            steps.append(("frontend build", [NPM, "run", "build"], frontend))
+        else:
+            print("  -- frontend test/build skipped (no frontend files changed) --")
 
     for label, cmd, cwd in steps:
         print(f"  -- {label} --")
@@ -829,6 +979,7 @@ def fail(spec: dict, name: str, reason: str) -> None:
     card.setdefault("checklist", []).append(f"[auto-attempt failed] {reason[:140]}")
     save_spec(spec)
     trello_apply()
+    _append_failure_log(name, reason)
     git("add", str(CARDS_FILE.relative_to(REPO_ROOT)))
     subprocess.run(["git", "commit", "-m", f"chore(trello): {name} -> back to Feature requests (auto-attempt failed)"],
                    cwd=str(REPO_ROOT), check=False)
@@ -905,6 +1056,21 @@ def iteration(args, board_id: str) -> str:
     pre_sha = git_head()
     print(f"  pre-attempt sha: {pre_sha}")
 
+    print("\n=== failure gate ===")
+    card_pre = find_card(spec, name)
+    if card_pre:
+        block, gate_reason = _check_failure_gate(card_pre)
+        if block:
+            print(f"  blocked: {gate_reason}")
+            card_pre.setdefault("checklist", []).append(
+                f"[failure gate] {gate_reason[:140]}"
+            )
+            save_spec(spec)
+            ts.apply_spec(spec, board_id, dry_run=False, only_cards=name)
+            print_conclusion("BLOCKED", name, ELIGIBLE_LIST, 0, 0, reason=gate_reason)
+            return "continue"
+        print("  ok")
+
     print("\n=== claim card ===")
     claim(spec, name, board_id)
     spec = load_spec()
@@ -940,7 +1106,7 @@ def iteration(args, board_id: str) -> str:
     if not args.skip_tests:
         while True:
             print(f"\n=== run tests (attempt {test_runs + 1}) ===")
-            ok, msg = run_tests()
+            ok, msg = run_tests(pre_sha=pre_sha)
             test_runs += 1
             if ok:
                 print(f"  {msg}")
@@ -963,7 +1129,7 @@ def iteration(args, board_id: str) -> str:
             fix_attempts += 1
             print(f"\n=== fix attempt {fix_attempts}/{args.max_fix_attempts} ===")
             fix_log = LOG_DIR / f"{int(time.time())}_{slugify(name)}_fix{fix_attempts}.log"
-            rc2, last2 = spawn_claude_fix(card, impl_model, msg, fix_log)
+            rc2, last2 = spawn_claude_fix(card, impl_model, msg, pre_sha, fix_log)
             print(f"  claude-fix exit={rc2}; log={fix_log}")
 
             if rc2 != 0 or last2.strip().upper().startswith("ABORT"):
