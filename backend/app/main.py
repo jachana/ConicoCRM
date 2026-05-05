@@ -5,6 +5,7 @@ from app.config import settings
 from app.core.logging import configure_logging
 from app.core.observability import init_sentry
 from app.core.request_logger import RequestLoggerMiddleware
+from app.core import db_metrics as _db_metrics
 from app.api import auth, users
 from app.api import health as health_api
 from app.api import proveedores
@@ -81,6 +82,7 @@ from app.utils.search import set_unaccent_available
 #      requests (401s, 403s) still produce an access log line.
 configure_logging()
 init_sentry()
+_db_metrics.install()
 
 app = FastAPI(title="Conico PMS")
 

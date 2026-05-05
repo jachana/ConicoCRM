@@ -17,6 +17,7 @@ from starlette.responses import Response
 from starlette.types import ASGIApp
 
 from app.core.logging import logger
+from app.core import db_metrics as _db_metrics
 
 try:
     from jose import jwt as _jwt  # type: ignore
@@ -113,6 +114,9 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
         request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
         request.state.request_id = request_id
 
+        # Propagate request_id to db_metrics slow-query listener.
+        rid_token = _db_metrics.current_request_id.set(request_id)
+
         # Reset per-request query counter.
         query_token = _query_count.set(0)
 
@@ -131,6 +135,7 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
             latency_ms = round((time.perf_counter() - start) * 1000, 2)
             query_count_val = _query_count.get()
             _query_count.reset(query_token)
+            _db_metrics.current_request_id.reset(rid_token)
 
             user_id = _extract_user_id(request)
             empresa_id = _extract_empresa_id(request)

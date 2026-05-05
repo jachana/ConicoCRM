@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     log_format: str = "pretty"  # "json" | "pretty"
     log_level: str = "INFO"
 
+    # Telemetry T1.2 – slow-query logging
+    db_metrics_enabled: bool = False
+    slow_query_ms: int = 200
+
     # Auth W1-07
     totp_issuer: str = "Conico"
     twofa_ticket_expire_seconds: int = 300
