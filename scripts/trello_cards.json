@@ -991,28 +991,22 @@
       ]
     },
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Modulos P2.4] Ocultar CTAs Dashboard + filtrar tabs Reportes",
       "labels": [
         "Core",
         "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nActualmente, Dashboard y Reportes muestran todas las acciones rápidas y pestañas de documentos sin considerar si sus módulos están desactivados. Usuarios con módulos off ven CTAs y tabs inoperacionales, generando confusión. Se requiere ocultar estos elementos dinámicamente según la configuración de módulos del tenant.\n\n**Acceptance Criteria**\n- Dashboard no muestra quick-action buttons cuyo módulo esté desactivado.\n- Dashboard oculta KPI tiles que dependen de módulos off (ej: tiles de facturación si facturas=off).\n- Reportes solo muestra tabs cuyo módulo esté activado.\n- Reportes selecciona automáticamente la primera tab disponible como default si la tab original estaba desactivada.\n- Tests verifican que con facturas=off: no aparece botón 'Nueva Factura' ni tile de facturación mes.\n- Tests verifican que con boletas=off: no aparece tab Boletas en Reportes.\n\n**Definition of Done**\n- Cambios en Dashboard.tsx y Reportes.tsx con filtrados basados en módulos.\n- Tests unitarios en dashboard.spec.ts y reportes.spec.ts pasan al 100%.\n- Migration/config de módulos disponibles (si aplica) ejecutada en staging.\n- Card movida a 'In review' en Trello.\n- Deployment a staging verificado sin errores en consola.\n\n**Notas tecnicas**\n- Archivos: src/components/Dashboard.tsx, src/components/Reportes.tsx.\n- Usar slug de módulo (ej: 'facturas', 'boletas', 'notaventa') como key de comparación.\n- Acceder a módulos activos desde context/store de configuración tenant.\n- KPI tiles a ocultar: facturación mes, boletas mes, etc. (mapear por módulo en componente).\n- Tests: usar mock de módulos con combinaciones on/off.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Se deben ocultar dinámicamente los CTAs del Dashboard y las pestañas de Reportes según los módulos activos del tenant.\n\n**Cambios / Decisiones** — DashboardHero.tsx ahora oculta KPI tiles (Ventas, Por cobrar, Stock) si sus módulos están desactivados. WidgetPicker.tsx filtra widgets por módulo usando widgetCatalog que ahora incluye modulo_slug. Reportes.tsx filtra tabs por módulo y selecciona automáticamente la primera disponible si la actual está desactivada. Se añadieron 10 nuevos tests en DashboardHero.test.tsx y Reportes.test.tsx para cubrir estas condiciones.",
       "checklist": [
-        "Dashboard: cada quick-action declarada con su modulo slug; filtrar antes de render",
-        "Dashboard: KPI tiles que dependen de modulo (ej: facturacion mes) se ocultan si modulo off",
-        "Reportes: tabs declaradas con slug; filtrar en render",
-        "Reportes: tab default seleccionada es la primera disponible",
-        "Test: Dashboard con facturas off no muestra 'Nueva Factura' ni tile de facturacion",
-        "Test: Reportes con boletas off no muestra tab boletas",
-        "Declarar quick-actions en Dashboard con módulo slug asociado; filtrar antes de render",
-        "Ocultar KPI tiles en Dashboard si su módulo está off",
-        "Declarar tabs en Reportes con módulo slug; filtrar en render",
-        "Seleccionar primera tab disponible como default en Reportes si la original está off",
-        "Escribir tests: Dashboard sin facturas no muestra 'Nueva Factura' ni tile facturación",
-        "Escribir tests: Reportes sin boletas no muestra tab Boletas",
-        "Desplegar a staging y validar; mover card a In review"
+        "Abrir Dashboard con facturas=off, verificar que no aparece tile de Ventas",
+        "Abrir Dashboard con inventario=off, verificar que no aparece tile de Stock crítico",
+        "Abrir Dashboard y abrir el picker de widgets con notas_venta=off, verificar que widget 'Por cobrar' no aparece",
+        "Abrir Reportes con boletas=off, verificar que la pestaña Boletas no se muestra",
+        "Abrir Reportes con la tab activa desactivada, verificar que se selecciona la primera tab disponible",
+        "Ejecutar tests de DashboardHero y verificar que pasan con módulos off",
+        "Ejecutar tests de Reportes y verificar cobertura de tabs filtradas"
       ]
     },
     {
