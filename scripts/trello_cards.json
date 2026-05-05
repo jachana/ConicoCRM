@@ -32,23 +32,28 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Modulos P3.2] Toggle interactivo + dependency-aware disable visual",
+      "list": "In progress",
+      "name": "[Modulos P3.3] Modal cascade-confirm al apagar parent con dependents on",
       "labels": [
         "Core",
         "Design System",
         "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Resumen** — Implementar toggles interactivos para módulos con lógica de bloqueo visual basada en dependencias de módulos padres.\n\n**Cambios / Decisiones** — Se reemplazaron los switches desactivados por toggles interactivos que usan `useMutation` para hacer PATCH a `/empresas/{id}/modulos`. Se añadió optimistic update con `setQueryData` y rollback automático en error. Los toggles cuyo módulo padre está desactivado muestran tooltip \"Requiere {parent.label}\" y tienen estilo visual de desactivados (`cursor-not-allowed`, `opacity-40`). Se invalida la caché de módulos tras éxito para refrescar sidebar. Se usan `toast.success` y `toast.error` para feedback. Se agregó `aria-label` en cada switch. Se escribieron 11 tests unitarios que cubren: toggle simple, switch bloqueado sin request, error con rollback, y validación de toasts.",
+      "desc": "**Contexto / Problema**\nCuando un usuario intenta desactivar (off→on) un módulo parent que tiene dependentes activos, el sistema debe mostrar la cascada completa de módulos que serán afectados antes de aplicar el cambio. Esto previene sorpresas y garantiza confirmación explícita del usuario.\n\n**Acceptance Criteria**\n- Al intentar desactivar un módulo parent con dependentes activos, se abre un modal con variante danger.\n- El modal muestra el nombre del módulo parent y lista legible de todos los dependentes que serán desactivados (ej: 'Apagar Facturas. Esto también apagará: Pagos, Cobranza, Nota de Crédito, Nota de Débito, Libros, Aprobaciones de Margen').\n- Botón 'Continuar' envía un PATCH atómico con los slugs de todos los módulos (parent + dependentes) en un solo body.\n- Botón 'Cancelar' cierra el modal sin realizar cambios.\n- Durante la mutación se muestra loading state en el botón de confirmación.\n- La cascada calculada en frontend coincide con la computed en backend (P3.2).\n\n**Definition of Done**\n- Modal component renderiza con contenido correcto según registry.\n- PATCH request incluye todos los slugs en un único body atómico.\n- Tests unitarios validan: (1) modal abre con lista correcta, (2) confirmar envía payload completo, (3) cancelar no dispara request.\n- Código mergeado en develop y desplegado a staging.\n- Trello card movida a 'In review'.\n\n**Notas tecnicas**\n- Reutilizar `compute_cascade()` del backend (P3.2) como referencia para lógica frontend en registry.\n- Modal component: variante 'danger' del Design System.\n- Endpoint PATCH: `/api/modules` con body `{slugs: [\"parent\", \"dep1\", \"dep2\", ...]}` (confirm atómico).\n- Hook: `usePatchModules()` para mutation con loading state.\n- Path frontend: `src/components/ModulesModal.tsx`, lógica en `src/hooks/usePatchModules.ts`.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir /configuracion/modulos y hacer clic en un toggle activo sin dependientes",
-        "Verificar que se envíe PATCH a /empresas/{id}/modulos y se actualice visualmente",
-        "Hacer clic en toggle desactivado cuyo padre está off, verificar tooltip y sin request",
-        "Forzar error de red y confirmar que el cambio se revierte y aparece toast.error()",
-        "Activar módulo con padre activo y verificar optimistic update inmediato",
-        "Revisar que se invalide caché de módulos y se refresque sidebar",
-        "Validar aria-label en toggles para accesibilidad y tests"
+        "Calcular cascade en frontend usando registry (espejo de compute_cascade backend)",
+        "Modal danger variant: 'Apagar facturas. Esto tambien apagara: pagos, cobranza, nota_credito, nota_debito, libros, aprobaciones_margen. Continuar?'",
+        "Confirmar -> PATCH con todos los slugs en un solo body",
+        "Cancelar cierra modal sin cambios",
+        "Loading state durante mutation",
+        "Tests: apagar facturas dispara modal con lista correcta; confirmar manda body completo; cancelar no envia request",
+        "Crear modal danger: 'Apagar [Parent]. Esto también apagará: [Dep1, Dep2, ...]. Continuar?'",
+        "Implementar botón Continuar: PATCH con slugs de parent + dependentes en un solo body",
+        "Implementar botón Cancelar: cierra modal sin request",
+        "Agregar loading state durante mutation (botón deshabilitado, spinner)",
+        "Tests: modal abre con lista correcta; confirmar manda body completo; cancelar no envia request",
+        "Mergear a develop, desplegar staging y mover Trello a In review"
       ]
     }
   ]
