@@ -11,7 +11,7 @@ from sqlalchemy import String as SqlString, cast, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.auth import get_current_user
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.api.shared import enforce_al_contado
 from app.api.solicitudes_descuento import (
     check_descuento_approval_required,
@@ -41,7 +41,7 @@ from app.services.email import EmailNotConfiguredError, enviar_cotizacion
 from app.services.pdf import generar_pdf_cotizacion
 from app.utils.logo import apply_config_logo
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("cotizaciones")])
 
 
 def _apply_text_search(query, db: Session, q: str):

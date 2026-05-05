@@ -224,9 +224,13 @@ def _test_password_hash():
 def admin_user(setup_test_db, _test_password_hash):
     from app.models.user import User
     from app.models.empresa import Empresa
+    from app.core.modulos import OPTIONAL_MODULES
 
     db = TestingSession()
-    empresa = Empresa(nombre="Admin Default Empresa")
+    empresa = Empresa(
+        nombre="Admin Default Empresa",
+        modulos_enabled={slug: True for slug in OPTIONAL_MODULES},
+    )
     db.add(empresa)
     db.flush()
 
@@ -253,13 +257,22 @@ def admin_token(client, admin_user):
 @pytest.fixture
 def subadmin_user(setup_test_db, _test_password_hash):
     from app.models.user import User
+    from app.models.empresa import Empresa
+    from app.core.modulos import OPTIONAL_MODULES
 
     db = TestingSession()
+    empresa = Empresa(
+        nombre="SubAdmin Default Empresa",
+        modulos_enabled={slug: True for slug in OPTIONAL_MODULES},
+    )
+    db.add(empresa)
+    db.flush()
     user = User(
         email="subadmin@conico.cl",
         name="SubAdmin",
         hashed_password=_test_password_hash,
         role="subadmin",
+        empresa_id=empresa.id,
     )
     db.add(user)
     db.commit()
@@ -277,13 +290,22 @@ def subadmin_token(client, subadmin_user):
 @pytest.fixture
 def vendedor_user(setup_test_db, _test_password_hash):
     from app.models.user import User
+    from app.models.empresa import Empresa
+    from app.core.modulos import OPTIONAL_MODULES
 
     db = TestingSession()
+    empresa = Empresa(
+        nombre="Vendedor Default Empresa",
+        modulos_enabled={slug: True for slug in OPTIONAL_MODULES},
+    )
+    db.add(empresa)
+    db.flush()
     user = User(
         email="vendedor@conico.cl",
         name="Vendedor",
         hashed_password=_test_password_hash,
         role="vendedor",
+        empresa_id=empresa.id,
     )
     db.add(user)
     db.commit()

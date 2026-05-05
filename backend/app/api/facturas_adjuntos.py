@@ -5,13 +5,13 @@ from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.models.factura import Factura
 from app.models.factura_adjunto import FacturaAdjunto
 from app.models.user import User
 from app.schemas.factura_adjunto import FacturaAdjuntoOut
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("facturas")])
 
 UPLOAD_DIR = Path("uploads")
 MAX_SIZE = 10 * 1024 * 1024

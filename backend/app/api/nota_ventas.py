@@ -10,7 +10,7 @@ from sqlalchemy import cast, or_, String as SqlString
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.auth import get_current_user
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.api.shared import enforce_al_contado
 from app.database import get_db
 from app.models.cliente import Cliente
@@ -37,7 +37,7 @@ from app.services.pdf import generar_pdf_nota_venta
 from app.utils.logo import apply_config_logo
 from app.utils.search import producto_ids_matching, unaccent_ilike
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("notas_venta")])
 
 _TRANSITIONS: dict[tuple[str, str], str] = {
     ("pendiente",  "despachada"): "any",

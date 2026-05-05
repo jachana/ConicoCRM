@@ -4,7 +4,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.models.dte_emision import DteEmision
 from app.models.factura import Factura
 from app.models.guia_despacho import GuiaDespacho
@@ -107,7 +107,7 @@ def emitir_factura(
 
 # ── Notas de Crédito ───────────────────────────────────────────────────────────
 
-@router.post("/notas-credito/", response_model=NotaCreditoOut, status_code=201)
+@router.post("/notas-credito/", response_model=NotaCreditoOut, status_code=201, dependencies=[require_modulo("nota_credito")])
 def crear_nc(
     body: NotaCreditoCreate,
     perms: tuple[User, Session] = require_permission("facturas", "create"),
@@ -131,7 +131,7 @@ def crear_nc(
     return nc
 
 
-@router.get("/notas-credito/", response_model=list[NotaCreditoOut])
+@router.get("/notas-credito/", response_model=list[NotaCreditoOut], dependencies=[require_modulo("nota_credito")])
 def listar_nc(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
@@ -141,7 +141,7 @@ def listar_nc(
     return db.query(NotaCredito).options(joinedload(NotaCredito.lineas)).order_by(NotaCredito.numero.desc()).all()
 
 
-@router.get("/notas-credito/{nc_id}", response_model=NotaCreditoOut)
+@router.get("/notas-credito/{nc_id}", response_model=NotaCreditoOut, dependencies=[require_modulo("nota_credito")])
 def get_nc(
     nc_id: int,
     perms: tuple[User, Session] = require_permission("facturas", "view"),
@@ -155,7 +155,7 @@ def get_nc(
     return nc
 
 
-@router.post("/notas-credito/{nc_id}/emitir", response_model=DteEmisionOut)
+@router.post("/notas-credito/{nc_id}/emitir", response_model=DteEmisionOut, dependencies=[require_modulo("nota_credito")])
 def emitir_nc(
     nc_id: int,
     perms: tuple[User, Session] = require_permission("facturas", "create"),
@@ -186,7 +186,7 @@ def emitir_nc(
 
 # ── Notas de Débito ────────────────────────────────────────────────────────────
 
-@router.post("/notas-debito/", response_model=NotaDebitoOut, status_code=201)
+@router.post("/notas-debito/", response_model=NotaDebitoOut, status_code=201, dependencies=[require_modulo("nota_debito")])
 def crear_nd(
     body: NotaDebitoCreate,
     perms: tuple[User, Session] = require_permission("facturas", "create"),
@@ -210,7 +210,7 @@ def crear_nd(
     return nd
 
 
-@router.get("/notas-debito/", response_model=list[NotaDebitoOut])
+@router.get("/notas-debito/", response_model=list[NotaDebitoOut], dependencies=[require_modulo("nota_debito")])
 def listar_nd(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
@@ -220,7 +220,7 @@ def listar_nd(
     return db.query(NotaDebito).options(joinedload(NotaDebito.lineas)).order_by(NotaDebito.numero.desc()).all()
 
 
-@router.get("/notas-debito/{nd_id}", response_model=NotaDebitoOut)
+@router.get("/notas-debito/{nd_id}", response_model=NotaDebitoOut, dependencies=[require_modulo("nota_debito")])
 def get_nd(
     nd_id: int,
     perms: tuple[User, Session] = require_permission("facturas", "view"),
@@ -234,7 +234,7 @@ def get_nd(
     return nd
 
 
-@router.post("/notas-debito/{nd_id}/emitir", response_model=DteEmisionOut)
+@router.post("/notas-debito/{nd_id}/emitir", response_model=DteEmisionOut, dependencies=[require_modulo("nota_debito")])
 def emitir_nd(
     nd_id: int,
     perms: tuple[User, Session] = require_permission("facturas", "create"),

@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import String as SqlString, cast, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.factura import Factura, FacturaLinea
@@ -36,7 +36,7 @@ from app.services.pdf import generar_pdf_factura
 from app.utils.logo import apply_config_logo
 from app.services.xml_dte import parse_dte_xml
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("facturas")])
 
 _TRANSITIONS: dict[tuple[str, str], str] = {
     ("emitida",  "anulada"): "admin",

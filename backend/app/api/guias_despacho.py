@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.api.dte import _next_numero
 from app.models.empresa import Empresa
 from app.models.guia_despacho import GuiaDespacho, GuiaDespachoLinea
@@ -21,7 +21,7 @@ from app.services.email import EmailNotConfiguredError, enviar_guia_despacho as 
 from app.services.pdf import generar_pdf_guia_despacho
 from app.utils.logo import apply_config_logo
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("guias_despacho")])
 
 
 def _config_dict(db: Session) -> dict:

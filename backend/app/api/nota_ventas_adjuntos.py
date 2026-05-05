@@ -5,13 +5,13 @@ from fastapi import APIRouter, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.models.nota_venta import NotaVenta
 from app.models.nota_venta_adjunto import NotaVentaAdjunto
 from app.models.user import User
 from app.schemas.nota_venta_adjunto import NotaVentaAdjuntoOut
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("notas_venta")])
 
 UPLOAD_DIR = Path("uploads")
 MAX_SIZE = 10 * 1024 * 1024

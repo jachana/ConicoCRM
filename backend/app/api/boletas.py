@@ -8,7 +8,7 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.api.deps import require_permission
+from app.api.deps import require_modulo, require_permission
 from app.api.dte import _next_numero
 from app.models.boleta import Boleta, BoletaLinea
 from app.models.dte_emision import DteEmision
@@ -23,7 +23,7 @@ from app.services.pdf import generar_pdf_boleta
 from app.utils.logo import apply_config_logo
 from app.tasks.dte import emit_dte
 
-router = APIRouter()
+router = APIRouter(dependencies=[require_modulo("boletas")])
 
 
 def _asignar_numero_boleta(db: Session) -> int:
