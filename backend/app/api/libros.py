@@ -846,7 +846,7 @@ def enviar_libro_ventas(
     payload = svc.build_libro_ventas_payload(rut_emisor, libro.periodo, detalles)
 
     try:
-        lioren_resp = svc.submit_libro("ventas", payload)
+        lioren_resp = svc.submit_libro("ventas", payload, empresa_id=libro.empresa_id, db=db)
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Lioren error: {exc}")
 
@@ -878,7 +878,7 @@ def enviar_libro_compras(
     payload = svc.build_libro_compras_payload(rut_emisor, libro.periodo, detalles)
 
     try:
-        lioren_resp = svc.submit_libro("compras", payload)
+        lioren_resp = svc.submit_libro("compras", payload, empresa_id=libro.empresa_id, db=db)
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Lioren error: {exc}")
 

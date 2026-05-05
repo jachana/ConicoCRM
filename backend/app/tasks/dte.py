@@ -114,7 +114,8 @@ def _process_emit(db: Session, emision: DteEmision, svc: DteService) -> None:
     else:
         raise ValueError(f"DteEmision {emision.id} has no document FK set")
 
-    result = svc.emit(payload)
+    empresa_id = getattr(doc, "empresa_id", None)
+    result = svc.emit(payload, empresa_id=empresa_id, dte_tipo=emision.tipo, db=db)
     emision.track_id = result.get("track_id")
     emision.folio = result.get("folio")
     emision.estado = "procesando"
@@ -161,7 +162,7 @@ def poll_dte_status() -> None:
             if not emision.track_id:
                 continue
             try:
-                result = svc.check_status(emision.track_id)
+                result = svc.check_status(emision.track_id, dte_tipo=emision.tipo)
                 lioren_estado = result.get("estado", "procesando")
                 nuevo_estado = _lioren_to_estado(lioren_estado)
                 if nuevo_estado != "procesando":

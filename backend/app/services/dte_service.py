@@ -1,8 +1,11 @@
 import hmac
 import hashlib
+import json as _json
 from datetime import date
 import httpx
 from sqlalchemy.orm import Session
+
+from app.services.lioren_metrics import lioren_call
 
 from app.models.factura import Factura
 from app.models.factura_compra import FacturaCompra
@@ -321,32 +324,52 @@ class DteService:
             "detalles": detalles,
         }
 
-    def submit_libro(self, tipo: str, payload: dict) -> dict:
-        resp = httpx.post(
-            f"{self.api_url}/libros/{tipo}",
-            json=payload,
-            headers=self._headers(),
-            timeout=30.0,
-        )
+    def submit_libro(
+        self,
+        tipo: str,
+        payload: dict,
+        *,
+        empresa_id: int | None = None,
+        db: Session | None = None,
+    ) -> dict:
+        url = f"{self.api_url}/libros/{tipo}"
+        body = _json.dumps(payload).encode()
+        with lioren_call(url, "POST", empresa_id=empresa_id, dte_tipo=tipo, db=db, req_size=len(body)) as state:
+            resp = httpx.post(url, json=payload, headers=self._headers(), timeout=30.0)
+            state["status"] = resp.status_code
+            state["resp_size"] = len(resp.content)
         resp.raise_for_status()
         return resp.json()
 
-    def emit(self, payload: dict) -> dict:
-        resp = httpx.post(
-            f"{self.api_url}/documentos",
-            json=payload,
-            headers=self._headers(),
-            timeout=30.0,
-        )
+    def emit(
+        self,
+        payload: dict,
+        *,
+        empresa_id: int | None = None,
+        dte_tipo: str | None = None,
+        db: Session | None = None,
+    ) -> dict:
+        url = f"{self.api_url}/documentos"
+        body = _json.dumps(payload).encode()
+        with lioren_call(url, "POST", empresa_id=empresa_id, dte_tipo=dte_tipo, db=db, req_size=len(body)) as state:
+            resp = httpx.post(url, json=payload, headers=self._headers(), timeout=30.0)
+            state["status"] = resp.status_code
+            state["resp_size"] = len(resp.content)
         resp.raise_for_status()
         return resp.json()
 
-    def check_status(self, track_id: str) -> dict:
-        resp = httpx.get(
-            f"{self.api_url}/documentos/{track_id}/estado",
-            headers=self._headers(),
-            timeout=15.0,
-        )
+    def check_status(
+        self,
+        track_id: str,
+        *,
+        empresa_id: int | None = None,
+        dte_tipo: str | None = None,
+    ) -> dict:
+        url = f"{self.api_url}/documentos/{track_id}/estado"
+        with lioren_call(url, "GET", empresa_id=empresa_id, dte_tipo=dte_tipo) as state:
+            resp = httpx.get(url, headers=self._headers(), timeout=15.0)
+            state["status"] = resp.status_code
+            state["resp_size"] = len(resp.content)
         resp.raise_for_status()
         return resp.json()
 
