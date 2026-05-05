@@ -32,21 +32,29 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Modulos P1.1] Registro central de modulos + grafo de dependencias",
+      "list": "In progress",
+      "name": "[Modulos P1.2] Migracion Alembic + Empresa.modulos_enabled + backfill",
       "labels": [
         "Core",
         "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Resumen** — Se creó `backend/app/core/modulos.py` como única fuente de verdad para registrar módulos opcionales y Core, incluyendo sus categorías, dependencias (`requires`/`dependents`) y reglas de auto-activación, sin I/O ni migraciones.\n\n**Cambios / Decisiones** — \n- Se definió la dataclass `ModuloSpec(label, categoria, requires, dependents)` en `backend/app/core/modulos.py`.\n- Se registraron 27 módulos opcionales agrupados en 8 categorías (ventas, compras, inventario_precios, finanzas, dte_sii, crm, rrhh, aprobaciones) y se mantuvo `CORE_MODULES` como set fijo.\n- Se implementaron las funciones puras `all_modulo_slugs()`, `get_modulo(slug)` (lanza `ValueError` si no existe) y `modulos_by_categoria()` para agrupamiento UI.\n- Se añadió validación de grafo: detección de ciclos (DFS) y verificación de que cada `requires` apunta a un slug existente.\n- Se crearon 12 tests unitarios en `backend/tests/test_modulos.py` cubriendo coherencia del grafo, ausencia de ciclos y cobertura de slugs de routers actuales.\n- Arquitectura: archivo puramente declarativo y funciones puras; sin acoplamientos a BD o frameworks externos.",
+      "desc": "**Contexto / Problema**\nPara implementar el sistema modular de Conico (P1), necesitamos persistir en cada empresa qué módulos están habilitados. Actualmente no existe este campo, bloqueando P1.3 y P1.7. Agregamos una columna JSONB con backfill que mantiene todas las empresas existentes en estado \"todos los módulos opcionales habilitados\" (comportamiento actual).\n\n**Acceptance Criteria**\n- Campo `Empresa.modulos_enabled` existe como columna JSONB en BD con default `{}`.\n- Todas las empresas existentes (antes de aplicar la migración) tienen `modulos_enabled` poblado con un dict con todas las opciones en `true` (ej: `{\"inventario\": true, \"ventas\": true, ...}`).\n- Nuevas empresas creadas vía API reciben automáticamente los defaults \"all-on\".\n- Backend arranca sin errores post-migración y puede leer el campo en cualquier empresa.\n- Alembic tiene un único head post-merge sin conflictos.\n\n**Definition of Done**\n- Migración Alembic generada, revisada a mano y aplicada en dev.\n- Backfill validado: `SELECT COUNT(*) FROM empresas WHERE modulos_enabled = '{}'` retorna 0.\n- Tests unitarios pasan (factory, modelo, smoke test).\n- Migración aplicada a staging.\n- Trello card movido a \"In review\".\n\n**Notas tecnicas**\n- Archivo: `app/models/empresa.py` (modelo), `alembic/versions/` (migración).\n- Estructura esperada del JSONB (ej): `{\"inventario\": true, \"ventas\": true, \"crm\": true}`.\n- Factory de tests: `tests/factories/empresa_factory.py`; agregar lógica de defaults si es necesario.\n- Prerequisito: P1.1 ya debe estar mergeado.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Ejecutar tests con `pytest backend/tests/test_modulos.py -v` y verificar 12 passed.",
-        "Importar modulos y verificar que get_modulo(\"cotizaciones\") retorna ModuloSpec con categoria=\"ventas\".",
-        "Simular get_modulo(\"modulo_inexistente\") y confirmar que lanza ValueError.",
-        "Verificar que modulos_by_categoria() devuelve un dict con exactamente 8 categorías.",
-        "Revisar que cada requires apunte a un slug válido usando all_modulo_slugs() en pruebas.",
-        "Confirmar que modulos.py es puro: no importa modelos de BD ni llama a I/O externo."
+        "Agregar campo Empresa.modulos_enabled: Mapped[dict] = mapped_column(JSONB, server_default='{}')",
+        "Generar migracion Alembic con autogenerate, revisar a mano",
+        "Backfill en migracion: UPDATE empresas SET modulos_enabled = '<dict con todos los OPTIONAL en true>'",
+        "Verificar single head Alembic post-merge",
+        "Smoke test: arrancar backend, leer empresa existente, asserts modulos_enabled poblado",
+        "Test unitario: nueva empresa creada via API tambien recibe defaults all-on",
+        "Update factory de tests si aplica",
+        "Agregar `modulos_enabled: Mapped[dict] = mapped_column(JSONB, server_default='{}')` al modelo Empresa",
+        "Generar migración Alembic con `alembic revision --autogenerate`, revisar a mano la SQL",
+        "Implementar backfill en migración: `UPDATE empresas SET modulos_enabled = '{\"inventario\": true, \"ventas\": true, ...}'` con todas las opciones",
+        "Verificar único head Alembic: `alembic heads`",
+        "Smoke test: arrancar backend, leer empresa existente, asegurar `modulos_enabled` poblado y correctamente tipado",
+        "Test unitario: nueva empresa creada vía factory o API recibe defaults all-on",
+        "Tests pasan + Deploy a staging, mover Trello a In review"
       ]
     }
   ]
