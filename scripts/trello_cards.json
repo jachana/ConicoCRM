@@ -32,7 +32,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Modulos P3.4] Audit visible per-modulo + acciones bulk",
       "labels": [
         "Core",
@@ -40,21 +40,15 @@
         "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nLos administradores necesitan ver quién y cuándo cambió cada módulo en la empresa para auditoría. Además, requieren acciones rápidas en lote: habilitar todos los módulos opcionales o apagarlos con confirmación de cascada para evitar cambios accidentales.\n\n**Acceptance Criteria**\n- El endpoint GET /empresas/{id}/modulos/audit retorna las últimas N entradas del audit_log con slug, before, after, actor (usuario), timestamp.\n- Cada módulo muestra en tooltip o sección \"Historial\" el último cambio (actor y fecha/hora).\n- Botón \"Habilitar todos los opcionales\" (solo admin) aplica cambio inmediato sin confirmación adicional.\n- Botón \"Apagar todos los opcionales\" (solo admin) abre modal de confirmación listando todos los módulos opcionales que se apagarán, con opción de cancelar.\n- Si hay validación fallida al aplicar bulk all-off (ej: dependencia bloqueada), se muestra error y no se aplica el cambio.\n- Tests verifican: carga correcta de audit, modal de confirmación en all-off, bulk all-on y all-off aplican cambios correctos.\n\n**Definition of Done**\n- Endpoint GET /empresas/{id}/modulos/audit implementado y devuelve datos correctos.\n- UI muestra historial de módulo y botones bulk.\n- Modal cascade-confirm renderiza y cancela/confirma correctamente.\n- Validaciones de bulk aplicadas (all-off valida dependencias).\n- Tests unitarios + integración pasan.\n- Desplegado a staging.\n- Card movida a \"In Review\".\n\n**Notas tecnicas**\n- Consultar audit_log con filtro: entity_type='modulo', entity_id={modulo_id}, order by ts DESC limit 10.\n- Endpoint: GET /empresas/{id}/modulos/audit → {modulos: [{slug, actor, ts, before_state, after_state}, ...]}\n- Bulk endpoints: PATCH /empresas/{id}/modulos/bulk-all-on, PATCH /empresas/{id}/modulos/bulk-all-off (con validación de cascade).\n- Frontend: agregar Historial component reutilizable; modal ConfirmCascade para all-off.\n- Dependencia: P3.3 debe estar completo (estructura base de módulos).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Mostrar historial de cambios por módulo y agregar acciones bulk para habilitar/apagar todos los módulos opcionales con confirmación de cascada.\n\n**Cambios / Decisiones**\n- Se implementó el endpoint GET /api/auditoria para obtener historial por módulo (entity_type='modulo').\n- En ModulesTab se agregó botón de historial por módulo que abre ModuleAuditModal con hasta 50 eventos.\n- Se añadieron acciones bulk: \"Habilitar todos\" (ejecución inmediata) y \"Apagar todos\" (con modal de confirmación).\n- Se corrigió el cálculo de workingEffective y validaciones en checkboxes.\n- Se estandarizó el formato de fecha y se mejoró validación de datos en DiffEntry.\n- Se reutilizó componente IndeterminateCheckbox y se optimizó lookup de sets.",
       "checklist": [
-        "Endpoint GET /empresas/{id}/modulos/audit -> ultimas N entradas con (slug, before, after, actor, ts)",
-        "Tooltip o seccion 'historial' por modulo con ultimo cambio",
-        "Boton 'Habilitar todos los opcionales' (admin) -> PATCH all-on",
-        "Boton 'Apagar todos los opcionales' (admin) -> Modal cascade-confirm + PATCH all-off",
-        "Bloquear bulk si hay validacion fallida (improbable en all-on, posible en all-off)",
-        "Test: audit se carga; bulk all-off muestra modal con todos los modulos opcionales",
-        "Implementar GET /empresas/{id}/modulos/audit con filtrado de audit_log",
-        "Agregar componente Historial per-módulo con último cambio (actor, fecha)",
-        "Crear botón 'Habilitar todos los opcionales' que ejecute bulk all-on",
-        "Crear botón 'Apagar todos los opcionales' con modal ConfirmCascade",
-        "Validar en bulk all-off que no existan dependencias bloqueadas; mostrar error si falla",
-        "Tests: carga audit, modal muestra módulos correctos, bulk all-on/all-off aplican cambios",
-        "Desplegar a staging y mover card a In Review"
+        "Abrir /configurar/empresas/{id}/modulos y verificar botones bulk visibles solo para admin",
+        "Hacer clic en historial (ícono) de un módulo y verificar despliegue de eventos con actor y fecha",
+        "Ejecutar 'Habilitar todos los opcionales' y confirmar que se aplican cambios sin modal",
+        "Ejecutar 'Apagar todos los opcionales' y verificar modal con lista de módulos a desactivar",
+        "Cancelar modal de apagado y confirmar que no hay cambios",
+        "Confirmar apagado bulk y verificar que se aplican cambios correctos",
+        "Verificar error en apagado bulk cuando hay dependencias bloqueadas"
       ]
     }
   ]
