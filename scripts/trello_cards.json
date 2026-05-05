@@ -32,22 +32,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Ops] Banner de alerta CAF: folios bajos / vencimiento proximo",
+      "list": "In progress",
+      "name": "[Hygiene] Eliminar artefactos .js compilados duplicados",
       "labels": [
         "Core",
-        "DTE/SII",
         "Goal: Operations",
-        "Size:L"
+        "Size:M"
       ],
-      "desc": "**Resumen** — Se implementó un sistema proactivo para alertar a los administradores sobre CAFs con consumo ≥90% o vencimiento <30 días, mediante un banner persistente en el dashboard y un reporte email diario consolidado.\n\n**Cambios / Decisiones**\n- Añadido campo `fecha_vencimiento` a la tabla `caf` y métodos `is_low_stock()` / `is_expiring_soon()` en `backend/app/models/caf.py`.\n- Endpoint `GET /api/cafs/alerts/` en `backend/app/api/cafs.py`: filtra por `empresa_id` del token, ordena por urgencia (vencimiento primero, luego stock) y expone folios/días restantes.\n- Tarea Celery `send_caf_alerts_email()` en `backend/app/tasks/caf.py`: ejecutada a las 08:30 (hora Chile), consolida alertas por administrador (1 email/día) sin duplicados.\n- Componente `CAFAlertBanner.tsx` integrado en `AppLayout.tsx`. Llama a `frontend/src/api/cafs.ts`, muestra tipo DTE, folios, días y enlace a configuración. Persiste estado cerrado en `sessionStorage`.\n- Tests unitarios cubren modelo, endpoint y task en `backend/tests/`.",
+      "desc": "**Contexto / Problema**\nEl repositorio contiene artefactos .js compilados legados junto a sus contrapartes .tsx modernas, generando ruido en `git status`, conflictos potenciales de resolución de módulos, y riesgo de que vuelvan a aparecer en futuras builds. Un sweep anterior (commit ce9ad58) fue parcial; se requiere limpieza completa + guardrails automatizados.\n\n**Acceptance Criteria**\n- Todos los .js redundantes (que tienen contraparte .tsx) han sido eliminados del repositorio.\n- .gitignore contiene regla explícita para prevenir commits de .js compilados cuando exista .tsx homólogo.\n- Pre-commit hook rechaza commits que intenten agregar .js junto a .tsx correspondiente.\n- Tests pasan sin cambios funcionales.\n- Build completa sin errores.\n- `git status` limpio sin archivos .js inesperados.\n\n**Definition of Done**\n- Reporte generado con lista completa de pares .tsx/.js encontrados (anexar a Trello o commit).\n- Todos los .js duplicados removidos en un único commit.\n- .gitignore actualizado y validado localmente.\n- Pre-commit hook configurado en `scripts/` o `.husky/`, documentado en CONTRIBUTING.md.\n- Suite de tests ejecutada en CI (GitHub Actions u otro) con resultado green.\n- Staging deployment realizado (si aplica).\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Considerar comando tipo `find src -name '*.tsx' | xargs -I {} sh -c 'test -f \"${1%.tsx}.js\" && echo \"${1%.tsx}.js\"' _ {}` para identificar duplicados.\n- .gitignore rule sugerida: agreggar patrón que ignore .js si existe .tsx (ej: `# Ignore compiled JS if TSX exists` + documentación).\n- Pre-commit hook (Python o shell): verificar que no exista `.js` cuando se commitea `.tsx`, o viceversa.\n- Rutas típicas: `src/**/*.js`, `lib/**/*.js`, `dist/**/*.js` (revisar según estructura del proyecto).\n\n<!-- conico-refined -->",
       "checklist": [
-        "Verificar endpoint: `curl` a `/api/cafs/alerts/` y confirmar respuesta 200 con lista ordenada.",
-        "Simular estado crítico en DB y verificar que el endpoint incluya el CAF correspondiente.",
-        "Validar componente frontend: abrir dashboard y confirmar aparición del banner con datos reales.",
-        "Probar persistencia de cierre: cerrar banner y recargar; debe permanecer oculto en la sesión.",
-        "Forzar ejecución de `send_caf_alerts_email()` y verificar bandeja del admin por consolidación.",
-        "Revisar logs de Celery para confirmar schedule diario a las 08:30 hora Chile."
+        "Lista completa de pares .tsx + .js redundantes",
+        "Borrar .js que tienen contraparte .tsx",
+        "Agregar regla a .gitignore",
+        "Pre-commit hook que rechace .js junto a .tsx",
+        "Verificar tests/build pasan",
+        "Ejecutar scan completo: listar todos los pares .tsx + .js redundantes",
+        "Eliminar archivos .js duplicados en un commit único",
+        "Actualizar .gitignore con regla para prevenir .js compilados",
+        "Configurar pre-commit hook que rechace .js junto a .tsx",
+        "Ejecutar tests y build localmente; verificar CI green",
+        "Verificar git status limpio; documentar cambios en CONTRIBUTING.md",
+        "Mover card a In review y desplegar a staging"
       ]
     }
   ]
