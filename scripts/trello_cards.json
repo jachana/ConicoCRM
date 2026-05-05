@@ -32,22 +32,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[UX] BoletaNueva: autocomplete productos + ClienteSelectModal",
+      "list": "In progress",
+      "name": "[UX] Migrar BoletaAnularModal/BoletaEmailModal a ui/Modal",
       "labels": [
-        "Core",
+        "Design System",
         "Goal: UX Polish",
         "Size:M"
       ],
-      "desc": "**Resumen** — Reemplazar inputs genéricos en BoletaNueva por autocomplete de productos y modal de selección de cliente para mejorar UX y consistencia.\n\n**Cambios / Decisiones** — Se reemplazó el input de descripción por `ProductoAutocomplete` que consulta `/api/productos/buscar`, completando automáticamente descripción y precio al seleccionar. El campo `cliente_id` numérico fue reemplazado por `ClienteSelectModal`, que al seleccionar un cliente completa razón social y RUT. Se eliminaron los TODOs W1-04 de `BoletaNueva.tsx`. Se actualizaron los tests con `QueryClientProvider` y se agregaron casos de smoke test. Se ajustó la ubicación del modal fuera del form y se corrigió cierre tras selección.",
+      "desc": "**Contexto / Problema**\nBoletaAnularModal y BoletaEmailModal son componentes legacy ubicados fuera del sistema de diseño. Su migración a ui/Modal asegura consistencia visual en toda la aplicación y facilita mantenimiento futuro del Design System.\n\n**Acceptance Criteria**\n- Ambos modales usan ui/Modal como componente base.\n- BoletaAnularModal aplica variant='danger' para diferenciación visual.\n- Los flujos de anulación y envío de correo funcionan idénticamente que antes.\n- Los tests existentes pasan sin modificación de lógica de negocio.\n- Si quedan sin referencias tras la migración, los componentes legacy se eliminan.\n- El código en BoletaDetalle.tsx:297 refleja las nuevas importaciones.\n\n**Definition of Done**\n- Tests unitarios pasan (componentes y BoletaDetalle).\n- Cambios verificados en staging (comportamiento modal, validaciones, estilos).\n- PR revisado y aprobado por Design System owner.\n- Trello card movida a In review.\n- Si aplica, clean up de BoletaAnularModal.tsx y BoletaEmailModal.tsx.\n\n**Notas tecnicas**\n- Ubicación actual: probablemente `src/pages/Boleta/components/BoletaDetalle.tsx:297`.\n- Componente destino: `src/ui/Modal` con props `variant: 'default' | 'danger'`.\n- Revisar props de trigger, onConfirm, onCancel en cada modal legacy.\n- Considerar si existen custom footers o headers que necesiten adaptación.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Ingresar a BoletaNueva y escribir en campo descripción, verificar despliegue de sugerencias de productos",
-        "Seleccionar un producto del autocomplete y validar autocompletado de descripción y precio",
-        "Hacer clic en botón de cliente, buscar y seleccionar cliente en modal",
-        "Verificar que razón social y RUT se completen tras seleccionar cliente",
-        "Validar que modal se cierre automáticamente tras selección",
-        "Ejecutar tests en BoletaNueva.test.tsx y confirmar que pasen",
-        "Confirmar que input cliente está deshabilitado cuando no hay empresa seleccionada"
+        "Portar BoletaAnularModal a ui/Modal (variant danger)",
+        "Portar BoletaEmailModal a ui/Modal",
+        "Eliminar componentes legacy si quedan sin uso",
+        "Verificar tests",
+        "Revisar estructura y props de BoletaAnularModal",
+        "Portar BoletaAnularModal a ui/Modal con variant='danger'",
+        "Revisar estructura y props de BoletaEmailModal",
+        "Portar BoletaEmailModal a ui/Modal con variant='default'",
+        "Actualizar importaciones en BoletaDetalle.tsx:297",
+        "Ejecutar tests unitarios y e2e (anulación + envío correo)",
+        "Eliminar componentes legacy si no tienen referencias",
+        "Mover card a In review y desplegar a staging"
       ]
     }
   ]
