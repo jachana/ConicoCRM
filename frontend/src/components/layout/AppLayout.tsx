@@ -5,6 +5,7 @@ import Sidebar from './Sidebar'
 import GlobalSearchModal from '../search/GlobalSearchModal'
 import SearchButton from '../search/SearchButton'
 import NotificationBell from '../NotificationBell'
+import CAFAlertBanner from '../CAFAlertBanner'
 import { useGlobalShortcut } from '../../hooks/useGlobalShortcut'
 import { usePreferencesStore } from '../../stores/preferences'
 import { useViewAsStore } from '../../stores/viewAs'
@@ -73,6 +74,8 @@ export default function AppLayout() {
             </button>
           </div>
         )}
+
+        <CAFAlertBanner />
 
         {/* Mobile top bar */}
         <header className="md:hidden flex items-center justify-between h-12 px-4 bg-[#111827] border-b border-white/5 flex-shrink-0">

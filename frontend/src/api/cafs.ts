@@ -69,3 +69,26 @@ export async function getCAF(cafId: number): Promise<CAFDetail> {
   const { data } = await api.get<CAFDetail>(`/api/onboarding/cafs/${cafId}`)
   return data
 }
+
+export interface CAFAlert {
+  id: number
+  tipo_dte: string
+  folios_restantes: number
+  total_folios: number
+  porcentaje_consumido: number
+  fecha_vencimiento: string | null
+  dias_al_vencimiento: number | null
+  is_low_stock: boolean
+  is_expiring_soon: boolean
+  urgencia: 'stock' | 'vencimiento' | 'ambos'
+}
+
+export interface CAFAlertsResponse {
+  count: number
+  alerts: CAFAlert[]
+}
+
+export async function getCAFAlerts(): Promise<CAFAlertsResponse> {
+  const { data } = await api.get<CAFAlertsResponse>('/api/cafs/alerts/')
+  return data
+}
