@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts'
 import { FileSpreadsheet, FileText, Inbox } from 'lucide-react'
 import { api } from '../lib/api'
+import { useModulos } from '../hooks/useModulos'
+import { isModuloEnabled } from '../lib/modulos'
+import type { Modulo } from '../lib/modulos'
 import type {
   ReportesVentas,
   ReportesCobranza,
@@ -792,14 +795,14 @@ function DteTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
 
 type Tab = 'ventas' | 'cobranza' | 'inventario' | 'compras' | 'margenes' | 'por_marca' | 'dte'
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'ventas', label: 'Ventas' },
-  { id: 'cobranza', label: 'Cobranza' },
-  { id: 'inventario', label: 'Inventario' },
-  { id: 'compras', label: 'Compras' },
-  { id: 'margenes', label: 'Márgenes' },
-  { id: 'por_marca', label: 'Por Marca' },
-  { id: 'dte', label: 'DTE' },
+const TABS: { id: Tab; label: string; modulo?: Modulo }[] = [
+  { id: 'ventas', label: 'Ventas', modulo: 'facturas' },
+  { id: 'cobranza', label: 'Cobranza', modulo: 'cobranza' },
+  { id: 'inventario', label: 'Inventario', modulo: 'inventario' },
+  { id: 'compras', label: 'Compras', modulo: 'ordenes_compra' },
+  { id: 'margenes', label: 'Márgenes', modulo: 'facturas' },
+  { id: 'por_marca', label: 'Por Marca', modulo: 'facturas' },
+  { id: 'dte', label: 'DTE', modulo: 'facturas' },
 ]
 
 const PRESETS = [
@@ -811,11 +814,24 @@ const PRESETS = [
 ]
 
 export default function Reportes() {
+  const { effective: modulos } = useModulos()
+
+  const visibleTabs = useMemo(
+    () => TABS.filter(t => !t.modulo || isModuloEnabled(modulos, t.modulo)),
+    [modulos],
+  )
+
   const [activeTab, setActiveTab] = useState<Tab>('ventas')
   const [preset, setPreset] = useState('este_mes')
   const defaultDates = getPresetDates('este_mes')
   const [dateFrom, setDateFrom] = useState(defaultDates.from)
   const [dateTo, setDateTo] = useState(defaultDates.to)
+
+  useEffect(() => {
+    if (visibleTabs.length > 0 && !visibleTabs.find(t => t.id === activeTab)) {
+      setActiveTab(visibleTabs[0].id)
+    }
+  }, [visibleTabs, activeTab])
 
   function handlePresetChange(p: string) {
     setPreset(p)
@@ -882,7 +898,7 @@ export default function Reportes() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)}>
         <TabsList variant="underline" className="overflow-x-auto">
-          {TABS.map(t => (
+          {visibleTabs.map(t => (
             <TabsTrigger key={t.id} value={t.id}>{t.label}</TabsTrigger>
           ))}
         </TabsList>

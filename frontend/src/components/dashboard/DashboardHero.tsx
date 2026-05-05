@@ -10,6 +10,8 @@ import {
   Loader2,
 } from 'lucide-react'
 import { api } from '../../lib/api'
+import { useModulos } from '../../hooks/useModulos'
+import { isModuloEnabled } from '../../lib/modulos'
 import type { DashboardSummaryOut } from '../../types/dashboard'
 import { cn } from '../../lib/cn'
 
@@ -133,6 +135,11 @@ export default function DashboardHero({ userName, presetName }: DashboardHeroPro
     refetchOnWindowFocus: false,
   })
 
+  const { effective: modulos } = useModulos()
+  const showFacturas = isModuloEnabled(modulos, 'facturas')
+  const showNV = isModuloEnabled(modulos, 'notas_venta')
+  const showInventario = isModuloEnabled(modulos, 'inventario')
+
   const g = greeting(userName || 'Hola')
   const today = new Date().toLocaleDateString('es-CL', {
     weekday: 'long',
@@ -142,6 +149,8 @@ export default function DashboardHero({ userName, presetName }: DashboardHeroPro
 
   const ventasDelta = data ? pctDelta(data.ventas_hoy, data.ventas_ayer) : null
   const mesDelta = data ? pctDelta(data.ventas_mes, data.ventas_mes_anterior) : null
+
+  const visibleCount = [showFacturas, showFacturas, showNV, showInventario].filter(Boolean).length
 
   return (
     <div className="border-b border-gray-200 dark:border-gray-800 bg-gradient-to-br from-brand-500/5 via-transparent to-transparent dark:from-brand-500/[0.07] px-4 md:px-6 pt-4 pb-3">
@@ -169,46 +178,59 @@ export default function DashboardHero({ userName, presetName }: DashboardHeroPro
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-        <KPICard
-          label="Ventas hoy"
-          value={data ? formatCLPCompact(data.ventas_hoy) : '—'}
-          hint={data ? `${data.ventas_hoy_count} venta${data.ventas_hoy_count === 1 ? '' : 's'}` : undefined}
-          delta={ventasDelta}
-          icon={<TrendingUp size={14} />}
-          accent="brand"
-        />
-        <KPICard
-          label="Ventas mes"
-          value={data ? formatCLPCompact(data.ventas_mes) : '—'}
-          hint={data ? `${data.ventas_mes_count} en total` : undefined}
-          delta={mesDelta}
-          icon={<Wallet size={14} />}
-          accent="emerald"
-        />
-        <KPICard
-          label="Por cobrar"
-          value={data ? `${data.nv_pendientes_count}` : '—'}
-          hint={data ? formatCLP(data.nv_pendientes_monto) : undefined}
-          icon={<FileText size={14} />}
-          accent="amber"
-          to="/notas-venta"
-        />
-        <KPICard
-          label="Stock crítico"
-          value={data ? `${data.stock_critico_count}` : '—'}
-          hint={
-            data
-              ? data.stock_critico_count === 0
-                ? 'Todo OK'
-                : 'productos bajo mínimo'
-              : undefined
-          }
-          icon={<AlertTriangle size={14} />}
-          accent={data && data.stock_critico_count > 0 ? 'rose' : 'emerald'}
-          to="/inventario"
-        />
-      </div>
+      {visibleCount > 0 && (
+        <div
+          className="grid gap-2 md:gap-3"
+          style={{ gridTemplateColumns: `repeat(${Math.min(visibleCount, 4)}, minmax(0, 1fr))` }}
+        >
+          {showFacturas && (
+            <KPICard
+              label="Ventas hoy"
+              value={data ? formatCLPCompact(data.ventas_hoy) : '—'}
+              hint={data ? `${data.ventas_hoy_count} venta${data.ventas_hoy_count === 1 ? '' : 's'}` : undefined}
+              delta={ventasDelta}
+              icon={<TrendingUp size={14} />}
+              accent="brand"
+            />
+          )}
+          {showFacturas && (
+            <KPICard
+              label="Ventas mes"
+              value={data ? formatCLPCompact(data.ventas_mes) : '—'}
+              hint={data ? `${data.ventas_mes_count} en total` : undefined}
+              delta={mesDelta}
+              icon={<Wallet size={14} />}
+              accent="emerald"
+            />
+          )}
+          {showNV && (
+            <KPICard
+              label="Por cobrar"
+              value={data ? `${data.nv_pendientes_count}` : '—'}
+              hint={data ? formatCLP(data.nv_pendientes_monto) : undefined}
+              icon={<FileText size={14} />}
+              accent="amber"
+              to="/notas-venta"
+            />
+          )}
+          {showInventario && (
+            <KPICard
+              label="Stock crítico"
+              value={data ? `${data.stock_critico_count}` : '—'}
+              hint={
+                data
+                  ? data.stock_critico_count === 0
+                    ? 'Todo OK'
+                    : 'productos bajo mínimo'
+                  : undefined
+              }
+              icon={<AlertTriangle size={14} />}
+              accent={data && data.stock_critico_count > 0 ? 'rose' : 'emerald'}
+              to="/inventario"
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }

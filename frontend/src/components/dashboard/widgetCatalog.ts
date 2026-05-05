@@ -1,5 +1,6 @@
 // frontend/src/components/dashboard/widgetCatalog.ts
 import type { ChartType, WidgetConfig, WidgetType } from '../../types/dashboard'
+import type { Modulo } from '../../lib/modulos'
 
 export interface WidgetDef {
   type: WidgetType
@@ -7,6 +8,7 @@ export interface WidgetDef {
   chartTypes: ChartType[]
   hasDateRange: boolean
   adminOnly: boolean
+  modulo?: Modulo
   defaultGrid: Partial<Record<ChartType, { w: number; h: number }>> & { default: { w: number; h: number } }
 }
 
@@ -17,6 +19,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     chartTypes: ['kpi', 'bar', 'line'],
     hasDateRange: true,
     adminOnly: false,
+    modulo: 'facturas',
     defaultGrid: {
       kpi: { w: 3, h: 3 },
       bar: { w: 6, h: 4 },
@@ -30,6 +33,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     chartTypes: ['kpi', 'bar'],
     hasDateRange: true,
     adminOnly: false,
+    modulo: 'cotizaciones',
     defaultGrid: {
       kpi: { w: 3, h: 3 },
       bar: { w: 6, h: 4 },
@@ -58,6 +62,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     chartTypes: ['table'],
     hasDateRange: false,
     adminOnly: false,
+    modulo: 'inventario',
     defaultGrid: { default: { w: 6, h: 5 } },
   },
   {
@@ -66,6 +71,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     chartTypes: ['kpi', 'table'],
     hasDateRange: false,
     adminOnly: false,
+    modulo: 'notas_venta',
     defaultGrid: {
       kpi: { w: 3, h: 3 },
       table: { w: 6, h: 5 },
@@ -78,6 +84,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     chartTypes: ['table', 'bar'],
     hasDateRange: true,
     adminOnly: true,
+    modulo: 'cotizaciones',
     defaultGrid: { default: { w: 6, h: 5 } },
   },
   {
@@ -86,6 +93,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     chartTypes: ['table', 'bar'],
     hasDateRange: true,
     adminOnly: true,
+    modulo: 'facturas',
     defaultGrid: { default: { w: 6, h: 5 } },
   },
 ]

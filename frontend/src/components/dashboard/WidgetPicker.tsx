@@ -1,6 +1,8 @@
 // frontend/src/components/dashboard/WidgetPicker.tsx
 import { Plus } from 'lucide-react'
 import { WIDGET_CATALOG, makeWidget } from './widgetCatalog'
+import { useModulos } from '../../hooks/useModulos'
+import { isModuloEnabled } from '../../lib/modulos'
 import type { WidgetConfig } from '../../types/dashboard'
 
 interface WidgetPickerProps {
@@ -9,7 +11,12 @@ interface WidgetPickerProps {
 }
 
 export default function WidgetPicker({ isAdmin, onAdd }: WidgetPickerProps) {
-  const available = WIDGET_CATALOG.filter(def => isAdmin || !def.adminOnly)
+  const { effective } = useModulos()
+  const available = WIDGET_CATALOG.filter(def => {
+    if (!isAdmin && def.adminOnly) return false
+    if (def.modulo && !isModuloEnabled(effective, def.modulo)) return false
+    return true
+  })
 
   return (
     <div className="w-56 flex-shrink-0 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 p-3 overflow-y-auto">
