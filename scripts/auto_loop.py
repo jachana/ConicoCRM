@@ -66,6 +66,7 @@ DEFAULT_PROVIDER = "auto"  # straico -> openrouter
 DEFAULT_IMPLEMENTER_MODEL = "sonnet"
 
 CLAUDE_CLI = shutil.which("claude") or "claude"
+OPENCODE_CLI = shutil.which("opencode") or "opencode"
 
 FAILURE_LOG_FILE = REPO_ROOT / ".claude" / "failure_log.json"
 CODEBASE_MAP_FILE = SCRIPT_DIR / "impl_codebase_map.md"
@@ -268,15 +269,21 @@ def run_scoped_tests(test_files: list[str]) -> tuple[bool, str]:
     if backend:
         rel = [f[len("backend/"):] for f in backend]
         r = subprocess.run([sys.executable, "-m", "pytest", *rel, "-q", "--no-header"],
-                           cwd=str(REPO_ROOT / "backend"), capture_output=True, text=True)
+                           cwd=str(REPO_ROOT / "backend"),
+                           capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
         if r.returncode != 0:
-            return False, f"backend pytest failed:\n{(r.stdout + r.stderr)[-1500:]}"
+            out = (r.stdout or "") + (r.stderr or "")
+            return False, f"backend pytest failed:\n{out[-1500:]}"
     if frontend:
         rel = [f[len("frontend/"):] for f in frontend]
         r = subprocess.run([NPM, "test", "--", "--run", *rel],
-                           cwd=str(REPO_ROOT / "frontend"), capture_output=True, text=True)
+                           cwd=str(REPO_ROOT / "frontend"),
+                           capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
         if r.returncode != 0:
-            return False, f"frontend vitest failed:\n{(r.stdout + r.stderr)[-1500:]}"
+            out = (r.stdout or "") + (r.stderr or "")
+            return False, f"frontend vitest failed:\n{out[-1500:]}"
     return True, "ok"
 
 
@@ -286,7 +293,8 @@ def _llm_call_with_prompt(system: str, user: str) -> dict | None:
     orig = ts._build_prompt
     ts._build_prompt = lambda _b, _s: (system, user)
     try:
-        result = ts.call_llm([], spec_stub, "haiku", provider="auto")
+        # Prefer OpenRouter Qwen for this path (test generation/grading).
+        result = ts.call_llm([], spec_stub, "qwen", provider="openrouter")
     except Exception as e:
         print(f"  llm error: {e}", file=sys.stderr)
         return None
@@ -741,6 +749,37 @@ def _fmt_elapsed(seconds: float) -> str:
     return f"{s // 60:d}:{s % 60:02d}"
 
 
+def _extract_text_fragments(obj) -> list[str]:
+    """Best-effort text extraction from heterogenous JSON event payloads."""
+    out: list[str] = []
+    if isinstance(obj, str):
+        s = obj.strip()
+        if s:
+            out.append(s)
+        return out
+    if isinstance(obj, list):
+        for item in obj:
+            out.extend(_extract_text_fragments(item))
+        return out
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k in {"text", "message", "content", "output"}:
+                out.extend(_extract_text_fragments(v))
+            elif isinstance(v, (dict, list)):
+                out.extend(_extract_text_fragments(v))
+        return out
+    return out
+
+
+def _normalize_opencode_model(model: str) -> str | None:
+    """OpenCode expects provider/model. For short aliases, let OpenCode default."""
+    if not model:
+        return None
+    if "/" in model:
+        return model
+    return None
+
+
 def _run_claude_with_prompt(prompt: str, model: str, log_path: Path) -> tuple[int, str]:
     cmd = [
         CLAUDE_CLI,
@@ -840,7 +879,49 @@ def _run_claude_with_prompt(prompt: str, model: str, log_path: Path) -> tuple[in
     return proc.returncode, last_text
 
 
-def spawn_claude(card: dict, model: str, log_path: Path) -> tuple[int, str]:
+def _run_opencode_with_prompt(prompt: str, model: str, log_path: Path) -> tuple[int, str]:
+    cmd = [
+        OPENCODE_CLI,
+        "run",
+        "--format", "json",
+        "--dangerously-skip-permissions",
+    ]
+    model_id = _normalize_opencode_model(model)
+    if model_id:
+        cmd.extend(["--model", model_id])
+    cmd.append(prompt)
+    print("  $ opencode run --format json --dangerously-skip-permissions <prompt>")
+    if model and not model_id:
+        print(f"  note: model alias '{model}' not provider/model; using OpenCode default")
+
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    last_text = ""
+    started = time.monotonic()
+    with log_path.open("w", encoding="utf-8") as f:
+        proc = subprocess.Popen(
+            cmd, cwd=str(REPO_ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, bufsize=1, encoding="utf-8", errors="replace"
+        )
+        for line in proc.stdout:
+            f.write(line)
+            f.flush()
+            elapsed = _fmt_elapsed(time.monotonic() - started)
+            try:
+                obj = json.loads(line)
+            except Exception:
+                continue
+            frags = _extract_text_fragments(obj)
+            if frags:
+                last_text = frags[-1]
+                snippet = last_text.strip().split("\n", 1)[0][:100]
+                if snippet:
+                    print(f"  [opencode {elapsed}]  {snippet}", flush=True)
+        proc.wait()
+    return proc.returncode, last_text
+
+
+def spawn_implementer(card: dict, model: str, log_path: Path,
+                      backend: str) -> tuple[int, str]:
     codebase_map = _load_codebase_map()
     print("  pre-scoping files via qwen ...")
     file_scope = _scope_card_files(card)
@@ -852,11 +933,13 @@ def spawn_claude(card: dict, model: str, log_path: Path) -> tuple[int, str]:
         file_scope=file_scope + "\n" if file_scope else "",
         card_json=json.dumps(card, ensure_ascii=False, indent=2),
     )
+    if backend == "opencode":
+        return _run_opencode_with_prompt(prompt, model, log_path)
     return _run_claude_with_prompt(prompt, model, log_path)
 
 
-def spawn_claude_fix(card: dict, model: str, failure: str, pre_sha: str,
-                     log_path: Path) -> tuple[int, str]:
+def spawn_implementer_fix(card: dict, model: str, failure: str, pre_sha: str,
+                          log_path: Path, backend: str) -> tuple[int, str]:
     diff = subprocess.run(
         ["git", "diff", "--stat", f"{pre_sha}..HEAD"],
         cwd=str(REPO_ROOT), capture_output=True, text=True, check=False,
@@ -866,6 +949,8 @@ def spawn_claude_fix(card: dict, model: str, failure: str, pre_sha: str,
         diff=diff,
         card_json=json.dumps(card, ensure_ascii=False, indent=2),
     )
+    if backend == "opencode":
+        return _run_opencode_with_prompt(prompt, model, log_path)
     return _run_claude_with_prompt(prompt, model, log_path)
 
 
@@ -1078,8 +1163,9 @@ def iteration(args, board_id: str) -> str:
 
     print("\n=== spawn claude ===")
     log_path = LOG_DIR / f"{int(time.time())}_{slugify(name)}.log"
-    rc, last_text = spawn_claude(card, impl_model, log_path)
-    print(f"  claude exit={rc}; log={log_path}")
+    rc, last_text = spawn_implementer(card, impl_model, log_path,
+                                      backend=args.implementer_backend)
+    print(f"  {args.implementer_backend} exit={rc}; log={log_path}")
 
     test_runs = 0
     fix_attempts = 0
@@ -1129,8 +1215,11 @@ def iteration(args, board_id: str) -> str:
             fix_attempts += 1
             print(f"\n=== fix attempt {fix_attempts}/{args.max_fix_attempts} ===")
             fix_log = LOG_DIR / f"{int(time.time())}_{slugify(name)}_fix{fix_attempts}.log"
-            rc2, last2 = spawn_claude_fix(card, impl_model, msg, pre_sha, fix_log)
-            print(f"  claude-fix exit={rc2}; log={fix_log}")
+            rc2, last2 = spawn_implementer_fix(
+                card, impl_model, msg, pre_sha, fix_log,
+                backend=args.implementer_backend
+            )
+            print(f"  {args.implementer_backend}-fix exit={rc2}; log={fix_log}")
 
             if rc2 != 0 or last2.strip().upper().startswith("ABORT"):
                 print("fix agent ABORTed; rolling back.", file=sys.stderr)
@@ -1198,8 +1287,8 @@ def main() -> int:
     parser.add_argument("--branch", default="master")
     parser.add_argument("--max", type=int, default=0, help="0 = unlimited")
     parser.add_argument("--triage-model", default=DEFAULT_TRIAGE_MODEL)
-    parser.add_argument("--summary-model", default="haiku",
-                        help="LLM alias for ship-time review summary (haiku|sonnet|gemini-flash|...). "
+    parser.add_argument("--summary-model", default="qwen",
+                        help="LLM alias for ship-time review summary (qwen|haiku|sonnet|gemini-flash|...). "
                              "Generates the 'In review' card description + manual-test checklist.")
     parser.add_argument("--provider", default=DEFAULT_PROVIDER,
                         choices=["auto", "straico", "openrouter"])
@@ -1208,7 +1297,10 @@ def main() -> int:
     parser.add_argument("--commit-window", type=int, default=200,
                         help="how many recent commits to scan for already-implemented matches")
     parser.add_argument("--max-fix-attempts", type=int, default=2,
-                        help="how many times to re-spawn claude with the failure tail before rolling back")
+                        help="how many times to re-spawn implementer on test failure before rollback")
+    parser.add_argument("--implementer-backend", default="opencode",
+                        choices=["opencode", "claude"],
+                        help="agent backend for implementation/fix steps")
     args = parser.parse_args()
 
     ts.load_dotenv(ts.ENV_FILE)
