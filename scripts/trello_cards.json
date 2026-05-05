@@ -32,7 +32,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Modulos P3.3] Modal cascade-confirm al apagar parent con dependents on",
       "labels": [
         "Core",
@@ -40,20 +40,13 @@
         "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nCuando un usuario intenta desactivar (off→on) un módulo parent que tiene dependentes activos, el sistema debe mostrar la cascada completa de módulos que serán afectados antes de aplicar el cambio. Esto previene sorpresas y garantiza confirmación explícita del usuario.\n\n**Acceptance Criteria**\n- Al intentar desactivar un módulo parent con dependentes activos, se abre un modal con variante danger.\n- El modal muestra el nombre del módulo parent y lista legible de todos los dependentes que serán desactivados (ej: 'Apagar Facturas. Esto también apagará: Pagos, Cobranza, Nota de Crédito, Nota de Débito, Libros, Aprobaciones de Margen').\n- Botón 'Continuar' envía un PATCH atómico con los slugs de todos los módulos (parent + dependentes) en un solo body.\n- Botón 'Cancelar' cierra el modal sin realizar cambios.\n- Durante la mutación se muestra loading state en el botón de confirmación.\n- La cascada calculada en frontend coincide con la computed en backend (P3.2).\n\n**Definition of Done**\n- Modal component renderiza con contenido correcto según registry.\n- PATCH request incluye todos los slugs en un único body atómico.\n- Tests unitarios validan: (1) modal abre con lista correcta, (2) confirmar envía payload completo, (3) cancelar no dispara request.\n- Código mergeado en develop y desplegado a staging.\n- Trello card movida a 'In review'.\n\n**Notas tecnicas**\n- Reutilizar `compute_cascade()` del backend (P3.2) como referencia para lógica frontend en registry.\n- Modal component: variante 'danger' del Design System.\n- Endpoint PATCH: `/api/modules` con body `{slugs: [\"parent\", \"dep1\", \"dep2\", ...]}` (confirm atómico).\n- Hook: `usePatchModules()` para mutation con loading state.\n- Path frontend: `src/components/ModulesModal.tsx`, lógica en `src/hooks/usePatchModules.ts`.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Al desactivar un módulo parent con dependientes, se muestra un modal de confirmación que lista todos los módulos afectados y permite confirmar o cancelar el cambio en bloque.\n\n**Cambios / Decisiones** — Se implementó `computeCascadeOff` en el frontend para replicar la lógica de cascada del backend. El modal de confirmación (variante danger) se muestra al intentar apagar un módulo con dependencias activas. El botón 'Continuar' envía un PATCH atómico a `/api/modules` con todos los slugs involucrados. Se reutilizó el hook `usePatchModules` para manejar el loading state. Se agregaron tres tests en `ModulesTab.test.tsx` para validar apertura del modal, envío correcto del payload y cancelación sin request.",
       "checklist": [
-        "Calcular cascade en frontend usando registry (espejo de compute_cascade backend)",
-        "Modal danger variant: 'Apagar facturas. Esto tambien apagara: pagos, cobranza, nota_credito, nota_debito, libros, aprobaciones_margen. Continuar?'",
-        "Confirmar -> PATCH con todos los slugs en un solo body",
-        "Cancelar cierra modal sin cambios",
-        "Loading state durante mutation",
-        "Tests: apagar facturas dispara modal con lista correcta; confirmar manda body completo; cancelar no envia request",
-        "Crear modal danger: 'Apagar [Parent]. Esto también apagará: [Dep1, Dep2, ...]. Continuar?'",
-        "Implementar botón Continuar: PATCH con slugs de parent + dependentes en un solo body",
-        "Implementar botón Cancelar: cierra modal sin request",
-        "Agregar loading state durante mutation (botón deshabilitado, spinner)",
-        "Tests: modal abre con lista correcta; confirmar manda body completo; cancelar no envia request",
-        "Mergear a develop, desplegar staging y mover Trello a In review"
+        "Abrir configuración de módulos y desactivar uno con dependientes",
+        "Verificar que se abre modal con lista de módulos a apagar",
+        "Confirmar y verificar solicitud PATCH con todos los slugs",
+        "Cancelar y verificar que no se envía ninguna request",
+        "Revisar que botón 'Continuar' muestra estado loading"
       ]
     }
   ]
