@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import date, timedelta
 
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.celery_app import celery_app
@@ -14,16 +15,18 @@ from app.services.email import enviar_recordatorio
 
 log = logging.getLogger(__name__)
 
+_EXPIRY_DAYS = 30
+_LOW_STOCK_RATIO = 0.9
+
 
 def _build_alert_line(caf: CAF) -> str:
-    """Return a single human-readable line for a CAF alert."""
     total = caf.num_fin - caf.num_inicio + 1
     restantes = total - caf.consumido
     pct = round((caf.consumido / total) * 100, 1) if total > 0 else 0.0
 
     line = f"  - Tipo DTE {caf.tipo_dte}: {restantes} folios restantes ({pct}% consumido)"
 
-    if caf.is_expiring_soon() and caf.fecha_vencimiento is not None:
+    if caf.fecha_vencimiento is not None:
         dias = (caf.fecha_vencimiento - date.today()).days
         line += f", vence en {dias} días"
 
@@ -31,17 +34,20 @@ def _build_alert_line(caf: CAF) -> str:
 
 
 def _get_alert_cafs(db: Session, empresa_id: int) -> list[CAF]:
-    """Return all vigente CAFs in alert state for the given empresa."""
-    cafs = (
-        db.query(CAF)
-        .filter(CAF.empresa_id == empresa_id, CAF.vigente.is_(True))
-        .all()
-    )
-    return [c for c in cafs if c.is_low_stock() or c.is_expiring_soon()]
+    today = date.today()
+    soon = today + timedelta(days=_EXPIRY_DAYS)
+    total_expr = CAF.num_fin - CAF.num_inicio + 1
+    return db.query(CAF).filter(
+        CAF.empresa_id == empresa_id,
+        CAF.vigente == True,
+        or_(
+            (CAF.consumido * 1.0 / total_expr) >= _LOW_STOCK_RATIO,
+            and_(CAF.fecha_vencimiento.isnot(None), CAF.fecha_vencimiento < soon),
+        ),
+    ).all()
 
 
 def _get_admin_users(db: Session, empresa_id: int) -> list[User]:
-    """Return all active admin users for the given empresa."""
     return (
         db.query(User)
         .filter(
@@ -54,10 +60,6 @@ def _get_admin_users(db: Session, empresa_id: int) -> list[User]:
 
 
 def _procesar_empresa_caf(db: Session, empresa: Empresa) -> int:
-    """
-    Send CAF alert emails to all admins of the empresa if there are alerts.
-    Returns the number of emails sent.
-    """
     alert_cafs = _get_alert_cafs(db, empresa.id)
     if not alert_cafs:
         return 0
@@ -108,11 +110,6 @@ def _procesar_empresa_caf(db: Session, empresa: Empresa) -> int:
     name="app.tasks.caf.send_caf_alerts_email",
 )
 def send_caf_alerts_email(self):
-    """
-    Daily Celery task: find CAFs in alert state across all empresas and send
-    one consolidated email per admin listing all their empresa's alerts.
-    Runs at 08:30 AM Chile time via Celery beat.
-    """
     db = SessionLocal()
     try:
         log.info("Iniciando envío de alertas CAF")
@@ -137,7 +134,6 @@ def send_caf_alerts_email(self):
         log.info(f"Alertas CAF completadas. Total emails enviados: {total_emails}")
 
     except Exception as e:
-        db.rollback()
         log.error(f"Error en send_caf_alerts_email: {e}")
         try:
             raise self.retry(exc=e, countdown=60)
