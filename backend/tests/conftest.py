@@ -14,7 +14,7 @@ sys.modules.setdefault("weasyprint", _weasyprint_mock)
 import sqlite3
 import unicodedata
 import pytest
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -90,22 +90,26 @@ def audit_enabled():
     TestingSession.configure(info={"audit_disabled": True})
 
 
-@pytest.fixture(autouse=True)
-def setup_test_db():
-    from app.database import Base
-    import app.models.user  # noqa: F401 — registers User with Base.metadata
-    import app.models.permission  # noqa: F401 — registers PermissionOverride with Base.metadata
-    import app.models.proveedor  # noqa: F401 — registers Proveedor with Base.metadata
-    import app.models.producto  # noqa: F401 — registers Producto with Base.metadata
-    import app.models.cliente  # noqa: F401 — registers Cliente with Base.metadata
+# ---------------------------------------------------------------------------
+# Schema management — create once per session, DELETE rows between tests
+# ---------------------------------------------------------------------------
+
+def _import_all_models():
+    import app.models.user  # noqa: F401
+    import app.models.permission  # noqa: F401
+    import app.models.proveedor  # noqa: F401
+    import app.models.producto  # noqa: F401
+    import app.models.cliente  # noqa: F401
     import app.models.empresa  # noqa: F401
     import app.models.empleado  # noqa: F401
     import app.models.empleado_documento  # noqa: F401
     import app.models.empleado_vacacion  # noqa: F401
     import app.models.cotizacion  # noqa: F401
     import app.models.nota_venta  # noqa: F401
+    import app.models.nota_venta_adjunto  # noqa: F401
     import app.models.tag  # noqa: F401
     import app.models.factura  # noqa: F401
+    import app.models.factura_adjunto  # noqa: F401
     import app.models.orden_compra  # noqa: F401
     import app.models.movimiento_inventario  # noqa: F401
     import app.models.system_config  # noqa: F401
@@ -115,36 +119,71 @@ def setup_test_db():
     import app.models.solicitud_descuento  # noqa: F401
     import app.models.cobranza_config  # noqa: F401
     import app.models.boleta  # noqa: F401
-    import app.models.guia_despacho  # noqa: F401 — registers GuiaDespacho with Base.metadata
-    import app.models.nota_credito  # noqa: F401 — registers NotaCredito with Base.metadata
-    import app.models.nota_debito  # noqa: F401 — registers NotaDebito with Base.metadata
+    import app.models.guia_despacho  # noqa: F401
+    import app.models.nota_credito  # noqa: F401
+    import app.models.nota_debito  # noqa: F401
+    import app.models.nota_alerta  # noqa: F401
     import app.models.dte_emision  # noqa: F401
     import app.models.banco_receptor  # noqa: F401
     import app.models.sede_despacho  # noqa: F401
     import app.models.marca  # noqa: F401
     import app.models.producto_documento  # noqa: F401
     import app.models.lista_precios  # noqa: F401
+    import app.models.precio_especial_cliente  # noqa: F401
     import app.models.tarea  # noqa: F401
     import app.models.regla_tarea  # noqa: F401
     import app.models.audit_log  # noqa: F401
-    import app.models.factura_compra  # noqa: F401 — registers FacturaCompra with Base.metadata
+    import app.models.factura_compra  # noqa: F401
     import app.models.notification  # noqa: F401
-    import app.models.oportunidad  # noqa: F401 — registers Oportunidad + Etapa with Base.metadata
-    import app.models.libro  # noqa: F401 — registers LibroVentas, LibroCompras, DteRecepcion with Base.metadata
-    import app.models.caf  # noqa: F401 — registers CAF with Base.metadata
-    import app.models.tipo_producto  # noqa: F401 — registers TipoProducto with Base.metadata
-    import app.models.import_report  # noqa: F401 — registers ImportReport with Base.metadata
-    # Register audit listeners once for the test session.
+    import app.models.oportunidad  # noqa: F401
+    import app.models.libro  # noqa: F401
+    import app.models.caf  # noqa: F401
+    import app.models.tipo_producto  # noqa: F401
+    import app.models.import_report  # noqa: F401
+    import app.models.pago  # noqa: F401
+    import app.models.pago_importado  # noqa: F401
+    import app.models.bodega  # noqa: F401
+    import app.models.contacto_empresa  # noqa: F401
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _session_schema():
+    """Create the full schema once for the entire test session."""
+    _import_all_models()
+    from app.database import Base
     from app.services.auditoria import register_listeners as _register_audit
     _register_audit()
-    Base.metadata.drop_all(bind=test_engine)
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
 
 
+@pytest.fixture(autouse=True)
+def setup_test_db(_session_schema):
+    """Ensure a clean DB state for each test by deleting all rows after the test.
+
+    Schema creation happens once per session (_session_schema). Row deletion
+    via DELETE is orders of magnitude faster than DROP/CREATE for each test.
+    """
+    yield
+    from app.database import Base
+    from sqlalchemy import inspect as sa_inspect
+    with test_engine.connect() as conn:
+        existing = set(sa_inspect(test_engine).get_table_names())
+        conn.execute(text("PRAGMA foreign_keys = OFF"))
+        for table in reversed(Base.metadata.sorted_tables):
+            if table.name in existing:
+                conn.execute(table.delete())
+        conn.execute(text("PRAGMA foreign_keys = ON"))
+        conn.commit()
+
+
+# ---------------------------------------------------------------------------
+# Shared fixtures
+# ---------------------------------------------------------------------------
+
 @pytest.fixture
-def db(setup_test_db):  # noqa: F811 — ensure tables exist before opening session
+def db(setup_test_db):  # noqa: F811 — ensure tables are clean before opening session
     session = TestingSession()
     try:
         yield session
@@ -171,14 +210,22 @@ def client():
     app.dependency_overrides.pop(get_db, None)
 
 
+# ---------------------------------------------------------------------------
+# Password hash — computed once (bcrypt is intentionally slow)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="session")
+def _test_password_hash():
+    from app.core.security import get_password_hash
+    return get_password_hash("secret123")
+
+
 @pytest.fixture
-def admin_user(setup_test_db):  # noqa: F811 — ensure DB is ready before inserting seed user
+def admin_user(setup_test_db, _test_password_hash):
     from app.models.user import User
     from app.models.empresa import Empresa
-    from app.core.security import get_password_hash
 
     db = TestingSession()
-    # Create default empresa for admin
     empresa = Empresa(nombre="Admin Default Empresa")
     db.add(empresa)
     db.flush()
@@ -186,7 +233,7 @@ def admin_user(setup_test_db):  # noqa: F811 — ensure DB is ready before inser
     user = User(
         email="admin@conico.cl",
         name="Admin",
-        hashed_password=get_password_hash("secret123"),
+        hashed_password=_test_password_hash,
         role="admin",
         empresa_id=empresa.id,
     )
@@ -204,15 +251,14 @@ def admin_token(client, admin_user):
 
 
 @pytest.fixture
-def subadmin_user(setup_test_db):
+def subadmin_user(setup_test_db, _test_password_hash):
     from app.models.user import User
-    from app.core.security import get_password_hash
 
     db = TestingSession()
     user = User(
         email="subadmin@conico.cl",
         name="SubAdmin",
-        hashed_password=get_password_hash("secret123"),
+        hashed_password=_test_password_hash,
         role="subadmin",
     )
     db.add(user)
@@ -229,15 +275,14 @@ def subadmin_token(client, subadmin_user):
 
 
 @pytest.fixture
-def vendedor_user(setup_test_db):
+def vendedor_user(setup_test_db, _test_password_hash):
     from app.models.user import User
-    from app.core.security import get_password_hash
 
     db = TestingSession()
     user = User(
         email="vendedor@conico.cl",
         name="Vendedor",
-        hashed_password=get_password_hash("secret123"),
+        hashed_password=_test_password_hash,
         role="vendedor",
     )
     db.add(user)
