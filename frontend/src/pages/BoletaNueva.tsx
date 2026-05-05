@@ -122,7 +122,6 @@ export default function BoletaNueva() {
   function handleClienteSelect(cliente: Cliente) {
     setClienteId(String(cliente.id))
     setClienteNombre(cliente.nombre)
-    setShowClienteModal(false)
     if (cliente.empresa_id) setEmpresaId(cliente.empresa_id)
   }
 
@@ -232,7 +231,8 @@ export default function BoletaNueva() {
             <button
               type="button"
               onClick={() => setShowClienteModal(true)}
-              className="w-full text-left px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
+              disabled={empresaId === 0}
+              className="w-full text-left px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 hover:border-gray-400 dark:hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {clienteNombre || <span className="text-gray-400">Seleccionar cliente...</span>}
             </button>
@@ -364,14 +364,14 @@ export default function BoletaNueva() {
           </Button>
         </div>
 
-        <ClienteSelectModal
-          open={showClienteModal}
-          empresaId={empresaId}
-          empresaNombre={empresas.find(e => e.id === empresaId)?.nombre ?? ''}
-          onSelect={handleClienteSelect}
-          onClose={() => setShowClienteModal(false)}
-        />
       </form>
+      <ClienteSelectModal
+        open={showClienteModal}
+        empresaId={empresaId}
+        empresaNombre={empresas.find(e => e.id === empresaId)?.nombre ?? ''}
+        onSelect={cliente => { handleClienteSelect(cliente); setShowClienteModal(false) }}
+        onClose={() => setShowClienteModal(false)}
+      />
     </div>
   )
 }
