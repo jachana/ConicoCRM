@@ -32,28 +32,21 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Modulos P2.5] Ocultar acciones cross-module en detalles",
       "labels": [
         "Core",
         "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nActualmente, botones que generan documentos o cierran operaciones en otros módulos están visibles aunque esos módulos estén desactivados por el administrador. Esto crea confusión y errores en flujos si el usuario intenta clickear acciones cuyo módulo destino no existe en su plan.\n\n**Acceptance Criteria**\n- En Nota de Venta detail, los botones 'Generar Factura', 'Generar Boleta' y 'Generar GD' se ocultan si sus módulos respectivos están off.\n- En Factura detail, 'Anular con NC' se oculta si nota_credito está off; 'Registrar pago' se oculta si pagos está off.\n- En Boleta, GD y Cotización details, los botones de cierre ('Anular con NC', 'Convertir a...') respetan los flags de módulo target.\n- En OC detail, 'Recibir' se oculta si inventario está off.\n- El comportamiento es consistente: si el usuario no ve el botón, no puede intentar la acción bloqueada.\n\n**Definition of Done**\n- Los 6 componentes detail actualizan su lógica de renderizado condicional.\n- Tests unitarios verifican que cada botón aparece/desaparece según el flag correspondiente.\n- Tests pasan en CI/CD (incluido P2.1 dependencies).\n- Cambios desplegados a staging y verificados manualmente en 2-3 flujos clave.\n- Trello card movida a 'In review'.\n\n**Notas tecnicas**\n- Asumir que P2.1 proporciona un objeto/contexto global con flags de módulo (ej: config.modulos.facturas, config.modulos.nota_credito, etc.).\n- Archivos a actualizar (src/pages/detail): NotaVentaDetalle, FacturaDetalle, BoletaDetalle, GuiaDespachoDetalle, CotizacionDetalle, OrdenCompraDetalle.\n- Patrón: cada botón envuelto en condicional que consulta el flag antes de renderizar.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Se implementó la lógica condicional para ocultar botones de acciones cruzadas en las páginas de detalle cuando los módulos destino están desactivados por el administrador.\n\n**Cambios / Decisiones**\n- Se aplicaron condicionales en 6 componentes de detalle (`NotaVentaDetalle`, `FacturaDetalle`, `BoletaDetalle`, `GuiaDespachoDetalle`, `CotizacionDetalle`, `OrdenCompraDetalle`) en `frontend/src/pages/`.\n- Se consultan los flags de módulos del contexto P2.1 (`config.modulos.*`) antes de renderizar botones específicos: 'Generar Factura'/'Generar guía' en NV, 'Registrar abono' en Factura, 'Anular' en Boleta/GD, 'Crear NV' en Cotización y 'Recepcionar mercadería' en OC.\n- Se envolvió el panel inline de recepción de OC en la misma condicional para evitar estados inconsistentes.\n- Se añadieron tests unitarios en los archivos `.test.tsx` de cada componente para verificar comportamiento visible/oculto según los flags.\n- Se mantiene el patrón existente de consumo de contexto global sin introducir nuevas dependencias ni cambios de esquema.",
       "checklist": [
-        "NotaVentaDetalle: gate boton 'Generar Factura' por facturas; 'Generar Boleta' por boletas; 'Generar GD' por guias_despacho",
-        "FacturaDetalle: gate 'Anular con NC' por nota_credito; 'Registrar pago' por pagos",
-        "BoletaDetalle: gate 'Anular con NC' por nota_credito",
-        "GuiaDespachoDetalle: gate 'Anular con NC' por nota_credito",
-        "CotizacionDetalle: gate 'Convertir a NV' por notas_venta; 'Convertir a Factura' por facturas",
-        "OrdenCompraDetalle: gate 'Recibir' por inventario",
-        "Tests por pantalla: botones ocultos cuando target off",
-        "Cargar contexto de módulos activos (P2.1) en cada componente detail",
-        "Ocultar botones cross-module según flags: NV (factura, boleta, GD), Factura (NC, pago), Boleta/GD/Cotiz/OC (destino)",
-        "Escribir tests unitarios para cada pantalla: botones visibles si módulo on, ocultos si off",
-        "Verificar en staging: flujos clave no muestran botones bloqueados",
-        "Tests pasan en CI/CD",
-        "Mover Trello a 'In review'"
+        "Abrir detalle de Nota de Venta con módulos de factura y guía deshabilitados y verificar que no aparezcan sus botones.",
+        "Ir al detalle de Factura, desactivar el módulo de pagos y confirmar que el botón de registrar abono no se renderiza.",
+        "Revisar detalle de Boleta y Guía de Despacho con nota de crédito off para validar que 'Anular' está oculto en ambas.",
+        "Abrir detalle de Cotización y OC con notas de venta e inventario deshabilitados, verificando que 'Crear NV' y 'Recepcionar' no aparezcan.",
+        "Ejecutar los tests unitarios de las 6 pantallas de detalle con `npm run test` y confirmar que todos pasan sin errores.",
+        "Validar en staging que al activar un módulo destino, los botones afectados vuelvan a ser visibles inmediatamente."
       ]
     }
   ]
