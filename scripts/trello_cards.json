@@ -32,22 +32,32 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Modulos P1.6] Wire require_modulo a RRHH + CRM + libros + DTE recepcion + aprobaciones",
+      "list": "In progress",
+      "name": "[Modulos P1.7] Endpoints admin /empresas/{id}/modulos + /me/modulos + audit",
       "labels": [
         "Core",
         "Goal: SaaS-ready",
         "Size:M"
       ],
-      "desc": "**Resumen** — Se aplicó el patrón `require_modulo()` a los routers de RRHH, CRM, libros, DTE recepción y aprobaciones para restringir el acceso según licencia.\n\n**Cambios / Decisiones** — Se añadió `require_modulo()` en `empleados.py`, `empleados_documentos.py`, `empleados_vacaciones.py` con `'rrhh'`; `oportunidades.py` con `'oportunidades'`; `tareas.py` y `reglas_tarea.py` con `'tareas'`; `libros.py` con `'libros'`; `dte_recepcion.py` con `'dte_recepcion'`; `aprobaciones.py`, `aprobaciones_costo.py`, `aprobaciones_margen.py` con `'aprobaciones'`; y `solicitudes_descuento.py` con `'aprobaciones_descuento'`. Se agregaron 22 tests verificando 403 cuando el módulo está desactivado. `reportes.py` permanece sin protección.",
+      "desc": "**Contexto / Problema**\nLos administradores necesitan consultar y modificar módulos activos por empresa, respetando dependencias entre features. Los usuarios deben ver solo sus módulos efectivos sin requerir permisos admin. Cada cambio debe registrarse en auditoría con diff detallado slug-by-slug.\n\n**Acceptance Criteria**\n- GET /empresas/{id}/modulos (admin) retorna {stored, effective, registry con deps} y valida permisos.\n- PATCH /empresas/{id}/modulos (admin) acepta {modulos: {slug: bool}}, valida cascade, persiste atómicamente y rechaza cambios inválidos con 400 'dependency_violation'.\n- GET /me/modulos (usuario autenticado) retorna {effective: dict} sin requerir admin, refleja módulos efectivos del usuario.\n- Cada toggle en PATCH genera entrada audit_log con action='modulos.toggle', target='empresa:{id}', meta={diff: [{slug, before, after}]}.\n- PATCH es idempotente: cambios sin delta real no generan audit.\n- Validaciones retornan 400 con detail específico ('dependency_violation' o 'unknown_slug').\n\n**Definition of Done**\n- Código en backend/app/api/modulos.py con router completo y esquemas Pydantic (EmpresaModulosResponse, EmpresaModulosUpdate).\n- Tests unitarios: GET admin validación de permisos, GET /me retorna solo efectivos, PATCH valida cascada y rechaza inválidos, idempotencia, audit logs generados.\n- Tests de integración: flujo admin→cambio→audit con usuario vendedor consultando /me.\n- Router registrado en main.py.\n- Todos los tests pasan (pytest).\n- Card movida a 'In review' post-merge a develop.\n\n**Notas tecnicas**\n- Depende de P1.3 (funciones compute_cascade, validate_toggle).\n- Schemas: EmpresaModulosResponse = {stored: dict, effective: dict, registry: list}; EmpresaModulosUpdate = {modulos: {slug: bool}}.\n- Audit: usar tabla audit_log existente, meta={diff: [...]} con before/after por slug.\n- PATCH debe usar transacción para atomicidad.\n- Endpoint /me/modulos usa contexto autenticado (require_user).\n\n<!-- conico-refined -->",
       "checklist": [
-        "Acceder a /empleados sin módulo 'rrhh' y verificar 403",
-        "Acceder a /oportunidades con módulo 'oportunidades' y verificar 200",
-        "Probar /tareas sin módulo 'tareas' y verificar 403",
-        "Ingresar a /libros con licencia válida y verificar acceso 200",
-        "Abrir /dte_recepcion sin módulo y confirmar respuesta 403",
-        "Consultar /aprobaciones_costo con módulo y verificar éxito",
-        "Acceder a /reportes sin login y verificar acceso permitido"
+        "Crear backend/app/api/modulos.py router",
+        "GET /empresas/{id}/modulos (require_admin) -> {stored: dict, effective: dict, registry: [...]}",
+        "PATCH /empresas/{id}/modulos (require_admin) body {modulos: {slug: bool}} -> valida con compute_cascade + validate_toggle, persiste atomico",
+        "GET /me/modulos (require_user) -> {effective: dict}",
+        "Audit log entries: action='modulos.toggle', target='empresa:{id}', meta={diff: [{slug, before, after}]}",
+        "Schemas Pydantic: EmpresaModulosResponse, EmpresaModulosUpdate",
+        "Validacion 400 con detail 'dependency_violation' o 'unknown_slug'",
+        "Tests: GET admin solo, GET me funciona para vendedor, PATCH bloquea cambios invalidos, audit registra diff",
+        "Tests: PATCH idempotente cuando no hay cambios reales",
+        "Registrar router en main.py",
+        "Crear backend/app/api/modulos.py con router y esquemas Pydantic (EmpresaModulosResponse, EmpresaModulosUpdate)",
+        "Implementar GET /empresas/{id}/modulos (admin) retornando {stored, effective, registry} con validación de permisos",
+        "Implementar PATCH /empresas/{id}/modulos (admin) con validación cascade, persistencia atómica y rechazo 400 en violaciones",
+        "Implementar GET /me/modulos (usuario) retornando {effective} sin requerir admin",
+        "Generar audit_log entries con action='modulos.toggle', target='empresa:{id}', meta={diff} en cada toggle",
+        "Escribir tests: permisos admin, idempotencia, cascade validation, auditoría y GET /me para vendedor",
+        "Registrar router en main.py, ejecutar pytest, mover card a In review"
       ]
     }
   ]
