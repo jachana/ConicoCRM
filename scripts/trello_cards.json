@@ -32,26 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[UX] BoletaNueva: autocomplete productos + ClienteSelectModal",
       "labels": [
         "Core",
         "Goal: UX Polish",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nBoletaNueva.tsx usa inputs genéricos (descripción en texto plano, cliente_id numérico) en lugar de componentes robustos ya disponibles en NV y Factura. Esto genera experiencia inconsistente y errores de entrada de usuario.\n\n**Acceptance Criteria**\n- El campo de descripción de producto es reemplazado por autocomplete que filtra productos existentes en tiempo real (mismo patrón usado en NV).\n- El campo cliente_id numérico es reemplazado por ClienteSelectModal con búsqueda y selección visual.\n- Los TODOs W1-04 en BoletaNueva.tsx:11-12 están eliminados.\n- Al seleccionar un producto, se completan automáticamente los campos de descripción y precio unitario.\n- Al seleccionar un cliente, se completan razón social y RUT.\n- Smoke test verde en BoletaNueva.test.tsx validando flujo completo de selección.\n\n**Definition of Done**\n- Componentes importados desde módulos existentes (NV/Factura) y sin duplicación de código.\n- Todos los tests pasan (unit + smoke).\n- Cambios desplegados a staging y validados con PM.\n- Trello card movida a In review.\n- Cero TODOs pendientes en el archivo.\n\n**Notas tecnicas**\n- Rutas relevantes: `src/modules/BoletaNueva/BoletaNueva.tsx:11-12`, `src/modules/NV/components/ProductoAutocomplete.tsx`, `src/components/ClienteSelectModal.tsx`.\n- Verificar esquema de producto y cliente para mapeo de props.\n- Importar hooks de validación de `useProductoAutocomplete` si existe.\n- Test file: `src/modules/BoletaNueva/BoletaNueva.test.tsx`.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Reemplazar inputs genéricos en BoletaNueva por autocomplete de productos y modal de selección de cliente para mejorar UX y consistencia.\n\n**Cambios / Decisiones** — Se reemplazó el input de descripción por `ProductoAutocomplete` que consulta `/api/productos/buscar`, completando automáticamente descripción y precio al seleccionar. El campo `cliente_id` numérico fue reemplazado por `ClienteSelectModal`, que al seleccionar un cliente completa razón social y RUT. Se eliminaron los TODOs W1-04 de `BoletaNueva.tsx`. Se actualizaron los tests con `QueryClientProvider` y se agregaron casos de smoke test. Se ajustó la ubicación del modal fuera del form y se corrigió cierre tras selección.",
       "checklist": [
-        "Reemplazar input descripcion por autocomplete productos (patron NV)",
-        "Reemplazar cliente_id numerico por ClienteSelectModal",
-        "Eliminar TODOs",
-        "Test de smoke en BoletaNueva.test.tsx",
-        "Importar ProductoAutocomplete desde NV y validar props",
-        "Reemplazar input descripción en BoletaNueva por autocomplete con lógica de selección",
-        "Importar ClienteSelectModal y reemplazar campo cliente_id numérico",
-        "Configurar mapeo de datos seleccionados (producto → descripción/precio; cliente → razón/RUT)",
-        "Eliminar TODOs W1-04 de BoletaNueva.tsx",
-        "Ejecutar tests smoke en BoletaNueva.test.tsx y verificar cobertura",
-        "Deploy a staging y mover Trello a In review"
+        "Ingresar a BoletaNueva y escribir en campo descripción, verificar despliegue de sugerencias de productos",
+        "Seleccionar un producto del autocomplete y validar autocompletado de descripción y precio",
+        "Hacer clic en botón de cliente, buscar y seleccionar cliente en modal",
+        "Verificar que razón social y RUT se completen tras seleccionar cliente",
+        "Validar que modal se cierre automáticamente tras selección",
+        "Ejecutar tests en BoletaNueva.test.tsx y confirmar que pasen",
+        "Confirmar que input cliente está deshabilitado cuando no hay empresa seleccionada"
       ]
     }
   ]
