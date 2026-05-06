@@ -32,27 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[UX] Campana de notificaciones en topbar",
       "labels": [
         "Core",
         "Goal: UX Polish",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nEl backend ya emite eventos de notificación a través de notifications.py, pero no existe interfaz en la UI para que los usuarios visualicen, interactúen o actúen sobre ellas. Es necesario exponer las notificaciones en la topbar con mecanismo de actualización en tiempo real.\n\n**Acceptance Criteria**\n- El usuario ve una campana de notificaciones en la topbar con badge rojo mostrando cantidad de no leídas.\n- Al hacer clic en la campana, se despliega un dropdown mostrando las últimas 10 notificaciones ordenadas por fecha descendente.\n- Cada notificación muestra mensaje, timestamp y estado de lectura (visual indicator).\n- Al hacer clic en una notificación, el usuario navega a la entidad relacionada y la notificación se marca automáticamente como leída.\n- El dropdown se cierra al navegar o al hacer clic fuera.\n- Las notificaciones se actualizan cada 30-60 segundos (polling) o en tiempo real si WS está disponible.\n- El badge desaparece cuando no hay notificaciones no leídas.\n\n**Definition of Done**\n- Endpoint GET /notifications y PATCH /notifications/{id}/read verificados y funcionando.\n- Componente NotificationBell + dropdown implementado y integrado en Topbar.\n- Tests unitarios para NotificationBell (render, badge count, dropdown toggle).\n- Tests de integración: polling/WS, mark as read, navigation.\n- Deployed a staging y validado en navegador.\n- Card movida a In review.\n\n**Notas tecnicas**\n- Rutas: frontend/src/components/Topbar/NotificationBell.tsx (o .jsx), frontend/src/hooks/useNotifications.ts para polling logic.\n- API: GET /api/notifications (query params: limit=10, sort=desc), PATCH /api/notifications/{id} {\"read\": true}.\n- State management: Context API o Redux (seguir patrón del proyecto).\n- Polling: useEffect + setInterval (30-60s) o WebSocket si existe en el stack.\n- Iconografía: bell-icon (Material-UI o custom SVG según Design System).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Agregar campana de notificaciones en la topbar con badge de no leídas, dropdown con últimas 10 notificaciones, navegación automática y marca como leída.\n\n**Cambios / Decisiones** — Se implementó el componente `NotificationBell` en `frontend/src/components/NotificationBell.tsx`, con lógica de polling y navegación. Se agregaron tests en `frontend/src/components/NotificationBell.test.tsx`. Se extendió `targetUrl` en backend para aprobaciones. Se conecta al endpoint `GET /api/notifications` (límite 10, orden descendente) y `PATCH /api/notifications/{id}/read`. Incluye actualización automática cada 30-60 segundos. El estado se maneja con el patrón de hooks existente.",
       "checklist": [
-        "Verificar API GET /notifications + PATCH read",
-        "Componente NotificationBell con badge count",
-        "Dropdown con ultimas 10 notificaciones",
-        "Click en notif navega a entidad y marca leida",
-        "Polling o websocket cada 30-60s",
-        "✓ Verificar contrato API: GET /notifications (limit, sort) y PATCH /notifications/{id}/read",
-        "✓ Crear componente NotificationBell con badge count y dropdown toggle",
-        "✓ Renderizar últimas 10 notificaciones en dropdown con timestamp y estado",
-        "✓ Implementar click-to-navigate + auto-mark-as-read al seleccionar notificación",
-        "✓ Agregar polling (30-60s) o WebSocket para actualizaciones en tiempo real",
-        "✓ Escribir tests: render, badge, dropdown, navigation, mark as read",
-        "✓ Deploy a staging + validar en navegador; mover card a In review"
+        "Abrir app y ver campana con badge en topbar",
+        "Hacer clic en campana y verificar dropdown con 10 notificaciones",
+        "Verificar que notificación no leída tenga indicador visual",
+        "Hacer clic en una notificación y confirmar navegación a entidad",
+        "Validar que notificación se marque como leída al navegar",
+        "Esperar 30-60s y ver actualización automática del badge",
+        "Verificar tests unitarios del componente NotificationBell"
       ]
     }
   ]
