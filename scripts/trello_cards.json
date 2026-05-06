@@ -32,23 +32,32 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Telemetry T4.1] /configuracion/telemetry: tab Routes",
+      "list": "In progress",
+      "name": "[Telemetry T4.2] /configuracion/telemetry: tab Cost & Usage",
       "labels": [
         "Core",
         "Goal: Operations",
         "Design System",
-        "Size:L"
+        "Size:M"
       ],
-      "desc": "**Resumen** — Se implementa el tab 'Routes' en la página de telemetría para admins, mostrando métricas de rendimiento de rutas con sparklines y drill-down por ruta.\n\n**Cambios / Decisiones** — Se crea la página `/admin/telemetria` protegida por ModuloGuard.core. El tab 'Routes' incluye tabla con métricas (count, p50/p95/p99, error_rate, sparkline), filtros por período (24h/7d/30d) y ordenamiento por p95/count/error_rate. Se implementa componente reutilizable `Sparkline.tsx` con SVG. Al hacer click en una fila se abre modal con histograma de latencias (recharts). Se agregan 5 tests unitarios en `AdminTelemetria.test.tsx` cubriendo render, datos, colores y modal. Se usa endpoint backend existente.",
+      "desc": "**Contexto / Problema**\nLos administradores de Conico necesitan visibilidad sobre el costo y uso por empresa para identificar tenants caros antes de facturación SaaS y tomar decisiones de pricing/optimización.\n\n**Acceptance Criteria**\n- Tab «Cost & Usage» aparece en `/configuracion/telemetry` junto a otros tabs existentes.\n- Tabla muestra: empresa, request_count, lioren_calls, lioren_cost_clp, dte_emitidos, slow_requests.\n- Tabla ordena por lioren_cost_clp descendente por defecto.\n- Selector de período permite elegir 7d, 30d (defecto), 90d.\n- Tile resumen en cabecera muestra: total_cost_clp, total_requests, count_empresas_activas.\n- Botón «Exportar CSV» descarga datos de la tabla actual con el período seleccionado.\n- Empty state muestra mensaje clarificador cuando no hay datos.\n- Interfaz responde correctamente con mock API (sin backend real aún, requiere T2.3).\n\n**Definition of Done**\n- Componente React montado en `/configuracion/telemetry` y enrutado correctamente.\n- Tests unitarios cubren: renderizado de tabla, período selector, ordenamiento, exportación CSV.\n- Mock API fixture implementado en `src/mocks/telemetry.mock.ts` (o equivalente).\n- Diseño sigue Design System tokens (colores, tipografía, espaciado).\n- Trello card movida a «In review».\n- Build y tests pasan en CI.\n\n**Notas tecnicas**\n- Archivo principal: `src/pages/Configuracion/Telemetry/CostUsageTab.tsx`.\n- Mock endpoint: `GET /api/v1/telemetry/cost-usage?period=30d` → fixture en `src/mocks/telemetry.mock.ts`.\n- Bibliotecas: React Table (o similar), csv-download-lib (o papaparse).\n- Esquema esperado: `{empresa_id, empresa_nombre, request_count, lioren_calls, lioren_cost_clp, dte_emitidos, slow_requests}`.\n- Prerequisito: T2.3 debe estar en Staging/Done para conectar API real post-MVP.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Ir a /admin/telemetria como admin y verificar tab 'Routes'",
-        "Verificar tabla con columnas: ruta, count, p50/p95/p99, error %, sparkline",
-        "Cambiar período a 7d y 30d, confirmar cambio en datos y sparklines",
-        "Ordenar por p95, count y error_rate, validar reordenamiento",
-        "Hacer click en fila y verificar modal con histograma de 24h",
-        "Verificar estado vacío al filtrar por período sin datos",
-        "Revisar test unitarios en frontend/src/pages/AdminTelemetria.test.tsx"
+        "Tab Cost & Usage en /configuracion/telemetry",
+        "Tabla: empresa, request_count, lioren_calls, lioren_cost_clp, dte_emitidos, slow_requests",
+        "Order by lioren_cost_clp DESC default",
+        "Period selector (30d default, 7d, 90d)",
+        "Tile resumen arriba: total_cost_clp + total_requests + count_empresas_activas",
+        "Export CSV",
+        "Empty state",
+        "Test render con mock API",
+        "Crear componente CostUsageTab.tsx con tabla base (empresa, request_count, lioren_calls, lioren_cost_clp, dte_emitidos, slow_requests)",
+        "Implementar período selector (7d, 30d defecto, 90d) y lógica de refetch",
+        "Ordenamiento por lioren_cost_clp DESC al montar y permitir reordenar en UI",
+        "Agregar tile resumen (total_cost_clp, total_requests, count_empresas_activas)",
+        "Implementar botón Exportar CSV con datos del período actual",
+        "Agregar empty state con mensaje descriptivo",
+        "Escribir tests unitarios (renderizado, período, ordenamiento, export)",
+        "Deploy a staging y mover card a In review"
       ]
     }
   ]
