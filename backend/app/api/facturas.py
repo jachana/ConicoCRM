@@ -298,7 +298,7 @@ def exportar_excel(
     )
 
 
-@router.get("/", response_model=list[FacturaListOut])
+@router.get("/", response_model=dict)
 def listar_facturas(
     estado: list[str] | None = Query(None),
     cliente_id: int | None = Query(None),
@@ -310,6 +310,8 @@ def listar_facturas(
     monto_max: Decimal | None = Query(None),
     producto_id: list[int] | None = Query(None),
     q: str = Query(""),
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     current_user, db = perms
@@ -341,13 +343,15 @@ def listar_facturas(
         ).distinct()
     if q:
         query = _apply_text_search(query, db, q)
-    results = [FacturaListOut.model_validate(f) for f in query.order_by(Factura.fecha.desc(), Factura.numero.desc()).all()]
+    total = query.count()
+    items = query.order_by(Factura.fecha.desc(), Factura.numero.desc()).offset(offset).limit(limit).all()
+    results = [FacturaListOut.model_validate(f) for f in items]
     if current_user.role == "vendedor":
         for fac in results:
             fac.margen_total = None
             for linea in fac.lineas:
                 linea.margen = None
-    return results
+    return {"data": results, "pagination": {"limit": limit, "offset": offset, "total": total}}
 
 
 @router.post("/", response_model=FacturaOut, status_code=status.HTTP_201_CREATED)

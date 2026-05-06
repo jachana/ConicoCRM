@@ -144,7 +144,7 @@ def test_listar_nvs(client, admin_token):
     _create_nv(client, admin_token, cid)
     r = client.get("/api/nota_ventas/", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
-    assert len(r.json()) >= 1
+    assert len(r.json()["data"]) >= 1
 
 
 def test_filtrar_por_estado(client, admin_token):
@@ -153,7 +153,7 @@ def test_filtrar_por_estado(client, admin_token):
     r = client.get("/api/nota_ventas/?estado=pendiente",
                    headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
-    for nv in r.json():
+    for nv in r.json()["data"]:
         assert nv["estado"] == "pendiente"
 
 

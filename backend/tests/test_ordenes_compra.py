@@ -69,7 +69,7 @@ def test_listar_ordenes(client, admin_token):
     client.post("/api/ordenes-compra/", json=_payload_orden(pid), headers={"Authorization": f"Bearer {admin_token}"})
     r = client.get("/api/ordenes-compra/", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
-    assert len(r.json()) >= 1
+    assert len(r.json()["data"]) >= 1
 
 
 def test_obtener_orden(client, admin_token):
@@ -282,7 +282,7 @@ def test_filtrar_por_proveedor(client, admin_token):
     client.post("/api/ordenes-compra/", json=_payload_orden(pid2), headers={"Authorization": f"Bearer {admin_token}"})
     r = client.get(f"/api/ordenes-compra/?proveedor_id={pid1}", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
-    assert all(o["proveedor_id"] == pid1 for o in r.json())
+    assert all(o["proveedor_id"] == pid1 for o in r.json()["data"])
 
 
 def test_no_puede_editar_orden_no_borrador(client, admin_token):

@@ -50,7 +50,8 @@ def test_list_cotizaciones_includes_lineas(client, admin_token, db):
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert list_resp.status_code == 200
-    data = list_resp.json()
+    body = list_resp.json()
+    data = body["data"]
     assert len(data) > 0
     first = data[0]
     assert "lineas" in first, "CotizacionListOut must include lineas"

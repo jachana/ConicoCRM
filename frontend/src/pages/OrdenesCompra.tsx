@@ -1,5 +1,5 @@
 import { openPdf } from '../lib/pdf'
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Plus, FileText, Trash2, Eye, Download, Inbox } from 'lucide-react'
@@ -42,17 +42,28 @@ export default function OrdenesCompra() {
   const [fechaHasta, setFechaHasta] = useState('')
   const [confirmId, setConfirmId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState('')
+  const [page, setPage] = useState(1)
 
-  const params = new URLSearchParams()
-  if (proveedorId) params.set('proveedor_id', proveedorId)
-  if (estado) params.set('estado', estado)
-  if (fechaDesde) params.set('fecha_desde', fechaDesde)
-  if (fechaHasta) params.set('fecha_hasta', fechaHasta)
+  useEffect(() => { setPage(1) }, [proveedorId, estado, fechaDesde, fechaHasta])
 
-  const { data: ordenes = [], isLoading } = useQuery<OrdenCompra[]>({
-    queryKey: ['ordenes_compra', proveedorId, estado, fechaDesde, fechaHasta],
+  const params = useMemo(() => {
+    const p = new URLSearchParams()
+    if (proveedorId) p.set('proveedor_id', proveedorId)
+    if (estado) p.set('estado', estado)
+    if (fechaDesde) p.set('fecha_desde', fechaDesde)
+    if (fechaHasta) p.set('fecha_hasta', fechaHasta)
+    p.set('limit', '50')
+    p.set('offset', String((page - 1) * 50))
+    return p
+  }, [proveedorId, estado, fechaDesde, fechaHasta, page])
+
+  const { data: listResponse, isLoading, isFetching } = useQuery<{ data: OrdenCompra[], pagination: { limit: number, offset: number, total: number } }>({
+    queryKey: ['ordenes_compra', proveedorId, estado, fechaDesde, fechaHasta, page],
     queryFn: () => api.get(`/api/ordenes-compra/?${params.toString()}`).then(r => r.data),
   })
+
+  const ordenes = listResponse?.data ?? []
+  const hasNextPage = ordenes.length === 50
 
   const { data: proveedores = [] } = useQuery<Proveedor[]>({
     queryKey: ['proveedores'],
@@ -211,6 +222,18 @@ export default function OrdenesCompra() {
             </TBody>
           </Table>
         </Card>
+      )}
+
+      {(page > 1 || hasNextPage) && (
+        <div className="flex items-center justify-center gap-3 py-3">
+          <Button variant="ghost" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1 || isFetching}>
+            Anterior
+          </Button>
+          <span className="text-sm text-gray-500 dark:text-gray-400 font-num">Página {page}</span>
+          <Button variant="ghost" size="sm" onClick={() => setPage(p => p + 1)} disabled={!hasNextPage || isFetching}>
+            Siguiente
+          </Button>
+        </div>
       )}
 
       {/* Delete confirmation modal */}

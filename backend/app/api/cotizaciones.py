@@ -321,7 +321,7 @@ def exportar_excel(
     )
 
 
-@router.get("/", response_model=list[CotizacionListOut])
+@router.get("/", response_model=dict)
 def listar_cotizaciones(
     estado: list[str] | None = Query(None),
     vendedor_id: int | None = Query(None),
@@ -334,6 +334,8 @@ def listar_cotizaciones(
     producto_id: list[int] | None = Query(None),
     terminos_pago_estado: str | None = Query(None),
     q: str = Query(""),
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     perms: tuple[User, Session] = require_permission("cotizaciones", "view"),
 ):
     current_user, db = perms
@@ -367,13 +369,15 @@ def listar_cotizaciones(
         query = query.filter(Cotizacion.terminos_pago_estado == terminos_pago_estado)
     if q:
         query = _apply_text_search(query, db, q)
-    results = [CotizacionListOut.model_validate(c) for c in query.order_by(Cotizacion.fecha.desc(), Cotizacion.numero.desc()).all()]
+    total = query.count()
+    items = query.order_by(Cotizacion.fecha.desc(), Cotizacion.numero.desc()).offset(offset).limit(limit).all()
+    results = [CotizacionListOut.model_validate(c) for c in items]
     if current_user.role == "vendedor":
         for cot in results:
             cot.margen_total = None
             for linea in cot.lineas:
                 linea.margen = None
-    return results
+    return {"data": results, "pagination": {"limit": limit, "offset": offset, "total": total}}
 
 
 @router.post("/", response_model=CotizacionOut, status_code=status.HTTP_201_CREATED)

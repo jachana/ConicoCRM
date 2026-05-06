@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus, Inbox } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import DteBadge from '../components/DteBadge'
 import type { NotaCredito } from '../types'
@@ -11,15 +12,15 @@ import {
 
 export default function NotasCredito() {
   const navigate = useNavigate()
-  const [items, setItems] = useState<NotaCredito[]>([])
-  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
 
-  useEffect(() => {
-    api.get<NotaCredito[]>('/api/dte/notas-credito/').then(r => {
-      setItems(r.data)
-      setLoading(false)
-    })
-  }, [])
+  const { data: listResponse, isLoading: loading, isFetching } = useQuery<{ data: NotaCredito[], pagination: { limit: number, offset: number, total: number } }>({
+    queryKey: ['notas-credito', page],
+    queryFn: () => api.get(`/api/dte/notas-credito/?limit=50&offset=${(page - 1) * 50}`).then(r => r.data),
+  })
+
+  const items = listResponse?.data ?? []
+  const hasNextPage = items.length === 50
 
   return (
     <div className="p-6 space-y-6">
@@ -81,6 +82,18 @@ export default function NotasCredito() {
             </TBody>
           </Table>
         </Card>
+      )}
+
+      {(page > 1 || hasNextPage) && (
+        <div className="flex items-center justify-center gap-3 py-3">
+          <Button variant="ghost" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1 || isFetching}>
+            Anterior
+          </Button>
+          <span className="text-sm text-gray-500 dark:text-gray-400 font-num">Página {page}</span>
+          <Button variant="ghost" size="sm" onClick={() => setPage(p => p + 1)} disabled={!hasNextPage || isFetching}>
+            Siguiente
+          </Button>
+        </div>
       )}
     </div>
   )

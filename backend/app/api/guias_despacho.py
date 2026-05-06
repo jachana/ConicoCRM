@@ -125,15 +125,15 @@ def crear_guia_despacho(
     return guia
 
 
-@router.get("/", response_model=list[GuiaDespachoListOut])
+@router.get("/", response_model=dict)
 def listar_guias_despacho(
     estado: str | None = Query(None),
     dte_estado: str | None = Query(None),
     cliente_id: int | None = Query(None),
     desde: date | None = Query(None),
     hasta: date | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, le=200),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=500),
     perms: tuple[User, Session] = require_permission("guias_despacho", "view"),
 ):
     _, db = perms
@@ -148,7 +148,9 @@ def listar_guias_despacho(
         q = q.filter(GuiaDespacho.fecha >= desde)
     if hasta:
         q = q.filter(GuiaDespacho.fecha <= hasta)
-    return q.order_by(GuiaDespacho.fecha.desc(), GuiaDespacho.id.desc()).offset(skip).limit(limit).all()
+    total = q.count()
+    items = q.order_by(GuiaDespacho.fecha.desc(), GuiaDespacho.id.desc()).offset(offset).limit(limit).all()
+    return {"data": [GuiaDespachoListOut.model_validate(g) for g in items], "pagination": {"limit": limit, "offset": offset, "total": total}}
 
 
 @router.get("/{guia_id}", response_model=GuiaDespachoOut)

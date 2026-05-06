@@ -11,6 +11,7 @@ import {
   MOTIVOS_TRASLADO,
   type GuiaListFilters,
   type GuiaDespachoListItem,
+  type GuiaDespachoListResponse,
   type GuiaEstado,
   type GuiaDteEstado,
   type MotivoTraslado,
@@ -83,14 +84,16 @@ export default function GuiasDespachoList() {
     dte_estado: dteEstado ? [dteEstado] : undefined,
     motivo_traslado: motivo || undefined,
     vendedor_id: vendedorId ? Number(vendedorId) : undefined,
-    page,
-    page_size: PAGE_SIZE,
+    limit: PAGE_SIZE,
+    offset: (page - 1) * PAGE_SIZE,
   }), [fechaDesde, fechaHasta, estados, dteEstado, motivo, vendedorId, page])
 
-  const { data: guias = [], isLoading, isFetching } = useQuery<GuiaDespachoListItem[]>({
+  const { data: listResponse, isLoading, isFetching } = useQuery<GuiaDespachoListResponse>({
     queryKey: ['guias-despacho-list', filters],
     queryFn: () => listarGuiasDespacho(filters),
   })
+
+  const guias = listResponse?.data ?? []
 
   const eliminarMut = useMutation({
     mutationFn: (id: number) => eliminarGuiaDespacho(id),
@@ -370,22 +373,12 @@ export default function GuiasDespachoList() {
       )}
 
       {(page > 1 || hasNextPage) && (
-        <div className="flex items-center justify-end gap-2 mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1 || isFetching}
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-          >
+        <div className="flex items-center justify-center gap-3 py-3">
+          <Button variant="ghost" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1 || isFetching}>
             Anterior
           </Button>
-          <span className="text-sm text-gray-500 dark:text-gray-400">Página {page}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!hasNextPage || isFetching}
-            onClick={() => setPage(p => p + 1)}
-          >
+          <span className="text-sm text-gray-500 dark:text-gray-400 font-num">Página {page}</span>
+          <Button variant="ghost" size="sm" onClick={() => setPage(p => p + 1)} disabled={!hasNextPage || isFetching}>
             Siguiente
           </Button>
         </div>

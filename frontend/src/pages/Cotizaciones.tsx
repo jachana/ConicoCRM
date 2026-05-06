@@ -107,6 +107,7 @@ function buildListParams(
   montoMax: string,
   productos: { id: number }[],
   q: string,
+  page?: number,
 ): URLSearchParams {
   const p = new URLSearchParams()
   estados.forEach(e => p.append('estado', e))
@@ -118,6 +119,10 @@ function buildListParams(
   if (montoMax) p.append('monto_max', montoMax)
   productos.forEach(p2 => p.append('producto_id', String(p2.id)))
   if (q.trim()) p.append('q', q.trim())
+  if (page !== undefined) {
+    p.append('limit', '50')
+    p.append('offset', String((page - 1) * 50))
+  }
   return p
 }
 
@@ -139,6 +144,7 @@ export default function Cotizaciones() {
   const [productoSearch, setProductoSearch] = useState('')
   const [busqueda, setBusqueda] = useState('')
   const debouncedBusqueda = useDebounce(busqueda, 300)
+  const [page, setPage] = useState(1)
 
   const [openPill, setOpenPill] = useState<string | null>(null)
   const filterBarRef = useRef<HTMLDivElement>(null)
@@ -177,9 +183,11 @@ export default function Cotizaciones() {
     staleTime: 30_000,
   })
 
+  useEffect(() => { setPage(1) }, [estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda])
+
   const params = useMemo(
-    () => buildListParams(estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda),
-    [estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda],
+    () => buildListParams(estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda, page),
+    [estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda, page],
   )
 
   const hasFilters = estados.length > 0 || !!emisorId || !!empresaId ||
@@ -193,10 +201,13 @@ export default function Cotizaciones() {
     setBusqueda('')
   }
 
-  const { data: cotizaciones = [], isLoading } = useQuery<Cotizacion[]>({
-    queryKey: ['cotizaciones', estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos.map(p => p.id), debouncedBusqueda],
+  const { data: listResponse, isLoading, isFetching } = useQuery<{ data: Cotizacion[], pagination: { limit: number, offset: number, total: number } }>({
+    queryKey: ['cotizaciones', estados, emisorId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos.map(p => p.id), debouncedBusqueda, page],
     queryFn: () => api.get(`/api/cotizaciones/?${params.toString()}`).then(r => r.data),
   })
+
+  const cotizaciones = listResponse?.data ?? []
+  const hasNextPage = cotizaciones.length === 50
 
   const flatLines = useMemo<FlatLine[]>(() =>
     cotizaciones.flatMap(c =>
@@ -556,6 +567,18 @@ export default function Cotizaciones() {
             </Card>
           </div>
         </>
+      )}
+
+      {(page > 1 || hasNextPage) && (
+        <div className="flex items-center justify-center gap-3 py-3">
+          <Button variant="ghost" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1 || isFetching}>
+            Anterior
+          </Button>
+          <span className="text-sm text-gray-500 dark:text-gray-400 font-num">Página {page}</span>
+          <Button variant="ghost" size="sm" onClick={() => setPage(p => p + 1)} disabled={!hasNextPage || isFetching}>
+            Siguiente
+          </Button>
+        </div>
       )}
 
       <Modal open={deleteId !== null} onOpenChange={(o) => { if (!o) { setDeleteId(null); setDeleteError('') } }}>

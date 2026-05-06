@@ -160,6 +160,11 @@ export default function Facturas() {
     staleTime: 30_000,
   })
 
+  const [page, setPage] = useState(1)
+
+  // Reset page when filters change
+  useEffect(() => { setPage(1) }, [estados, clienteId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda])
+
   // Build list params
   const listParams = useMemo(() => {
     const p = new URLSearchParams()
@@ -172,17 +177,33 @@ export default function Facturas() {
     if (montoMax) p.append('monto_max', montoMax)
     productos.forEach(prod => p.append('producto_id', String(prod.id)))
     if (debouncedBusqueda.trim()) p.append('q', debouncedBusqueda.trim())
+    p.append('limit', '50')
+    p.append('offset', String((page - 1) * 50))
     return p.toString()
-  }, [estados, clienteId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda])
+  }, [estados, clienteId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda, page])
 
-  const { data: facturas = [], isLoading } = useQuery<FacturaList[]>({
+  const { data: listResponse, isLoading, isFetching } = useQuery<{ data: FacturaList[], pagination: { limit: number, offset: number, total: number } }>({
     queryKey: ['facturas-list', listParams],
     queryFn: () => api.get(`/api/facturas/${listParams ? '?' + listParams : ''}`).then(r => r.data),
   })
 
+  const facturas = listResponse?.data ?? []
+  const hasNextPage = facturas.length === 50
+
   const exportBaseUrl = useMemo(() => {
-    return `/api/facturas/export/excel${listParams ? '?' + listParams : ''}`
-  }, [listParams])
+    const p = new URLSearchParams()
+    estados.forEach(e => p.append('estado', e))
+    if (clienteId) p.append('cliente_id', String(clienteId))
+    if (empresaId) p.append('empresa_id', String(empresaId))
+    if (fechaDesde) p.append('fecha_desde', fechaDesde)
+    if (fechaHasta) p.append('fecha_hasta', fechaHasta)
+    if (montoMin) p.append('monto_min', montoMin)
+    if (montoMax) p.append('monto_max', montoMax)
+    productos.forEach(prod => p.append('producto_id', String(prod.id)))
+    if (debouncedBusqueda.trim()) p.append('q', debouncedBusqueda.trim())
+    const qs = p.toString()
+    return `/api/facturas/export/excel${qs ? '?' + qs : ''}`
+  }, [estados, clienteId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda])
 
   const flatLines = useMemo<FlatLine[]>(() =>
     facturas.flatMap(f =>
@@ -522,6 +543,18 @@ export default function Facturas() {
                 </Card>
               </div>
             </>
+          )}
+
+          {(page > 1 || hasNextPage) && (
+            <div className="flex items-center justify-center gap-3 py-3">
+              <Button variant="ghost" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1 || isFetching}>
+                Anterior
+              </Button>
+              <span className="text-sm text-gray-500 dark:text-gray-400 font-num">Página {page}</span>
+              <Button variant="ghost" size="sm" onClick={() => setPage(p => p + 1)} disabled={!hasNextPage || isFetching}>
+                Siguiente
+              </Button>
+            </div>
           )}
         </div>
 

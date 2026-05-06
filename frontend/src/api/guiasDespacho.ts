@@ -127,8 +127,13 @@ export interface GuiaListFilters {
   estado?: GuiaEstado[];
   dte_estado?: GuiaDteEstado[];
   vendedor_id?: number;
-  page?: number;
-  page_size?: number;
+  limit?: number;
+  offset?: number;
+}
+
+export interface GuiaDespachoListResponse {
+  data: GuiaDespachoListItem[];
+  pagination: { limit: number; offset: number; total: number };
 }
 
 function cleanParams(filtros: GuiaListFilters): Record<string, unknown> {
@@ -144,9 +149,9 @@ function cleanParams(filtros: GuiaListFilters): Record<string, unknown> {
 
 export async function listarGuiasDespacho(
   filtros: GuiaListFilters = {},
-): Promise<GuiaDespachoListItem[]> {
+): Promise<GuiaDespachoListResponse> {
   const params = cleanParams(filtros);
-  const { data } = await api.get<GuiaDespachoListItem[]>('/api/guias-despacho/', { params });
+  const { data } = await api.get<GuiaDespachoListResponse>('/api/guias-despacho/', { params });
   return data;
 }
 

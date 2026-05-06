@@ -1,7 +1,7 @@
 import json
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_modulo, require_permission
@@ -131,14 +131,19 @@ def crear_nc(
     return nc
 
 
-@router.get("/notas-credito/", response_model=list[NotaCreditoOut], dependencies=[require_modulo("nota_credito")])
+@router.get("/notas-credito/", response_model=dict, dependencies=[require_modulo("nota_credito")])
 def listar_nc(
     perms: tuple[User, Session] = require_permission("facturas", "view"),
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
 ):
     current_user, db = perms
     if current_user.role == "vendedor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
-    return db.query(NotaCredito).options(joinedload(NotaCredito.lineas)).order_by(NotaCredito.numero.desc()).all()
+    q = db.query(NotaCredito).options(joinedload(NotaCredito.lineas))
+    total = q.count()
+    items = q.order_by(NotaCredito.numero.desc()).offset(offset).limit(limit).all()
+    return {"data": [NotaCreditoOut.model_validate(nc) for nc in items], "pagination": {"limit": limit, "offset": offset, "total": total}}
 
 
 @router.get("/notas-credito/{nc_id}", response_model=NotaCreditoOut, dependencies=[require_modulo("nota_credito")])

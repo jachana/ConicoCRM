@@ -128,12 +128,14 @@ def exportar_excel(
     )
 
 
-@router.get("/", response_model=list[OrdenCompraListOut])
+@router.get("/", response_model=dict)
 def listar_ordenes(
     proveedor_id: int | None = Query(None),
     estado: str | None = Query(None),
     fecha_desde: date | None = Query(None),
     fecha_hasta: date | None = Query(None),
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     perms: tuple[User, Session] = require_permission("ordenes_compra", "view"),
 ):
     _, db = perms
@@ -146,7 +148,9 @@ def listar_ordenes(
         q = q.filter(OrdenCompra.fecha >= fecha_desde)
     if fecha_hasta:
         q = q.filter(OrdenCompra.fecha <= fecha_hasta)
-    return q.order_by(OrdenCompra.fecha.desc(), OrdenCompra.numero.desc()).all()
+    total = q.count()
+    items = q.order_by(OrdenCompra.fecha.desc(), OrdenCompra.numero.desc()).offset(offset).limit(limit).all()
+    return {"data": [OrdenCompraListOut.model_validate(o) for o in items], "pagination": {"limit": limit, "offset": offset, "total": total}}
 
 
 @router.post("/", response_model=OrdenCompraOut, status_code=status.HTTP_201_CREATED)

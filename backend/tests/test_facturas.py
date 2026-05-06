@@ -91,7 +91,7 @@ def test_listar_facturas(client, admin_token):
     _create_factura(client, admin_token, cid)
     r = client.get("/api/facturas/", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
-    assert len(r.json()) >= 1
+    assert len(r.json()["data"]) >= 1
 
 
 def test_obtener_factura(client, admin_token):
@@ -450,7 +450,7 @@ def test_lista_includes_lineas_and_margen_total(client, admin_token):
     ])
     r = client.get("/api/facturas/", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
-    found = next(f for f in r.json() if f["id"] == fac["id"])
+    found = next(f for f in r.json()["data"] if f["id"] == fac["id"])
     assert "lineas" in found
     assert len(found["lineas"]) == 1
     assert found["lineas"][0]["descripcion"] == prod["nombre"]

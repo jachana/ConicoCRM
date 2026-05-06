@@ -237,7 +237,7 @@ def exportar_excel(
     )
 
 
-@router.get("/", response_model=list[NotaVentaListOut])
+@router.get("/", response_model=dict)
 def listar_nvs(
     estado: str | None = Query(None),
     vendedor_id: int | None = Query(None),
@@ -245,6 +245,8 @@ def listar_nvs(
     fecha_desde: date | None = Query(None),
     fecha_hasta: date | None = Query(None),
     q: str = Query(""),
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     perms: tuple[User, Session] = require_permission("nota_venta", "view"),
 ):
     _, db = perms
@@ -278,7 +280,9 @@ def listar_nvs(
                 NotaVenta.lineas.any(or_(*line_conds)),
             )
         )
-    return query.order_by(NotaVenta.fecha.desc(), NotaVenta.numero.desc()).all()
+    total = query.count()
+    items = query.order_by(NotaVenta.fecha.desc(), NotaVenta.numero.desc()).offset(offset).limit(limit).all()
+    return {"data": [NotaVentaListOut.model_validate(nv) for nv in items], "pagination": {"limit": limit, "offset": offset, "total": total}}
 
 
 @router.post("/", response_model=NotaVentaOut, status_code=status.HTTP_201_CREATED)

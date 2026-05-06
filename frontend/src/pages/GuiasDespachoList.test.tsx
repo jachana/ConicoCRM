@@ -34,7 +34,7 @@ const mockGuia: apiGuias.GuiaDespachoListItem = {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(apiGuias.listarGuiasDespacho).mockResolvedValue([mockGuia])
+  vi.mocked(apiGuias.listarGuiasDespacho).mockResolvedValue({ data: [mockGuia], pagination: { limit: 50, offset: 0, total: 1 } })
 })
 
 describe('GuiasDespachoList', () => {
@@ -56,7 +56,7 @@ describe('GuiasDespachoList', () => {
   })
 
   it('shows empty state when no guías', async () => {
-    vi.mocked(apiGuias.listarGuiasDespacho).mockResolvedValue([])
+    vi.mocked(apiGuias.listarGuiasDespacho).mockResolvedValue({ data: [], pagination: { limit: 50, offset: 0, total: 0 } })
     renderPage()
     await waitFor(() => expect(screen.getByText(/sin guías/i)).toBeInTheDocument())
   })

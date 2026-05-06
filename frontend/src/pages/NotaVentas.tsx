@@ -1,5 +1,5 @@
 import { openPdf } from '../lib/pdf'
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useDebounce } from '../hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -47,18 +47,29 @@ export default function NotaVentas() {
   const debouncedBusqueda = useDebounce(busqueda, 300)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState('')
+  const [page, setPage] = useState(1)
 
-  const params = new URLSearchParams()
-  if (estado) params.set('estado', estado)
-  if (fechaDesde) params.set('fecha_desde', fechaDesde)
-  if (fechaHasta) params.set('fecha_hasta', fechaHasta)
-  if (debouncedBusqueda) params.set('q', debouncedBusqueda)
+  useEffect(() => { setPage(1) }, [estado, fechaDesde, fechaHasta, debouncedBusqueda])
 
-  const { data: nvs = [], isLoading } = useQuery<NotaVenta[]>({
-    queryKey: ['nota_ventas', estado, fechaDesde, fechaHasta, debouncedBusqueda],
+  const params = useMemo(() => {
+    const p = new URLSearchParams()
+    if (estado) p.set('estado', estado)
+    if (fechaDesde) p.set('fecha_desde', fechaDesde)
+    if (fechaHasta) p.set('fecha_hasta', fechaHasta)
+    if (debouncedBusqueda) p.set('q', debouncedBusqueda)
+    p.set('limit', '50')
+    p.set('offset', String((page - 1) * 50))
+    return p
+  }, [estado, fechaDesde, fechaHasta, debouncedBusqueda, page])
+
+  const { data: listResponse, isLoading, isFetching } = useQuery<{ data: NotaVenta[], pagination: { limit: number, offset: number, total: number } }>({
+    queryKey: ['nota_ventas', estado, fechaDesde, fechaHasta, debouncedBusqueda, page],
     queryFn: () => api.get(`/api/nota_ventas/?${params.toString()}`).then(r => r.data),
     placeholderData: keepPreviousData,
   })
+
+  const nvs = listResponse?.data ?? []
+  const hasNextPage = nvs.length === 50
 
   const deleteMut = useMutation({
     mutationFn: (id: number) => api.delete(`/api/nota_ventas/${id}`),
@@ -186,6 +197,18 @@ export default function NotaVentas() {
           </Table>
         )}
       </div>
+
+      {(page > 1 || hasNextPage) && (
+        <div className="flex items-center justify-center gap-3 py-3">
+          <Button variant="ghost" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1 || isFetching}>
+            Anterior
+          </Button>
+          <span className="text-sm text-gray-500 dark:text-gray-400 font-num">Página {page}</span>
+          <Button variant="ghost" size="sm" onClick={() => setPage(p => p + 1)} disabled={!hasNextPage || isFetching}>
+            Siguiente
+          </Button>
+        </div>
+      )}
 
       <Modal open={deleteId !== null} onOpenChange={(o) => { if (!o) { setDeleteId(null); setDeleteError('') } }}>
         <ModalContent size="sm">
