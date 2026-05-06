@@ -1,5 +1,6 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui'
 import TelemetryRoutesTab from '../components/config/TelemetryRoutesTab'
+import CostUsageTab from '../components/config/CostUsageTab'
 
 export default function AdminTelemetria() {
   return (
@@ -12,9 +13,13 @@ export default function AdminTelemetria() {
       <Tabs defaultValue="routes">
         <TabsList variant="underline">
           <TabsTrigger value="routes">Rutas</TabsTrigger>
+          <TabsTrigger value="cost">Costo & Uso</TabsTrigger>
         </TabsList>
         <TabsContent value="routes">
           <TelemetryRoutesTab />
+        </TabsContent>
+        <TabsContent value="cost">
+          <CostUsageTab />
         </TabsContent>
       </Tabs>
     </div>
