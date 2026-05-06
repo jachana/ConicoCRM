@@ -32,22 +32,29 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Perf] Paginacion en listas de alto volumen",
+      "list": "In progress",
+      "name": "[Docs] Environment variables reference",
       "labels": [
-        "Core",
-        "Goal: Performance",
-        "Size:XL"
+        "Roadmap",
+        "Goal: Docs",
+        "Size:M"
       ],
-      "desc": "**Resumen** — Implementar paginación en vistas de listas de alto volumen (Facturas, Cotizaciones, Notas de Venta, Guías de Despacho, Órdenes de Compra y Notas de Crédito) para mejorar performance y UX, siguiendo el patrón ya existente en otras listas.\n\n**Cambios / Decisiones** — Se migraron 6 vistas principales del frontend a paginación con controles de navegación y selector de tamaño de página. Se actualizaron los endpoints backend correspondientes para aceptar parámetros `skip`/`limit` y retornar metadata de paginación. Se ajustaron tests unitarios y se aseguró persistencia de filtros entre páginas. Archivos afectados: `Facturas.tsx`, `Cotizaciones.tsx`, `NotaVentas.tsx`, `GuiasDespachoList.tsx`, `OrdenesCompra.tsx`, `NotasCredito.tsx` y sus respectivos endpoints y tests.",
+      "desc": "**Contexto / Problema**\nDesarrolladores e infraestructura necesitan una referencia centralizada y clara de todas las variables de entorno requeridas para desplegar y operar Conico CRM. Actualmente esta información está dispersa en archivos `.env.example`, código, y documentación no estructurada, generando fricción en onboarding y setup.\n\n**Acceptance Criteria**\n- Documento único (`.md`) lista todas las variables de entorno agrupadas por subsistema (Backend, Frontend, Celery, Email/SMTP, Sentry, DTE/Lioren, Backup/rclone).\n- Cada variable incluye: nombre, tipo (string|bool|int|url), requerida/opcional, valor default, descripción clara, y ejemplo válido.\n- Marcado visual claro (ej: ⭐ o `[REQUIRED]`) para variables obligatorias vs opcionales.\n- Se incluyen instrucciones para generar `SECRET_KEY` y otras claves criptográficas.\n- Documento vinculado desde README principal y accesible en sitio de docs.\n\n**Definition of Done**\n- Archivo `docs/environment-variables.md` creado y revisado.\n- Contenido validado contra código actual (backend, frontend, Celery, email, Sentry, etc.).\n- PR aprobado por Tech Lead o DevOps.\n- Documento desplegado a sitio de documentación de usuario/dev.\n- Trello card movida a \"In review\" o \"Done\".\n\n**Notas tecnicas**\n- Ubicación: `docs/environment-variables.md`\n- Incluir referencias a archivos: `.env.example`, `backend/settings.py`, `frontend/.env.example`, `celery_app.py`, `sentry_sdk` init.\n- Formato: tabla o lista estructurada en Markdown con anchors para enlazabilidad.\n- Validar contra `python-decouple`, `os.getenv()`, y `python-dotenv` patterns usados en proyecto.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir /facturas y verificar carga máxima 50 registros",
-        "Navegar entre páginas usando botones Anterior/Siguiente",
-        "Aplicar filtro y verificar persistencia al cambiar página",
-        "Cambiar tamaño de página a 20 y validar nuevo límite",
-        "Revisar metadata de paginación en response de API",
-        "Verificar funcionamiento de filtros en /cotizaciones",
-        "Validar performance con dataset >1000 registros"
+        "Backend core vars (DATABASE_URL, SECRET_KEY, etc.)",
+        "Email/SMTP vars",
+        "DTE/Lioren vars",
+        "Sentry vars",
+        "Backup/rclone vars",
+        "Frontend VITE_* vars",
+        "Mark required vs optional clearly",
+        "Inventariar todas las variables de entorno en backend (DATABASE_URL, SECRET_KEY, ALLOWED_HOSTS, etc.)",
+        "Inventariar variables de frontend (VITE_API_URL, VITE_*, etc.) y Celery (CELERY_BROKER_URL, etc.)",
+        "Inventariar variables de email (SMTP_HOST, SMTP_PORT, SMTP_USER, etc.), Sentry (SENTRY_DSN), DTE/Lioren y backup (RCLONE_*)",
+        "Redactar descripción clara, defaults, ejemplos y marcar requeridas vs opcionales para cada variable",
+        "Crear tabla/secciones estructuradas en `docs/environment-variables.md` con anchors",
+        "Revisar documento contra código fuente y validar coherencia con `.env.example`",
+        "Mover Trello a \"In review\" y obtener aprobación de Tech Lead/DevOps"
       ]
     }
   ]
