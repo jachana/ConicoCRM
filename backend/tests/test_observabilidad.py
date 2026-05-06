@@ -224,3 +224,22 @@ def test_log_format_json_emits_valid_json(monkeypatch):
     core_logging._CONFIGURED = False
     monkeypatch.setattr(core_logging.settings, "log_format", "pretty")
     core_logging.configure_logging()
+
+
+def test_traces_sampler_health_routes():
+    from app.core.observability import traces_sampler
+    assert traces_sampler({"asgi_scope": {"path": "/healthz"}}) == 0.0
+    assert traces_sampler({"asgi_scope": {"path": "/readyz"}}) == 0.0
+
+
+def test_traces_sampler_dte_routes():
+    from app.core.observability import traces_sampler
+    assert traces_sampler({"asgi_scope": {"path": "/api/dte/123"}}) == 0.5
+    assert traces_sampler({"asgi_scope": {"path": "/api/lioren/callback"}}) == 0.5
+
+
+def test_traces_sampler_default_routes():
+    from app.core.observability import traces_sampler
+    assert traces_sampler({"asgi_scope": {"path": "/api/invoices/5"}}) == 0.05
+    assert traces_sampler({"asgi_scope": {"path": "/api/users/me/preferencias"}}) == 0.05
+    assert traces_sampler({}) == 0.05  # no scope = default

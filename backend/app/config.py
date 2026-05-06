@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     sentry_env: str = "production"
     sentry_traces_sample_rate: float = 0.0
     sentry_release: str = ""
+    sentry_traces_profile: bool = False
     log_format: str = "pretty"  # "json" | "pretty"
     log_level: str = "INFO"
 

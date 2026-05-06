@@ -31,10 +31,28 @@ def _resolve_release() -> Optional[str]:
     try:
         sha = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL
-        ).decode().strip()
+        ).decode("utf-8").strip()
         return sha or None
     except Exception:  # pragma: no cover - git not available in some envs
         return None
+
+
+def traces_sampler(sampling_context: dict) -> float:
+    """Per-route sampling rates for Sentry tracing.
+
+    Rules:
+      - /healthz, /readyz  → 0.0  (no traces — high-frequency, low-value)
+      - /api/dte/*         → 0.5  (DTE calls: important, sample half)
+      - /api/lioren/*      → 0.5  (Lioren webhook/API: same)
+      - everything else    → 0.05 (default 5%)
+    """
+    scope = sampling_context.get("asgi_scope", {})
+    path = scope.get("path", "")
+    if path in ("/healthz", "/readyz"):
+        return 0.0
+    if path.startswith("/api/dte/") or path.startswith("/api/lioren/"):
+        return 0.5
+    return 0.05
 
 
 def init_sentry() -> bool:
@@ -52,20 +70,23 @@ def init_sentry() -> bool:
         logger.warning("sentry.skipped reason=sentry_sdk_not_installed")
         return False
 
+    profiles_sample_rate = 1.0 if settings.sentry_traces_profile else 0.0
+
     sentry_sdk.init(
         dsn=dsn,
         environment=settings.sentry_env or "production",
         release=_resolve_release(),
-        traces_sample_rate=settings.sentry_traces_sample_rate or 0.0,
+        traces_sampler=traces_sampler,
+        profiles_sample_rate=profiles_sample_rate,
         integrations=[StarletteIntegration(), FastApiIntegration()],
         send_default_pii=False,
     )
     logger.info(
-        "sentry.initialized env={env} traces={traces}",
+        "sentry.initialized env={env} traces=sampler profiling={profiling}",
         env=settings.sentry_env,
-        traces=settings.sentry_traces_sample_rate,
+        profiling=settings.sentry_traces_profile,
     )
     return True
 
 
-__all__ = ["init_sentry"]
+__all__ = ["init_sentry", "traces_sampler"]
