@@ -32,27 +32,20 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Ops] Job de retencion/archivo de audit_log",
       "labels": [
         "Core",
         "Goal: Operations",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\naudit_log crece sin límite y degrada performance en consultas y backups a largo plazo. Es necesario implementar una política de retención que archive registros antiguos a una tabla cold, manteniendo auditabilidad pero mejorando performance del sistema en producción.\n\n**Acceptance Criteria**\n- Job Celery ejecuta semanalmente y archiva registros de audit_log con más de 180 días (configurable via variable de entorno).\n- Registros archivados se mueven a tabla `audit_log_archive` con idéntica estructura y datos íntegros.\n- Métrica Prometheus/StatsD registra cantidad de filas archivadas por ejecución.\n- En staging/producción, audit_log mantiene <90 días de datos activos post-ejecución.\n- Queries sobre audit_log activo muestran reducción medible de latencia vs línea base (pre-feature).\n- Endpoint admin GET `/api/admin/audit-log/stats` expone: filas activas, filas archivadas, última ejecución.\n\n**Definition of Done**\n- Migration Django creada y aplicada; tabla `audit_log_archive` existe con índices.\n- Task Celery implementada con reintentos y manejo de errores; scheduled en beat.\n- Tests unitarios cubren: lógica de filtro por fecha, integridad de datos post-movimiento, idempotencia.\n- Tests de integración validan end-to-end en BD test.\n- Métrica de auditoría (filas movidas) visible en dashboard de operaciones.\n- Endpoint admin implementado y documentado en OpenAPI.\n- Deployment a staging sin downtime; validar contra carga real.\n- Card movida a \"In review\" tras merge a develop.\n\n**Notas tecnicas**\n- Archivo: `apps/audit/tasks.py` (task), `apps/audit/migrations/XXXX_create_audit_log_archive.py`.\n- Modelo: extender `audit_log` meta options con `db_table='audit_log_archive'` para tabla espejo.\n- Config: `settings/base.py` → `AUDIT_LOG_RETENTION_DAYS = env.int('AUDIT_LOG_RETENTION_DAYS', 180)`.\n- Query: `audit_log.objects.filter(created_at__lt=timezone.now() - timedelta(days=retention_days))` + bulk_create en archive + bulk_delete.\n- Métrica: usar `statsd.gauge('audit_log.archived_count', count)` o equivalente en tu observabilidad.\n- Índices: `audit_log_archive(created_at, id)` para queries futuras de auditoría histórica.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Implementar job Celery semanal para archivar registros de `audit_log` mayores a 180 días en una tabla separada, mejorando performance y manteniendo auditoría.\n\n**Cambios / Decisiones** — Se creó modelo `AuditLogArchive` con migración en `versions/a1b2c3d4e5f0_add_audit_log_archive.py`. Task Celery en `tasks/audit_retention.py` mueve registros antiguos en batches de 10k cada lunes 2am, con bloqueo de filas y métrica de conteo. Agregado endpoint GET `/api/auditoria/stats` para ver filas activas/archivadas. Configuración de retención en `config.py` (default 180 días). Tests en `test_audit_retention.py` validan lógica de archivo y conteo.",
       "checklist": [
-        "Definir politica (180 dias default, configurable)",
-        "Tabla audit_log_archive con misma estructura",
-        "Celery task semanal de archivo",
-        "Metrica de filas archivadas",
-        "Endpoint admin para consultar archivo si se requiere",
-        "Crear migration Django para tabla audit_log_archive con misma estructura e índices",
-        "Implementar task Celery semanal con config de retención (días, via settings)",
-        "Desarrollar lógica de bulk-move (filtrar por fecha, crear en archive, eliminar de activo)",
-        "Agregar métrica Prometheus/StatsD de filas archivadas por ejecución",
-        "Implementar endpoint admin GET /api/admin/audit-log/stats con conteos",
-        "Escribir tests: unitarios (lógica fecha), integración (BD test), validar integridad",
-        "Deploy a staging y validar; mover card a In review"
+        "Ejecutar task Celery y verificar filas archivadas en DB",
+        "Hacer GET a /api/auditoria/stats y validar conteos",
+        "Consultar tabla audit_log_archive con registros antiguos",
+        "Verificar métrica Prometheus de filas archivadas",
+        "Revisar logs de task para confirmar ejecución sin errores"
       ]
     }
   ]
