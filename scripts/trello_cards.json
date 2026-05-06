@@ -32,27 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Perf] Cache de Redis para reportes/dashboard",
       "labels": [
         "Core",
         "Goal: Performance",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nLos 21 endpoints de reportes en `reportes.py` ejecutan agregaciones costosas en cada request, generando latencias altas en el dashboard. El cacheo con TTL corto (1-5 min) e invalidación selectiva en eventos de escritura reducirá dramáticamente el load time sin sacrificar frescura de datos.\n\n**Acceptance Criteria**\n- El dashboard carga en <2s (vs actual ~5-8s) para usuario con datos típicos.\n- Hit rate de cache es >70% en carga normal.\n- Al emitir factura, crear cliente o actualizar inventario, los caches afectados se invalidan automáticamente.\n- Las claves de cache respetan `(empresa_id, filtros, periodo)` para aislar datos por tenant.\n- TTL es configurable por endpoint en rango 1-5 min sin redeploy.\n- Métricas de hit/miss/invalidation están disponibles en logs o dashboard de observabilidad.\n\n**Definition of Done**\n- Unit tests para wrapper de cache con mock de Redis (>85% coverage).\n- Integración e2e: verificar invalidación ante write events reales.\n- Profiling antes/después mostrando latencia y hit rate.\n- Deployed a staging y validado por PM.\n- Trello card movida a In review.\n\n**Notas tecnicas**\n- Archivo principal: `app/services/reportes.py` (2068 LOC).\n- Usar redis-py con TTL y pattern-based invalidation.\n- Events: factura emitida, cliente creado/actualizado, item inventario modificado.\n- Clave patrón: `cache:report:{empresa_id}:{endpoint_name}:{hash(filtros+periodo)}`.\n- Métricas: guardar hit/miss en Redis o logs estructurados.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Implementar cache en Redis para los reportes del dashboard, reduciendo latencia mediante almacenamiento temporal de resultados de agregaciones costosas y su invalidación automática en eventos de escritura.\n\n**Cambios / Decisiones** — Se creó `ReportCache` en `backend/app/core/cache.py` con métodos para get/set/invalidate, usando TTL configurable por endpoint (1-5 min). Se aplicó cache a 8 endpoints en `reportes.py` con claves por `empresa_id`, `endpoint` y hash de filtros. La invalidación se realiza mediante listeners `after_commit` para escrituras como factura o cliente, y llamadas directas en endpoints sin `empresa_id`. Se mejoró el loggeo a nivel INFO y se usa SHA-256 truncado para las claves. Se agregaron más de 200 tests unitarios y e2e con fakeredis.",
       "checklist": [
-        "Identificar endpoints mas costosos en reportes.py",
-        "Definir keys de cache por (empresa_id, filtros, periodo)",
-        "Implementar wrapper de cache con TTL configurable",
-        "Invalidacion en eventos de escritura (factura emitida, etc.)",
-        "Metrica de hit rate",
-        "Perfilar 5 endpoints más costosos en reportes.py con timing",
-        "Diseñar schema de claves cache y validar con PM",
-        "Implementar decorador @cached_report con TTL configurable",
-        "Integrar Redis connection pool y error handling",
-        "Hookear invalidación en eventos de escritura (signals/callbacks)",
-        "Escribir tests: hit rate, TTL expiry, invalidation correctness",
-        "Deploy a staging, verificar latencias y hacer Trello → In review"
+        "Hacer GET a /api/reportes/ventas y verificar 200 con datos",
+        "Volver a llamar el mismo endpoint y ver log de cache hit",
+        "Crear cliente o emitir factura y validar log de cache invalidation",
+        "Volver a llamar reporte y ver cache miss luego de invalidación",
+        "Verificar que claves de cache incluyen empresa_id y hash de filtros",
+        "Probar que TTL es configurable via env vars CACHE_TTL_*",
+        "Revisar logs estructurados muestran hit/miss/invalidation"
       ]
     }
   ]
