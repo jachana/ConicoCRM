@@ -32,7 +32,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Telemetry T4.2] /configuracion/telemetry: tab Cost & Usage",
       "labels": [
         "Core",
@@ -40,24 +40,15 @@
         "Design System",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nLos administradores de Conico necesitan visibilidad sobre el costo y uso por empresa para identificar tenants caros antes de facturación SaaS y tomar decisiones de pricing/optimización.\n\n**Acceptance Criteria**\n- Tab «Cost & Usage» aparece en `/configuracion/telemetry` junto a otros tabs existentes.\n- Tabla muestra: empresa, request_count, lioren_calls, lioren_cost_clp, dte_emitidos, slow_requests.\n- Tabla ordena por lioren_cost_clp descendente por defecto.\n- Selector de período permite elegir 7d, 30d (defecto), 90d.\n- Tile resumen en cabecera muestra: total_cost_clp, total_requests, count_empresas_activas.\n- Botón «Exportar CSV» descarga datos de la tabla actual con el período seleccionado.\n- Empty state muestra mensaje clarificador cuando no hay datos.\n- Interfaz responde correctamente con mock API (sin backend real aún, requiere T2.3).\n\n**Definition of Done**\n- Componente React montado en `/configuracion/telemetry` y enrutado correctamente.\n- Tests unitarios cubren: renderizado de tabla, período selector, ordenamiento, exportación CSV.\n- Mock API fixture implementado en `src/mocks/telemetry.mock.ts` (o equivalente).\n- Diseño sigue Design System tokens (colores, tipografía, espaciado).\n- Trello card movida a «In review».\n- Build y tests pasan en CI.\n\n**Notas tecnicas**\n- Archivo principal: `src/pages/Configuracion/Telemetry/CostUsageTab.tsx`.\n- Mock endpoint: `GET /api/v1/telemetry/cost-usage?period=30d` → fixture en `src/mocks/telemetry.mock.ts`.\n- Bibliotecas: React Table (o similar), csv-download-lib (o papaparse).\n- Esquema esperado: `{empresa_id, empresa_nombre, request_count, lioren_calls, lioren_cost_clp, dte_emitidos, slow_requests}`.\n- Prerequisito: T2.3 debe estar en Staging/Done para conectar API real post-MVP.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen**\nImplementación de la pestaña «Cost & Usage» en `/configuracion/telemetry` para mostrar costo y consumo por empresa, permitiendo identificar tenants caros y optimizar pricing.\n\n**Cambios / Decisiones**\n- Se creó el componente principal en `frontend/src/components/config/CostUsageTab.tsx` (164 líneas) con la tabla, selector de período y lógica de ordenamiento.\n- Se integró en `frontend/src/pages/AdminTelemetria.tsx` (+5 líneas) para habilitar el enrutamiento.\n- El selector de período (`7d`, `30d` por defecto, `90d`) dispara refetch a `GET /api/v1/telemetry/cost-usage`.\n- La tabla inicia ordenada por `lioren_cost_clp` descendente y permite reordenamiento interactivo.\n- Se agregaron tiles de resumen en la cabecera (`total_cost_clp`, `total_requests`, `count_empresas_activas`).\n- Se añadió exportación a CSV de los datos actuales y estado vacío descriptivo.\n- Tests unitarios en `frontend/src/__tests__/CostUsageTab.test.tsx` (+87 líneas) cubren renderizado, período, orden y exportación.\n- *Nota:* El componente se ubicó en `src/components/config/` para reutilización, en lugar de la ruta de página original.",
       "checklist": [
-        "Tab Cost & Usage en /configuracion/telemetry",
-        "Tabla: empresa, request_count, lioren_calls, lioren_cost_clp, dte_emitidos, slow_requests",
-        "Order by lioren_cost_clp DESC default",
-        "Period selector (30d default, 7d, 90d)",
-        "Tile resumen arriba: total_cost_clp + total_requests + count_empresas_activas",
-        "Export CSV",
-        "Empty state",
-        "Test render con mock API",
-        "Crear componente CostUsageTab.tsx con tabla base (empresa, request_count, lioren_calls, lioren_cost_clp, dte_emitidos, slow_requests)",
-        "Implementar período selector (7d, 30d defecto, 90d) y lógica de refetch",
-        "Ordenamiento por lioren_cost_clp DESC al montar y permitir reordenar en UI",
-        "Agregar tile resumen (total_cost_clp, total_requests, count_empresas_activas)",
-        "Implementar botón Exportar CSV con datos del período actual",
-        "Agregar empty state con mensaje descriptivo",
-        "Escribir tests unitarios (renderizado, período, ordenamiento, export)",
-        "Deploy a staging y mover card a In review"
+        "Navegar a /configuracion/telemetry y verificar que aparece la pestaña «Cost & Usage».",
+        "Seleccionar 30d (defecto) y confirmar que la tabla muestra las 6 columnas requeridas.",
+        "Verificar orden descendente por lioren_cost_clp al montar y probar reordenamiento en UI.",
+        "Cambiar a 7d y 90d, asegurar que la data se actualiza y los tiles reflejan totales correctos.",
+        "Hacer clic en «Exportar CSV» y validar descarga con datos visibles y período activo.",
+        "Simular respuesta vacía del endpoint y confirmar aparición del empty state descriptivo.",
+        "Ejecutar npm test CostUsageTab y verificar que render, período, orden y export pasan."
       ]
     }
   ]
