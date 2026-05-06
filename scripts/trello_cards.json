@@ -32,28 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Telemetry T2.3] GET /admin/telemetry/cost",
       "labels": [
         "Core",
         "Goal: Operations",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nPara construir billing y cost tracking en Conico SaaS, necesitamos un endpoint administrativo que agregue métricas de uso (llamadas Lioren, DTEs, performance) por empresa. Este endpoint es la base de reportes operacionales y futuros modelos de facturación.\n\n**Acceptance Criteria**\n- GET `/admin/telemetry/cost?period=30d&empresa_id=optional` retorna datos de uso segmentados por empresa.\n- Respuesta incluye por empresa: `empresa_id`, `request_count`, `lioren_call_count`, `lioren_cost_clp`, `dte_emitidos_count`, `slow_request_count`.\n- Cuando no se envía `empresa_id`, el endpoint retorna agregado total de todas las empresas al final de la lista.\n- Solo usuarios con rol admin pueden acceder (validación `require_admin`).\n- OpenAPI schema está documentada y actualizada.\n- Tests multempresa validan lectura desde `cost_rollup` y `perf_rollup` con datos semilla.\n\n**Definition of Done**\n- Código en rama, tests 100% pass (pytest).\n- OpenAPI schema generada correctamente en Swagger/Redoc.\n- Endpoint desplegado a staging y funcional con datos de prueba.\n- Trello card movida a \"In review\".\n- Bloqueador para T4.2 removido en caso de que T2.1 ya esté completo.\n\n**Notas tecnicas**\n- Endpoint: `GET /admin/telemetry/cost`.\n- Query params: `period` (ej: 30d, 90d), `empresa_id` (opcional).\n- Fuentes de datos: tablas `cost_rollup` y `perf_rollup` (joins o aggregations).\n- Modelo Pydantic para response: `CostTelemetryResponse`.\n- Decorador/middleware: `@require_admin` o similar.\n- Tests: `test_get_telemetry_cost_single_empresa`, `test_get_telemetry_cost_aggregate`.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Se implementó el endpoint GET /admin/telemetry/cost para obtener métricas de uso y costos por empresa, como parte del sistema de billing y telemetría.\n\n**Cambios / Decisiones** — Se agregó el endpoint en `backend/app/api/telemetry.py` bajo la ruta `/admin/telemetry/cost`, protegido con `@require_admin`. Lee datos de las tablas `cost_rollup`, `perf_rollup` y `dte_emisiones`. Retorna métricas por empresa (`request_count`, `lioren_call_count`, `lioren_cost_clp`, `dte_emitidos_count`, `slow_request_count`) y un total agregado al final si no se filtra por `empresa_id`. Se creó el modelo Pydantic `CostTelemetryResponse` y se generó la documentación OpenAPI. Se añadieron tests en `backend/tests/test_telemetry_cost.py` validando distintos casos con datos multempresa.",
       "checklist": [
-        "GET /admin/telemetry/cost?period=30d&empresa_id=optional",
-        "Response per empresa: {empresa_id, request_count, lioren_call_count, lioren_cost_clp, dte_emitidos_count, slow_request_count}",
-        "Total agregado al final",
-        "Permission: require_admin",
-        "Tests con seed multi-empresa",
-        "Schema Pydantic + OpenAPI",
-        "Implementar lógica de lectura desde cost_rollup + perf_rollup con filtro por period y empresa_id",
-        "Definir modelo Pydantic CostTelemetryResponse con campos: empresa_id, request_count, lioren_call_count, lioren_cost_clp, dte_emitidos_count, slow_request_count",
-        "Agregar endpoint GET /admin/telemetry/cost con validación require_admin",
-        "Calcular total agregado y agregarlo al final de respuesta cuando empresa_id es opcional",
-        "Escribir tests con seed multempresa y validar respuestas",
-        "Generar OpenAPI schema y validar en Swagger",
-        "Desplegar a staging y mover Trello a In review"
+        "Hacer GET a /admin/telemetry/cost?period=30d y verificar lista con datos por empresa y total al final",
+        "Hacer GET a /admin/telemetry/cost?period=7d&empresa_id=123 y verificar solo datos de esa empresa",
+        "Verificar que un usuario no admin recibe 403 al acceder al endpoint",
+        "Revisar en Swagger que el schema CostTelemetryResponse esté documentado correctamente",
+        "Validar que llamada con period=24h retorna datos correctos de las últimas 24h",
+        "Verificar que se retornan cero conteos cuando no hay datos en el periodo solicitado",
+        "Revisar tests en test_telemetry_cost.py para confirmar cobertura de casos multempresa"
       ]
     }
   ]
