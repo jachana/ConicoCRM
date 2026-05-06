@@ -32,29 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Telemetry T1.5] Sentry Performance: per-route traces_sample_rate + dashboards",
       "labels": [
         "Core",
         "Goal: Operations",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nSentry está configurado en `core/observability.py` pero con sampling uniforme. Endpoints críticos (DTE, Lioren) merecen más visibilidad, mientras que healthz y readyz generan ruido innecesario. Sin dashboards documentados, no hay visibilidad operacional de qué monitorear.\n\n**Acceptance Criteria**\n- `/healthz` y `/readyz` no generan traces en Sentry (sample rate 0.0).\n- Endpoints `/api/dte/*` y `/api/lioren/*` capturan el 50% de traces; resto 5% por defecto.\n- Profiling (SENTRY_TRACES_PROFILE=on) es toggleable sin reiniciar.\n- Nombres de transacción usan templates de ruta (ej. `GET /api/invoices/{id}`, no `/api/invoices/12345`).\n- Transactions tagueadas con `empresa_id` desde request scope para filtrar por cliente.\n- README incluye paso a paso: crear dashboard \"Slowest endpoints\", \"Throughput per route\", \"Error rate\", \"p95 trends\".\n- README sugiere alertas: spike de errores, regresión en p95.\n- Code review aprobado y merged a main.\n\n**Definition of Done**\n- Tests unitarios de `traces_sampler` pasan (casos: healthz→0.0, dte→0.5, default→0.05).\n- Profiling toggle testeado manualmente en staging.\n- Dashboard Sentry creado manualmente en organización (screenshots en README).\n- README `docs/observability.md` actualizado con config step-by-step.\n- PR merged, staging desplegado.\n- Trello card movido a \"Done\".\n\n**Notas tecnicas**\n- Archivo: `core/observability.py` (función `traces_sampler`).\n- Usar `Transaction.get_current()` para custom names.\n- Tag schema: `transaction.set_tag(\"empresa_id\", request.scope.get(\"empresa_id\"))`.\n- Env var: `SENTRY_TRACES_PROFILE` (bool, default False).\n- Dashboard URLs se guardan en README como links comentados.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Configurar muestreo de traces en Sentry por ruta, documentar dashboards y alertas, y etiquetar transacciones con empresa_id.\n\n**Cambios / Decisiones** — Se implementó `traces_sampler` en `core/observability.py` para asignar sample rates: 0.0 a `/healthz` y `/readyz`, 0.5 a `/api/dte/*` y `/api/lioren/*`, y 0.05 por defecto. Se agregó toggle de profiling via env var `SENTRY_TRACES_PROFILE`. Los nombres de transacciones usan templates de ruta y se etiquetan con `empresa_id` desde el scope de autenticación (`api/auth.py`). Se agregaron tests en `tests/test_observabilidad.py` y docs actualizados en `docs/observability.md` con instrucciones para crear dashboards y alertas sugeridas.",
       "checklist": [
-        "traces_sampler funcion: 0.0 para /healthz /readyz, 0.05 default, 0.5 para /api/dte/* y /api/lioren/*",
-        "Setting SENTRY_TRACES_PROFILE=on toggleable",
-        "Custom transaction names usar route template (no path con ids)",
-        "Tag transactions con empresa_id desde request scope",
-        "Documentar dashboards Sentry a crear: Slowest endpoints, Throughput per route, Error rate, p95 trends",
-        "Documentar alertas Sentry sugeridas: error spike, p95 regression",
-        "README de observabilidad actualizado",
-        "Implementar traces_sampler: 0.0 /healthz|/readyz, 0.05 default, 0.5 /api/dte/*|/api/lioren/*",
-        "Nombres de transacción con templates (no IDs): usar request.path_template o route name",
-        "Tagear transactions con empresa_id desde request scope",
-        "Hacer SENTRY_TRACES_PROFILE toggleable vía env var",
-        "Tests unitarios para sampling logic (3+ casos)",
-        "Documentar en README: dashboards + alertas sugeridas + pasos configuración",
-        "Code review + merge a main, desplegar staging, mover Trello a Done"
+        "Verificar sample rate 0.0 en /healthz y /readyz",
+        "Confirmar 50% sampling en /api/dte/* y /api/lioren/*",
+        "Validar nombre de transacción usa template, no ID",
+        "Chequear tag empresa_id en transacción Sentry",
+        "Probar SENTRY_TRACES_PROFILE=on activa profiling",
+        "Revisar docs: dashboards + alertas sugeridas",
+        "Validar tests unitarios del sampling logic"
       ]
     }
   ]
