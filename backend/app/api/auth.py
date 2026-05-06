@@ -57,7 +57,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         try:
             import sentry_sdk
             sentry_sdk.set_tag("empresa_id", str(user.empresa_id))
-        except Exception:
+        except ImportError:
             pass
     return user
 

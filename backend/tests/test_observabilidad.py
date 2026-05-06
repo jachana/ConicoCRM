@@ -243,6 +243,8 @@ def test_traces_sampler_default_routes():
     assert traces_sampler({"asgi_scope": {"path": "/api/invoices/5"}}) == 0.05
     assert traces_sampler({"asgi_scope": {"path": "/api/users/me/preferencias"}}) == 0.05
     assert traces_sampler({}) == 0.05  # no scope = default
+    assert traces_sampler({"asgi_scope": {"path": ""}}) == 0.05  # empty path = default
+    assert traces_sampler({"asgi_scope": {"path": "/api/dte"}}) == 0.05  # no trailing slash → default
 
 
 def test_init_sentry_uses_traces_sampler_not_uniform_rate():

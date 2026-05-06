@@ -7,7 +7,7 @@
 | `SENTRY_DSN` | `""` | Sentry Data Source Name. Leave empty to disable Sentry entirely. |
 | `SENTRY_ENV` | `"production"` | Environment tag (`production`, `staging`, `dev`). |
 | `SENTRY_TRACES_PROFILE` | `false` | Set to `true` to enable Sentry profiling. Takes effect on next restart. |
-| `SENTRY_TRACES_SAMPLE_RATE` | `0.0` | Kept for backwards compatibility. The `traces_sampler` function takes precedence. |
+| `SENTRY_TRACES_SAMPLE_RATE` | `0.0` | Unused. Formerly the global sample rate; superseded by the per-route `traces_sampler`. The value is not passed to the SDK — safe to remove from env files. |
 | `SENTRY_RELEASE` | `""` | Override release identifier. Falls back to `GIT_SHA`, `SOURCE_VERSION`, `GIT_COMMIT` env vars, then `git rev-parse HEAD`. |
 
 ## Sampling Rules
@@ -36,7 +36,7 @@ import sentry_sdk
 sentry_sdk.set_tag("empresa_id", str(empresa.id))
 ```
 
-A good place for this is the `get_current_empresa` dependency that already resolves `empresa` from the JWT claim. Adding one line there tags every authenticated request automatically.
+This is already implemented in `get_current_user` (`backend/app/api/auth.py`) — every authenticated request is automatically tagged.
 
 ## Suggested Sentry Dashboards
 
