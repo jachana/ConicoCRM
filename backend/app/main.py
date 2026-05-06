@@ -70,6 +70,7 @@ from app.api import onboarding_tareas
 from app.api import libros as libros_api
 from app.api import dte_recepcion as dte_recepcion_api
 from app.api import modulos as modulos_api
+from app.api import telemetry as telemetry_api
 from app.api import nota_alerta as nota_alerta_api
 from app.middleware.audit_context import AuditContextMiddleware
 from app.services.auditoria import register_listeners as register_audit_listeners
@@ -198,3 +199,4 @@ app.include_router(onboarding_tareas.router, prefix="/api/onboarding/tareas", ta
 app.include_router(libros_api.router, prefix="/api/libros", tags=["libros"])
 app.include_router(dte_recepcion_api.router, prefix="/api/dte_recepcion", tags=["dte_recepcion"])
 app.include_router(modulos_api.router, prefix="/api", tags=["modulos"])
+app.include_router(telemetry_api.router, prefix="/api", tags=["telemetry"])

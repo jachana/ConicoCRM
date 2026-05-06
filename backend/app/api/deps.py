@@ -10,6 +10,15 @@ from app.models.user import User
 from app.services.modulo_calculator import compute_effective_modulos
 
 
+def require_admin(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> tuple[User, Session]:
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores")
+    return current_user, db
+
+
 def require_permission(module: str, action: str):
     def dependency(
         current_user: User = Depends(get_current_user),
@@ -33,7 +42,7 @@ def require_modulo(slug: str):
         empresa = db.get(Empresa, current_user.empresa_id) if current_user.empresa_id else None
         stored: dict[str, bool] = (empresa.modulos_enabled or {}) if empresa else {}
         effective = compute_effective_modulos(stored)
-        if not effective.get(slug, True):
+        if not effective.get(slug, False):
             spec = OPTIONAL_MODULES.get(slug)
             label = spec.label if spec else slug
             raise HTTPException(
