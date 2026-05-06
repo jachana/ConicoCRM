@@ -32,27 +32,19 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Docs] Celery background jobs reference",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nLos desarrolladores y operadores necesitan una referencia centralizada sobre las tareas Celery que ejecuta Conico: qué hacen, cuándo se disparan, políticas de reintentos y comportamiento ante fallos. Actualmente esta información está dispersa en el código.\n\n**Acceptance Criteria**\n- Documento en formato markdown que lista todas las tareas Celery en producción (DTE polling, evaluación de reglas de tarea, recordatorios de cobranza, etc.).\n- Cada tarea incluye: nombre exacto, trigger/disparador, cadencia o cola, descripción breve de qué realiza, política de reintentos, comportamiento ante fallos.\n- Configuración de Beat (schedule) documentada con ejemplos de cómo agregar nuevas tareas periódicas.\n- Sección sobre monitoreo: cómo usar Flower, interpretar logs, identificar tareas atoradas o fallidas.\n- Documento accesible en el repositorio (ej: `/docs/celery-tasks-reference.md`).\n\n**Definition of Done**\n- Documento escrito y revisado por al menos un developer que mantenga Celery.\n- Pull request aprobado y mergeado a rama principal.\n- Trello card movida a \"Done\".\n\n**Notas tecnicas**\n- Revisar `conico/tasks.py` o módulos equivalentes para nombre exacto de tasks.\n- Verificar `celerybeat_schedule` en settings para cadencias.\n- Incluir ejemplo de lectura de logs con `celery inspect` y setup básico de Flower.\n- Si hay secretos o rutas específicas del ambiente, usar placeholders (ej: `${CELERY_BROKER_URL}`)\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Crear una referencia centralizada en markdown sobre las tareas Celery de Conico, incluyendo sus triggers, cadencia, reintentos y comportamiento ante fallos.\n\n**Cambios / Decisiones** — Se creó el documento `docs/celery-jobs.md` que incluye: descripción de 9 tareas Celery (DTE emission/polling, CRM auto-tasks, cobranza reminders, CAF alerts, telemetry rollups, audit archival), sus políticas de reintentos, configuración de Beat schedule, y guía para monitoreo usando Flower y logs. Se documentó cómo agregar nuevas tareas periódicas.",
       "checklist": [
-        "DTE emission + polling task",
-        "ReglaTarea hourly evaluator",
-        "Cobranza reminder sender",
-        "Beat schedule config",
-        "How to monitor jobs (Flower / logs)",
-        "Documentar tarea DTE: polling, cadencia, reintentos, fallo",
-        "Documentar ReglaTarea: evaluador horario, trigger, comportamiento",
-        "Documentar Cobranza: recordatorios, cola, política de reintento",
-        "Documentar Beat schedule: cómo está configurado, agregar nuevas tareas",
-        "Agregar sección de monitoreo: Flower, logs, troubleshooting",
-        "Crear PR, revisar con maintainer, mergear a main",
-        "Mover Trello a Done"
+        "Abrir docs/celery-jobs.md y verificar sección de tareas Celery",
+        "Verificar presencia de DTE polling, ReglaTarea y Cobranza",
+        "Revisar configuración de Beat schedule y ejemplo de nueva tarea",
+        "Validar sección de monitoreo con Flower y logs"
       ]
     }
   ]
