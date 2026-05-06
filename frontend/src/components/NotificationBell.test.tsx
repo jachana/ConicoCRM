@@ -148,6 +148,40 @@ describe('NotificationBell', () => {
     expect(screen.getByText('Aprobación XYZ')).toBeTruthy()
   })
 
+  it('navigates when clicking a tarea_asignada notification', () => {
+    ;(useQuery as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockData({
+        items: [makeNotif({ tipo: 'tarea_asignada', payload: { tarea_id: 42 } })],
+        unread: 1,
+      }),
+    )
+    render(
+      <MemoryRouter>
+        <NotificationBell />
+      </MemoryRouter>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /notificaciones/i }))
+    fireEvent.click(screen.getByText('Nueva tarea'))
+    expect(mockNavigate).toHaveBeenCalledWith('/tareas')
+  })
+
+  it('navigates to cotizacion when clicking aprobacion_pendiente notification', () => {
+    ;(useQuery as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockData({
+        items: [makeNotif({ tipo: 'aprobacion_pendiente', payload: { cotizacion_id: 7, solicitud_descuento_id: 1 } })],
+        unread: 1,
+      }),
+    )
+    render(
+      <MemoryRouter>
+        <NotificationBell />
+      </MemoryRouter>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /notificaciones/i }))
+    fireEvent.click(screen.getByText('Nueva tarea'))
+    expect(mockNavigate).toHaveBeenCalledWith('/cotizaciones/7')
+  })
+
   it('shows mark-all-read button only when there are unread notifications', () => {
     ;(useQuery as ReturnType<typeof vi.fn>).mockReturnValue(
       mockData({ unread: 2, items: [makeNotif()] }),

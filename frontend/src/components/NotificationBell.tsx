@@ -34,7 +34,7 @@ function targetUrl(n: Notification): string | null {
   }
   if (
     (n.tipo === 'aprobacion_pendiente' || n.tipo === 'aprobacion_resuelta') &&
-    typeof p.cotizacion_id === 'number'
+    typeof p.cotizacion_id === 'number' && p.cotizacion_id > 0
   ) {
     return `/cotizaciones/${p.cotizacion_id}`
   }
