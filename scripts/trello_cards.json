@@ -32,29 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Docs] Local development setup guide",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nNuevos desarrolladores gastan tiempo valioso descubriendo cómo levantar el entorno local. Se requiere una guía paso a paso que centralice todos los requisitos, configuración y comandos necesarios para ejecutar Conico en desarrollo.\n\n**Acceptance Criteria**\n- La guía incluye todos los prerrequisitos (versiones específicas de Node, Python, Docker).\n- Describe cómo clonar el repositorio y configurar archivos .env con valores de ejemplo.\n- Instruye cómo levantar servicios con Docker Compose y verificar su salud.\n- Detalla el flujo de migraciones Alembic y cómo ejecutarlas.\n- Incluye comandos para cargar datos de prueba / fixtures.\n- Instruye cómo iniciar servidores dev (Frontend Vite + Backend).\n- Especifica cómo ejecutar test suites (pytest para backend, vitest para frontend).\n- Un desarrollador nuevo puede seguir la guía sin intervención y tener stack funcional en <30 min.\n\n**Definition of Done**\n- Documento en formato markdown publicado en `/docs` (o wiki del repositorio).\n- Todos los comandos y rutas de archivo verificados en entorno limpio.\n- Tests pass (si aplica: verificación de código de ejemplo o snippets).\n- Pull request revisado y aprobado por al menos un maintainer.\n- Card movida a 'In review' → 'Done'.\n\n**Notas tecnicas**\n- Ubicación sugerida: `/docs/setup-local.md` o similar.\n- Considerar: versiones mínimas (Node ≥16, Python ≥3.9, Docker ≥20.10).\n- Incluir troubleshooting común (puertos ocupados, permisos, M1/ARM si aplica).\n- Verificar nombres exactos de servicios Docker Compose y variables de entorno críticas.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen**\nGuía canónica para que un nuevo desarrollador levante el stack Conico CRM (Postgres + Redis + Backend FastAPI + Celery + Frontend Vite) en menos de 30 minutos sin intervención manual.\n\n**Cambios / Decisiones**\n- Nuevo `docs/setup-local.md` (~400 líneas) con TOC, prerrequisitos, clone+`.env`, Docker Compose, migraciones Alembic, seed, tests, día-a-día, troubleshooting y apéndice de dev sin Docker.\n- Documenta los **puertos host no estándar** del `docker-compose.yml`: db `15432`, redis `16379`, backend `18000`, frontend `15173` — punto crítico que un dev nuevo no descubre solo.\n- Aclara que `backend/entrypoint.sh` corre `alembic upgrade heads` (plural) + `seed_admin.py` + `seed_all.py` automáticamente, así que en dev con Compose **no hace falta** invocarlos manualmente.\n- Documenta los dos seeds: `backend/scripts/seed_admin.py` (admin con credenciales `admin@conico.cl / changeme123`) y `backend/scripts/seed_all.py` (lee `data_seed/*.xlsx`).\n- Cubre tests: `pytest` para backend (con nota sobre `addopts = -m \"not smoke\"` en `backend/pytest.ini`), `npm test -- --run` para frontend con flag `--run` para no quedar en watch mode.\n- Cross-link a `docs/environment-variables.md` como referencia canónica de env vars en vez de duplicar — evita drift entre dos docs que se solapan.\n- Apéndice de dev nativo (sin Docker) explica cómo apuntar `DATABASE_URL` al puerto host `15432` cuando el backend corre fuera de Compose.\n- Sin cambios de código, schema, ni dependencias — change set es 1 archivo nuevo bajo `docs/`.\n",
       "checklist": [
-        "Prerequisites (Node, Python, Docker)",
-        "Clone + env file setup",
-        "Docker Compose up + healthcheck",
-        "Alembic migrations",
-        "Seed data / fixture commands",
-        "Frontend dev server (Vite)",
-        "Running tests (pytest + vitest)",
-        "Documentar prerrequisitos (Node, Python, Docker, versiones exactas)",
-        "Escribir pasos de clonación y configuración .env con ejemplos",
-        "Instruir Docker Compose setup y health checks",
-        "Describir migraciones Alembic y seed data / fixtures",
-        "Documentar arranque de servidores dev (Vite + backend)",
-        "Detallar ejecución de test suites (pytest + vitest)",
-        "Revisar y testar guía end-to-end en entorno limpio; PR review + Deploy a docs"
+        "Clonar el repo en un directorio limpio y seguir docs/setup-local.md sección 1-2 (cp .env.example .env, generar SECRET_KEY, docker compose up -d --build) — verificar que los 6 servicios salen healthy en `docker compose ps`.",
+        "Abrir http://localhost:15173 y http://localhost:18000/api/health desde el navegador — frontend carga, health responde 200.",
+        "Login con admin@conico.cl / changeme123; verificar que el seed_all corrió revisando que hay clientes/empresas/productos en las listas.",
+        "Correr `docker compose exec backend pytest` y `docker compose exec frontend npm test -- --run` — ambos suites verdes (smoke tests excluidos por default, según pytest.ini).",
+        "Probar `docker compose down -v && docker compose up -d --build` y confirmar que arranca limpio sin pasos manuales adicionales (entrypoint.sh aplica migraciones y seeds).",
+        "Seguir el apéndice \"Desarrollo sin Docker\" (backend nativo con `DATABASE_URL=postgresql://conico:conico@localhost:15432/conico`) y confirmar que `uvicorn app.main:app --reload --port 8000` arranca contra el Postgres del Compose.",
+        "Validar el cross-link a docs/environment-variables.md (sección \"1. Clonar y configurar `.env`\") — debe abrir el doc canónico de env vars, no duplicarlo."
       ]
     }
   ]
