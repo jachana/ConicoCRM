@@ -7,7 +7,7 @@ celery_app = Celery(
     "conico",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["app.tasks.dte", "app.tasks.tareas", "app.tasks.cobranza", "app.tasks.caf", "app.tasks.telemetry"],
+    include=["app.tasks.dte", "app.tasks.tareas", "app.tasks.cobranza", "app.tasks.caf", "app.tasks.telemetry", "app.tasks.audit_retention"],
 )
 
 celery_app.conf.update(
@@ -44,6 +44,10 @@ celery_app.conf.update(
         "cleanup-old-rollups": {
             "task": "app.tasks.telemetry.cleanup_old_rollups",
             "schedule": crontab(hour=3, minute=0, day_of_week=0),  # weekly Sunday 3am
+        },
+        "archive-audit-logs": {
+            "task": "app.tasks.audit_retention.archive_old_audit_logs",
+            "schedule": crontab(hour=2, minute=0, day_of_week=1),  # weekly Monday 2am
         },
     },
 )

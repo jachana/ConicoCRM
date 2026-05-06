@@ -14,9 +14,11 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_permission
+from app.config import settings
 from app.models.audit_log import AuditLog
 from app.models.user import User
 from app.schemas.auditoria import AuditLogOut, AuditLogPage
@@ -205,3 +207,21 @@ def exportar_auditoria_csv(
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": "attachment; filename=auditoria.csv"},
     )
+
+
+@router.get("/stats")
+def auditoria_stats(
+    perms: tuple[User, Session] = require_permission("usuarios", "admin"),
+):
+    """Returns active row count, archive row count, and estimated oldest active record."""
+    _, db = perms
+    from app.models.audit_log_archive import AuditLogArchive
+    active_count = db.query(func.count(AuditLog.id)).scalar() or 0
+    archive_count = db.query(func.count(AuditLogArchive.id)).scalar() or 0
+    oldest = db.query(func.min(AuditLog.created_at)).scalar()
+    return {
+        "active_rows": active_count,
+        "archive_rows": archive_count,
+        "oldest_active": oldest.isoformat() if oldest else None,
+        "retention_days": settings.audit_log_retention_days,
+    }

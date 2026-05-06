@@ -133,6 +133,7 @@ def _import_all_models():
     import app.models.tarea  # noqa: F401
     import app.models.regla_tarea  # noqa: F401
     import app.models.audit_log  # noqa: F401
+    import app.models.audit_log_archive  # noqa: F401
     import app.models.factura_compra  # noqa: F401
     import app.models.notification  # noqa: F401
     import app.models.oportunidad  # noqa: F401

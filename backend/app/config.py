@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     db_metrics_enabled: bool = False
     slow_query_ms: int = 200
 
+    # Ops — audit log retention
+    audit_log_retention_days: int = 180
+
     # Auth W1-07
     totp_issuer: str = "Conico"
     twofa_ticket_expire_seconds: int = 300
