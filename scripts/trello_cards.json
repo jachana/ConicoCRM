@@ -32,22 +32,29 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Docs] Environment variables reference",
+      "list": "In progress",
+      "name": "[Docs] Local development setup guide",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:M"
       ],
-      "desc": "**Resumen**\nSe centraliza en `docs/environment-variables.md` la referencia única de variables de entorno (backend, frontend, Celery, Postgres/Docker, backups, rclone offsite, tooling). Cada entrada lista tipo, required/optional, default, descripción y archivo:línea fuente.\n\n**Cambios / Decisiones**\n- Nuevo archivo `docs/environment-variables.md` (304 líneas, 19 secciones), agrupado por subsistema con tabla por grupo.\n- Cobertura cruzada contra código: `backend/app/config.py`, `backend/app/core/cache.py` (CACHE_TTL_*), `backend/app/core/observability.py` (Sentry release fallbacks GIT_SHA/SOURCE_VERSION/GIT_COMMIT), `backend/app/services/email.py` (SMTP_FROM), `frontend/src/sentry.ts`, `frontend/src/lib/webVitals.ts` (VITE_TELEMETRY_SAMPLE_RATE), `docker-compose.prod.yml` (BACKUP_*, S3_*), `.env.prod.example`.\n- Marca `SENTRY_TRACES_SAMPLE_RATE` como stale (no se pasa al SDK; el sampling real lo dicta `traces_sampler` en `observability.py`) — preservado por compat hasta limpieza explícita.\n- Sección de Tooling para vars que viven en `scripts/.trello.env` (TRELLO_*, OPENROUTER_API_KEY, STRAICO_API_KEY, COOLIFY_READONLY_KEY) — no se cargan al runtime de la app, pero son required para los scripts de operación.\n- Linkeado desde `QUICKSTART.md` (paso de variables de entorno) y `docs/architecture.md` (header).\n- Sección \"Generación de secretos\" con comandos `openssl` listos para copy-paste.\n- Sección \"Cómo agregar una nueva variable\" como contrato: backend pydantic → frontend vite-env.d.ts → compose → plantillas .env.example → este doc.\n\n**Notas para revisor**\n- Tests no se ejecutaron localmente: el entorno Python local no tiene `loguru` instalado y Docker Desktop no está corriendo. Cambio es markdown-only (zero código), riesgo de regresión nulo.\n- Cross-check automático ejecutado: 65 vars documentadas, 55 referenciadas en código → cero missing en doc; los \"extras\" del set comparativo son tooling (TRELLO_*, COOLIFY, OPENROUTER, STRAICO, DATA_SEED_DIR), false-positives del regex (`INFO` como default de LOG_LEVEL), y vars detectadas con patrones distintos al grep (`GIT_SHA`, `VITE_API_URL`).\n",
+      "desc": "**Contexto / Problema**\nNuevos desarrolladores gastan tiempo valioso descubriendo cómo levantar el entorno local. Se requiere una guía paso a paso que centralice todos los requisitos, configuración y comandos necesarios para ejecutar Conico en desarrollo.\n\n**Acceptance Criteria**\n- La guía incluye todos los prerrequisitos (versiones específicas de Node, Python, Docker).\n- Describe cómo clonar el repositorio y configurar archivos .env con valores de ejemplo.\n- Instruye cómo levantar servicios con Docker Compose y verificar su salud.\n- Detalla el flujo de migraciones Alembic y cómo ejecutarlas.\n- Incluye comandos para cargar datos de prueba / fixtures.\n- Instruye cómo iniciar servidores dev (Frontend Vite + Backend).\n- Especifica cómo ejecutar test suites (pytest para backend, vitest para frontend).\n- Un desarrollador nuevo puede seguir la guía sin intervención y tener stack funcional en <30 min.\n\n**Definition of Done**\n- Documento en formato markdown publicado en `/docs` (o wiki del repositorio).\n- Todos los comandos y rutas de archivo verificados en entorno limpio.\n- Tests pass (si aplica: verificación de código de ejemplo o snippets).\n- Pull request revisado y aprobado por al menos un maintainer.\n- Card movida a 'In review' → 'Done'.\n\n**Notas tecnicas**\n- Ubicación sugerida: `/docs/setup-local.md` o similar.\n- Considerar: versiones mínimas (Node ≥16, Python ≥3.9, Docker ≥20.10).\n- Incluir troubleshooting común (puertos ocupados, permisos, M1/ARM si aplica).\n- Verificar nombres exactos de servicios Docker Compose y variables de entorno críticas.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir docs/environment-variables.md y verificar que cada tabla rinde (sin filas rotas) en GitHub markdown.",
-        "Click en cada link relativo al final del doc (architecture.md, observability.md, runbooks/backup-restore.md, STACK.md, INTEGRATIONS.md, QUICKSTART.md) y confirmar que resuelven al archivo correcto.",
-        "Verificar al menos 5 file:line refs en la columna Source apuntando al codigo real (e.g. backend/app/config.py:7 -> DATABASE_URL).",
-        "Desde QUICKSTART.md confirmar el link a docs/environment-variables.md navega correctamente.",
-        "Desde docs/architecture.md (header) confirmar el link al doc nuevo.",
-        "Confirmar la seccion \"Generacion de secretos\" copy-pasteable: ejecutar el comando openssl rand -hex 32 y validar 64 hex chars.",
-        "Spot-check de cobertura: buscar 3 vars al azar del codigo (CACHE_TTL_KPIS, VITE_TELEMETRY_SAMPLE_RATE, BACKUP_KEEP_WEEKS) y confirmar que estan documentadas con la descripcion correcta."
+        "Prerequisites (Node, Python, Docker)",
+        "Clone + env file setup",
+        "Docker Compose up + healthcheck",
+        "Alembic migrations",
+        "Seed data / fixture commands",
+        "Frontend dev server (Vite)",
+        "Running tests (pytest + vitest)",
+        "Documentar prerrequisitos (Node, Python, Docker, versiones exactas)",
+        "Escribir pasos de clonación y configuración .env con ejemplos",
+        "Instruir Docker Compose setup y health checks",
+        "Describir migraciones Alembic y seed data / fixtures",
+        "Documentar arranque de servidores dev (Vite + backend)",
+        "Detallar ejecución de test suites (pytest + vitest)",
+        "Revisar y testar guía end-to-end en entorno limpio; PR review + Deploy a docs"
       ]
     }
   ]
