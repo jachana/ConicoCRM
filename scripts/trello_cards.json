@@ -32,27 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Telemetry T2.2] GET /admin/telemetry/routes",
       "labels": [
         "Core",
         "Goal: Operations",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nLos operadores necesitan visibilidad sobre el rendimiento de rutas API en producción. Actualmente no hay forma de consultar top routes por latencia (p95), volumen o tasa de error, ni visualizar tendencias horarias por ruta. Este endpoint consume los datos ya agregados en perf_rollup para responder estas queries sin costo de cálculo real-time.\n\n**Acceptance Criteria**\n- Endpoint GET /admin/telemetry/routes responde con top N rutas ordenadas por p95, count, o error_rate.\n- Respuesta incluye para cada ruta: nombre, count, p50/p95/p99, error_rate, y array de trend con buckets horarios (hour, p95, count).\n- Soporta filtros: period (24h|7d|30d), empresa_id (opcional), order_by (p95|count|error_rate), limit (default 20).\n- Rutas de salud (healthz, readyz) y estáticas (/static/*) están excluidas de resultados.\n- Solo usuarios con rol admin pueden acceder (verificado en request).\n- Respuesta valida contra schema Pydantic y está documentada en OpenAPI/Swagger.\n- Consulta a perf_rollup retorna datos en < 200ms para período típico.\n\n**Definition of Done**\n- Código mergeado a rama develop.\n- Tests unitarios pasan (incluye seed data para perf_rollup).\n- Tests de integración validan query params y permisos.\n- Schema Pydantic definido y auto-documentado en OpenAPI.\n- Deployado a staging y verificado en admin dashboard.\n- Card movida a 'In review'.\n- Bloqueo de T4.1 removido (esta feature es prerequisito).\n\n**Notas tecnicas**\n- Archivo: `backend/app/routes/admin/telemetry.py` (crear si no existe).\n- Consumidor: tabla `perf_rollup` (pre-existente, schema: route, period_bucket, p50/p95/p99, count, error_count).\n- Pydantic model: `RouteMetricsResponse` con nested `TrendBucket`.\n- Permiso: decorator `@require_admin` (o `current_user.role == 'admin'`).\n- Filtro de exclusión: `route NOT IN ('healthz', 'readyz') AND NOT route.startswith('/static')`.\n- OpenAPI: `/docs` debe mostrar endpoint con ejemplos y esquema.\n- Tests: `tests/admin/test_telemetry_routes.py`.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Se implementó un endpoint GET /admin/telemetry/routes que permite a los administradores consultar el rendimiento de las rutas API según latencia, volumen o tasa de error, usando datos preagregados de perf_rollup.\n\n**Cambios / Decisiones** — Se creó el archivo `backend/app/api/telemetry.py` con el nuevo endpoint, se centralizó el decorador `@require_admin` en `deps.py`, y se añadieron modelos Pydantic para validar y documentar la respuesta en OpenAPI. El endpoint soporta filtros por periodo (24h/7d/30d), empresa_id opcional y ordenamiento por p95/count/error_rate, excluyendo rutas de salud y estáticas. Se agregaron tests unitarios e integración en `backend/tests/test_telemetry_routes.py`.",
       "checklist": [
-        "GET /admin/telemetry/routes?period=24h|7d|30d&empresa_id=optional&order_by=p95|count|error_rate&limit=20",
-        "Response: [{route, count, p50, p95, p99, error_rate, trend:[{hour, p95, count}]}]",
-        "Permission: require_admin",
-        "Filtrar healthz/readyz/static",
-        "Tests: respuesta correcta con datos seed",
-        "Schema Pydantic + documentado en OpenAPI",
-        "Crear endpoint GET /admin/telemetry/routes con query params (period, empresa_id, order_by, limit)",
-        "Validar permisos admin y descartar rutas healthz/readyz/static",
-        "Consultar perf_rollup y construir respuesta con p50/p95/p99, count, error_rate, trend horario",
-        "Implementar schema Pydantic y documentar en OpenAPI",
-        "Escribir tests unitarios e integración con seed data",
-        "Verificar en staging y mover a 'In review'"
+        "Hacer GET a /admin/telemetry/routes?period=24h y verificar éxito",
+        "Probar filtro ?order_by=count y validar orden descendente",
+        "Incluir ?empresa_id=123 y confirmar resultados filtrados",
+        "Verificar que rutas healthz/readyz/static no aparecen en respuesta",
+        "Revisar estructura: route, p95, error_rate, trend[] con hour+p95",
+        "Confirmar acceso denegado sin rol admin (403 si no es admin)",
+        "Validar en /docs que el endpoint aparece con schema esperado"
       ]
     }
   ]
