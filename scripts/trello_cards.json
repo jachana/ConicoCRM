@@ -783,31 +783,22 @@
       ]
     },
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[UX] Dashboard: KPI tiles principales",
       "labels": [
         "Core",
         "Goal: UX Polish",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nEl dashboard actual (Dashboard.tsx) carece de una capa de KPIs ejecutivos. Los usuarios SME necesitan visualizar métricas críticas de negocio (ventas, clientes clave, rechazos DTE, antigüedad de cartera) en un vistazo para tomar decisiones rápidas. Los modelos de datos ya contienen toda la información necesaria.\n\n**Acceptance Criteria**\n- El dashboard muestra 5 tiles con KPIs: ventas (mes vs mes anterior con delta %), top 5 clientes del mes, tasa de rechazo DTE, envejecimiento de cartera (AR aging por tramos 0-30/30-60/60-90/+90 días), y sparklines o mini-gráficos cuando agreguen valor visual.\n- El usuario puede visualizar los KPIs sin fricciones de carga (< 2 seg).\n- Cada tile es responsivo y legible en pantallas ≥ 320px.\n- Los números se actualizan correctamente cuando cambia el período seleccionado (mes/año).\n- Las métricas de DTE y AR reflejan datos en tiempo real de la BD.\n\n**Definition of Done**\n- Endpoint GET /reportes/kpis implementado, con parámetros de período y filtros opcionales.\n- 5 componentes de tile creados y estilizados según design system.\n- Tests unitarios para cálculo de deltas, buckets de AR, y transformación de datos.\n- Tests E2E del dashboard con datos mock o fixture.\n- Migración aplicada (si aplica) y datos de prueba en staging.\n- Card movida a \"In review\" y desplegada a staging.\n\n**Notas tecnicas**\n- Ruta: `src/components/Dashboard/KPITiles/` para componentes.\n- Endpoint: `GET /api/reportes/kpis?periodo=YYYY-MM` (retorna JSON con ventas, top clientes, rejection_rate, ar_buckets).\n- Utilizar librería rechazable de charts (Recharts o similar integrada) para sparklines.\n- Considerar caché en frontend (5-10 min) para evitar solicitudes repetidas.\n- Validar que DTE rejection_rate = (emitidas_rechazadas / emitidas_totales) * 100.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Agregar tiles de KPIs ejecutivos al dashboard para mostrar métricas clave como ventas, clientes importantes, rechazos DTE, y envejecimiento de cartera.\n\n**Cambios / Decisiones** — Se implementó el endpoint `GET /api/reportes/kpis` que calcula ventas, top clientes, tasa de rechazo DTE y buckets de AR aging. En frontend se creó el componente `KPITiles` con 5 tiles responsivos, se usó Recharts para sparklines, y se agregó lógica de delta % entre períodos. Se excluyen facturas pagadas del cálculo de AR aging. Se añadieron tests unitarios y E2E.",
       "checklist": [
-        "Endpoint GET /reportes/kpis con periodo",
-        "Tile: ventas del mes vs anterior",
-        "Tile: top 5 clientes del mes",
-        "Tile: DTE rejection rate (rechazadas / emitidas)",
-        "Tile: AR aging buckets",
-        "Sparklines o mini-charts donde aporte",
-        "Implementar endpoint GET /reportes/kpis con período y retornar JSON estructurado",
-        "Crear componente KPITile base (contenedor, titulo, valor, delta, icono)",
-        "Agregar tile Ventas (mes vs mes anterior con delta %)",
-        "Agregar tile Top 5 clientes del mes",
-        "Agregar tile DTE rejection rate (rechazadas / emitidas)",
-        "Agregar tile AR aging con buckets 0-30/30-60/60-90/+90 días",
-        "Añadir sparklines o mini-gráficos en tiles relevantes",
-        "Ejecutar tests unitarios (cálculos, transformación) y E2E",
-        "Desplegar a staging y validar rendering responsivo",
-        "Mover card a In review"
+        "Abrir dashboard y verificar carga de tiles en <2s",
+        "Cambiar período y validar actualización de valores",
+        "Verificar tile Ventas muestra delta % mes vs anterior",
+        "Validar top 5 clientes se muestra correctamente",
+        "Confirmar DTE rejection rate = (rechazadas/emitidas)*100",
+        "Revisar AR aging con buckets 0-30/30-60/60-90/+90 días",
+        "Ver sparklines en tiles relevantes (ej: ventas, AR)"
       ]
     },
     {
