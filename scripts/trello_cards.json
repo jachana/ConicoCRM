@@ -32,32 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Perf] Paginacion en listas de alto volumen",
       "labels": [
         "Core",
         "Goal: Performance",
         "Size:XL"
       ],
-      "desc": "**Contexto / Problema**\nActualmente solo 3 de 67 vistas de listas implementan paginación (BoletasList, DTERecepcionList, LibrosList), mientras el resto renderiza el dataset completo. Esto genera degradación severa de performance y UX en clientes con volúmenes altos de transacciones (>500 registros por vista). Necesario resolver antes de escalar a nuevos segmentos de clientes.\n\n**Acceptance Criteria**\n- Facturas, Cotizaciones, NotasVentas, GuiasDespacho, OrdenesCompra y NotasCredito cargan máximo 50 registros por página (configurable).\n- Cada vista muestra controles de navegación (Primera, Anterior, Siguiente, Última) y selector de página.\n- El usuario puede seleccionar tamaño de página (20, 50, 100 registros).\n- Los filtros, búsqueda y ordenamiento se preservan al cambiar de página.\n- Los endpoints backend retornan metadata (total, página actual, total_páginas).\n- Ninguna vista de alto volumen renderiza >100 registros simultaneamente.\n- Las métricas de performance (tiempo de carga inicial, renderizado) mejoran ≥40% vs implementación anterior.\n\n**Definition of Done**\n- Todos los endpoints de listado aceptan y respetan parámetros `skip` y `limit`.\n- Seis componentes de lista migrados con tests unitarios para paginación.\n- Tests E2E validando navegación entre páginas y persistencia de filtros.\n- Code review aprobado por al menos un senior.\n- Desplegado a staging y validado con dataset >1000 registros.\n- Trello card movida a In Review.\n- Métricas baseline (bundle size, TTL, render time) documentadas en PR.\n\n**Notas tecnicas**\n- Patrón existente en: `BoletasList`, `DTERecepcionList` (validar hooks y estado).\n- Vistas a refactorizar: `FacturasList`, `CotizacionesList`, `NotasVentasList`, `GuiasDespachoList`, `OrdenesCompraList`, `NotasCreditoList`.\n- Backend endpoints: verificar endpoint de cada recurso acepta `?skip=0&limit=50`.\n- State management: considerar usar React Query o similar para caché de páginas.\n- Filtros: asegurar que `filterParams` se preservan al paginar (posible usar URLSearchParams).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Implementar paginación en vistas de listas de alto volumen (Facturas, Cotizaciones, Notas de Venta, Guías de Despacho, Órdenes de Compra y Notas de Crédito) para mejorar performance y UX, siguiendo el patrón ya existente en otras listas.\n\n**Cambios / Decisiones** — Se migraron 6 vistas principales del frontend a paginación con controles de navegación y selector de tamaño de página. Se actualizaron los endpoints backend correspondientes para aceptar parámetros `skip`/`limit` y retornar metadata de paginación. Se ajustaron tests unitarios y se aseguró persistencia de filtros entre páginas. Archivos afectados: `Facturas.tsx`, `Cotizaciones.tsx`, `NotaVentas.tsx`, `GuiasDespachoList.tsx`, `OrdenesCompra.tsx`, `NotasCredito.tsx` y sus respectivos endpoints y tests.",
       "checklist": [
-        "Facturas list: paginacion + page size selector",
-        "Cotizaciones list: paginacion",
-        "NotaVentas list: paginacion",
-        "GuiasDespachoList: paginacion",
-        "OrdenesCompra list: paginacion",
-        "NotasCredito list: paginacion",
-        "Backend: verificar endpoints aceptan skip/limit",
-        "Revisar patrón de paginación en BoletasList y DTERecepcionList",
-        "Migrar FacturasList: agregar paginación + page size selector",
-        "Migrar CotizacionesList: agregar paginación",
-        "Migrar NotasVentasList, GuiasDespachoList, OrdenesCompraList, NotasCreditoList",
-        "Verificar backend: endpoints aceptan skip/limit y retornan metadata",
-        "Tests unitarios: navegación, persistencia de filtros, edge cases",
-        "Tests E2E: flujo completo con >1000 registros",
-        "Deploy a staging y validar métricas de performance",
-        "Code review aprobado",
-        "Mover card a In Review"
+        "Abrir /facturas y verificar carga máxima 50 registros",
+        "Navegar entre páginas usando botones Anterior/Siguiente",
+        "Aplicar filtro y verificar persistencia al cambiar página",
+        "Cambiar tamaño de página a 20 y validar nuevo límite",
+        "Revisar metadata de paginación en response de API",
+        "Verificar funcionamiento de filtros en /cotizaciones",
+        "Validar performance con dataset >1000 registros"
       ]
     }
   ]
