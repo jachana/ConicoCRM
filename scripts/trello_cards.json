@@ -32,22 +32,35 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Docs] Roles and permissions matrix",
+      "list": "In progress",
+      "name": "[UX] Command palette Cmd+K (busqueda global + acciones)",
       "labels": [
-        "Roadmap",
-        "Goal: Docs",
-        "Size:M"
+        "Design System",
+        "Goal: UX Polish",
+        "Size:L"
       ],
-      "desc": "**Resumen**\nDocumenta de forma definitiva los roles y permisos del CRM: matriz roles × módulos × acciones, mecanismo de override por usuario, gating en backend (FastAPI `Depends`) y frontend (route guards / `useEffectivePermissions`), feature \"view as\" del admin, y guía para depurar errores 403.\n\n**Cambios / Decisiones**\n- Nuevo doc: `docs/security/roles-and-permissions.md` (~430 líneas) cubriendo el modelo de 3 capas (auth → rol+override → módulo activo), matriz completa de defaults para los 3 roles, schema y resolución de `permission_overrides`, ejemplos reales con `require_admin` / `require_permission(module, action)` / `require_modulo(slug)` desde `backend/app/api/deps.py`, y patrones de gating frontend con `<RequireAdmin>` / `<ModuloGuard>` / `useEffectivePermissions`.\n- `docs/architecture.md` §5: agregado link al nuevo doc y corregido nombre de tabla (`permissions` → `permission_overrides`, según `backend/app/models/permission.py`).\n- Aclara dos detalles no obvios del runtime: (a) `admin` hace bypass total y sus overrides son *dead data* aunque se persistan; (b) \"view as\" sólo afecta UI — clamp-ea `myPerms ∧ targetPerms` para evitar elevar, pero las route guards siguen leyendo el rol real.\n- Sección de pitfalls comunes con flujo de depuración para `403 modulo_disabled` vs `403 Sin permisos` vs `401`.\n- Cambio docs-only; sin tocar código de producción ni schema.\n\n<!-- conico-refined -->",
+      "desc": "**Contexto / Problema**\nLa paleta de comandos Cmd+K (Wave 1, Tier A #7) cubre búsqueda de entidades, pero los usuarios deben navegar manualmente para crear documentos o acceder a acciones frecuentes. Necesitamos agregar una capa de Acciones (ej: 'nueva factura', 'nueva NV', 'ir a reportes') ejecutables directamente desde el palette.\n\n**Acceptance Criteria**\n- Al presionar Cmd+K / Ctrl+K, el modal muestra grupo 'Acciones' antes de 'Recientes'.\n- Las acciones listadas incluyen: nueva factura, nueva NV, nueva cotización, nuevo cliente, nueva OC, ir a reportes, cerrar sesión.\n- Usuario navega entre acciones con ↑↓ y ejecuta con Enter, cerrando el modal automáticamente.\n- Solo se muestran acciones para las que el usuario tiene permiso.\n- Las acciones soportan búsqueda por palabra clave en español ('fac', 'nueva', 'ir a', etc.).\n- Al ejecutar una acción, se navega a su ruta o dispara su handler (ej: crear documento vacío, logout).\n- El placeholder del input menciona \"Buscar... o escribe 'nueva'\" para educar sobre acciones.\n- Tests validan renderizado de grupo, navegación, permisos, búsqueda y ejecución.\n\n**Definition of Done**\n- Componentes ActionItem.tsx y grupo 'Acciones' en GlobalSearchModal.tsx implementados.\n- Registry de acciones (slug, label, ícono, ruta/handler, permiso) definido en constants o config.\n- Filtro permission-aware aplicado (oculta acciones sin permiso del usuario actual).\n- Tests unitarios (RTL + userEvent) validan render, navegación, permisos, búsqueda y ejecución.\n- Todos los tests pasan en CI.\n- Card movida a 'In Review' en Trello.\n- Help/onboarding actualizado con ejemplo de comando (ej: \"Presiona Cmd+K y escribe 'nueva'\" con screenshot).\n- Deployado a staging.\n\n**Notas tecnicas**\n- Componente existente: `src/components/search/GlobalSearchModal.tsx`.\n- Nuevo componente: `src/components/search/items/ActionItem.tsx`.\n- Registry de acciones (propuesta): `src/config/commandPalette.actions.ts` o similar.\n- Endpoint existente: `/api/search` (no requiere cambios).\n- Permisos: usar contexto de user actual (ej: `AuthContext.user.permissions` o claims JWT).\n- Búsqueda: extend lógica existente de `useMemo` en GlobalSearchModal con keywords de acciones.\n- Handlers: navegar con `useNavigate()` (react-router) o disparar acciones (ej: `dispatch(createDocument(type))`)\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir docs/security/roles-and-permissions.md y revisar que la matriz §3 coincida con _DEFAULT en backend/app/core/permissions.py para los 3 roles",
-        "Verificar que docs/architecture.md §5 ahora linkea al nuevo doc y dice 'permission_overrides' (no 'permissions')",
-        "Loguearse como vendedor de prueba e intentar borrar una boleta — debe fallar con 403 'Sin permisos' (matchea el flujo descrito en §7)",
-        "Como admin, abrir Configuración → Usuarios → Permisos de un vendedor, marcar 'boletas.delete=true', y verificar que ahora puede borrar (override sobreescribe el default)",
-        "Como admin, activar 'View as' apuntando a un vendedor desde Configuración y confirmar que botones admin desaparecen pero las rutas /usuarios y /admin/* siguen accesibles (route guards usan rol real, no efectivo) — esto valida el comportamiento documentado en §6.3",
-        "Apagar el módulo 'boletas' para una empresa de prueba en Configuración → Módulos y verificar que GET /api/boletas devuelve 403 con detail.error == 'modulo_disabled' (capa 3 del modelo)",
-        "Confirmar que los snippets de código en §5 y §6.2 referencian rutas de archivo que existen actualmente en el repo"
+        "Componente CommandPalette con shortcut global Cmd+K / Ctrl+K",
+        "Integracion con endpoint /api/search",
+        "Navegacion con teclado (arrows + enter)",
+        "Acciones rapidas: nueva factura, NV, cotizacion, cliente",
+        "Atajos visibles en placeholder",
+        "Test con userEvent",
+        "Definir registro de acciones (slug, label, icono, ruta o handler, permiso requerido)",
+        "Componente ActionItem en components/search/items/",
+        "Grupo 'Acciones' en GlobalSearchModal antes de Recientes",
+        "Filtro permission-aware (ocultar acciones sin permiso)",
+        "Match por palabra clave en espanol (ej: 'fac', 'nueva', 'ir a')",
+        "Test: ejecutar accion cierra modal y navega/dispara handler",
+        "Documentar en help/onboarding la capa de comandos",
+        "Definir registry de acciones (slug, label, ícono, ruta/handler, permiso requerido) en constants",
+        "Crear ActionItem.tsx y renderizar grupo 'Acciones' antes de 'Recientes' en GlobalSearchModal",
+        "Implementar filtro permission-aware: ocultar acciones sin permiso del usuario",
+        "Agregar búsqueda por keyword en español (ej: 'fac', 'nueva', 'ir a') en lógica de filter",
+        "Implementar handlers: navegar o disparar acción, cerrar modal al ejecutar",
+        "Escribir tests (RTL + userEvent) para render, navegación, permisos, búsqueda, ejecución",
+        "Todos los tests pasan; mover card a 'In Review' en Trello; deployar a staging"
       ]
     }
   ]
