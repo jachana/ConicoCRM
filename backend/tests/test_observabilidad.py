@@ -243,3 +243,45 @@ def test_traces_sampler_default_routes():
     assert traces_sampler({"asgi_scope": {"path": "/api/invoices/5"}}) == 0.05
     assert traces_sampler({"asgi_scope": {"path": "/api/users/me/preferencias"}}) == 0.05
     assert traces_sampler({}) == 0.05  # no scope = default
+
+
+def test_init_sentry_uses_traces_sampler_not_uniform_rate():
+    """init_sentry must pass traces_sampler to sentry_sdk.init (not uniform rate)."""
+    import sentry_sdk
+    from app.core.observability import init_sentry, traces_sampler
+    from app.config import settings
+
+    init_calls = []
+
+    def mock_init(**kwargs):
+        init_calls.append(kwargs)
+
+    with patch.object(sentry_sdk, "init", mock_init):
+        settings.sentry_dsn = "https://fake@sentry.io/123"
+        try:
+            result = init_sentry()
+        finally:
+            settings.sentry_dsn = ""
+
+    assert result is True
+    assert init_calls, "sentry_sdk.init was not called"
+    kwargs = init_calls[0]
+    assert "traces_sampler" in kwargs, "traces_sampler must be passed to sentry_sdk.init"
+    assert kwargs["traces_sampler"] is traces_sampler
+    assert "traces_sample_rate" not in kwargs, "uniform traces_sample_rate should not be set when traces_sampler is active"
+
+
+def test_get_current_user_sets_empresa_id_sentry_tag(client, admin_token):
+    """get_current_user must set empresa_id Sentry tag when user has empresa."""
+    import sentry_sdk
+    tags_set: dict = {}
+
+    with patch.object(sentry_sdk, "set_tag", lambda k, v: tags_set.update({k: v})):
+        resp = client.get(
+            "/api/users/me/preferencias",
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        assert resp.status_code == 200
+
+    assert "empresa_id" in tags_set, f"empresa_id tag not set; tags were: {tags_set}"
+    assert tags_set["empresa_id"] is not None
