@@ -32,22 +32,20 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[UX] Command palette Cmd+K (busqueda global + acciones)",
+      "list": "In progress",
+      "name": "[Bug] Windows clones rompen docker compose build (CRLF en entrypoint.sh)",
       "labels": [
-        "Design System",
-        "Goal: UX Polish",
-        "Size:L"
+        "Bug",
+        "Size:S"
       ],
-      "desc": "**Resumen**\nExtiende la paleta global Cmd+K agregando un grupo \"Acciones\" con accesos rápidos a creación de documentos, navegación y logout, gateado por rol y módulo.\n\n**Cambios / Decisiones**\n- `frontend/src/components/search/actions.ts`: registro `ACTIONS` con 12 acciones (slug, label, icon, route|handler, modulo, roles, keywords) + helpers `isActionAllowed` y `matchesActionQuery`.\n- `frontend/src/components/search/items/ActionItem.tsx`: ítem reutilizable con badge \"Acción\" y `Command.Item` de cmdk para navegación por teclado.\n- `frontend/src/components/search/GlobalSearchModal.tsx`: consume `useAuthStore.role`, `useModulos()` y `logout`; renderiza grupo \"Acciones\" antes de \"Recientes\" y antes de resultados de entidades.\n- Permission-aware: oculta acciones cuyo `modulo` está OFF (vía `isModuloEnabled`) o cuyo `roles` no incluye al usuario actual (admin/subadmin/vendedor).\n- Búsqueda insensible a tildes con `normalize('NFD')` + strip de combining marks (U+0300–U+036F); soporta tokens en español como \"fac\", \"nueva\", \"cotizacion\".\n- Placeholder actualizado a `Buscar productos, clientes, documentos... o escribe 'nueva'` para descubrir el grupo de acciones.\n- Logout sin permisos/módulo asociado se comporta siempre visible y limpia el auth store + redirige a `/login`.\n- Tests: `frontend/src/__tests__/GlobalSearchModalActions.test.tsx` con 8 casos (render por rol admin, vendedor sin acciones de admin, módulo OFF oculta acción, búsqueda 'fac', búsqueda diacritic-insensitive 'cotizacion', click navega + cierra modal, logout limpia auth y redirige, placeholder con hint).",
+      "desc": "**Contexto / Problema**\nEl repo tiene `core.autocrlf=true` y no tiene `.gitattributes`. Cuando un dev en Windows clona el repo, Git convierte `backend/entrypoint.sh` de LF a CRLF en el working tree. El `Dockerfile` hace `COPY . .` y luego `ENTRYPOINT [\"./entrypoint.sh\"]`, así que la imagen queda con el script CRLF-eado. Al arrancar el contenedor, Linux no encuentra `/bin/sh\r` (el shebang `#!/bin/sh\r\n` interpretado literalmente) y falla:\n\n```\nbackend-1  | exec ./entrypoint.sh: no such file or directory\n```\n\nBackend, celery_worker y celery_beat exit code 255. Stack queda inservible para cualquier dev nuevo en Windows. Reproducido 2026-05-06 al levantar el stack para validar `docs/setup-local.md`.\n\n**Reproducción**\n1. Clonar el repo en Windows con `core.autocrlf=true` (default de Git for Windows).\n2. `docker compose up -d --build`.\n3. `docker compose ps --all` muestra backend/celery_worker/celery_beat en `Exited (255)`.\n4. `docker compose logs backend` muestra `exec ./entrypoint.sh: no such file or directory`.\n\n**Acceptance Criteria**\n- Un dev nuevo en Windows puede clonar y `docker compose up --build` sin pasos extra.\n- El fix es robusto a futuras escrituras del archivo desde editores Windows.\n- Documentado en `docs/setup-local.md` como troubleshooting (por si vuelve a ocurrir con otros .sh).\n\n**Definition of Done**\n- Fix elegido y aplicado (ver opciones técnicas).\n- Verificación: clonar el repo en una máquina Windows limpia o `git rm --cached backend/entrypoint.sh && git checkout backend/entrypoint.sh` y volver a buildear sin error.\n- `git ls-files --eol backend/entrypoint.sh` reporta `i/lf` (working tree y index ambos LF).\n- Card movida a 'In review'.\n\n**Opciones técnicas (elegir una)**\n\n1. **`.gitattributes` con normalización forzada (recomendado, blast radius bajo y duradero):**\n   ```\n   *.sh        text eol=lf\n   Dockerfile  text eol=lf\n   *.py        text eol=lf\n   ```\n   Después: `git add --renormalize . && git commit -m \"fix: force LF for shell/python/Dockerfile\"`. Esto normaliza todo el repo de una; no requiere tocar el Dockerfile.\n\n2. **Defensa adicional en `backend/Dockerfile`** (antes del `chmod +x`):\n   ```dockerfile\n   COPY . .\n   RUN sed -i 's/\r$//' entrypoint.sh\n   RUN chmod +x entrypoint.sh\n   ```\n   Idempotente; protege incluso si `.gitattributes` no se aplica (ej. tarball download). Combinable con opción 1.\n\n**Notas tecnicas**\n- Verificar con `file backend/entrypoint.sh` — debe decir `POSIX shell script, ASCII text executable` (sin `with CRLF line terminators`).\n- Hay otros .sh en el repo (`scripts/restore.sh`) — la opción 1 los cubre todos automáticamente.\n- Cuidado: `git add --renormalize .` puede tocar archivos que no son ASCII puro; revisar el diff antes de commitear.\n",
       "checklist": [
-        "Loguearse como admin, abrir Cmd+K y verificar que aparece grupo 'Acciones' antes de 'Recientes' con Nueva factura, Nueva NV, Nueva cotización, etc.",
-        "Escribir 'fac' en el input y verificar que solo aparece 'Nueva factura' (filtro por keyword)",
-        "Escribir 'cotizacion' sin tilde y verificar que aparece 'Nueva cotización' (búsqueda insensible a tildes)",
-        "Click en 'Nueva factura' y verificar que el modal se cierra y se navega a /facturas/nueva",
-        "Loguearse como vendedor y verificar que NO aparecen Nueva OC, Nueva NC, Ir a Reportes ni Ir a Configuración",
-        "Deshabilitar módulo Boletas en /configuracion/empresa, recargar y verificar que 'Nueva boleta' desaparece del grupo Acciones",
-        "Click en 'Cerrar sesión' y verificar que se cierra sesión y redirige a /login"
+        "Decidir entre .gitattributes + renormalize (opción 1) vs sed en Dockerfile (opción 2) o ambos",
+        "Aplicar .gitattributes con `*.sh text eol=lf` y `Dockerfile text eol=lf`",
+        "git add --renormalize . y revisar el diff",
+        "Verificar `file backend/entrypoint.sh` reporta sin CRLF",
+        "Levantar el stack en limpio (docker compose down + up --build) y confirmar backend/celery_worker/celery_beat healthy",
+        "Agregar nota al troubleshooting de docs/setup-local.md"
       ]
     }
   ]
