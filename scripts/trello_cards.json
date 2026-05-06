@@ -32,35 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[UX] Command palette Cmd+K (busqueda global + acciones)",
       "labels": [
         "Design System",
         "Goal: UX Polish",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nLa paleta de comandos Cmd+K (Wave 1, Tier A #7) cubre búsqueda de entidades, pero los usuarios deben navegar manualmente para crear documentos o acceder a acciones frecuentes. Necesitamos agregar una capa de Acciones (ej: 'nueva factura', 'nueva NV', 'ir a reportes') ejecutables directamente desde el palette.\n\n**Acceptance Criteria**\n- Al presionar Cmd+K / Ctrl+K, el modal muestra grupo 'Acciones' antes de 'Recientes'.\n- Las acciones listadas incluyen: nueva factura, nueva NV, nueva cotización, nuevo cliente, nueva OC, ir a reportes, cerrar sesión.\n- Usuario navega entre acciones con ↑↓ y ejecuta con Enter, cerrando el modal automáticamente.\n- Solo se muestran acciones para las que el usuario tiene permiso.\n- Las acciones soportan búsqueda por palabra clave en español ('fac', 'nueva', 'ir a', etc.).\n- Al ejecutar una acción, se navega a su ruta o dispara su handler (ej: crear documento vacío, logout).\n- El placeholder del input menciona \"Buscar... o escribe 'nueva'\" para educar sobre acciones.\n- Tests validan renderizado de grupo, navegación, permisos, búsqueda y ejecución.\n\n**Definition of Done**\n- Componentes ActionItem.tsx y grupo 'Acciones' en GlobalSearchModal.tsx implementados.\n- Registry de acciones (slug, label, ícono, ruta/handler, permiso) definido en constants o config.\n- Filtro permission-aware aplicado (oculta acciones sin permiso del usuario actual).\n- Tests unitarios (RTL + userEvent) validan render, navegación, permisos, búsqueda y ejecución.\n- Todos los tests pasan en CI.\n- Card movida a 'In Review' en Trello.\n- Help/onboarding actualizado con ejemplo de comando (ej: \"Presiona Cmd+K y escribe 'nueva'\" con screenshot).\n- Deployado a staging.\n\n**Notas tecnicas**\n- Componente existente: `src/components/search/GlobalSearchModal.tsx`.\n- Nuevo componente: `src/components/search/items/ActionItem.tsx`.\n- Registry de acciones (propuesta): `src/config/commandPalette.actions.ts` o similar.\n- Endpoint existente: `/api/search` (no requiere cambios).\n- Permisos: usar contexto de user actual (ej: `AuthContext.user.permissions` o claims JWT).\n- Búsqueda: extend lógica existente de `useMemo` en GlobalSearchModal con keywords de acciones.\n- Handlers: navegar con `useNavigate()` (react-router) o disparar acciones (ej: `dispatch(createDocument(type))`)\n\n<!-- conico-refined -->",
+      "desc": "**Resumen**\nExtiende la paleta global Cmd+K agregando un grupo \"Acciones\" con accesos rápidos a creación de documentos, navegación y logout, gateado por rol y módulo.\n\n**Cambios / Decisiones**\n- `frontend/src/components/search/actions.ts`: registro `ACTIONS` con 12 acciones (slug, label, icon, route|handler, modulo, roles, keywords) + helpers `isActionAllowed` y `matchesActionQuery`.\n- `frontend/src/components/search/items/ActionItem.tsx`: ítem reutilizable con badge \"Acción\" y `Command.Item` de cmdk para navegación por teclado.\n- `frontend/src/components/search/GlobalSearchModal.tsx`: consume `useAuthStore.role`, `useModulos()` y `logout`; renderiza grupo \"Acciones\" antes de \"Recientes\" y antes de resultados de entidades.\n- Permission-aware: oculta acciones cuyo `modulo` está OFF (vía `isModuloEnabled`) o cuyo `roles` no incluye al usuario actual (admin/subadmin/vendedor).\n- Búsqueda insensible a tildes con `normalize('NFD')` + strip de combining marks (U+0300–U+036F); soporta tokens en español como \"fac\", \"nueva\", \"cotizacion\".\n- Placeholder actualizado a `Buscar productos, clientes, documentos... o escribe 'nueva'` para descubrir el grupo de acciones.\n- Logout sin permisos/módulo asociado se comporta siempre visible y limpia el auth store + redirige a `/login`.\n- Tests: `frontend/src/__tests__/GlobalSearchModalActions.test.tsx` con 8 casos (render por rol admin, vendedor sin acciones de admin, módulo OFF oculta acción, búsqueda 'fac', búsqueda diacritic-insensitive 'cotizacion', click navega + cierra modal, logout limpia auth y redirige, placeholder con hint).",
       "checklist": [
-        "Componente CommandPalette con shortcut global Cmd+K / Ctrl+K",
-        "Integracion con endpoint /api/search",
-        "Navegacion con teclado (arrows + enter)",
-        "Acciones rapidas: nueva factura, NV, cotizacion, cliente",
-        "Atajos visibles en placeholder",
-        "Test con userEvent",
-        "Definir registro de acciones (slug, label, icono, ruta o handler, permiso requerido)",
-        "Componente ActionItem en components/search/items/",
-        "Grupo 'Acciones' en GlobalSearchModal antes de Recientes",
-        "Filtro permission-aware (ocultar acciones sin permiso)",
-        "Match por palabra clave en espanol (ej: 'fac', 'nueva', 'ir a')",
-        "Test: ejecutar accion cierra modal y navega/dispara handler",
-        "Documentar en help/onboarding la capa de comandos",
-        "Definir registry de acciones (slug, label, ícono, ruta/handler, permiso requerido) en constants",
-        "Crear ActionItem.tsx y renderizar grupo 'Acciones' antes de 'Recientes' en GlobalSearchModal",
-        "Implementar filtro permission-aware: ocultar acciones sin permiso del usuario",
-        "Agregar búsqueda por keyword en español (ej: 'fac', 'nueva', 'ir a') en lógica de filter",
-        "Implementar handlers: navegar o disparar acción, cerrar modal al ejecutar",
-        "Escribir tests (RTL + userEvent) para render, navegación, permisos, búsqueda, ejecución",
-        "Todos los tests pasan; mover card a 'In Review' en Trello; deployar a staging"
+        "Loguearse como admin, abrir Cmd+K y verificar que aparece grupo 'Acciones' antes de 'Recientes' con Nueva factura, Nueva NV, Nueva cotización, etc.",
+        "Escribir 'fac' en el input y verificar que solo aparece 'Nueva factura' (filtro por keyword)",
+        "Escribir 'cotizacion' sin tilde y verificar que aparece 'Nueva cotización' (búsqueda insensible a tildes)",
+        "Click en 'Nueva factura' y verificar que el modal se cierra y se navega a /facturas/nueva",
+        "Loguearse como vendedor y verificar que NO aparecen Nueva OC, Nueva NC, Ir a Reportes ni Ir a Configuración",
+        "Deshabilitar módulo Boletas en /configuracion/empresa, recargar y verificar que 'Nueva boleta' desaparece del grupo Acciones",
+        "Click en 'Cerrar sesión' y verificar que se cierra sesión y redirige a /login"
       ]
     }
   ]
