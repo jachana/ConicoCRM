@@ -1,4 +1,4 @@
-import { it, expect, vi, describe } from 'vitest'
+import { it, expect, vi, describe, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import ModulesTab from './ModulesTab'
