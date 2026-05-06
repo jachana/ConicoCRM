@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, joinedload
 from weasyprint import HTML
 
 from app.api.deps import require_permission
+from app.core.cache import TTL_SETTINGS, get_report_cache
 from app.models.boleta import Boleta
 from app.models.dte_emision import DteEmision
 from app.models.factura import Factura, FacturaLinea
@@ -72,6 +73,13 @@ def reporte_ventas(
     current_user, db = perms
     if current_user.role == "vendedor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+
+    _cache = get_report_cache()
+    _filters = {"date_from": str(date_from), "date_to": str(date_to)}
+    if _cache and current_user.empresa_id is not None:
+        _cached = _cache.get(current_user.empresa_id, "ventas", _filters)
+        if _cached is not None:
+            return _cached
 
     base_q = (
         db.query(Factura)
@@ -182,7 +190,7 @@ def reporte_ventas(
         for d, m in sorted(daily_map_boletas.items())
     ]
 
-    return {
+    _result = {
         "kpis": {
             "total_vendido": float(total_vendido),
             "num_facturas": num_facturas,
@@ -199,6 +207,9 @@ def reporte_ventas(
             "ventas_diarias": ventas_diarias_boletas,
         },
     }
+    if _cache and current_user.empresa_id is not None:
+        _cache.set(current_user.empresa_id, "ventas", _filters, _result, TTL_SETTINGS["ventas"])
+    return _result
 
 
 # ---------------------------------------------------------------------------
@@ -215,6 +226,13 @@ def reporte_cobranza(
     current_user, db = perms
     if current_user.role == "vendedor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+
+    _cache = get_report_cache()
+    _filters = {"date_from": str(date_from), "date_to": str(date_to)}
+    if _cache and current_user.empresa_id is not None:
+        _cached = _cache.get(current_user.empresa_id, "cobranza", _filters)
+        if _cached is not None:
+            return _cached
 
     today = date.today()
 
@@ -318,7 +336,7 @@ def reporte_cobranza(
         for e in sorted(empresa_map.values(), key=lambda x: x["saldo"], reverse=True)
     ]
 
-    return {
+    _result = {
         "kpis": {
             "total_por_cobrar": float(total_por_cobrar),
             "total_vencido": float(total_vencido),
@@ -327,6 +345,9 @@ def reporte_cobranza(
         "aging": aging_out,
         "por_empresa": por_empresa,
     }
+    if _cache and current_user.empresa_id is not None:
+        _cache.set(current_user.empresa_id, "cobranza", _filters, _result, TTL_SETTINGS["cobranza"])
+    return _result
 
 
 # ---------------------------------------------------------------------------
@@ -343,6 +364,13 @@ def reporte_inventario(
     current_user, db = perms
     if current_user.role == "vendedor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+
+    _cache = get_report_cache()
+    _filters = {"date_from": str(date_from), "date_to": str(date_to)}
+    if _cache and current_user.empresa_id is not None:
+        _cached = _cache.get(current_user.empresa_id, "inventario", _filters)
+        if _cached is not None:
+            return _cached
 
     # --- KPIs: current stock (date range ignored) ---
     productos = db.query(Producto).all()
@@ -400,7 +428,7 @@ def reporte_inventario(
     for t in top_vendidos:
         t["monto_total"] = float(t["monto_total"])
 
-    return {
+    _result = {
         "kpis": {
             "valor_total_stock": float(valor_total_stock),
             "num_bajo_minimo": len(bajo_minimo_list),
@@ -409,6 +437,9 @@ def reporte_inventario(
         "bajo_minimo": bajo_minimo_out,
         "top_vendidos": top_vendidos,
     }
+    if _cache and current_user.empresa_id is not None:
+        _cache.set(current_user.empresa_id, "inventario", _filters, _result, TTL_SETTINGS["inventario"])
+    return _result
 
 
 # ---------------------------------------------------------------------------
@@ -434,6 +465,13 @@ def reporte_compras(
     current_user, db = perms
     if current_user.role == "vendedor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+
+    _cache = get_report_cache()
+    _filters = {"date_from": str(date_from), "date_to": str(date_to)}
+    if _cache and current_user.empresa_id is not None:
+        _cached = _cache.get(current_user.empresa_id, "compras", _filters)
+        if _cached is not None:
+            return _cached
 
     ocs: list[OrdenCompra] = (
         db.query(OrdenCompra)
@@ -483,7 +521,7 @@ def reporte_compras(
     for e in por_estado:
         e["total"] = float(e["total"])
 
-    return {
+    _result = {
         "kpis": {
             "total_comprado": float(total_comprado),
             "num_oc_emitidas": num_oc_emitidas,
@@ -492,6 +530,9 @@ def reporte_compras(
         "por_proveedor": por_proveedor,
         "por_estado": por_estado,
     }
+    if _cache and current_user.empresa_id is not None:
+        _cache.set(current_user.empresa_id, "compras", _filters, _result, TTL_SETTINGS["compras"])
+    return _result
 
 
 # ---------------------------------------------------------------------------
@@ -508,6 +549,13 @@ def reporte_margenes(
     current_user, db = perms
     if current_user.role == "vendedor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+
+    _cache = get_report_cache()
+    _filters = {"date_from": str(date_from), "date_to": str(date_to)}
+    if _cache and current_user.empresa_id is not None:
+        _cached = _cache.get(current_user.empresa_id, "margenes", _filters)
+        if _cached is not None:
+            return _cached
 
     base_q = (
         db.query(Factura)
@@ -624,11 +672,14 @@ def reporte_margenes(
         ),
     }
 
-    return {
+    _result = {
         "kpis": kpis,
         "por_producto": por_producto,
         "por_factura": por_factura_list,
     }
+    if _cache and current_user.empresa_id is not None:
+        _cache.set(current_user.empresa_id, "margenes", _filters, _result, TTL_SETTINGS["margenes"])
+    return _result
 
 
 # ---------------------------------------------------------------------------
@@ -817,8 +868,22 @@ def reporte_por_marca(
     current_user, db = perms
     if current_user.role == "vendedor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+    _cache = get_report_cache()
+    _filters = {
+        "date_from": str(date_from),
+        "date_to": str(date_to),
+        "cliente_ids": sorted(cliente_id) if cliente_id else None,
+        "marca_ids": sorted(marca_id) if marca_id else None,
+    }
+    if _cache and current_user.empresa_id is not None:
+        _cached = _cache.get(current_user.empresa_id, "por_marca", _filters)
+        if _cached is not None:
+            return _cached
     vendedor_id = None
-    return _get_por_marca(date_from, date_to, db, vendedor_id, cliente_id, marca_id)
+    _result = _get_por_marca(date_from, date_to, db, vendedor_id, cliente_id, marca_id)
+    if _cache and current_user.empresa_id is not None:
+        _cache.set(current_user.empresa_id, "por_marca", _filters, _result, TTL_SETTINGS["por_marca"])
+    return _result
 
 
 @router.get("/por-marca/export/excel")
@@ -975,6 +1040,13 @@ def reporte_dte(
     if current_user.role == "vendedor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
+    _cache = get_report_cache()
+    _filters = {"date_from": str(date_from), "date_to": str(date_to)}
+    if _cache and current_user.empresa_id is not None:
+        _cached = _cache.get(current_user.empresa_id, "dte", _filters)
+        if _cached is not None:
+            return _cached
+
     date_to_exclusive = date_to + timedelta(days=1)
 
     emisiones: list[DteEmision] = (
@@ -1026,7 +1098,7 @@ def reporte_dte(
             }
         )
 
-    return {
+    _result = {
         "kpis": {
             "total_emitidos": total_emitidos,
             "aceptadas": aceptadas,
@@ -1036,6 +1108,9 @@ def reporte_dte(
         "por_tipo": por_tipo,
         "emisiones": emisiones_out,
     }
+    if _cache and current_user.empresa_id is not None:
+        _cache.set(current_user.empresa_id, "dte", _filters, _result, TTL_SETTINGS["dte"])
+    return _result
 
 
 # ---------------------------------------------------------------------------
@@ -2048,6 +2123,13 @@ def reporte_kpis(
     if current_user.role == "vendedor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
+    _cache = get_report_cache()
+    _filters = {"periodo": periodo}
+    if _cache and current_user.empresa_id is not None:
+        _cached = _cache.get(current_user.empresa_id, "kpis", _filters)
+        if _cached is not None:
+            return _cached
+
     today = _date.today()
 
     if periodo is None:
@@ -2207,7 +2289,7 @@ def reporte_kpis(
         for k, v in aging_buckets.items()
     }
 
-    return {
+    _result = {
         "periodo": f"{year:04d}-{month:02d}",
         "ventas": {
             "total": float(total_periodo),
@@ -2224,6 +2306,9 @@ def reporte_kpis(
         },
         "ar_aging": ar_aging,
     }
+    if _cache and current_user.empresa_id is not None:
+        _cache.set(current_user.empresa_id, "kpis", _filters, _result, TTL_SETTINGS["kpis"])
+    return _result
 
 
 # ---------------------------------------------------------------------------

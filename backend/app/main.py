@@ -50,6 +50,7 @@ from app.api import search as search_api
 from app.api import auditoria as auditoria_api
 from app.api import timeline as timeline_api
 from app.api import notifications as notifications_api
+from app.core.cache import init_report_cache
 from app.api import oportunidades as oportunidades_api
 from app.api import onboarding_payments
 from app.api import onboarding_clientes_empresas
@@ -130,6 +131,18 @@ app.add_middleware(AuditContextMiddleware)
 app.add_middleware(RequestLoggerMiddleware)
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 register_audit_listeners()
+
+
+@app.on_event("startup")
+def _init_cache() -> None:
+    """Initialise Redis report cache (no-op if Redis is unavailable)."""
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        init_report_cache(settings.redis_url)
+        logger.info("Report cache initialised (redis_url=%s)", settings.redis_url)
+    except Exception as exc:
+        logger.warning("Report cache unavailable — caching disabled: %s", exc)
 
 # Health endpoints — no prefix, no auth.
 app.include_router(health_api.router)
