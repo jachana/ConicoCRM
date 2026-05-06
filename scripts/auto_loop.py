@@ -47,7 +47,6 @@ from trello_groom import parse_groom_block
 
 IS_WIN = platform.system() == "Windows"
 NPM = "npm.cmd" if IS_WIN else "npm"
-BASH = shutil.which("bash") or "bash"
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -67,6 +66,12 @@ DEFAULT_IMPLEMENTER_MODEL = "sonnet"
 
 CLAUDE_CLI = shutil.which("claude") or "claude"
 OPENCODE_CLI = shutil.which("opencode") or "opencode"
+
+OPENCODE_IMPLEMENTER_ALIASES = {
+    "haiku": "anthropic/claude-haiku-4.5",
+    "sonnet": "anthropic/claude-sonnet-4.5",
+    "opus": "anthropic/claude-opus-4.1",
+}
 
 FAILURE_LOG_FILE = REPO_ROOT / ".claude" / "failure_log.json"
 CODEBASE_MAP_FILE = SCRIPT_DIR / "impl_codebase_map.md"
@@ -134,23 +139,51 @@ def git_head() -> str:
 
 
 
-DIRTY_IGNORE_PREFIXES = (".claude/", "Conico-reportes", "scripts/trello_cards.json")
+DIRTY_IGNORE_PREFIXES = (
+    ".claude/",
+    "Conico-reportes",
+    "scripts/trello_cards.json",
+    "scripts/auto_loop.py",
+)
 
 
 def git_dirty() -> bool:
     """True if working tree has uncommitted changes outside ignorable paths.
 
-    Ignores `.claude/` (Claude Code internal state) and submodule pointer changes
-    so the loop can run when only those are dirty.
+    Ignores `.claude/`, transient Trello JSON, and this script so iterating on
+    the loop itself does not block claims.
     """
-    r = subprocess.run(["git", "status", "--porcelain"], cwd=str(REPO_ROOT),
-                       capture_output=True, text=True, check=True)
+    r = subprocess.run(
+        ["git", "status", "--porcelain"], cwd=str(REPO_ROOT),
+        capture_output=True, text=True, check=True,
+        encoding="utf-8", errors="replace",
+    )
     for line in r.stdout.splitlines():
         path = line[3:].strip().strip('"')
         if any(path.startswith(p) for p in DIRTY_IGNORE_PREFIXES):
             continue
         return True
     return False
+
+
+def _usable_bash() -> str | None:
+    """Return a bash that runs `bash -lc`, or None (Windows stubs / missing WSL)."""
+    seen: set[str] = set()
+    for exe in (shutil.which("bash"), shutil.which("bash.exe")):
+        if not exe or exe in seen:
+            continue
+        seen.add(exe)
+        try:
+            r = subprocess.run(
+                [exe, "-lc", "exit 0"],
+                cwd=str(REPO_ROOT), capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=15,
+            )
+            if r.returncode == 0:
+                return exe
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+    return None
 
 
 def load_spec() -> dict:
@@ -775,12 +808,42 @@ def _extract_text_fragments(obj) -> list[str]:
 
 
 def _normalize_opencode_model(model: str) -> str | None:
-    """OpenCode expects provider/model. For short aliases, let OpenCode default."""
+    """OpenCode expects provider/model. Map triage aliases to anthropic/* slugs."""
     if not model:
         return None
     if "/" in model:
         return model
-    return None
+    return OPENCODE_IMPLEMENTER_ALIASES.get(model.strip().lower())
+
+
+def _opencode_output_looks_idle(last_text: str) -> bool:
+    if not (last_text or "").strip():
+        return False
+    t = last_text.lower()
+    needles = (
+        "ready. send the task",
+        "send the task",
+        "send your task",
+        "what would you like",
+        "how can i help",
+    )
+    return any(n in t for n in needles)
+
+
+def _agent_fail_reason(backend: str, rc: int, last_text: str, log_path: Path) -> str:
+    msg = (last_text or "").strip()
+    if msg:
+        return msg
+    return f"{backend} exited {rc} (no output captured; see {log_path})"
+
+
+def _tail_file(path: Path, max_lines: int = 80) -> str:
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    lines = text.splitlines()
+    return "\n".join(lines[-max_lines:])
 
 
 def _run_claude_with_prompt(prompt: str, model: str, log_path: Path) -> tuple[int, str]:
@@ -882,7 +945,14 @@ def _run_claude_with_prompt(prompt: str, model: str, log_path: Path) -> tuple[in
     return proc.returncode, last_text
 
 
-def _run_opencode_with_prompt(prompt: str, model: str, log_path: Path) -> tuple[int, str]:
+def _run_opencode_with_prompt(
+    prompt: str,
+    model: str,
+    log_path: Path,
+    variant: str = "",
+) -> tuple[int, str]:
+    # Official CLI: `opencode run [message..]` — message is trailing positionals, not --prompt
+    # (--prompt is for the default TUI, not `run`; unknown flags yield help text + exit 1.)
     cmd = [
         OPENCODE_CLI,
         "run",
@@ -892,13 +962,19 @@ def _run_opencode_with_prompt(prompt: str, model: str, log_path: Path) -> tuple[
     model_id = _normalize_opencode_model(model)
     if model_id:
         cmd.extend(["--model", model_id])
+        print(f"  opencode -m {model_id}")
+    v = (variant or "").strip()
+    if v:
+        cmd.extend(["--variant", v])
+        print(f"  opencode --variant {v!r}")
     cmd.append(prompt)
-    print("  $ opencode run --format json --dangerously-skip-permissions <prompt>")
+    print("  $ opencode run ... <single message arg> (see https://opencode.ai/docs/cli/)")
     if model and not model_id:
-        print(f"  note: model alias '{model}' not provider/model; using OpenCode default")
+        print(f"  note: unknown model alias {model!r}; using OpenCode default model")
 
     log_path.parent.mkdir(parents=True, exist_ok=True)
     last_text = ""
+    last_nonjson_line = ""
     started = time.monotonic()
     with log_path.open("w", encoding="utf-8") as f:
         proc = subprocess.Popen(
@@ -912,6 +988,9 @@ def _run_opencode_with_prompt(prompt: str, model: str, log_path: Path) -> tuple[
             try:
                 obj = json.loads(line)
             except Exception:
+                s = line.strip()
+                if s:
+                    last_nonjson_line = s[:2000]
                 continue
             frags = _extract_text_fragments(obj)
             if frags:
@@ -920,11 +999,26 @@ def _run_opencode_with_prompt(prompt: str, model: str, log_path: Path) -> tuple[
                 if snippet:
                     print(f"  [opencode {elapsed}]  {snippet}", flush=True)
         proc.wait()
-    return proc.returncode, last_text
+    rc = proc.returncode
+    if not last_text.strip() and last_nonjson_line:
+        last_text = last_nonjson_line
+    if rc == 0 and _opencode_output_looks_idle(last_text):
+        print("  opencode: idle reply; treating as failure", file=sys.stderr)
+        rc = 1
+    if rc != 0:
+        tail = _tail_file(log_path, 100)
+        if tail.strip():
+            print(f"  opencode log tail (exit {rc}):\n{tail[-5000:]}", file=sys.stderr)
+    return rc, last_text
 
 
-def spawn_implementer(card: dict, model: str, log_path: Path,
-                      backend: str) -> tuple[int, str]:
+def spawn_implementer(
+    card: dict,
+    model: str,
+    log_path: Path,
+    backend: str,
+    opencode_variant: str = "",
+) -> tuple[int, str]:
     codebase_map = _load_codebase_map()
     print("  pre-scoping files via qwen ...")
     file_scope = _scope_card_files(card)
@@ -937,12 +1031,19 @@ def spawn_implementer(card: dict, model: str, log_path: Path,
         card_json=json.dumps(card, ensure_ascii=False, indent=2),
     )
     if backend == "opencode":
-        return _run_opencode_with_prompt(prompt, model, log_path)
+        return _run_opencode_with_prompt(prompt, model, log_path, variant=opencode_variant)
     return _run_claude_with_prompt(prompt, model, log_path)
 
 
-def spawn_implementer_fix(card: dict, model: str, failure: str, pre_sha: str,
-                          log_path: Path, backend: str) -> tuple[int, str]:
+def spawn_implementer_fix(
+    card: dict,
+    model: str,
+    failure: str,
+    pre_sha: str,
+    log_path: Path,
+    backend: str,
+    opencode_variant: str = "",
+) -> tuple[int, str]:
     diff = subprocess.run(
         ["git", "diff", "--stat", f"{pre_sha}..HEAD"],
         cwd=str(REPO_ROOT), capture_output=True, text=True, check=False,
@@ -953,7 +1054,7 @@ def spawn_implementer_fix(card: dict, model: str, failure: str, pre_sha: str,
         card_json=json.dumps(card, ensure_ascii=False, indent=2),
     )
     if backend == "opencode":
-        return _run_opencode_with_prompt(prompt, model, log_path)
+        return _run_opencode_with_prompt(prompt, model, log_path, variant=opencode_variant)
     return _run_claude_with_prompt(prompt, model, log_path)
 
 
@@ -967,12 +1068,27 @@ def run_tests(pre_sha: str | None = None) -> tuple[bool, str]:
     frontend_changed = True
     if pre_sha:
         r = subprocess.run(["git", "diff", "--name-only", pre_sha, "HEAD"],
-                           cwd=str(REPO_ROOT), capture_output=True, text=True, check=False)
-        frontend_changed = any(l.startswith("frontend/") for l in r.stdout.splitlines())
+                           cwd=str(REPO_ROOT), capture_output=True, text=True, check=False,
+                           encoding="utf-8", errors="replace")
+        frontend_changed = any(
+            l.startswith("frontend/") for l in (r.stdout or "").splitlines()
+        )
 
     steps: list[tuple[str, list[str], Path]] = []
     if (backend / "run_tests.sh").exists():
-        steps.append(("backend pytest", [BASH, "./run_tests.sh"], backend))
+        bash_exe = _usable_bash()
+        if bash_exe:
+            steps.append(("backend pytest", [bash_exe, "./run_tests.sh"], backend))
+        else:
+            print("  -- backend: no working bash; pytest direct (no HTML report) --")
+            steps.append((
+                "backend pytest",
+                [
+                    sys.executable, "-m", "pytest", "tests/",
+                    "-m", "not smoke", "-q", "--no-header",
+                ],
+                backend,
+            ))
     if (frontend / "package.json").exists():
         if frontend_changed:
             steps.append(("frontend test", [NPM, "test", "--", "--run"], frontend))
@@ -982,9 +1098,13 @@ def run_tests(pre_sha: str | None = None) -> tuple[bool, str]:
 
     for label, cmd, cwd in steps:
         print(f"  -- {label} --")
-        r = subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True)
+        r = subprocess.run(
+            cmd, cwd=str(cwd), capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
+        )
         if r.returncode != 0:
-            tail = (r.stdout + r.stderr)[-2000:]
+            out = (r.stdout or "") + (r.stderr or "")
+            tail = out[-2000:]
             return False, f"{label} failed (exit {r.returncode}):\n{tail}"
     return True, "all tests passed"
 
@@ -1128,7 +1248,11 @@ def iteration(args, board_id: str) -> str:
 
     name = pick["name"]
     impl_model = pick.get("model") or DEFAULT_IMPLEMENTER_MODEL
-    print(f"\n=== picked: {name}  (difficulty={pick.get('difficulty')}, model={impl_model}) ===")
+    impl_model_effective = impl_model
+    if args.implementer_backend == "opencode" and (args.opencode_model or "").strip():
+        impl_model_effective = args.opencode_model.strip()
+    print(f"\n=== picked: {name}  (difficulty={pick.get('difficulty')}, "
+          f"model={impl_model_effective}) ===")
 
     if args.dry_run:
         print("--dry-run set, stopping before claim.")
@@ -1164,10 +1288,15 @@ def iteration(args, board_id: str) -> str:
     spec = load_spec()
     card = find_card(spec, name)
 
-    print("\n=== spawn claude ===")
+    print(f"\n=== spawn implementer ({args.implementer_backend}) ===")
     log_path = LOG_DIR / f"{int(time.time())}_{slugify(name)}.log"
-    rc, last_text = spawn_implementer(card, impl_model, log_path,
-                                      backend=args.implementer_backend)
+    rc, last_text = spawn_implementer(
+        card,
+        impl_model_effective,
+        log_path,
+        backend=args.implementer_backend,
+        opencode_variant=args.opencode_variant,
+    )
     print(f"  {args.implementer_backend} exit={rc}; log={log_path}")
 
     test_runs = 0
@@ -1177,9 +1306,10 @@ def iteration(args, board_id: str) -> str:
         print("agent reported failure; rolling back.", file=sys.stderr)
         rollback_to(pre_sha)
         spec = load_spec()
-        fail(spec, name, last_text or f"claude exit {rc}")
+        why = _agent_fail_reason(args.implementer_backend, rc, last_text, log_path)
+        fail(spec, name, why)
         print_conclusion("FAILED", name, ELIGIBLE_LIST, fix_attempts, test_runs,
-                         reason=last_text[:300] or f"claude exit {rc}")
+                         reason=why[:300])
         return "continue"
 
     new_sha = git_head()
@@ -1219,8 +1349,13 @@ def iteration(args, board_id: str) -> str:
             print(f"\n=== fix attempt {fix_attempts}/{args.max_fix_attempts} ===")
             fix_log = LOG_DIR / f"{int(time.time())}_{slugify(name)}_fix{fix_attempts}.log"
             rc2, last2 = spawn_implementer_fix(
-                card, impl_model, msg, pre_sha, fix_log,
-                backend=args.implementer_backend
+                card,
+                impl_model_effective,
+                msg,
+                pre_sha,
+                fix_log,
+                backend=args.implementer_backend,
+                opencode_variant=args.opencode_variant,
             )
             print(f"  {args.implementer_backend}-fix exit={rc2}; log={fix_log}")
 
@@ -1228,10 +1363,11 @@ def iteration(args, board_id: str) -> str:
                 print("fix agent ABORTed; rolling back.", file=sys.stderr)
                 rollback_to(pre_sha)
                 spec = load_spec()
-                fail(spec, name, last2 or f"fix exit {rc2}")
+                why2 = _agent_fail_reason(args.implementer_backend, rc2, last2, fix_log)
+                fail(spec, name, why2)
                 print_conclusion("ABORTED", name, ELIGIBLE_LIST,
                                  fix_attempts, test_runs,
-                                 reason=last2[:300] or f"fix exit {rc2}")
+                                 reason=why2[:300])
                 return "continue"
 
             new_after_fix = git_head()
@@ -1304,7 +1440,21 @@ def main() -> int:
     parser.add_argument("--implementer-backend", default="opencode",
                         choices=["opencode", "claude"],
                         help="agent backend for implementation/fix steps")
+    parser.add_argument(
+        "--opencode-model",
+        default="",
+        help="When using opencode: provider/model (e.g. openai/gpt-5.5). "
+             "Empty = triage model (haiku|sonnet|opus mapped to anthropic/*). "
+             "Also CONICO_OPENCODE_MODEL.",
+    )
+    parser.add_argument(
+        "--opencode-variant",
+        default="",
+        help="When using opencode: pass --variant to CLI (e.g. low). Also CONICO_OPENCODE_VARIANT.",
+    )
     args = parser.parse_args()
+    args.opencode_model = (args.opencode_model or os.environ.get("CONICO_OPENCODE_MODEL") or "").strip()
+    args.opencode_variant = (args.opencode_variant or os.environ.get("CONICO_OPENCODE_VARIANT") or "").strip()
 
     ts.load_dotenv(ts.ENV_FILE)
     missing = [v for v in ("TRELLO_API_KEY", "TRELLO_TOKEN", "TRELLO_BOARD_ID")

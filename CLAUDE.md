@@ -83,7 +83,9 @@ Logs at `.claude/auto_loop_logs/<ts>_<slug>.log`.
 - **Confirmation Required**: Always ask before running destructive commands like `rm` or `git reset --hard`.
 
 ## Testing & Shipping Checklist
-- Always run the full test suite (backend + frontend) before committing.
+- **On commit**: run only tests for changed module/files (targeted).
+- **On card → `In review`**: run a smoke check (happy-path tests for the affected area).
+- **Full suite** (backend + frontend): only when finishing a large multi-card feature or explicitly asked. Never run it for a single card.
 - Always commit AND push when the user asks to 'ship' or 'implement' a task — don't stop at commit.
 - After Alembic migrations, verify there's only one head before committing.
 
