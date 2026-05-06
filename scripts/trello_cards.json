@@ -32,22 +32,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[UX] Auditoria de print CSS / PDF por tipo DTE",
+      "list": "In progress",
+      "name": "[Docs] Celery background jobs reference",
       "labels": [
-        "DTE/SII",
-        "Goal: Operations",
-        "Size:L"
+        "Roadmap",
+        "Goal: Docs",
+        "Size:M"
       ],
-      "desc": "**Resumen** — Agregar vista previa de PDF para Notas de Crédito y Débito con botón en UI y endpoints dedicados, asegurando correcta renderización visual.\n\n**Cambios / Decisiones** — Se crearon endpoints GET /api/dte/notas-credito/{id}/pdf y /notas-debito/{id}/pdf. Se añadieron plantillas Jinja2 nota_credito.html y nota_debito.html. Los detalles en frontend ahora muestran botón de PDF consistente con otras pantallas. NC usa color rojo y ND ámbar para diferenciación visual.",
+      "desc": "**Contexto / Problema**\nLos desarrolladores y operadores necesitan una referencia centralizada sobre las tareas Celery que ejecuta Conico: qué hacen, cuándo se disparan, políticas de reintentos y comportamiento ante fallos. Actualmente esta información está dispersa en el código.\n\n**Acceptance Criteria**\n- Documento en formato markdown que lista todas las tareas Celery en producción (DTE polling, evaluación de reglas de tarea, recordatorios de cobranza, etc.).\n- Cada tarea incluye: nombre exacto, trigger/disparador, cadencia o cola, descripción breve de qué realiza, política de reintentos, comportamiento ante fallos.\n- Configuración de Beat (schedule) documentada con ejemplos de cómo agregar nuevas tareas periódicas.\n- Sección sobre monitoreo: cómo usar Flower, interpretar logs, identificar tareas atoradas o fallidas.\n- Documento accesible en el repositorio (ej: `/docs/celery-tasks-reference.md`).\n\n**Definition of Done**\n- Documento escrito y revisado por al menos un developer que mantenga Celery.\n- Pull request aprobado y mergeado a rama principal.\n- Trello card movida a \"Done\".\n\n**Notas tecnicas**\n- Revisar `conico/tasks.py` o módulos equivalentes para nombre exacto de tasks.\n- Verificar `celerybeat_schedule` en settings para cadencias.\n- Incluir ejemplo de lectura de logs con `celery inspect` y setup básico de Flower.\n- Si hay secretos o rutas específicas del ambiente, usar placeholders (ej: `${CELERY_BROKER_URL}`)\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir detalle de Nota de Crédito y verificar botón 'PDF' visible",
-        "Hacer clic en botón PDF y confirmar carga del documento en rojo",
-        "Repetir para Nota de Débito, debe cargar PDF en color ámbar",
-        "Verificar endpoint /notas-credito/{id}/pdf responde con PDF válido",
-        "Verificar endpoint /notas-debito/{id}/pdf responde con PDF válido",
-        "Comparar contenido PDF con datos del DTE mostrado en pantalla",
-        "Validar estilos print CSS en vista previa de ambos tipos de nota"
+        "DTE emission + polling task",
+        "ReglaTarea hourly evaluator",
+        "Cobranza reminder sender",
+        "Beat schedule config",
+        "How to monitor jobs (Flower / logs)",
+        "Documentar tarea DTE: polling, cadencia, reintentos, fallo",
+        "Documentar ReglaTarea: evaluador horario, trigger, comportamiento",
+        "Documentar Cobranza: recordatorios, cola, política de reintento",
+        "Documentar Beat schedule: cómo está configurado, agregar nuevas tareas",
+        "Agregar sección de monitoreo: Flower, logs, troubleshooting",
+        "Crear PR, revisar con maintainer, mergear a main",
+        "Mover Trello a Done"
       ]
     }
   ]
