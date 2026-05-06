@@ -8,6 +8,7 @@ import WidgetGrid from '../components/dashboard/WidgetGrid'
 import WidgetPicker from '../components/dashboard/WidgetPicker'
 import WidgetConfigModal from '../components/dashboard/WidgetConfig'
 import DashboardHero from '../components/dashboard/DashboardHero'
+import KPITilesSection from '../components/dashboard/KPITiles'
 import { TEMPLATES, applyTemplate } from '../components/dashboard/widgetCatalog'
 import type { WidgetConfig } from '../types/dashboard'
 import Widget from '../components/dashboard/Widget'
@@ -146,6 +147,7 @@ export default function Dashboard() {
           )}
         </div>
       )}
+      {!editMode && role !== 'vendedor' && <KPITilesSection />}
 
       {/* Edit mode header */}
       {editMode && (
