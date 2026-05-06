@@ -32,27 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Docs] Roles and permissions matrix",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nConico CRM tiene tres roles base (Admin, SubAdmin, Vendedor) con permisos que varían por módulo y acción. Los desarrolladores y operadores necesitan una referencia única y clara sobre qué roles pueden hacer qué, cómo funcionan los overrides por usuario, y cómo se implementan las validaciones en backend (Depends) y frontend (gating de rutas/botones).\n\n**Acceptance Criteria**\n- Matriz completa roles × módulos × acciones que documenta permisos por defecto para Admin, SubAdmin, Vendedor.\n- Explicación clara de cómo funciona el sistema de override por usuario (ej: cuándo y dónde se almacena, cómo se resuelve en tiempo de ejecución).\n- Diagrama o tabla que muestre la precedencia: rol base → overrides por usuario → decisión final.\n- Ejemplos de código (backend con `Depends`, frontend con condicionales/rutas) que muestren cómo se aplica cada patrón.\n- Documento en Markdown o Wiki accesible a todo el equipo (no solo devs).\n\n**Definition of Done**\n- Documento revisado y aprobado por Tech Lead.\n- Almacenado en ubicación estándar (docs/ o Wiki del repo).\n- Enlaces desde README o guía principal de desarrollo.\n- Trello card movida a Done.\n\n**Notas tecnicas**\n- Buscar en codebase: carpetas de modelos de usuario/rol (auth/, models/), middleware de permisos.\n- Verificar si existen estructuras como `PermissionSet`, decoradores `@require_role`, o enums de acciones.\n- Documentar endpoints clave donde se usan `Depends(RoleValidator(...))` o similar.\n- Si hay override en BD, incluir schema relevante (tablas, campos).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen**\nDocumenta de forma definitiva los roles y permisos del CRM: matriz roles × módulos × acciones, mecanismo de override por usuario, gating en backend (FastAPI `Depends`) y frontend (route guards / `useEffectivePermissions`), feature \"view as\" del admin, y guía para depurar errores 403.\n\n**Cambios / Decisiones**\n- Nuevo doc: `docs/security/roles-and-permissions.md` (~430 líneas) cubriendo el modelo de 3 capas (auth → rol+override → módulo activo), matriz completa de defaults para los 3 roles, schema y resolución de `permission_overrides`, ejemplos reales con `require_admin` / `require_permission(module, action)` / `require_modulo(slug)` desde `backend/app/api/deps.py`, y patrones de gating frontend con `<RequireAdmin>` / `<ModuloGuard>` / `useEffectivePermissions`.\n- `docs/architecture.md` §5: agregado link al nuevo doc y corregido nombre de tabla (`permissions` → `permission_overrides`, según `backend/app/models/permission.py`).\n- Aclara dos detalles no obvios del runtime: (a) `admin` hace bypass total y sus overrides son *dead data* aunque se persistan; (b) \"view as\" sólo afecta UI — clamp-ea `myPerms ∧ targetPerms` para evitar elevar, pero las route guards siguen leyendo el rol real.\n- Sección de pitfalls comunes con flujo de depuración para `403 modulo_disabled` vs `403 Sin permisos` vs `401`.\n- Cambio docs-only; sin tocar código de producción ni schema.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Role definitions and inheritance",
-        "Module x action permission table",
-        "Per-user override mechanism",
-        "How frontend gates routes/buttons",
-        "How backend enforces with Depends",
-        "Mapear todos los roles base y su herencia (Admin → SubAdmin → Vendedor)",
-        "Crear matriz roles × módulos × acciones con permisos por defecto",
-        "Documentar mecanismo de override por usuario (almacenamiento y resolución)",
-        "Incluir ejemplos de código: backend Depends() y frontend routing/gating",
-        "Redactar diagrama de precedencia de permisos (base → override → decisión final)",
-        "Revisar con Tech Lead y publicar en ubicación estándar",
-        "Mover Trello a Done"
+        "Abrir docs/security/roles-and-permissions.md y revisar que la matriz §3 coincida con _DEFAULT en backend/app/core/permissions.py para los 3 roles",
+        "Verificar que docs/architecture.md §5 ahora linkea al nuevo doc y dice 'permission_overrides' (no 'permissions')",
+        "Loguearse como vendedor de prueba e intentar borrar una boleta — debe fallar con 403 'Sin permisos' (matchea el flujo descrito en §7)",
+        "Como admin, abrir Configuración → Usuarios → Permisos de un vendedor, marcar 'boletas.delete=true', y verificar que ahora puede borrar (override sobreescribe el default)",
+        "Como admin, activar 'View as' apuntando a un vendedor desde Configuración y confirmar que botones admin desaparecen pero las rutas /usuarios y /admin/* siguen accesibles (route guards usan rol real, no efectivo) — esto valida el comportamiento documentado en §6.3",
+        "Apagar el módulo 'boletas' para una empresa de prueba en Configuración → Módulos y verificar que GET /api/boletas devuelve 403 con detail.error == 'modulo_disabled' (capa 3 del modelo)",
+        "Confirmar que los snippets de código en §5 y §6.2 referencian rutas de archivo que existen actualmente en el repo"
       ]
     }
   ]
