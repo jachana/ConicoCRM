@@ -30,7 +30,7 @@ class ReportCache:
 
     def _build_key(self, empresa_id: int, endpoint: str, filters: dict) -> str:
         sorted_filters = json.dumps(filters, sort_keys=True, ensure_ascii=False)
-        filters_hash = hashlib.md5(sorted_filters.encode("utf-8")).hexdigest()
+        filters_hash = hashlib.sha256(sorted_filters.encode("utf-8")).hexdigest()[:16]
         return f"cache:report:{empresa_id}:{endpoint}:{filters_hash}"
 
     def get(self, empresa_id: int, endpoint: str, filters: dict) -> Optional[Any]:
@@ -56,6 +56,20 @@ class ReportCache:
     def invalidate_pattern(self, empresa_id: int, endpoints: list[str]) -> None:
         for endpoint in endpoints:
             pattern = f"cache:report:{empresa_id}:{endpoint}:*"
+            try:
+                cursor = 0
+                while True:
+                    cursor, keys = self._client.scan(cursor, match=pattern, count=100)
+                    if keys:
+                        self._client.delete(*keys)
+                    if cursor == 0:
+                        break
+            except RedisError as exc:
+                logger.warning("cache.invalidate_pattern error pattern=%s: %s", pattern, exc)
+
+    def invalidate_empresa(self, empresa_id: int) -> None:
+        pattern = f"cache:report:{empresa_id}:*"
+        try:
             cursor = 0
             while True:
                 cursor, keys = self._client.scan(cursor, match=pattern, count=100)
@@ -63,16 +77,8 @@ class ReportCache:
                     self._client.delete(*keys)
                 if cursor == 0:
                     break
-
-    def invalidate_empresa(self, empresa_id: int) -> None:
-        pattern = f"cache:report:{empresa_id}:*"
-        cursor = 0
-        while True:
-            cursor, keys = self._client.scan(cursor, match=pattern, count=100)
-            if keys:
-                self._client.delete(*keys)
-            if cursor == 0:
-                break
+        except RedisError as exc:
+            logger.warning("cache.invalidate_empresa error pattern=%s: %s", pattern, exc)
 
 
 report_cache: Optional[ReportCache] = None

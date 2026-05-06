@@ -66,7 +66,7 @@ def test_cache_key_format():
     key = rc._build_key(7, "margenes", filters)
 
     sorted_raw = json.dumps(filters, sort_keys=True, ensure_ascii=False)
-    expected_hash = hashlib.md5(sorted_raw.encode("utf-8")).hexdigest()
+    expected_hash = hashlib.sha256(sorted_raw.encode("utf-8")).hexdigest()[:16]
     expected_key = f"cache:report:7:margenes:{expected_hash}"
 
     assert key == expected_key
