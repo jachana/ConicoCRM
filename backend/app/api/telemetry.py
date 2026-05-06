@@ -1,12 +1,15 @@
 """Admin telemetry endpoints (T2.2+)."""
 from __future__ import annotations
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.api.deps import require_admin
 from app.models.dte_emision import DteEmision
@@ -238,3 +241,28 @@ def get_telemetry_cost(
     )
 
     return CostTelemetryResponse(period=period, empresas=empresas, total=total)
+
+
+_VALID_VITALS = frozenset({"LCP", "FID", "INP", "CLS", "TTFB"})
+
+
+class WebVitalPayload(BaseModel):
+    metric: str
+    value: float
+    route: str
+    user_agent: str
+    timestamp: str
+
+
+@router.post("/telemetry/web-vitals", status_code=204, tags=["telemetry"])
+async def post_web_vital(payload: WebVitalPayload, request: Request) -> Response:
+    if payload.metric in _VALID_VITALS:
+        logger.info(
+            "web-vital metric=%s value=%.3f route=%s ua=%.80s ts=%s",
+            payload.metric,
+            payload.value,
+            payload.route,
+            payload.user_agent,
+            payload.timestamp,
+        )
+    return Response(status_code=204)

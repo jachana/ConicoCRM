@@ -7,11 +7,13 @@ import 'react-grid-layout/css/styles.css'
 import App from './App'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { initSentry } from './sentry'
+import { initWebVitals } from './lib/webVitals'
 import { extractApiError } from './lib/api'
 
 // W1-06 — initialize Sentry as early as possible so subsequent module load
 // errors are captured. No-op when DSN is empty (local dev, CI).
 initSentry()
+initWebVitals()
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
