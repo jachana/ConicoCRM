@@ -32,20 +32,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Ops] Job de retencion/archivo de audit_log",
+      "list": "In progress",
+      "name": "[UX] Campana de notificaciones en topbar",
       "labels": [
         "Core",
-        "Goal: Operations",
+        "Goal: UX Polish",
         "Size:L"
       ],
-      "desc": "**Resumen** — Implementar job Celery semanal para archivar registros de `audit_log` mayores a 180 días en una tabla separada, mejorando performance y manteniendo auditoría.\n\n**Cambios / Decisiones** — Se creó modelo `AuditLogArchive` con migración en `versions/a1b2c3d4e5f0_add_audit_log_archive.py`. Task Celery en `tasks/audit_retention.py` mueve registros antiguos en batches de 10k cada lunes 2am, con bloqueo de filas y métrica de conteo. Agregado endpoint GET `/api/auditoria/stats` para ver filas activas/archivadas. Configuración de retención en `config.py` (default 180 días). Tests en `test_audit_retention.py` validan lógica de archivo y conteo.",
+      "desc": "**Contexto / Problema**\nEl backend ya emite eventos de notificación a través de notifications.py, pero no existe interfaz en la UI para que los usuarios visualicen, interactúen o actúen sobre ellas. Es necesario exponer las notificaciones en la topbar con mecanismo de actualización en tiempo real.\n\n**Acceptance Criteria**\n- El usuario ve una campana de notificaciones en la topbar con badge rojo mostrando cantidad de no leídas.\n- Al hacer clic en la campana, se despliega un dropdown mostrando las últimas 10 notificaciones ordenadas por fecha descendente.\n- Cada notificación muestra mensaje, timestamp y estado de lectura (visual indicator).\n- Al hacer clic en una notificación, el usuario navega a la entidad relacionada y la notificación se marca automáticamente como leída.\n- El dropdown se cierra al navegar o al hacer clic fuera.\n- Las notificaciones se actualizan cada 30-60 segundos (polling) o en tiempo real si WS está disponible.\n- El badge desaparece cuando no hay notificaciones no leídas.\n\n**Definition of Done**\n- Endpoint GET /notifications y PATCH /notifications/{id}/read verificados y funcionando.\n- Componente NotificationBell + dropdown implementado y integrado en Topbar.\n- Tests unitarios para NotificationBell (render, badge count, dropdown toggle).\n- Tests de integración: polling/WS, mark as read, navigation.\n- Deployed a staging y validado en navegador.\n- Card movida a In review.\n\n**Notas tecnicas**\n- Rutas: frontend/src/components/Topbar/NotificationBell.tsx (o .jsx), frontend/src/hooks/useNotifications.ts para polling logic.\n- API: GET /api/notifications (query params: limit=10, sort=desc), PATCH /api/notifications/{id} {\"read\": true}.\n- State management: Context API o Redux (seguir patrón del proyecto).\n- Polling: useEffect + setInterval (30-60s) o WebSocket si existe en el stack.\n- Iconografía: bell-icon (Material-UI o custom SVG según Design System).\n\n<!-- conico-refined -->",
       "checklist": [
-        "Ejecutar task Celery y verificar filas archivadas en DB",
-        "Hacer GET a /api/auditoria/stats y validar conteos",
-        "Consultar tabla audit_log_archive con registros antiguos",
-        "Verificar métrica Prometheus de filas archivadas",
-        "Revisar logs de task para confirmar ejecución sin errores"
+        "Verificar API GET /notifications + PATCH read",
+        "Componente NotificationBell con badge count",
+        "Dropdown con ultimas 10 notificaciones",
+        "Click en notif navega a entidad y marca leida",
+        "Polling o websocket cada 30-60s",
+        "✓ Verificar contrato API: GET /notifications (limit, sort) y PATCH /notifications/{id}/read",
+        "✓ Crear componente NotificationBell con badge count y dropdown toggle",
+        "✓ Renderizar últimas 10 notificaciones en dropdown con timestamp y estado",
+        "✓ Implementar click-to-navigate + auto-mark-as-read al seleccionar notificación",
+        "✓ Agregar polling (30-60s) o WebSocket para actualizaciones en tiempo real",
+        "✓ Escribir tests: render, badge, dropdown, navigation, mark as read",
+        "✓ Deploy a staging + validar en navegador; mover card a In review"
       ]
     }
   ]
