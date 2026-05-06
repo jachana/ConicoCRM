@@ -32,22 +32,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Docs] DTE/Lioren integration deep-dive",
+      "list": "In progress",
+      "name": "[Docs] Roles and permissions matrix",
       "labels": [
-        "DTE/SII",
         "Roadmap",
         "Goal: Docs",
-        "Size:L"
+        "Size:M"
       ],
-      "desc": "**Resumen**\nSe creó documentación técnica completa sobre la integración DTE/Lioren para facilitar onboarding y reducir errores de integración, consolidando conocimiento disperso en código y Slack.\n\n**Cambios / Decisiones**\n- Nuevo documento `docs/integrations/dte-lioren.md` (559 líneas) cubre autenticación Lioren, tipos DTE soportados (33/39/41/52/56/61) con esquemas payload por builder.\n- Documenta máquina de estados async: emisión → polling → webhook, con validación HMAC-SHA256 en webhooks.\n- Detalla gestión CAF: inventario de folios, alertas de agotamiento; **documenta gap conocido**: campo `consumido` no se auto-incrementa y no existe automatización de rollover.\n- Incluye matriz de troubleshooting basada en código actual: `backend/app/services/dte_service.py`, `backend/app/tasks/dte.py`, `backend/app/api/dte.py`, `backend/app/services/lioren_metrics.py`, `backend/app/services/caf_service.py`, `backend/app/api/onboarding_cafs.py`.\n- Linkeado desde `docs/architecture.md` (no existe README.md principal en el repo).\n- Cambio markdown-only, sin superficie ejecutable.",
+      "desc": "**Contexto / Problema**\nConico CRM tiene tres roles base (Admin, SubAdmin, Vendedor) con permisos que varían por módulo y acción. Los desarrolladores y operadores necesitan una referencia única y clara sobre qué roles pueden hacer qué, cómo funcionan los overrides por usuario, y cómo se implementan las validaciones en backend (Depends) y frontend (gating de rutas/botones).\n\n**Acceptance Criteria**\n- Matriz completa roles × módulos × acciones que documenta permisos por defecto para Admin, SubAdmin, Vendedor.\n- Explicación clara de cómo funciona el sistema de override por usuario (ej: cuándo y dónde se almacena, cómo se resuelve en tiempo de ejecución).\n- Diagrama o tabla que muestre la precedencia: rol base → overrides por usuario → decisión final.\n- Ejemplos de código (backend con `Depends`, frontend con condicionales/rutas) que muestren cómo se aplica cada patrón.\n- Documento en Markdown o Wiki accesible a todo el equipo (no solo devs).\n\n**Definition of Done**\n- Documento revisado y aprobado por Tech Lead.\n- Almacenado en ubicación estándar (docs/ o Wiki del repo).\n- Enlaces desde README o guía principal de desarrollo.\n- Trello card movida a Done.\n\n**Notas tecnicas**\n- Buscar en codebase: carpetas de modelos de usuario/rol (auth/, models/), middleware de permisos.\n- Verificar si existen estructuras como `PermissionSet`, decoradores `@require_role`, o enums de acciones.\n- Documentar endpoints clave donde se usan `Depends(RoleValidator(...))` o similar.\n- Si hay override en BD, incluir schema relevante (tablas, campos).\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir docs/integrations/dte-lioren.md y verificar secciones: auth, tipos DTE, flujo async, webhook HMAC, CAF, troubleshooting",
-        "Validar esquemas payload JSON contra backend/app/services/dte_service.py para tipos 33/39/41/52/56/61",
-        "Confirmar que diagrama de estados coincide con transiciones en backend/app/tasks/dte.py (poll_dte_status)",
-        "Revisar validación HMAC webhook contra implementación en backend/app/api/dte.py",
-        "Verificar que gap de CAF (consumido no auto-incrementa) está documentado y coincide con backend/app/services/caf_service.py",
-        "Comprobar link funcional desde docs/architecture.md hacia dte-lioren.md"
+        "Role definitions and inheritance",
+        "Module x action permission table",
+        "Per-user override mechanism",
+        "How frontend gates routes/buttons",
+        "How backend enforces with Depends",
+        "Mapear todos los roles base y su herencia (Admin → SubAdmin → Vendedor)",
+        "Crear matriz roles × módulos × acciones con permisos por defecto",
+        "Documentar mecanismo de override por usuario (almacenamiento y resolución)",
+        "Incluir ejemplos de código: backend Depends() y frontend routing/gating",
+        "Redactar diagrama de precedencia de permisos (base → override → decisión final)",
+        "Revisar con Tech Lead y publicar en ubicación estándar",
+        "Mover Trello a Done"
       ]
     }
   ]
