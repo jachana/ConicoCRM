@@ -30,5 +30,35 @@
     "Size:S": "green",
     "Wave 2": "orange"
   },
-  "cards": []
+  "cards": [
+    {
+      "list": "In progress",
+      "name": "[Docs] DTE/Lioren integration deep-dive",
+      "labels": [
+        "DTE/SII",
+        "Roadmap",
+        "Goal: Docs",
+        "Size:L"
+      ],
+      "desc": "**Contexto / Problema**\nDesarrolladores internos y partners necesitan referencia técnica completa sobre la integración DTE con Lioren. Actualmente, el conocimiento está disperso en código y Slack; esto impide onboarding rápido y genera errores de integración.\n\n**Acceptance Criteria**\n- Documento cubre autenticación Lioren (credenciales, headers, refresh logic).\n- Especifica tipos DTE soportados (33/39/41/52/56/61) con esquemas JSON de payload.\n- Incluye diagrama de flujo: API Conico → Celery task → Lioren → SII → webhook cliente.\n- Documenta endpoint webhook, validación HMAC, y formato de firma.\n- Detalla lógica de polling (transiciones de estado, backoff exponencial, reintentos máximos).\n- Explica flujo de anulación: emisión de NC (tipo 61) desde boleta/guía y efectos en SII.\n- Cubre gestión CAF: subida, folio disponible, agotamiento, rollover.\n- Documento publicado en wiki interno y linkeable desde README principal.\n\n**Definition of Done**\n- Documento markdown versionado en `/docs/integrations/dte-lioren.md`.\n- Código de ejemplo para cada sección (auth, webhook listener, polling consumer).\n- Diagramas en formato Mermaid o SVG en `/docs/assets/dte-flow-*`.\n- Revisado por responsable de DTE/SII backend y QA.\n- Link agregado a índice de docs (`docs/README.md`).\n- Trello card movido a 'Done'.\n\n**Notas tecnicas**\n- Rutas relevantes: `apps/dte/integrations/lioren.py`, `apps/dte/tasks/polling.py`, `apps/dte/webhooks.py`, `apps/dte/models.py` (CAF, DTEDocument).\n- Endpoints: `POST /api/dte/emit`, `POST /api/dte/webhooks/lioren`, `GET /api/dte/caf/status`.\n- Variables de entorno: `LIOREN_API_KEY`, `LIOREN_API_URL`, `LIOREN_WEBHOOK_SECRET`.\n- Celery task: `tasks.poll_dte_status` con retry policy.\n- Estados DTE en SII: 'enviado', 'aceptado', 'rechazado', 'cancelado'.\n\n<!-- conico-refined -->",
+      "checklist": [
+        "Lioren API auth and config",
+        "Supported DTE types + payload shapes",
+        "Emission flow diagram (API -> Celery -> Lioren -> SII -> webhook)",
+        "Webhook endpoint + HMAC validation",
+        "Polling task (states, backoff, max retries)",
+        "Annulment flow (NC type 61 from boleta/guia)",
+        "CAF upload + folio management",
+        "Documentar autenticación Lioren: credenciales, headers, refresh token flow",
+        "Listar tipos DTE soportados (33/39/41/52/56/61) con esquemas payload JSON",
+        "Crear diagrama flujo: API → Celery → Lioren → SII → webhook",
+        "Documentar validación HMAC en endpoint webhook + formato de firma",
+        "Especificar lógica polling: estados, backoff exponencial, máximos reintentos",
+        "Explicar anulación: emisión NC (61) desde boleta/guía",
+        "Documentar CAF: subida, folios, agotamiento, rollover",
+        "Tests: validar links en docs y consistencia con código actual",
+        "Mover a In review; agregar link a README principal"
+      ]
+    }
+  ]
 }
