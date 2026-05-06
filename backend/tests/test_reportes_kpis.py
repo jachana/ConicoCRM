@@ -114,6 +114,7 @@ def test_kpis_returns_valid_structure(client, admin_token, db):
     assert "count" in v
     assert "sparkline" in v
     assert isinstance(v["total"], float)
+    assert isinstance(v["total_anterior"], float)
     assert isinstance(v["delta_pct"], float)
     assert isinstance(v["count"], int)
     assert isinstance(v["sparkline"], list)
@@ -236,3 +237,58 @@ def test_kpis_empty_period_returns_zeros(client, admin_token):
     assert data["top_clientes"] == []
     assert data["dte_rejection"]["emitidas"] == 0
     assert data["dte_rejection"]["rate"] == 0.0
+
+
+def test_kpis_vendedor_forbidden(client, vendedor_token):
+    """vendedor role should receive 403 on the KPIs endpoint."""
+    r = client.get(
+        "/api/reportes/kpis",
+        params={"periodo": "2026-05"},
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert r.status_code == 403
+
+
+def test_kpis_ar_aging_ignores_period_filter(client, admin_token, db):
+    """AR aging is a current-state snapshot: overdue facturas from prior months
+    must still appear even when querying a different period."""
+    from app.models.empresa import Empresa
+    from app.models.cliente import Cliente
+    from app.models.factura import Factura
+    from app.core.modulos import OPTIONAL_MODULES
+    from decimal import Decimal
+
+    empresa = Empresa(nombre="Test Empresa AR Aging", modulos_enabled={s: True for s in OPTIONAL_MODULES})
+    db.add(empresa)
+    db.flush()
+
+    cliente = Cliente(nombre="Cliente AR Aging", empresa_id=empresa.id)
+    db.add(cliente)
+    db.flush()
+
+    # Factura from 2026-03, overdue (vencimiento also in 2026-03, so 30+ days past today 2026-05-06)
+    fac_old = Factura(
+        numero=70001,
+        cliente_id=cliente.id,
+        fecha=date(2026, 3, 1),
+        estado="emitida",
+        total=Decimal("300000"),
+        total_neto=Decimal("252101"),
+        total_iva=Decimal("47899"),
+        fecha_vencimiento=date(2026, 3, 15),
+    )
+    db.add(fac_old)
+    db.commit()
+
+    r = client.get(
+        "/api/reportes/kpis",
+        params={"periodo": "2026-05"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    aging = r.json()["ar_aging"]
+    total_count = sum(
+        aging[b]["count"]
+        for b in ("d_0_30", "d_31_60", "d_61_90", "d_90_plus")
+    )
+    assert total_count > 0, "Overdue factura from prior month should appear in AR aging snapshot"
