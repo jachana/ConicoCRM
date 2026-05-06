@@ -32,22 +32,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[UX] Campana de notificaciones en topbar",
+      "list": "In progress",
+      "name": "[Perf] Cache de Redis para reportes/dashboard",
       "labels": [
         "Core",
-        "Goal: UX Polish",
+        "Goal: Performance",
         "Size:L"
       ],
-      "desc": "**Resumen** — Agregar campana de notificaciones en la topbar con badge de no leídas, dropdown con últimas 10 notificaciones, navegación automática y marca como leída.\n\n**Cambios / Decisiones** — Se implementó el componente `NotificationBell` en `frontend/src/components/NotificationBell.tsx`, con lógica de polling y navegación. Se agregaron tests en `frontend/src/components/NotificationBell.test.tsx`. Se extendió `targetUrl` en backend para aprobaciones. Se conecta al endpoint `GET /api/notifications` (límite 10, orden descendente) y `PATCH /api/notifications/{id}/read`. Incluye actualización automática cada 30-60 segundos. El estado se maneja con el patrón de hooks existente.",
+      "desc": "**Contexto / Problema**\nLos 21 endpoints de reportes en `reportes.py` ejecutan agregaciones costosas en cada request, generando latencias altas en el dashboard. El cacheo con TTL corto (1-5 min) e invalidación selectiva en eventos de escritura reducirá dramáticamente el load time sin sacrificar frescura de datos.\n\n**Acceptance Criteria**\n- El dashboard carga en <2s (vs actual ~5-8s) para usuario con datos típicos.\n- Hit rate de cache es >70% en carga normal.\n- Al emitir factura, crear cliente o actualizar inventario, los caches afectados se invalidan automáticamente.\n- Las claves de cache respetan `(empresa_id, filtros, periodo)` para aislar datos por tenant.\n- TTL es configurable por endpoint en rango 1-5 min sin redeploy.\n- Métricas de hit/miss/invalidation están disponibles en logs o dashboard de observabilidad.\n\n**Definition of Done**\n- Unit tests para wrapper de cache con mock de Redis (>85% coverage).\n- Integración e2e: verificar invalidación ante write events reales.\n- Profiling antes/después mostrando latencia y hit rate.\n- Deployed a staging y validado por PM.\n- Trello card movida a In review.\n\n**Notas tecnicas**\n- Archivo principal: `app/services/reportes.py` (2068 LOC).\n- Usar redis-py con TTL y pattern-based invalidation.\n- Events: factura emitida, cliente creado/actualizado, item inventario modificado.\n- Clave patrón: `cache:report:{empresa_id}:{endpoint_name}:{hash(filtros+periodo)}`.\n- Métricas: guardar hit/miss en Redis o logs estructurados.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir app y ver campana con badge en topbar",
-        "Hacer clic en campana y verificar dropdown con 10 notificaciones",
-        "Verificar que notificación no leída tenga indicador visual",
-        "Hacer clic en una notificación y confirmar navegación a entidad",
-        "Validar que notificación se marque como leída al navegar",
-        "Esperar 30-60s y ver actualización automática del badge",
-        "Verificar tests unitarios del componente NotificationBell"
+        "Identificar endpoints mas costosos en reportes.py",
+        "Definir keys de cache por (empresa_id, filtros, periodo)",
+        "Implementar wrapper de cache con TTL configurable",
+        "Invalidacion en eventos de escritura (factura emitida, etc.)",
+        "Metrica de hit rate",
+        "Perfilar 5 endpoints más costosos en reportes.py con timing",
+        "Diseñar schema de claves cache y validar con PM",
+        "Implementar decorador @cached_report con TTL configurable",
+        "Integrar Redis connection pool y error handling",
+        "Hookear invalidación en eventos de escritura (signals/callbacks)",
+        "Escribir tests: hit rate, TTL expiry, invalidation correctness",
+        "Deploy a staging, verificar latencias y hacer Trello → In review"
       ]
     }
   ]
