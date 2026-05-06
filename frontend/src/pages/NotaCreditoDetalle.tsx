@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Send } from 'lucide-react'
+import { Send, FileText } from 'lucide-react'
 import { api } from '../lib/api'
+import { openPdf } from '../lib/pdf'
 import DteBadge from '../components/DteBadge'
 import type { NotaCredito } from '../types'
 import {
@@ -58,6 +59,9 @@ export default function NotaCreditoDetalle() {
             Emitir DTE
           </Button>
         )}
+        <Button size="sm" variant="outline" leftIcon={<FileText className="size-4" />} onClick={() => openPdf(`/api/dte/notas-credito/${id}/pdf`)}>
+          PDF
+        </Button>
       </div>
 
       <Card>

@@ -59,3 +59,17 @@ def generar_pdf_guia_despacho(guia_despacho, config: dict) -> bytes:
     template = env.get_template("guia_despacho.html")
     html_str = template.render(guia_despacho=guia_despacho, config=config)
     return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()
+
+
+def generar_pdf_nota_credito(nc, config: dict) -> bytes:
+    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+    template = env.get_template("nota_credito.html")
+    html_str = template.render(nc=nc, config=config)
+    return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()
+
+
+def generar_pdf_nota_debito(nd, config: dict) -> bytes:
+    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+    template = env.get_template("nota_debito.html")
+    html_str = template.render(nd=nd, config=config)
+    return HTML(string=html_str, base_url=TEMPLATES_DIR).write_pdf()

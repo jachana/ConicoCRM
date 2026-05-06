@@ -1,7 +1,10 @@
 import json
+import re
 from datetime import date, datetime, timezone
 from decimal import Decimal
+from io import BytesIO
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_modulo, require_permission
@@ -18,9 +21,14 @@ from app.schemas.dte import (
     NotaDebitoCreate, NotaDebitoOut,
 )
 from app.services.dte_service import get_dte_service
+from app.services.pdf import generar_pdf_nota_credito, generar_pdf_nota_debito
 from app.tasks.dte import emit_dte, _lioren_to_estado, _sync_dte_estado
 
 router = APIRouter()
+
+
+def _get_config_dict(db: Session) -> dict:
+    return {r.key: r.value for r in db.query(SystemConfig).all()}
 
 
 def _next_numero(db: Session, key: str) -> int:
@@ -160,6 +168,29 @@ def get_nc(
     return nc
 
 
+@router.get("/notas-credito/{nc_id}/pdf", dependencies=[require_modulo("nota_credito")])
+def pdf_nc(
+    nc_id: int,
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+    nc = db.query(NotaCredito).options(joinedload(NotaCredito.lineas), joinedload(NotaCredito.cliente)).filter_by(id=nc_id).first()
+    if not nc:
+        raise HTTPException(status_code=404, detail="Nota de crédito no encontrada")
+    config = _get_config_dict(db)
+    pdf_bytes = generar_pdf_nota_credito(nc, config)
+    cliente_nombre = nc.cliente.nombre if nc.cliente else "cliente"
+    raw_filename = f"NC - {nc.numero} {nc.fecha}. {cliente_nombre}.pdf"
+    filename = re.sub(r'[^\w\s\-.]', '_', raw_filename)
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
+
+
 @router.post("/notas-credito/{nc_id}/emitir", response_model=DteEmisionOut, dependencies=[require_modulo("nota_credito")])
 def emitir_nc(
     nc_id: int,
@@ -237,6 +268,29 @@ def get_nd(
     if not nd:
         raise HTTPException(status_code=404, detail="Nota de débito no encontrada")
     return nd
+
+
+@router.get("/notas-debito/{nd_id}/pdf", dependencies=[require_modulo("nota_debito")])
+def pdf_nd(
+    nd_id: int,
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+    nd = db.query(NotaDebito).options(joinedload(NotaDebito.lineas), joinedload(NotaDebito.cliente)).filter_by(id=nd_id).first()
+    if not nd:
+        raise HTTPException(status_code=404, detail="Nota de débito no encontrada")
+    config = _get_config_dict(db)
+    pdf_bytes = generar_pdf_nota_debito(nd, config)
+    cliente_nombre = nd.cliente.nombre if nd.cliente else "cliente"
+    raw_filename = f"ND - {nd.numero} {nd.fecha}. {cliente_nombre}.pdf"
+    filename = re.sub(r'[^\w\s\-.]', '_', raw_filename)
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
 
 
 @router.post("/notas-debito/{nd_id}/emitir", response_model=DteEmisionOut, dependencies=[require_modulo("nota_debito")])
