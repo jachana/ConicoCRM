@@ -32,29 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Docs] Environment variables reference",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nDesarrolladores e infraestructura necesitan una referencia centralizada y clara de todas las variables de entorno requeridas para desplegar y operar Conico CRM. Actualmente esta información está dispersa en archivos `.env.example`, código, y documentación no estructurada, generando fricción en onboarding y setup.\n\n**Acceptance Criteria**\n- Documento único (`.md`) lista todas las variables de entorno agrupadas por subsistema (Backend, Frontend, Celery, Email/SMTP, Sentry, DTE/Lioren, Backup/rclone).\n- Cada variable incluye: nombre, tipo (string|bool|int|url), requerida/opcional, valor default, descripción clara, y ejemplo válido.\n- Marcado visual claro (ej: ⭐ o `[REQUIRED]`) para variables obligatorias vs opcionales.\n- Se incluyen instrucciones para generar `SECRET_KEY` y otras claves criptográficas.\n- Documento vinculado desde README principal y accesible en sitio de docs.\n\n**Definition of Done**\n- Archivo `docs/environment-variables.md` creado y revisado.\n- Contenido validado contra código actual (backend, frontend, Celery, email, Sentry, etc.).\n- PR aprobado por Tech Lead o DevOps.\n- Documento desplegado a sitio de documentación de usuario/dev.\n- Trello card movida a \"In review\" o \"Done\".\n\n**Notas tecnicas**\n- Ubicación: `docs/environment-variables.md`\n- Incluir referencias a archivos: `.env.example`, `backend/settings.py`, `frontend/.env.example`, `celery_app.py`, `sentry_sdk` init.\n- Formato: tabla o lista estructurada en Markdown con anchors para enlazabilidad.\n- Validar contra `python-decouple`, `os.getenv()`, y `python-dotenv` patterns usados en proyecto.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen**\nSe centraliza en `docs/environment-variables.md` la referencia única de variables de entorno (backend, frontend, Celery, Postgres/Docker, backups, rclone offsite, tooling). Cada entrada lista tipo, required/optional, default, descripción y archivo:línea fuente.\n\n**Cambios / Decisiones**\n- Nuevo archivo `docs/environment-variables.md` (304 líneas, 19 secciones), agrupado por subsistema con tabla por grupo.\n- Cobertura cruzada contra código: `backend/app/config.py`, `backend/app/core/cache.py` (CACHE_TTL_*), `backend/app/core/observability.py` (Sentry release fallbacks GIT_SHA/SOURCE_VERSION/GIT_COMMIT), `backend/app/services/email.py` (SMTP_FROM), `frontend/src/sentry.ts`, `frontend/src/lib/webVitals.ts` (VITE_TELEMETRY_SAMPLE_RATE), `docker-compose.prod.yml` (BACKUP_*, S3_*), `.env.prod.example`.\n- Marca `SENTRY_TRACES_SAMPLE_RATE` como stale (no se pasa al SDK; el sampling real lo dicta `traces_sampler` en `observability.py`) — preservado por compat hasta limpieza explícita.\n- Sección de Tooling para vars que viven en `scripts/.trello.env` (TRELLO_*, OPENROUTER_API_KEY, STRAICO_API_KEY, COOLIFY_READONLY_KEY) — no se cargan al runtime de la app, pero son required para los scripts de operación.\n- Linkeado desde `QUICKSTART.md` (paso de variables de entorno) y `docs/architecture.md` (header).\n- Sección \"Generación de secretos\" con comandos `openssl` listos para copy-paste.\n- Sección \"Cómo agregar una nueva variable\" como contrato: backend pydantic → frontend vite-env.d.ts → compose → plantillas .env.example → este doc.\n\n**Notas para revisor**\n- Tests no se ejecutaron localmente: el entorno Python local no tiene `loguru` instalado y Docker Desktop no está corriendo. Cambio es markdown-only (zero código), riesgo de regresión nulo.\n- Cross-check automático ejecutado: 65 vars documentadas, 55 referenciadas en código → cero missing en doc; los \"extras\" del set comparativo son tooling (TRELLO_*, COOLIFY, OPENROUTER, STRAICO, DATA_SEED_DIR), false-positives del regex (`INFO` como default de LOG_LEVEL), y vars detectadas con patrones distintos al grep (`GIT_SHA`, `VITE_API_URL`).\n",
       "checklist": [
-        "Backend core vars (DATABASE_URL, SECRET_KEY, etc.)",
-        "Email/SMTP vars",
-        "DTE/Lioren vars",
-        "Sentry vars",
-        "Backup/rclone vars",
-        "Frontend VITE_* vars",
-        "Mark required vs optional clearly",
-        "Inventariar todas las variables de entorno en backend (DATABASE_URL, SECRET_KEY, ALLOWED_HOSTS, etc.)",
-        "Inventariar variables de frontend (VITE_API_URL, VITE_*, etc.) y Celery (CELERY_BROKER_URL, etc.)",
-        "Inventariar variables de email (SMTP_HOST, SMTP_PORT, SMTP_USER, etc.), Sentry (SENTRY_DSN), DTE/Lioren y backup (RCLONE_*)",
-        "Redactar descripción clara, defaults, ejemplos y marcar requeridas vs opcionales para cada variable",
-        "Crear tabla/secciones estructuradas en `docs/environment-variables.md` con anchors",
-        "Revisar documento contra código fuente y validar coherencia con `.env.example`",
-        "Mover Trello a \"In review\" y obtener aprobación de Tech Lead/DevOps"
+        "Abrir docs/environment-variables.md y verificar que cada tabla rinde (sin filas rotas) en GitHub markdown.",
+        "Click en cada link relativo al final del doc (architecture.md, observability.md, runbooks/backup-restore.md, STACK.md, INTEGRATIONS.md, QUICKSTART.md) y confirmar que resuelven al archivo correcto.",
+        "Verificar al menos 5 file:line refs en la columna Source apuntando al codigo real (e.g. backend/app/config.py:7 -> DATABASE_URL).",
+        "Desde QUICKSTART.md confirmar el link a docs/environment-variables.md navega correctamente.",
+        "Desde docs/architecture.md (header) confirmar el link al doc nuevo.",
+        "Confirmar la seccion \"Generacion de secretos\" copy-pasteable: ejecutar el comando openssl rand -hex 32 y validar 64 hex chars.",
+        "Spot-check de cobertura: buscar 3 vars al azar del codigo (CACHE_TTL_KPIS, VITE_TELEMETRY_SAMPLE_RATE, BACKUP_KEEP_WEEKS) y confirmar que estan documentadas con la descripcion correcta."
       ]
     }
   ]
