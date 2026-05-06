@@ -3,6 +3,8 @@
 > Estado: documento vivo. Última revisión: 2026-04-24. Mantener sincronizado con `PROGRESS.md` y `docs/backlog.md`.
 >
 > Variables de entorno: ver [`docs/environment-variables.md`](environment-variables.md) para la referencia canónica (backend, frontend, Celery, backups, Sentry).
+>
+> Integraciones externas: ver [`docs/integrations/dte-lioren.md`](integrations/dte-lioren.md) para el deep-dive de la integración DTE/Lioren (auth, payloads, webhook HMAC, polling, CAF).
 
 ---
 
