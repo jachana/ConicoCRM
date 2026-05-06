@@ -32,29 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Telemetry T3.1] Web Vitals capture + POST endpoint",
       "labels": [
         "Core",
         "Goal: Operations",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nConico necesita visibilidad en el rendimiento real del frontend (LCP, FID, INP, CLS, TTFB) para identificar degradación de UX y optimizar antes de escalar. Hoy no capturamos estas métricas.\n\n**Acceptance Criteria**\n- Al cargar cualquier página de Conico, se capturan automáticamente las 5 métricas Web Vitals (LCP, FID, INP, CLS, TTFB).\n- Cada métrica se envía vía POST a `/api/telemetry/web-vitals` con estructura `{metric, value, route, user_agent, timestamp}`.\n- El backend recibe y loguea la métrica en stdout/logs (sin persistencia en DB por ahora).\n- Sample rate es configurable vía variable de entorno (default 100%, completamente habilitado en desarrollo y staging).\n- En ambiente local (NODE_ENV=development) las métricas NO se envían a backend.\n- Un developer puede ver en DevTools (Network tab) o logs del backend que el POST se ejecutó al cargar BoletasList.\n\n**Definition of Done**\n- `frontend/src/lib/webVitals.ts` creado e inicializado en punto de entrada de la app.\n- Dependencia `web-vitals` agregada a package.json y instalada.\n- Endpoint `POST /api/telemetry/web-vitals` implementado y documentado (code comment o ADR).\n- Variable de entorno `NEXT_PUBLIC_TELEMETRY_SAMPLE_RATE` disponible (default 1.0).\n- Tests unitarios verifican que callbacks de cada métrica se disparan y envían payload correcto.\n- Smoke test en staging: cargar BoletasList, abrir DevTools Network, confirmar POST enviado.\n- Trello card movida a \"In Review\".\n- PR mergeado a develop.\n\n**Notas tecnicas**\n- Usar `web-vitals` v3.x (oficial, ~3KB gzipped).\n- Registrar callbacks en `app.tsx` o similar punto de entrada único.\n- Endpoint: `POST /api/telemetry/web-vitals` en Next.js `/pages/api/` o router.\n- Payload: `{metric: string, value: number, route: string, user_agent: string, timestamp: ISO8601}`.\n- Log a stdout con level `info` o `debug` para alertas posteriores.\n- Excluir si `process.env.NODE_ENV === 'development'` antes de POST.\n- Para sample rate: generar `Math.random()` en frontend, comparar contra `parseFloat(process.env.NEXT_PUBLIC_TELEMETRY_SAMPLE_RATE || '1.0')`.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Implementar captura automática de Web Vitals (LCP, FID, INP, CLS, TTFB) en el frontend y un endpoint POST para enviarlas al backend.\n\n**Cambios / Decisiones** — Se agregó la dependencia `web-vitals` v5.2.0. Se creó `frontend/src/lib/webVitals.ts` para registrar las 5 métricas y enviarlas vía POST a `/api/telemetry/web-vitals`. El envío se saltea en `development` y respeta un sample rate configurable con `VITE_TELEMETRY_SAMPLE_RATE` (por defecto 1.0). En backend, se implementó `backend/app/api/telemetry.py` que valida y loguea las métricas recibidas (sin persistir en DB). Se incluyeron 8 tests unitarios en frontend y 8 en backend.",
       "checklist": [
-        "Instalar web-vitals npm package",
-        "frontend/src/lib/webVitals.ts: registrar onLCP/onFID/onCLS/onINP/onTTFB",
-        "Send a POST /api/telemetry/web-vitals con {metric, value, route, user_agent}",
-        "Endpoint backend que solo loguea (no DB todavia)",
-        "Sample rate configurable (default 1.0 hasta tener volumen)",
-        "Excluir local dev (env check)",
-        "Test: smoke en BoletasList; verificar request enviado al cargar",
-        "Instalar web-vitals npm package y agregar a package.json",
-        "Crear frontend/src/lib/webVitals.ts registrando onLCP, onFID, onINP, onCLS, onTTFB",
-        "Implementar POST /api/telemetry/web-vitals que loguea {metric, value, route, user_agent, timestamp}",
-        "Configurar variable NEXT_PUBLIC_TELEMETRY_SAMPLE_RATE (default 1.0) con lógica de exclusión en dev",
-        "Escribir tests unitarios para callbacks y payload de cada métrica",
-        "Smoke test: cargar BoletasList en staging y verificar POST en Network tab",
-        "Mover a In Review, mergear a develop"
+        "Abrir BoletasList en staging, abrir DevTools → Network, verificar POST a /api/telemetry/web-vitals",
+        "En Network tab, validar que el payload tenga {metric, value, route, user_agent, timestamp}",
+        "Verificar en logs del backend que se imprimen las métricas recibidas",
+        "Revisar que el POST no se haga en ambiente local (development)",
+        "Validar comportamiento con sample rate < 1.0 (usar VITE_TELEMETRY_SAMPLE_RATE=0.5)",
+        "Revisar tests unitarios en frontend/src/__tests__/webVitals.test.ts",
+        "Verificar que todas las 5 Web Vitals (LCP, FID, INP, CLS, TTFB) se reporten"
       ]
     }
   ]
