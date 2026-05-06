@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_modulo, require_permission
+from app.services.auditoria import invalidate_cache_for_empresa
 from app.database import get_db
 from app.models.movimiento_inventario import MovimientoInventario
 from app.models.orden_compra import OrdenCompra, OrdenCompraLinea
@@ -153,7 +154,7 @@ def crear_orden(
     body: OrdenCompraCreate,
     perms: tuple[User, Session] = require_permission("ordenes_compra", "create"),
 ):
-    _, db = perms
+    current_user, db = perms
     numero = _asignar_numero(db)
     orden = OrdenCompra(
         numero=numero,
@@ -170,6 +171,7 @@ def crear_orden(
         linea.orden_compra_id = orden.id
     _recalcular_totales(orden)
     db.commit()
+    invalidate_cache_for_empresa(current_user.empresa_id, ["compras", "kpis"])
     return _get_orden_con_relaciones(db, orden.id)
 
 
@@ -191,7 +193,7 @@ def actualizar_orden(
     body: OrdenCompraUpdate,
     perms: tuple[User, Session] = require_permission("ordenes_compra", "edit"),
 ):
-    _, db = perms
+    current_user, db = perms
     orden = db.get(OrdenCompra, orden_id)
     if not orden:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
@@ -202,6 +204,7 @@ def actualizar_orden(
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(orden, field, value)
     db.commit()
+    invalidate_cache_for_empresa(current_user.empresa_id, ["compras", "kpis"])
     return _get_orden_con_relaciones(db, orden_id)
 
 
@@ -211,7 +214,7 @@ def reemplazar_lineas(
     lineas_data: list[OrdenCompraLineaCreate],
     perms: tuple[User, Session] = require_permission("ordenes_compra", "edit"),
 ):
-    _, db = perms
+    current_user, db = perms
     orden = db.query(OrdenCompra).options(joinedload(OrdenCompra.lineas)).filter(OrdenCompra.id == orden_id).first()
     if not orden:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
@@ -230,6 +233,7 @@ def reemplazar_lineas(
     orden.lineas = nuevas
     _recalcular_totales(orden)
     db.commit()
+    invalidate_cache_for_empresa(current_user.empresa_id, ["compras", "kpis"])
     return _get_orden_con_relaciones(db, orden_id)
 
 
@@ -238,7 +242,7 @@ def eliminar_orden(
     orden_id: int,
     perms: tuple[User, Session] = require_permission("ordenes_compra", "delete"),
 ):
-    _, db = perms
+    current_user, db = perms
     orden = db.get(OrdenCompra, orden_id)
     if not orden:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
@@ -248,6 +252,7 @@ def eliminar_orden(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Solo se pueden eliminar órdenes en estado 'borrador'")
     db.delete(orden)
     db.commit()
+    invalidate_cache_for_empresa(current_user.empresa_id, ["compras", "kpis"])
 
 
 @router.get("/{orden_id}/pdf")
@@ -280,7 +285,7 @@ def enviar_email(
     orden_id: int,
     perms: tuple[User, Session] = require_permission("ordenes_compra", "edit"),
 ):
-    _, db = perms
+    current_user, db = perms
     orden = _get_orden_con_relaciones(db, orden_id)
     if not orden:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
@@ -306,6 +311,7 @@ def enviar_email(
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Error al enviar email: {e}")
     orden.estado = "enviada"
     db.commit()
+    invalidate_cache_for_empresa(current_user.empresa_id, ["compras", "kpis"])
     return {"detail": "Email enviado correctamente"}
 
 
@@ -363,6 +369,7 @@ def recepcionar(
         orden.estado = "recibida_parcial"
 
     db.commit()
+    invalidate_cache_for_empresa(current_user.empresa_id, ["compras", "inventario", "kpis"])
     return _get_orden_con_relaciones(db, orden_id)
 
 
@@ -372,7 +379,7 @@ def cambiar_estado(
     body: EstadoUpdate,
     perms: tuple[User, Session] = require_permission("ordenes_compra", "edit"),
 ):
-    _, db = perms
+    current_user, db = perms
     orden = db.get(OrdenCompra, orden_id)
     if not orden:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
@@ -388,4 +395,5 @@ def cambiar_estado(
         )
     orden.estado = body.estado
     db.commit()
+    invalidate_cache_for_empresa(current_user.empresa_id, ["compras", "kpis"])
     return _get_orden_con_relaciones(db, orden_id)

@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_modulo, require_permission
+from app.services.auditoria import invalidate_cache_for_empresa
 from app.models.movimiento_inventario import MovimientoInventario
 from app.models.producto import Producto
 from app.models.user import User
@@ -78,6 +79,7 @@ def crear_ajuste(
     db.add(mov)
     db.flush()
     db.commit()
+    invalidate_cache_for_empresa(current_user.empresa_id, ["inventario", "kpis", "margenes"])
     return _load_movimiento(db, mov.id)
 
 

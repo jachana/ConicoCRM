@@ -9,6 +9,12 @@ Estrategia
 - El contexto (user_id, ip, user_agent) se obtiene desde `session.info`,
   poblado por el middleware `AuditContextMiddleware` por request.
 - El listener nunca se aplica a `AuditLog` mismo (evita recursión infinita).
+
+Cache invalidation
+------------------
+- `_before_flush` also collects `(empresa_id, endpoints)` pairs for models that map
+  to report caches.  After a successful commit the `after_commit` listener fires
+  `ReportCache.invalidate_pattern` for each affected empresa.  Errors are swallowed.
 """
 from __future__ import annotations
 
@@ -21,6 +27,22 @@ from sqlalchemy import event, inspect
 from sqlalchemy.orm import Session
 
 
+# ---------------------------------------------------------------------------
+# Cache-invalidation mapping: model classname → report endpoints to clear.
+# Only models that carry empresa_id directly are handled here; models without
+# empresa_id (e.g. Producto, OrdenCompra) are invalidated at the API layer.
+# ---------------------------------------------------------------------------
+_CACHE_INVALIDATION_MAP: dict[str, list[str]] = {
+    "Factura":    ["ventas", "cobranza", "margenes", "dte", "kpis", "por_marca"],
+    "NotaVenta":  ["ventas", "kpis"],
+    "Cliente":    ["ventas", "cobranza", "kpis"],
+}
+
+# session.info key used to accumulate (empresa_id → set[endpoint]) per transaction.
+_CACHE_PENDING_KEY = "_cache_invalidations"
+
+
+# ---------------------------------------------------------------------------
 # Campos sensibles que NUNCA deben aparecer en diff_json.
 SENSITIVE_FIELDS: set[str] = {
     "password",
@@ -195,6 +217,26 @@ def _make_log_row(
 _PENDING_INSERTS_KEY = "_audit_pending_inserts"
 
 
+def _accumulate_cache_invalidations(session: Session, instances: list[Any]) -> None:
+    """Scan *instances* and accumulate (empresa_id → endpoints) in session.info.
+
+    Called from before_flush so PKs and attributes are still accessible.
+    Only models in _CACHE_INVALIDATION_MAP that have a non-None empresa_id are
+    processed.
+    """
+    pending: dict[int, set[str]] = session.info.setdefault(_CACHE_PENDING_KEY, {})
+    for inst in instances:
+        model_name = type(inst).__name__
+        endpoints = _CACHE_INVALIDATION_MAP.get(model_name)
+        if not endpoints:
+            continue
+        empresa_id = getattr(inst, "empresa_id", None)
+        if not empresa_id:
+            continue
+        existing = pending.setdefault(empresa_id, set())
+        existing.update(endpoints)
+
+
 def _before_flush(session: Session, flush_context, instances):
     """Captura UPDATE y DELETE (donde el before-state aún es accesible)."""
     if session.info.get("audit_disabled"):
@@ -253,6 +295,12 @@ def _before_flush(session: Session, flush_context, instances):
 
         for r in rows:
             session.add(r)
+
+        # Collect cache-invalidation targets for after_commit.
+        _accumulate_cache_invalidations(
+            session,
+            list(session.new) + list(session.dirty) + list(session.deleted),
+        )
     except Exception as exc:  # noqa: BLE001 — audit must never block business ops
         logger.exception("audit.listener_failed event=before_flush")
 
@@ -294,6 +342,39 @@ def _after_flush_postexec(session: Session, flush_context):
         logger.exception("audit.listener_failed event=after_flush_postexec")
 
 
+def _after_commit(session: Session) -> None:
+    """Fire cache invalidations accumulated during the flushed transaction."""
+    pending: dict[int, set[str]] = session.info.pop(_CACHE_PENDING_KEY, {})
+    if not pending:
+        return
+    try:
+        from app.core.cache import get_report_cache
+        cache = get_report_cache()
+        if cache is None:
+            return
+        for empresa_id, endpoints in pending.items():
+            try:
+                cache.invalidate_pattern(empresa_id, list(endpoints))
+                logger.debug(
+                    "cache.invalidated empresa_id=%s endpoints=%s",
+                    empresa_id,
+                    sorted(endpoints),
+                )
+            except Exception:  # noqa: BLE001
+                logger.warning(
+                    "cache.invalidation_error empresa_id=%s endpoints=%s",
+                    empresa_id,
+                    sorted(endpoints),
+                )
+    except Exception:  # noqa: BLE001
+        logger.warning("cache.invalidation_error event=after_commit")
+
+
+def _after_rollback(session: Session) -> None:
+    """Discard accumulated invalidations on rollback."""
+    session.info.pop(_CACHE_PENDING_KEY, None)
+
+
 _LISTENERS_REGISTERED = False
 
 
@@ -304,6 +385,8 @@ def register_listeners() -> None:
         return
     event.listen(Session, "before_flush", _before_flush)
     event.listen(Session, "after_flush_postexec", _after_flush_postexec)
+    event.listen(Session, "after_commit", _after_commit)
+    event.listen(Session, "after_rollback", _after_rollback)
     _LISTENERS_REGISTERED = True
 
 
@@ -314,7 +397,42 @@ def unregister_listeners() -> None:
         return
     event.remove(Session, "before_flush", _before_flush)
     event.remove(Session, "after_flush_postexec", _after_flush_postexec)
+    event.remove(Session, "after_commit", _after_commit)
+    event.remove(Session, "after_rollback", _after_rollback)
     _LISTENERS_REGISTERED = False
+
+
+# ---------------------------------------------------------------------------
+# Public helpers
+# ---------------------------------------------------------------------------
+
+
+def invalidate_cache_for_empresa(empresa_id: int | None, endpoints: list[str]) -> None:
+    """Invalidate report-cache entries for *empresa_id* immediately.
+
+    Safe to call from API endpoints for models that don't carry empresa_id
+    (e.g. Producto, OrdenCompra).  No-ops if cache is unavailable or
+    empresa_id is None.  Never raises.
+    """
+    if not empresa_id:
+        return
+    try:
+        from app.core.cache import get_report_cache
+        cache = get_report_cache()
+        if cache is None:
+            return
+        cache.invalidate_pattern(empresa_id, endpoints)
+        logger.debug(
+            "cache.invalidated empresa_id=%s endpoints=%s",
+            empresa_id,
+            endpoints,
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "cache.invalidation_error empresa_id=%s endpoints=%s",
+            empresa_id,
+            endpoints,
+        )
 
 
 # Helper público para escribir manualmente (login, etc.) — no se usa en V1
