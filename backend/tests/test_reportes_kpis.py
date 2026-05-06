@@ -115,7 +115,7 @@ def test_kpis_returns_valid_structure(client, admin_token, db):
     assert "sparkline" in v
     assert isinstance(v["total"], float)
     assert isinstance(v["total_anterior"], float)
-    assert isinstance(v["delta_pct"], float)
+    assert v["delta_pct"] is None or isinstance(v["delta_pct"], float)
     assert isinstance(v["count"], int)
     assert isinstance(v["sparkline"], list)
 
@@ -232,7 +232,7 @@ def test_kpis_empty_period_returns_zeros(client, admin_token):
     data = r.json()
     assert data["ventas"]["total"] == 0.0
     assert data["ventas"]["count"] == 0
-    assert data["ventas"]["delta_pct"] == 0.0
+    assert data["ventas"]["delta_pct"] is None
     assert data["ventas"]["sparkline"] == []
     assert data["top_clientes"] == []
     assert data["dte_rejection"]["emitidas"] == 0

@@ -2117,7 +2117,7 @@ def reporte_kpis(
         + (Decimal(str(prev_bol_total_raw)) if prev_bol_total_raw else _ZERO)
     )
     if prev_total == _ZERO:
-        delta_pct = 0.0
+        delta_pct: float | None = None
     else:
         delta_pct = round(float((total_periodo - prev_total) / prev_total * 100), 1)
 
@@ -2164,7 +2164,7 @@ def reporte_kpis(
     all_unpaid = (
         db.query(Factura)
         .filter(
-            Factura.estado != "anulada",
+            Factura.estado.not_in(["anulada", "pagada"]),
             Factura.fecha_vencimiento < today,
         )
         .all()
