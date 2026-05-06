@@ -32,22 +32,29 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Telemetry T2.3] GET /admin/telemetry/cost",
+      "list": "In progress",
+      "name": "[Telemetry T3.1] Web Vitals capture + POST endpoint",
       "labels": [
         "Core",
         "Goal: Operations",
         "Size:M"
       ],
-      "desc": "**Resumen** — Se implementó el endpoint GET /admin/telemetry/cost para obtener métricas de uso y costos por empresa, como parte del sistema de billing y telemetría.\n\n**Cambios / Decisiones** — Se agregó el endpoint en `backend/app/api/telemetry.py` bajo la ruta `/admin/telemetry/cost`, protegido con `@require_admin`. Lee datos de las tablas `cost_rollup`, `perf_rollup` y `dte_emisiones`. Retorna métricas por empresa (`request_count`, `lioren_call_count`, `lioren_cost_clp`, `dte_emitidos_count`, `slow_request_count`) y un total agregado al final si no se filtra por `empresa_id`. Se creó el modelo Pydantic `CostTelemetryResponse` y se generó la documentación OpenAPI. Se añadieron tests en `backend/tests/test_telemetry_cost.py` validando distintos casos con datos multempresa.",
+      "desc": "**Contexto / Problema**\nConico necesita visibilidad en el rendimiento real del frontend (LCP, FID, INP, CLS, TTFB) para identificar degradación de UX y optimizar antes de escalar. Hoy no capturamos estas métricas.\n\n**Acceptance Criteria**\n- Al cargar cualquier página de Conico, se capturan automáticamente las 5 métricas Web Vitals (LCP, FID, INP, CLS, TTFB).\n- Cada métrica se envía vía POST a `/api/telemetry/web-vitals` con estructura `{metric, value, route, user_agent, timestamp}`.\n- El backend recibe y loguea la métrica en stdout/logs (sin persistencia en DB por ahora).\n- Sample rate es configurable vía variable de entorno (default 100%, completamente habilitado en desarrollo y staging).\n- En ambiente local (NODE_ENV=development) las métricas NO se envían a backend.\n- Un developer puede ver en DevTools (Network tab) o logs del backend que el POST se ejecutó al cargar BoletasList.\n\n**Definition of Done**\n- `frontend/src/lib/webVitals.ts` creado e inicializado en punto de entrada de la app.\n- Dependencia `web-vitals` agregada a package.json y instalada.\n- Endpoint `POST /api/telemetry/web-vitals` implementado y documentado (code comment o ADR).\n- Variable de entorno `NEXT_PUBLIC_TELEMETRY_SAMPLE_RATE` disponible (default 1.0).\n- Tests unitarios verifican que callbacks de cada métrica se disparan y envían payload correcto.\n- Smoke test en staging: cargar BoletasList, abrir DevTools Network, confirmar POST enviado.\n- Trello card movida a \"In Review\".\n- PR mergeado a develop.\n\n**Notas tecnicas**\n- Usar `web-vitals` v3.x (oficial, ~3KB gzipped).\n- Registrar callbacks en `app.tsx` o similar punto de entrada único.\n- Endpoint: `POST /api/telemetry/web-vitals` en Next.js `/pages/api/` o router.\n- Payload: `{metric: string, value: number, route: string, user_agent: string, timestamp: ISO8601}`.\n- Log a stdout con level `info` o `debug` para alertas posteriores.\n- Excluir si `process.env.NODE_ENV === 'development'` antes de POST.\n- Para sample rate: generar `Math.random()` en frontend, comparar contra `parseFloat(process.env.NEXT_PUBLIC_TELEMETRY_SAMPLE_RATE || '1.0')`.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Hacer GET a /admin/telemetry/cost?period=30d y verificar lista con datos por empresa y total al final",
-        "Hacer GET a /admin/telemetry/cost?period=7d&empresa_id=123 y verificar solo datos de esa empresa",
-        "Verificar que un usuario no admin recibe 403 al acceder al endpoint",
-        "Revisar en Swagger que el schema CostTelemetryResponse esté documentado correctamente",
-        "Validar que llamada con period=24h retorna datos correctos de las últimas 24h",
-        "Verificar que se retornan cero conteos cuando no hay datos en el periodo solicitado",
-        "Revisar tests en test_telemetry_cost.py para confirmar cobertura de casos multempresa"
+        "Instalar web-vitals npm package",
+        "frontend/src/lib/webVitals.ts: registrar onLCP/onFID/onCLS/onINP/onTTFB",
+        "Send a POST /api/telemetry/web-vitals con {metric, value, route, user_agent}",
+        "Endpoint backend que solo loguea (no DB todavia)",
+        "Sample rate configurable (default 1.0 hasta tener volumen)",
+        "Excluir local dev (env check)",
+        "Test: smoke en BoletasList; verificar request enviado al cargar",
+        "Instalar web-vitals npm package y agregar a package.json",
+        "Crear frontend/src/lib/webVitals.ts registrando onLCP, onFID, onINP, onCLS, onTTFB",
+        "Implementar POST /api/telemetry/web-vitals que loguea {metric, value, route, user_agent, timestamp}",
+        "Configurar variable NEXT_PUBLIC_TELEMETRY_SAMPLE_RATE (default 1.0) con lógica de exclusión en dev",
+        "Escribir tests unitarios para callbacks y payload de cada métrica",
+        "Smoke test: cargar BoletasList en staging y verificar POST en Network tab",
+        "Mover a In Review, mergear a develop"
       ]
     }
   ]
