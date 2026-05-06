@@ -33,21 +33,21 @@
   "cards": [
     {
       "list": "In review",
-      "name": "[Perf] Paginacion en listas de alto volumen",
+      "name": "[UX] Command palette Cmd+K (busqueda global + acciones)",
       "labels": [
-        "Core",
-        "Goal: Performance",
-        "Size:XL"
+        "Design System",
+        "Goal: UX Polish",
+        "Size:L"
       ],
-      "desc": "**Resumen** — Implementar paginación en vistas de listas de alto volumen (Facturas, Cotizaciones, Notas de Venta, Guías de Despacho, Órdenes de Compra y Notas de Crédito) para mejorar performance y UX, siguiendo el patrón ya existente en otras listas.\n\n**Cambios / Decisiones** — Se migraron 6 vistas principales del frontend a paginación con controles de navegación y selector de tamaño de página. Se actualizaron los endpoints backend correspondientes para aceptar parámetros `skip`/`limit` y retornar metadata de paginación. Se ajustaron tests unitarios y se aseguró persistencia de filtros entre páginas. Archivos afectados: `Facturas.tsx`, `Cotizaciones.tsx`, `NotaVentas.tsx`, `GuiasDespachoList.tsx`, `OrdenesCompra.tsx`, `NotasCredito.tsx` y sus respectivos endpoints y tests.",
+      "desc": "**Resumen**\nExtiende la paleta global Cmd+K agregando un grupo \"Acciones\" con accesos rápidos a creación de documentos, navegación y logout, gateado por rol y módulo.\n\n**Cambios / Decisiones**\n- `frontend/src/components/search/actions.ts`: registro `ACTIONS` con 12 acciones (slug, label, icon, route|handler, modulo, roles, keywords) + helpers `isActionAllowed` y `matchesActionQuery`.\n- `frontend/src/components/search/items/ActionItem.tsx`: ítem reutilizable con badge \"Acción\" y `Command.Item` de cmdk para navegación por teclado.\n- `frontend/src/components/search/GlobalSearchModal.tsx`: consume `useAuthStore.role`, `useModulos()` y `logout`; renderiza grupo \"Acciones\" antes de \"Recientes\" y antes de resultados de entidades.\n- Permission-aware: oculta acciones cuyo `modulo` está OFF (vía `isModuloEnabled`) o cuyo `roles` no incluye al usuario actual (admin/subadmin/vendedor).\n- Búsqueda insensible a tildes con `normalize('NFD')` + strip de combining marks (U+0300–U+036F); soporta tokens en español como \"fac\", \"nueva\", \"cotizacion\".\n- Placeholder actualizado a `Buscar productos, clientes, documentos... o escribe 'nueva'` para descubrir el grupo de acciones.\n- Logout sin permisos/módulo asociado se comporta siempre visible y limpia el auth store + redirige a `/login`.\n- Tests: `frontend/src/__tests__/GlobalSearchModalActions.test.tsx` con 8 casos (render por rol admin, vendedor sin acciones de admin, módulo OFF oculta acción, búsqueda 'fac', búsqueda diacritic-insensitive 'cotizacion', click navega + cierra modal, logout limpia auth y redirige, placeholder con hint).",
       "checklist": [
-        "Abrir /facturas y verificar carga máxima 50 registros",
-        "Navegar entre páginas usando botones Anterior/Siguiente",
-        "Aplicar filtro y verificar persistencia al cambiar página",
-        "Cambiar tamaño de página a 20 y validar nuevo límite",
-        "Revisar metadata de paginación en response de API",
-        "Verificar funcionamiento de filtros en /cotizaciones",
-        "Validar performance con dataset >1000 registros"
+        "Loguearse como admin, abrir Cmd+K y verificar que aparece grupo 'Acciones' antes de 'Recientes' con Nueva factura, Nueva NV, Nueva cotización, etc.",
+        "Escribir 'fac' en el input y verificar que solo aparece 'Nueva factura' (filtro por keyword)",
+        "Escribir 'cotizacion' sin tilde y verificar que aparece 'Nueva cotización' (búsqueda insensible a tildes)",
+        "Click en 'Nueva factura' y verificar que el modal se cierra y se navega a /facturas/nueva",
+        "Loguearse como vendedor y verificar que NO aparecen Nueva OC, Nueva NC, Ir a Reportes ni Ir a Configuración",
+        "Deshabilitar módulo Boletas en /configuracion/empresa, recargar y verificar que 'Nueva boleta' desaparece del grupo Acciones",
+        "Click en 'Cerrar sesión' y verificar que se cierra sesión y redirige a /login"
       ]
     }
   ]

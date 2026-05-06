@@ -1,10 +1,14 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Command } from 'cmdk'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { useNavigate } from 'react-router-dom'
 import { Search, Loader2 } from 'lucide-react'
 import { useGlobalSearch } from '../../hooks/useGlobalSearch'
 import { useRecentEntities, type RecentTipo } from '../../hooks/useRecentEntities'
+import { useModulos } from '../../hooks/useModulos'
+import { useAuthStore } from '../../stores/auth'
+import { ACTIONS, isActionAllowed, matchesActionQuery, type ActionDef } from './actions'
+import ActionItem from './items/ActionItem'
 import ProductoItem from './items/ProductoItem'
 import ClienteItem from './items/ClienteItem'
 import EmpresaItem from './items/EmpresaItem'
@@ -33,6 +37,16 @@ export default function GlobalSearchModal({ open, onOpenChange }: Props) {
   const navigate = useNavigate()
   const { data, isFetching } = useGlobalSearch(q)
   const { recientes, push } = useRecentEntities()
+  const role = useAuthStore(s => s.user?.role) ?? null
+  const logout = useAuthStore(s => s.logout)
+  const { effective: modulos, isLoading: modulosLoading } = useModulos()
+
+  const visibleActions = useMemo(
+    () =>
+      ACTIONS.filter(a => isActionAllowed(a, role, modulos, modulosLoading))
+        .filter(a => matchesActionQuery(a, q)),
+    [role, modulos, modulosLoading, q]
+  )
 
   const handleClose = useCallback(
     (v: boolean) => {
@@ -49,6 +63,19 @@ export default function GlobalSearchModal({ open, onOpenChange }: Props) {
       handleClose(false)
     },
     [navigate, push, handleClose]
+  )
+
+  const handleActionSelect = useCallback(
+    (action: ActionDef) => {
+      handleClose(false)
+      if (action.handler === 'logout') {
+        logout()
+        navigate('/login')
+        return
+      }
+      if (action.route) navigate(action.route)
+    },
+    [navigate, logout, handleClose]
   )
 
   return (
@@ -73,13 +100,20 @@ export default function GlobalSearchModal({ open, onOpenChange }: Props) {
           <Command.Input
             value={q}
             onValueChange={setQ}
-            placeholder="Buscar productos, clientes, documentos..."
+            placeholder="Buscar productos, clientes, documentos... o escribe 'nueva'"
             className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-400"
           />
           {isFetching && <Loader2 size={16} className="text-gray-400 animate-spin" />}
         </div>
 
         <Command.List className="max-h-[60vh] overflow-y-auto p-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-gray-500 dark:[&_[cmdk-group-heading]]:text-gray-400">
+          {visibleActions.length > 0 && (
+            <Command.Group heading="Acciones">
+              {visibleActions.map(a => (
+                <ActionItem key={`action-${a.slug}`} action={a} onSelect={handleActionSelect} />
+              ))}
+            </Command.Group>
+          )}
           {q.length < 2 && <RecentesGroup recientes={recientes} onSelect={handleSelect} />}
           {q.length >= 2 && (
             <>

@@ -83,8 +83,9 @@ describe('GuiaDespachoDetalle', () => {
     vi.mocked(apiGuias.getGuiaDespacho).mockResolvedValue(makeGuia())
     renderPage()
     await waitFor(() => screen.getByRole('button', { name: /anular/i }))
-    window.confirm = vi.fn(() => true)
     await userEvent.click(screen.getByRole('button', { name: /anular/i }))
+    // Confirm in the modal
+    await userEvent.click(await screen.findByRole('button', { name: /crear nc y anular/i }))
     await waitFor(() => expect(screen.getByText('nc-nueva-stub')).toBeInTheDocument())
   })
 

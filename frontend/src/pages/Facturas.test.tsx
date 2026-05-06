@@ -41,8 +41,20 @@ const sampleFactura = {
   lineas: [],
 }
 
+function mockApiGet(facturas: any[]) {
+  vi.mocked(api.get).mockImplementation((url: string) => {
+    if (url.startsWith('/api/facturas/')) {
+      return Promise.resolve({
+        data: { data: facturas, pagination: { limit: 50, offset: 0, total: facturas.length } },
+      } as any)
+    }
+    // /api/empresas/, /api/clientes/, /api/productos/ — raw array shape
+    return Promise.resolve({ data: [] } as any)
+  })
+}
+
 beforeEach(() => {
-  vi.mocked(api.get).mockResolvedValue({ data: [] } as any)
+  mockApiGet([])
 })
 
 describe('Facturas', () => {
@@ -52,7 +64,7 @@ describe('Facturas', () => {
   })
 
   it('renders facturas table with data', async () => {
-    vi.mocked(api.get).mockResolvedValue({ data: [sampleFactura] } as any)
+    mockApiGet([sampleFactura])
     wrap(<Facturas />)
     const matches = await screen.findAllByText('FAC-00001')
     expect(matches.length).toBeGreaterThan(0)
@@ -61,7 +73,7 @@ describe('Facturas', () => {
   })
 
   it('shows DTE badge as primary SII signal', async () => {
-    vi.mocked(api.get).mockResolvedValue({ data: [{ ...sampleFactura, dte_estado: 'aceptada' }] } as any)
+    mockApiGet([{ ...sampleFactura, dte_estado: 'aceptada' }])
     const { container } = wrap(<Facturas />)
     await waitFor(() => expect(container.textContent).toContain('DTE OK'), { timeout: 3000 })
   })

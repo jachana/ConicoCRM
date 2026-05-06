@@ -1,6 +1,10 @@
 # Conico — Arquitectura de Alto Nivel
 
 > Estado: documento vivo. Última revisión: 2026-04-24. Mantener sincronizado con `PROGRESS.md` y `docs/backlog.md`.
+>
+> Variables de entorno: ver [`docs/environment-variables.md`](environment-variables.md) para la referencia canónica (backend, frontend, Celery, backups, Sentry).
+>
+> Integraciones externas: ver [`docs/integrations/dte-lioren.md`](integrations/dte-lioren.md) para el deep-dive de la integración DTE/Lioren (auth, payloads, webhook HMAC, polling, CAF).
 
 ---
 
@@ -130,8 +134,10 @@ Factura ──▶ NotaCredito / NotaDebito ──▶ DteEmision
 
 ## 5. Permisos
 
+> Referencia completa: [`docs/security/roles-and-permissions.md`](security/roles-and-permissions.md) — matriz roles × módulos × acciones, mecanismo de override por usuario, gates en backend (`Depends`) y frontend (route guards / `useEffectivePermissions`), feature "view as", y pitfalls comunes para depurar `403`.
+
 - **3 roles base:** `admin`, `subadmin`, `vendedor`.
-- **Permisos por usuario** (toggles módulo×acción) almacenados en tabla `permissions` — sobrescriben defaults del rol.
+- **Permisos por usuario** (toggles módulo×acción) almacenados en tabla `permission_overrides` — sobrescriben defaults del rol.
 - **Vendedor scoping:** queries filtran por `vendedor_id == current_user.id` automáticamente en cotizaciones/NV/facturas/aprobaciones; reportes filtran datos a sus propias ventas; búsqueda global omite resultados ajenos.
 - Bypass por permission flags concretos (`tareas:view_all`, `catalogo:delete`, etc.).
 
