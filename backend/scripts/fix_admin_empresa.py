@@ -1,50 +1,53 @@
 """Assign admin user to 'Conico' empresa with all modules enabled.
 
+Uses raw SQL to avoid any ORM mutation-tracking issues with JSON columns.
+Safe to run on every startup (idempotent).
+
 Run inside backend container:
   docker-compose exec backend python scripts/fix_admin_empresa.py
 """
-import sys, os
+import sys, os, json
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from app.database import SessionLocal
-from app.models.user import User
-from app.models.empresa import Empresa
+from sqlalchemy import text
+from app.database import engine
 from app.core.modulos import OPTIONAL_MODULES
 
-ALL_MODULES_ON = {slug: True for slug in OPTIONAL_MODULES}
+ALL_MODULES_ON = json.dumps({slug: True for slug in OPTIONAL_MODULES})
 
 
 def fix():
-    db = SessionLocal()
-    try:
-        empresa = db.query(Empresa).filter(Empresa.nombre == "Conico").first()
-        if not empresa:
-            empresa = Empresa(
-                nombre="Conico",
-                razon_social="Conico SpA",
-                modulos_enabled=ALL_MODULES_ON,
-            )
-            db.add(empresa)
-            db.flush()
-            print(f"Created empresa 'Conico' id={empresa.id}")
+    with engine.begin() as conn:
+        # 1. Find or create Conico empresa
+        row = conn.execute(text("SELECT id FROM empresas WHERE nombre = 'Conico'")).first()
+        if row:
+            empresa_id = row[0]
+            conn.execute(text(
+                "UPDATE empresas SET modulos_enabled = :m WHERE id = :id"
+            ), {"m": ALL_MODULES_ON, "id": empresa_id})
+            print(f"Updated empresa 'Conico' id={empresa_id} — all modules ON")
         else:
-            empresa.modulos_enabled = ALL_MODULES_ON
-            print(f"Updated empresa 'Conico' id={empresa.id} — all modules ON")
+            result = conn.execute(text(
+                "INSERT INTO empresas (nombre, razon_social, modulos_enabled) "
+                "VALUES ('Conico', 'Conico SpA', :m) RETURNING id"
+            ), {"m": ALL_MODULES_ON})
+            empresa_id = result.first()[0]
+            print(f"Created empresa 'Conico' id={empresa_id}")
 
-        admin = db.query(User).filter_by(role="admin").first()
-        if not admin:
-            print("ERROR: no admin user found")
+        # 2. Assign admin user to this empresa
+        result = conn.execute(text(
+            "UPDATE users SET empresa_id = :eid "
+            "WHERE role = 'admin' "
+            "RETURNING id, email, empresa_id"
+        ), {"eid": empresa_id})
+        rows = result.fetchall()
+        if not rows:
+            print("ERROR: no admin user found — skipping empresa assignment")
             return
+        for r in rows:
+            print(f"Assigned user id={r[0]} ({r[1]}) → empresa_id={r[2]}")
 
-        admin.empresa_id = empresa.id
-        db.commit()
-        print(f"Assigned user '{admin.email}' → empresa_id={empresa.id}")
-        print("Done. User must log out and back in to get a fresh token.")
-    except Exception as exc:
-        db.rollback()
-        raise
-    finally:
-        db.close()
+    print("Done. User must log out and back in to get a fresh JWT.")
 
 
 if __name__ == "__main__":
