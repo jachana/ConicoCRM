@@ -32,30 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Telemetry T3.2] Bundle analyzer en CI + perf budget",
       "labels": [
         "Core",
         "Goal: Operations",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nActualmente no tenemos visibilidad del tamaño de bundle en cada build ni control de regresiones de performance. Necesitamos automatizar la detección de cambios no autorizados en el tamaño del bundle principal y dependencias.\n\n**Acceptance Criteria**\n- El bundle de main (gzipped) se reporta automáticamente en cada build de CI con un archivo HTML visualizable.\n- La build de CI falla si el bundle de main excede 350 KB gzipped o vendor excede 500 KB gzipped.\n- El reporte de bundle (stats.html) se descarga como artifact desde el run de GH Actions.\n- Un desarrollador puede ejecutar localmente el visualizer para inspeccionar el bundle antes de pushear.\n- La documentación en CONTRIBUTING.md explica cómo consultar el visualizer y respetar el budget.\n\n**Definition of Done**\n- rollup-plugin-visualizer (o equivalente para Vite) está instalado en package.json.\n- Script `size-check.js` implementado y validado contra fixtures.\n- Paso de CI que ejecuta `size-check.js` y falla si se excede budget está en `.github/workflows/*.yml`.\n- stats.html se genera en `dist/` y se sube como artifact en GH Actions.\n- Tests unitarios para `size-check.js` con casos: within budget, exceeds budget, malformed dist.\n- Documentación en CONTRIBUTING.md completada y revisada.\n- Trello card movida a In review.\n\n**Notas tecnicas**\n- Usar `rollup-plugin-visualizer` (npm) o `vite-plugin-bundle-analyzer` según build actual.\n- Script `scripts/size-check.js`: parsea archivos en `dist/`, suma tamaños gzipped, compara vs `config/perf-budget.json`.\n- Budget config: `{ \"main\": \"350KB\", \"vendor\": \"500KB\" }`.\n- GH Actions: agregar step que ejecuta `node scripts/size-check.js` después del build.\n- Artifact upload: `actions/upload-artifact@v3` con path `dist/stats.html`.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Automatizar análisis de tamaño de bundles en CI con control de regresiones de performance mediante límites definidos.\n\n**Cambios / Decisiones** — Se instaló `rollup-plugin-visualizer` y se configuró en `vite.config.ts` para generar `stats.html`. Se creó el script `scripts/size-check.js` que valida el tamaño gzipped de los bundles (`main` y `vendor`) contra límites definidos en `config/perf-budget.json`. La build falla si se exceden: main > 350KB o vendor > 500KB. Se agregó un job en `.github/workflows/ci.yml` que ejecuta el check y sube `stats.html` como artifact. Se documentó el uso local en `CONTRIBUTING.md`. Se incluyen 19 tests unitarios para `size-check.js`.",
       "checklist": [
-        "Instalar rollup-plugin-visualizer (o vite-plugin-bundle-analyzer)",
-        "Generar stats.html en build de CI",
-        "Subir stats.html como artifact en GH Actions",
-        "Script size-check.js que parsea dist/ y compara contra budget en config",
-        "Budget inicial: main 350KB gz, vendor 500KB gz",
-        "CI step que falla si excede budget",
-        "Documentar en CONTRIBUTING como inspeccionar visualizer",
-        "Instalar rollup-plugin-visualizer (o vite-plugin-bundle-analyzer) en package.json",
-        "Configurar plugin en build para generar stats.json y stats.html en dist/",
-        "Crear scripts/size-check.js que parsea dist/ y valida contra perf-budget.json",
-        "Agregar step en GH Actions que ejecute size-check.js y falle si se excede budget",
-        "Configurar upload de stats.html como artifact en GH Actions",
-        "Escribir tests unitarios para size-check.js (within, exceeds, malformed cases)",
-        "Documentar en CONTRIBUTING.md cómo inspeccionar visualizer localmente y respetar budget",
-        "Tests pasan, deploy a staging, Trello → In review"
+        "Ejecutar `node scripts/size-check.js` localmente y verificar exit 0",
+        "Verificar que `dist/stats.html` se genera al correr el build",
+        "Inspeccionar `stats.html` y confirmar visualización de módulos",
+        "Editar `config/perf-budget.json` a valores bajos y validar fallo en CI",
+        "Correr `npm test` y confirmar pass de tests de size-check.js",
+        "Abrir CONTRIBUTING.md y revisar sección de bundle analysis",
+        "Verificar en GH Actions que artifact `stats.html` se publica en builds"
       ]
     }
   ]
