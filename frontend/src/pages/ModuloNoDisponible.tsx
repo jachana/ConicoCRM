@@ -12,7 +12,7 @@ export default function ModuloNoDisponible({ slug }: Props) {
   return (
     <div className="flex flex-col items-center justify-center h-full min-h-[400px] gap-4 text-center p-8">
       <div className="rounded-full bg-gray-100 dark:bg-gray-800 p-4">
-        <Lock className="h-8 w-8 text-gray-400" />
+        <Lock className="h-8 w-8 text-gray-500 dark:text-gray-400" />
       </div>
       <div className="space-y-2">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">

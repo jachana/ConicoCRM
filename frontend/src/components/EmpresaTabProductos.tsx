@@ -70,7 +70,7 @@ export default function EmpresaTabProductos({ empresaId, empresaNombre }: Props)
   }
 
   function SortIndicator({ field }: { field: SortField }) {
-    if (sortField !== field) return <span className="text-gray-400 ml-1">↕</span>
+    if (sortField !== field) return <span className="text-gray-500 dark:text-gray-400 ml-1">↕</span>
     return <span className="text-brand-500 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
   }
 
@@ -128,7 +128,7 @@ export default function EmpresaTabProductos({ empresaId, empresaNombre }: Props)
           className="min-w-[220px]"
         />
         <Input type="date" size="sm" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} className="w-40" />
-        <span className="text-gray-400 text-sm">→</span>
+        <span className="text-gray-500 dark:text-gray-400 text-sm">→</span>
         <Input type="date" size="sm" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} className="w-40" />
         <Button
           size="sm"

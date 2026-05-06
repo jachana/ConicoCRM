@@ -117,11 +117,11 @@ export default function ExportPreviewPanel({
 
       {/* Table */}
       {isLoading ? (
-        <div className="text-gray-400 text-sm py-8 text-center">Cargando...</div>
+        <div className="text-gray-500 dark:text-gray-400 text-sm py-8 text-center">Cargando...</div>
       ) : lines.length === 0 ? (
-        <div className="text-gray-400 text-sm py-8 text-center">Sin líneas</div>
+        <div className="text-gray-500 dark:text-gray-400 text-sm py-8 text-center">Sin líneas</div>
       ) : visibleCols.length === 0 ? (
-        <div className="text-gray-400 text-sm py-8 text-center">Selecciona al menos una columna</div>
+        <div className="text-gray-500 dark:text-gray-400 text-sm py-8 text-center">Selecciona al menos una columna</div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
           <table className="text-xs w-full">
@@ -151,7 +151,7 @@ export default function ExportPreviewPanel({
 
       {/* Footer + export */}
       <div className="flex items-center justify-between gap-4">
-        <span className="text-xs text-gray-400">
+        <span className="text-xs text-gray-500 dark:text-gray-400">
           {lines.length > PREVIEW_CAP
             ? `Mostrando ${PREVIEW_CAP} de ${lines.length} líneas — exporta todas`
             : `${lines.length} línea${lines.length !== 1 ? 's' : ''}`}

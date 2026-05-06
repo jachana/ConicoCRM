@@ -305,7 +305,7 @@ export default function FacturaCompraDetalle() {
                           size="icon-sm"
                           onClick={() => removeLinea(i)}
                           aria-label="Eliminar línea"
-                          className="text-gray-400 hover:text-danger-500"
+                          className="text-gray-500 dark:text-gray-400 hover:text-danger-500"
                           disabled={lineas.length === 1}
                         >
                           <Trash2 className="size-4" />

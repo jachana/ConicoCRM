@@ -45,7 +45,7 @@ function fmtFecha(iso: string) {
 }
 
 function ReferenciaCelda({ tipo, id }: { tipo: string | null; id: number | null }) {
-  if (!tipo || !id) return <span className="text-gray-400">—</span>
+  if (!tipo || !id) return <span className="text-gray-500 dark:text-gray-400">—</span>
   const map: Record<string, string> = {
     orden_compra: `/ordenes-compra/${id}`,
     nota_venta: `/notas-venta/${id}`,
@@ -271,7 +271,7 @@ export default function Inventario() {
                           <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300 text-sm">
                             <MovimientoIcon tipo={m.tipo} signo={m.signo} />
                             {TIPO_LABELS[m.tipo] ?? m.tipo}
-                            {m.motivo && <span className="text-gray-400 dark:text-gray-500 text-xs">({MOTIVO_LABELS[m.motivo] ?? m.motivo})</span>}
+                            {m.motivo && <span className="text-gray-500 dark:text-gray-400 text-xs">({MOTIVO_LABELS[m.motivo] ?? m.motivo})</span>}
                           </span>
                         </TD>
                         <TD className={`text-right font-num font-semibold ${m.signo === 1 ? 'text-success-600 dark:text-success-400' : 'text-danger-600 dark:text-danger-400'}`}>

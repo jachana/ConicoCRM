@@ -5,7 +5,7 @@ interface SparklineProps {
 }
 
 export function Sparkline({ data, width = 80, height = 24 }: SparklineProps) {
-  if (data.length < 2) return <span className="text-gray-400 text-xs">—</span>
+  if (data.length < 2) return <span className="text-gray-500 dark:text-gray-400 text-xs">—</span>
 
   const values = data.map(d => d.p95)
   const min = Math.min(...values)

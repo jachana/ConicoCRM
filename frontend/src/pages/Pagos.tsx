@@ -147,7 +147,7 @@ export default function Pagos() {
                       </div>
                       {p.nota && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">{p.nota}</p>}
                       {p.registrado_por && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">por {p.registrado_por.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">por {p.registrado_por.name}</p>
                       )}
                     </div>
                     {isAdmin && (

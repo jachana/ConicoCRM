@@ -130,7 +130,7 @@ export default function TareasConfigPage() {
                   <TR key={r.tipo} className={isDirty ? 'bg-warning-50/50 dark:bg-warning-500/10' : ''}>
                     <TD>
                       <div className="font-medium text-gray-900 dark:text-white">{prettyTipo(r.tipo)}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{r.tipo}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{r.tipo}</div>
                     </TD>
                     <TD>
                       <label className="inline-flex items-center cursor-pointer">

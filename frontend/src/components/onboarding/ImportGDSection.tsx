@@ -228,7 +228,7 @@ export function ImportGDSection() {
           <div className="mt-3 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
             <FileSpreadsheet className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
             <span className="truncate font-medium">{file.name}</span>
-            <span className="text-gray-400 shrink-0">({(file.size / 1024).toFixed(1)} KB)</span>
+            <span className="text-gray-500 dark:text-gray-400 shrink-0">({(file.size / 1024).toFixed(1)} KB)</span>
           </div>
         )}
       </Card>
@@ -301,7 +301,7 @@ export function ImportGDSection() {
                       <span className="text-gray-500 shrink-0">{row.fecha}</span>
                       <span className="text-gray-500 shrink-0">Tipo {row.tipo_traslado}</span>
                       {row.sede_destino && <span className="text-gray-500 truncate">{row.sede_destino}</span>}
-                      <span className="text-gray-400 shrink-0">{row.lineas_count} línea{row.lineas_count !== 1 ? 's' : ''}</span>
+                      <span className="text-gray-500 dark:text-gray-400 shrink-0">{row.lineas_count} línea{row.lineas_count !== 1 ? 's' : ''}</span>
                       {row.cliente_encontrado === false && (
                         <span className="shrink-0 px-1.5 py-0.5 rounded font-medium bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400">
                           Sin cliente

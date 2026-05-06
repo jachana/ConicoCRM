@@ -257,7 +257,7 @@ function WidgetContent({ widget, data }: { widget: WidgetConfig; data: unknown }
     case 'nv_por_cobrar': return <RenderNVPorCobrar data={data as NVPorCobrarOut} chart={widget.chart} />
     case 'cotizaciones_por_vendedor':
     case 'ventas_por_vendedor': return <RenderVendedorMetrica data={data as VendedorMetricaItem[]} chart={widget.chart} />
-    default: return <div className="text-xs text-gray-400">Widget desconocido</div>
+    default: return <div className="text-xs text-gray-500 dark:text-gray-400">Widget desconocido</div>
   }
 }
 
@@ -288,14 +288,14 @@ export default function Widget({ widget, editMode, onConfigure, onRemove }: Widg
             <button
               onClick={() => onConfigure(widget.id)}
               aria-label="Configurar widget"
-              className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
             >
               <Settings size={13} />
             </button>
             <button
               onClick={() => onRemove(widget.id)}
               aria-label="Quitar widget"
-              className="p-0.5 rounded hover:bg-danger-100 dark:hover:bg-danger-900/30 text-gray-400 hover:text-danger-500"
+              className="p-0.5 rounded hover:bg-danger-100 dark:hover:bg-danger-900/30 text-gray-500 dark:text-gray-400 hover:text-danger-500"
             >
               <X size={13} />
             </button>
@@ -305,7 +305,7 @@ export default function Widget({ widget, editMode, onConfigure, onRemove }: Widg
       <div className="flex-1 p-2 min-h-0">
         {isLoading && (
           <div className="flex items-center justify-center h-full">
-            <Loader2 size={20} className="animate-spin text-gray-400" />
+            <Loader2 size={20} className="animate-spin text-gray-500 dark:text-gray-400" />
           </div>
         )}
         {isError && (

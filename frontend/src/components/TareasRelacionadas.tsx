@@ -62,7 +62,7 @@ export default function TareasRelacionadas({ tipo, id }: Props) {
               Error al cargar tareas
             </div>
           ) : tareas.length === 0 ? (
-            <div className="text-sm text-gray-400 dark:text-gray-500 py-2">Sin tareas</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 py-2">Sin tareas</div>
           ) : (
             <ul className="divide-y divide-gray-100 dark:divide-gray-800">
               {tareas.map((t) => (

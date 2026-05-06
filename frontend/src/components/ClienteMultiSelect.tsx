@@ -57,20 +57,20 @@ export default function ClienteMultiSelect({ selected, onChange }: Props) {
   return (
     <div ref={boxRef} className="relative min-w-[200px]">
       <div
-        className="bg-gray-900 border border-white/[0.1] rounded-lg px-2 py-1.5 flex flex-wrap gap-1 cursor-text"
+        className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/[0.1] rounded-lg px-2 py-1.5 flex flex-wrap gap-1 cursor-text"
         onClick={() => setOpen(true)}
       >
         {selected.map(id => (
           <span
             key={id}
-            className="bg-amber-400/15 text-amber-200 text-xs px-2 py-0.5 rounded-md flex items-center gap-1"
+            className="bg-brand-100 dark:bg-amber-400/15 text-brand-800 dark:text-amber-200 text-xs px-2 py-0.5 rounded-md flex items-center gap-1"
           >
             {selectedDetails[id] ?? `#${id}`}
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); toggle(id) }}
               aria-label="Quitar cliente"
-              className="text-amber-200/70 hover:text-amber-100"
+              className="text-brand-600 dark:text-amber-200/70 hover:text-brand-900 dark:hover:text-amber-100"
             >×</button>
           </span>
         ))}
@@ -78,11 +78,11 @@ export default function ClienteMultiSelect({ selected, onChange }: Props) {
           value={q}
           onChange={e => { setQ(e.target.value); setOpen(true) }}
           placeholder={selected.length ? '' : 'Filtrar clientes...'}
-          className="flex-1 min-w-[100px] bg-transparent text-gray-200 text-xs outline-none"
+          className="flex-1 min-w-[100px] bg-transparent text-gray-800 dark:text-gray-200 text-xs outline-none"
         />
       </div>
       {open && options.length > 0 && (
-        <div className="absolute z-20 mt-1 left-0 right-0 bg-gray-900 border border-white/[0.1] rounded-lg max-h-64 overflow-auto shadow-lg">
+        <div className="absolute z-20 mt-1 left-0 right-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/[0.1] rounded-lg max-h-64 overflow-auto shadow-lg">
           {options.map(o => {
             const isSel = selected.includes(o.id)
             return (
@@ -90,7 +90,7 @@ export default function ClienteMultiSelect({ selected, onChange }: Props) {
                 type="button"
                 key={o.id}
                 onClick={() => toggle(o.id)}
-                className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-800 ${isSel ? 'text-amber-300' : 'text-gray-300'}`}
+                className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 dark:hover:bg-gray-800 ${isSel ? 'text-brand-600 dark:text-amber-300' : 'text-gray-700 dark:text-gray-300'}`}
               >
                 {isSel ? '✓ ' : ''}{o.nombre}
               </button>

@@ -145,7 +145,7 @@ export default function EmpresaTabContactos({ empresaId }: Props) {
           {hasContactos && (
             <div className="flex flex-col gap-2">
               {(hasContactos || hasClientes) && (
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 px-0.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 px-0.5">
                   Contactos internos
                 </p>
               )}
@@ -189,7 +189,7 @@ export default function EmpresaTabContactos({ empresaId }: Props) {
 
           {hasClientes && (
             <div className="flex flex-col gap-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 px-0.5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 px-0.5">
                 Clientes vinculados
               </p>
               {clientes!.map(c => (

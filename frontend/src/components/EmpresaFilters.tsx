@@ -88,12 +88,12 @@ export default function EmpresaFilters({
         <div className={`${pillBase} ${sector ? pillActive : pillInactive}`}>
           <button onClick={() => togglePill('sector')} className="flex items-center gap-1.5 pl-3 pr-1.5 py-1.5">
             <span className="whitespace-nowrap">{sector ? `Sector: ${sector}` : 'Sector'}</span>
-            <ChevronDown size={13} className={`transition-transform ${openPill === 'sector' ? 'rotate-180' : ''} text-gray-400`} />
+            <ChevronDown size={13} className={`transition-transform ${openPill === 'sector' ? 'rotate-180' : ''} text-gray-500 dark:text-gray-400`} />
           </button>
           {sector && (
             <button onClick={e => { e.stopPropagation(); onSectorChange(null) }}
               aria-label="Limpiar sector"
-              className="pr-2 pl-0.5 py-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+              className="pr-2 pl-0.5 py-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
               <X size={13} />
             </button>
           )}
@@ -101,7 +101,7 @@ export default function EmpresaFilters({
         {openPill === 'sector' && (
           <div className="absolute top-full left-0 mt-1.5 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-2 min-w-[180px]">
             {sectores.length === 0 && (
-              <div className="px-3 py-2 text-sm text-gray-400">Sin sectores</div>
+              <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">Sin sectores</div>
             )}
             {sectores.map(s => (
               <button key={s} onClick={() => { onSectorChange(s === sector ? null : s); setOpenPill(null) }}
@@ -122,12 +122,12 @@ export default function EmpresaFilters({
                 ? `Productos (${productoIds.length})`
                 : 'Productos'}
             </span>
-            <ChevronDown size={13} className={`transition-transform ${openPill === 'productos' ? 'rotate-180' : ''} text-gray-400`} />
+            <ChevronDown size={13} className={`transition-transform ${openPill === 'productos' ? 'rotate-180' : ''} text-gray-500 dark:text-gray-400`} />
           </button>
           {productoIds.length > 0 && (
             <button onClick={e => { e.stopPropagation(); onProductosChange([], []) }}
               aria-label="Limpiar productos"
-              className="pr-2 pl-0.5 py-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+              className="pr-2 pl-0.5 py-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
               <X size={13} />
             </button>
           )}
@@ -145,7 +145,7 @@ export default function EmpresaFilters({
             </div>
             {productoIds.length > 0 && (
               <>
-                <div className="px-3 py-1 text-xs font-medium text-gray-400 uppercase tracking-wide">Seleccionados</div>
+                <div className="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Seleccionados</div>
                 {productoIds.map((id, idx) => (
                   <button key={id}
                     onClick={() => toggleProducto({ id, nombre: productoNombres[idx], sku: null })}
@@ -157,14 +157,14 @@ export default function EmpresaFilters({
                 <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
               </>
             )}
-            <div className="px-3 py-1 text-xs font-medium text-gray-400 uppercase tracking-wide">Productos</div>
+            <div className="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Productos</div>
             {productos
               .filter(p => !productoIds.includes(p.id))
               .slice(0, 20)
               .map(p => (
                 <button key={p.id} onClick={() => toggleProducto(p)}
                   className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 text-left">
-                  {p.sku && <span className="text-gray-400 text-xs font-mono">{p.sku}</span>}
+                  {p.sku && <span className="text-gray-500 dark:text-gray-400 text-xs font-mono">{p.sku}</span>}
                   <span>{p.nombre}</span>
                 </button>
               ))}
@@ -178,7 +178,7 @@ export default function EmpresaFilters({
         Con Deuda
       </button>
 
-      <span className="ml-auto text-xs text-gray-400">{totalCount} empresa{totalCount !== 1 ? 's' : ''}</span>
+      <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">{totalCount} empresa{totalCount !== 1 ? 's' : ''}</span>
     </div>
   )
 }

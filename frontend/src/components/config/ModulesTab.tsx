@@ -343,7 +343,7 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
                         </p>
                       )}
                       {entry.dependents.length > 0 && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           Habilita: {entry.dependents.map(d => {
                             const dep = data.registry.find(e => e.slug === d)
                             return dep?.label ?? d
@@ -364,7 +364,7 @@ export default function ModulesTab({ empresaId }: { empresaId: number }) {
                           type="button"
                           aria-label={`Historial de ${entry.label}`}
                           onClick={() => setAuditSlug({ slug: entry.slug, label: entry.label })}
-                          className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
+                          className="rounded p-1 text-gray-500 dark:text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
                         >
                           <History className="size-4" />
                         </button>

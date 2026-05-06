@@ -208,7 +208,7 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
       <FormField label="Tipos" className="col-span-2" hint={isAdmin ? 'Multi-selección. Admins pueden crear nuevos tipos.' : 'Multi-selección.'}>
         <div className="flex flex-wrap gap-1.5 mb-2">
           {tipos.length === 0 && (
-            <span className="text-xs text-gray-400">Sin tipos disponibles</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Sin tipos disponibles</span>
           )}
           {tipos.map(t => {
             const sel = form.tipos.includes(t.id)

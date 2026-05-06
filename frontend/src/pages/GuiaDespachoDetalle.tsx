@@ -120,7 +120,7 @@ export default function GuiaDespachoDetalle() {
     setEditingMeta(true)
   }
 
-  if (isLoading) return <div className="p-6 text-gray-400 dark:text-gray-500">Cargando...</div>
+  if (isLoading) return <div className="p-6 text-gray-500 dark:text-gray-400">Cargando...</div>
   if (isError || !guia) return <div className="p-6 text-danger-600 dark:text-danger-400">Error al cargar la guía.</div>
 
   const motivoLabel = MOTIVOS_TRASLADO.find(m => m.value === guia.motivo_traslado)?.label ?? '—'

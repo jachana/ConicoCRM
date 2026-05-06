@@ -98,7 +98,7 @@ export default function ClienteSelectModal({ open, empresaId, empresaNombre, onS
             <button
               type="button"
               onClick={() => { setView('list'); setForm(EMPTY_FORM); setFormError(null) }}
-              className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
               aria-label="Volver"
             >
               <ArrowLeft size={18} />
@@ -110,7 +110,7 @@ export default function ClienteSelectModal({ open, empresaId, empresaNombre, onS
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">{empresaNombre}</p>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+          <button onClick={onClose} aria-label="Cerrar" className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -120,7 +120,7 @@ export default function ClienteSelectModal({ open, empresaId, empresaNombre, onS
             {/* Search */}
             <div className="px-4 pt-3 pb-2 flex-shrink-0">
               <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
                 <input
                   type="text"
                   placeholder="Buscar por nombre o email..."
@@ -135,10 +135,10 @@ export default function ClienteSelectModal({ open, empresaId, empresaNombre, onS
             {/* List */}
             <div className="flex-1 overflow-y-auto px-4 py-2 min-h-0">
               {isLoading ? (
-                <p className="text-sm text-gray-400 text-center py-8">Cargando...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">Cargando...</p>
               ) : filtered.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-sm text-gray-400 mb-3">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                     {search ? 'Sin resultados' : 'No hay clientes para esta empresa'}
                   </p>
                   {!search && (

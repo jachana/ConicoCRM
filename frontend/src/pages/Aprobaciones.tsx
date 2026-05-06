@@ -236,7 +236,7 @@ export default function Aprobaciones() {
                           <Badge variant="warning">Descuento</Badge>
                         )}
                       </TD>
-                      <TD>{a.vendedor?.name ?? <span className="text-gray-400">—</span>}</TD>
+                      <TD>{a.vendedor?.name ?? <span className="text-gray-500 dark:text-gray-400">—</span>}</TD>
                       <TD>
                         {a.tipo === 'credito'
                           ? (a.empresa?.nombre ?? '—')
@@ -366,7 +366,7 @@ export default function Aprobaciones() {
                         Términos solicitados: <strong className="text-warning-700 dark:text-warning-400">{cot.terminos_pago}</strong>
                       </div>
                       {cot.vendedor && (
-                        <div className="text-xs text-gray-400 mt-0.5">Vendedor: {cot.vendedor.name}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Vendedor: {cot.vendedor.name}</div>
                       )}
                     </div>
                     <div className="flex gap-2 shrink-0">

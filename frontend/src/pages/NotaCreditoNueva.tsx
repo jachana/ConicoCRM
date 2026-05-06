@@ -165,7 +165,7 @@ export default function NotaCreditoNueva() {
                   size="icon-sm"
                   onClick={() => removeLinea(i)}
                   aria-label="Eliminar línea"
-                  className="text-gray-400 hover:text-danger-500"
+                  className="text-gray-500 dark:text-gray-400 hover:text-danger-500"
                 >
                   <Trash2 className="size-4" />
                 </Button>

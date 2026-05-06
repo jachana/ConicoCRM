@@ -795,7 +795,7 @@ export default function FacturaDetalle() {
           </div>
           {referenciasDocs.length === 0 ? (
             <Card>
-              <p className="px-4 py-5 text-sm text-gray-400 dark:text-gray-500 text-center">Sin documentos referenciados</p>
+              <p className="px-4 py-5 text-sm text-gray-500 dark:text-gray-400 text-center">Sin documentos referenciados</p>
             </Card>
           ) : (
             <Card className="overflow-x-auto">
@@ -857,7 +857,7 @@ export default function FacturaDetalle() {
                             variant="ghost"
                             onClick={() => setReferenciasDocs(prev => prev.filter((_, i) => i !== idx))}
                             aria-label="Eliminar referencia"
-                            className="text-gray-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                            className="text-gray-500 dark:text-gray-400 hover:text-danger-600 dark:hover:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-500/10"
                           >
                             <Trash2 size={13} />
                           </Button>
@@ -895,7 +895,7 @@ export default function FacturaDetalle() {
           </div>
           <Card className="overflow-hidden">
             {pagos.length === 0 ? (
-              <p className="px-4 py-5 text-sm text-gray-400 dark:text-gray-500 text-center">Sin pagos registrados</p>
+              <p className="px-4 py-5 text-sm text-gray-500 dark:text-gray-400 text-center">Sin pagos registrados</p>
             ) : (
               <Table density="compact">
                 <THead>
@@ -924,7 +924,7 @@ export default function FacturaDetalle() {
                               variant="ghost"
                               onClick={() => setConfirmEliminarPagoId(p.id)}
                               aria-label="Eliminar abono"
-                              className="text-gray-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                              className="text-gray-500 dark:text-gray-400 hover:text-danger-600 dark:hover:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-500/10"
                             >
                               <Trash2 size={13} />
                             </Button>
@@ -1049,7 +1049,7 @@ export default function FacturaDetalle() {
             ))}
             {lineas.length === 0 && (
               <TR>
-                <TD colSpan={9} className="text-center text-xs text-gray-400 dark:text-gray-500 py-6">Sin líneas</TD>
+                <TD colSpan={9} className="text-center text-xs text-gray-500 dark:text-gray-400 py-6">Sin líneas</TD>
               </TR>
             )}
           </TBody>

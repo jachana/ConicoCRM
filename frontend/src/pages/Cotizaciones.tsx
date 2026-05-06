@@ -44,7 +44,7 @@ function fmtDate(iso: string) {
 }
 
 function MargenBadge({ value }: { value: number | null | undefined }) {
-  if (value == null) return <span className="text-gray-400 text-xs">—</span>
+  if (value == null) return <span className="text-gray-500 dark:text-gray-400 text-xs">—</span>
   const pct = Math.round(value * 1000) / 10
   const color = pct < 15 ? 'text-danger-600 dark:text-danger-400'
     : pct < 25 ? 'text-warning-600 dark:text-warning-400'
@@ -74,12 +74,12 @@ function FilterPill({ label, active, summary, isOpen, onToggle, onClear, childre
       >
         <button onClick={onToggle} className="flex items-center gap-1.5 pl-3 pr-1.5 py-1.5">
           <span className="whitespace-nowrap">{active && summary ? summary : label}</span>
-          <ChevronDown size={13} className={`transition-transform ${isOpen ? 'rotate-180' : ''} text-gray-400`} />
+          <ChevronDown size={13} className={`transition-transform ${isOpen ? 'rotate-180' : ''} text-gray-500 dark:text-gray-400`} />
         </button>
         {active && (
           <button onClick={(e) => { e.stopPropagation(); onClear() }}
             aria-label="Limpiar filtro"
-            className="pr-2 pl-0.5 py-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+            className="pr-2 pl-0.5 py-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
             <X size={13} />
           </button>
         )}
@@ -420,19 +420,19 @@ export default function Cotizaciones() {
                         onClick={() => setProductos(prev => [...prev, r])}
                         className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-800 dark:text-gray-200 flex items-center justify-between gap-2">
                         <span className="truncate">{r.nombre}</span>
-                        {r.sku && <span className="text-xs text-gray-400 flex-shrink-0 font-num">{r.sku}</span>}
+                        {r.sku && <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 font-num">{r.sku}</span>}
                       </button>
                     ))}
                 </div>
               </>
             )}
             {productoSearch.length >= 1 && productoResults.filter(r => !productos.some(p => p.id === r.id)).length === 0 && (
-              <p className="px-3 py-2 text-xs text-gray-400">Sin resultados</p>
+              <p className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">Sin resultados</p>
             )}
           </FilterPill>
 
           {hasFilters && (
-            <button onClick={clearAll} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 px-1 underline underline-offset-2 flex-shrink-0">
+            <button onClick={clearAll} className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 px-1 underline underline-offset-2 flex-shrink-0">
               Limpiar todo
             </button>
           )}
@@ -460,7 +460,7 @@ export default function Cotizaciones() {
                     <div>
                       <span className="text-xs text-gray-500 dark:text-gray-400 font-num">COT-{String(c.numero).padStart(5, '0')}</span>
                       <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">{c.cliente?.nombre ?? '—'}</p>
-                      {c.empresa?.nombre && <p className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</p>}
+                      {c.empresa?.nombre && <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{c.empresa.nombre}</p>}
                     </div>
                     <Badge variant={ESTADO_VARIANT[c.estado] ?? 'neutral'} size="sm">
                       {ESTADO_LABELS[c.estado] ?? c.estado}
@@ -519,7 +519,7 @@ export default function Cotizaciones() {
                       <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">{fmtDate(c.fecha)}</TD>
                       <TD>
                         <div className="text-gray-900 dark:text-white leading-tight">{c.cliente?.nombre ?? '-'}</div>
-                        {c.empresa?.nombre && <div className="text-xs text-gray-400 leading-tight">{c.empresa.nombre}</div>}
+                        {c.empresa?.nombre && <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{c.empresa.nombre}</div>}
                       </TD>
                       <TD className="font-medium text-gray-900 dark:text-white whitespace-nowrap text-right font-num">{fmtMoney(c.total)}</TD>
                       {!isVendedor && <TD className="text-right"><MargenBadge value={c.margen_total} /></TD>}

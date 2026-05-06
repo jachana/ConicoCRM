@@ -292,7 +292,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                 onDrop={handleDrop}
               >
                 <p className="text-gray-500 dark:text-gray-400 text-sm">Arrastra archivos XML aquí o haz clic para seleccionar</p>
-                <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">Se pueden seleccionar múltiples archivos</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">Se pueden seleccionar múltiples archivos</p>
               </div>
               <input ref={inputRef} type="file" accept=".xml" multiple className="hidden" />
             </>

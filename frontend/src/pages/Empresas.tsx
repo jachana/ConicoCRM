@@ -289,7 +289,7 @@ export default function Empresas() {
   }
 
   function SortIndicator({ field }: { field: SortField }) {
-    if (sortField !== field) return <span className="text-gray-400 ml-1">↕</span>
+    if (sortField !== field) return <span className="text-gray-500 dark:text-gray-400 ml-1">↕</span>
     return <span className="text-brand-500 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
   }
 
@@ -338,7 +338,7 @@ export default function Empresas() {
         <Card variant="subtle">
           <CardContent className="py-3">
             <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Deuda Vencida</div>
-            <div className={`text-lg font-bold font-num ${totalVencida > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-400 dark:text-gray-500'}`}>
+            <div className={`text-lg font-bold font-num ${totalVencida > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-500 dark:text-gray-400'}`}>
               {fmt(totalVencida)}
             </div>
           </CardContent>
@@ -410,10 +410,10 @@ export default function Empresas() {
                           ? new Date(e.ultima_compra + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
                           : '—'}
                       </TD>
-                      <TD className={`text-right font-num font-semibold whitespace-nowrap ${deudaTotal > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400'}`}>
+                      <TD className={`text-right font-num font-semibold whitespace-nowrap ${deudaTotal > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-500 dark:text-gray-400'}`}>
                         {deudaTotal > 0 ? fmt(deudaTotal) : '—'}
                       </TD>
-                      <TD className={`text-right font-num whitespace-nowrap ${deudaVencida > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-400'}`}>
+                      <TD className={`text-right font-num whitespace-nowrap ${deudaVencida > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-500 dark:text-gray-400'}`}>
                         {deudaVencida > 0 ? fmt(deudaVencida) : '—'}
                       </TD>
                       <TD>
@@ -519,7 +519,7 @@ export default function Empresas() {
                     disabled={!!editando}
                   />
                   {editando && (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">El RUT no puede modificarse una vez creada la empresa</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">El RUT no puede modificarse una vez creada la empresa</p>
                   )}
                   {!editando && rutError && (
                     <p className="text-xs text-danger-500 mt-1">{rutError}</p>
@@ -539,7 +539,7 @@ export default function Empresas() {
                           <button
                             type="button"
                             onClick={() => setForm(f => ({ ...f, ruts_adicionales: f.ruts_adicionales.filter((_, j) => j !== i) }))}
-                            className="text-gray-400 hover:text-danger-500 leading-none"
+                            className="text-gray-500 dark:text-gray-400 hover:text-danger-500 leading-none"
                             aria-label="Quitar RUT"
                           >
                             ×

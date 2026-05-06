@@ -147,7 +147,7 @@ export default function TareasPage() {
             <TabsTrigger key={t} value={t}>
               {TAB_LABELS[t]}
               {tab === t && total > 0 && (
-                <span className="ml-1 text-xs text-gray-400 font-num">({total})</span>
+                <span className="ml-1 text-xs text-gray-500 dark:text-gray-400 font-num">({total})</span>
               )}
             </TabsTrigger>
           ))}
@@ -283,7 +283,7 @@ export default function TareasPage() {
                               {link.label}
                             </Link>
                           ) : (
-                            <span className="text-gray-400">—</span>
+                            <span className="text-gray-500 dark:text-gray-400">—</span>
                           )}
                         </TD>
                         <TD className="text-gray-500 dark:text-gray-400">

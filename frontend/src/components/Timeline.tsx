@@ -153,7 +153,7 @@ function EventRow({ item }: { item: TimelineEvent }) {
         {item.subtitulo && (
           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{item.subtitulo}</p>
         )}
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{fmtDate(item.fecha)}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{fmtDate(item.fecha)}</p>
       </div>
 
       {/* Right: monto + estado */}

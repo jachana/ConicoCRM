@@ -219,7 +219,7 @@ export default function TelemetryRoutesTab() {
         </Table>
       )}
 
-      <div className="text-xs text-gray-400 dark:text-gray-500">
+      <div className="text-xs text-gray-500 dark:text-gray-400">
         Haz click en una fila para ver el detalle por hora. Rojo: p95 ≥ 1s o error ≥ 5%.
       </div>
 

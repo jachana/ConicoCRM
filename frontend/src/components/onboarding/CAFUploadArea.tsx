@@ -95,7 +95,7 @@ export function CAFUploadArea({ files, onFilesSelect, disabled }: CAFUploadAreaP
         />
 
         <div className="flex flex-col items-center justify-center gap-3">
-          <Upload className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+          <Upload className="w-8 h-8 text-gray-500 dark:text-gray-400" />
           <div className="text-center">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Arrastra archivos CAF aquí o{' '}

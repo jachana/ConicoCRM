@@ -18,7 +18,7 @@ function formatCLPCompact(n: number): string {
 }
 
 function DeltaPill({ delta }: { delta: number | null }) {
-  if (delta === null) return <span className="text-xs text-gray-400">—</span>
+  if (delta === null) return <span className="text-xs text-gray-500 dark:text-gray-400">—</span>
   const pos = delta > 0
   return (
     <span className={`text-xs font-medium ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
@@ -122,12 +122,12 @@ function TopClientesTile({ top_clientes }: { top_clientes: KpisOut['top_clientes
         Top clientes (mes)
       </div>
       {rows.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Sin datos</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Sin datos</p>
       ) : (
         <ol className="space-y-1">
           {rows.map((c, i) => (
             <li key={c.nombre} className="flex items-center gap-1.5 text-xs">
-              <span className="text-gray-400 dark:text-gray-500 w-4 shrink-0">{i + 1}.</span>
+              <span className="text-gray-500 dark:text-gray-400 w-4 shrink-0">{i + 1}.</span>
               <span
                 className="flex-1 truncate text-gray-700 dark:text-gray-200"
                 title={c.nombre}
@@ -157,7 +157,7 @@ function DteRejectionTile({ dte_rejection }: { dte_rejection: KpisOut['dte_rejec
         Tasa rechazo DTE
       </div>
       {emitidas === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Sin emisiones</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Sin emisiones</p>
       ) : (
         <>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-50 tabular-nums">

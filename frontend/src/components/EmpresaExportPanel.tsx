@@ -98,11 +98,11 @@ export default function EmpresaExportPanel<T>({
 
       {/* Preview table */}
       {isLoading ? (
-        <div className="text-gray-400 text-sm py-6 text-center">Cargando...</div>
+        <div className="text-gray-500 dark:text-gray-400 text-sm py-6 text-center">Cargando...</div>
       ) : rows.length === 0 ? (
-        <div className="text-gray-400 text-sm py-6 text-center">Sin datos</div>
+        <div className="text-gray-500 dark:text-gray-400 text-sm py-6 text-center">Sin datos</div>
       ) : visibleCols.length === 0 ? (
-        <div className="text-gray-400 text-sm py-6 text-center">Selecciona al menos una columna</div>
+        <div className="text-gray-500 dark:text-gray-400 text-sm py-6 text-center">Selecciona al menos una columna</div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
           <table className="text-xs w-full">
@@ -132,7 +132,7 @@ export default function EmpresaExportPanel<T>({
 
       {/* Footer */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <span className="text-xs text-gray-400">
+        <span className="text-xs text-gray-500 dark:text-gray-400">
           {rows.length > PREVIEW_CAP
             ? `Mostrando ${PREVIEW_CAP} de ${rows.length} filas — exporta todas`
             : `${rows.length} fila${rows.length !== 1 ? 's' : ''}`}

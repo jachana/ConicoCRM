@@ -44,7 +44,7 @@ export default function FacturaAdjuntos({ facturaId, disabled = false }: { factu
       })
   }
 
-  if (isLoading) return <div className="text-sm text-gray-400">Cargando adjuntos…</div>
+  if (isLoading) return <div className="text-sm text-gray-500 dark:text-gray-400">Cargando adjuntos…</div>
 
   return (
     <div>
@@ -68,14 +68,14 @@ export default function FacturaAdjuntos({ facturaId, disabled = false }: { factu
         />
       </div>
       {docs.length === 0 && (
-        <p className="text-sm text-gray-400 text-center py-4">Sin adjuntos</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">Sin adjuntos</p>
       )}
       <ul className="space-y-2">
         {docs.map(doc => (
           <li key={doc.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm">
             <div className="min-w-0 flex-1 pr-3">
               <div className="font-medium text-gray-800 dark:text-gray-200 truncate">{doc.nombre}</div>
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
                 {new Date(doc.subido_en).toLocaleDateString('es-CL')} · {doc.mime_type}
               </div>
             </div>

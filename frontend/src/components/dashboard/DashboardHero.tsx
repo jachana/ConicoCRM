@@ -42,7 +42,7 @@ function pctDelta(current: number, prev: number): number | null {
 function DeltaPill({ delta }: { delta: number | null }) {
   if (delta === null) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-gray-400">
+      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">
         <Minus size={12} /> —
       </span>
     )
@@ -171,7 +171,7 @@ export default function DashboardHero({ userName, presetName }: DashboardHeroPro
           </div>
         </div>
         {isLoading && (
-          <div className="text-xs text-gray-400 inline-flex items-center gap-1.5">
+          <div className="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center gap-1.5">
             <Loader2 size={12} className="animate-spin" />
             Cargando KPIs…
           </div>

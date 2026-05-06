@@ -961,7 +961,7 @@ export default function NotaVentaDetalle() {
                   <TD className="text-right font-num">
                     {linea.margen !== null
                       ? <span className={linea.margen >= 0.15 ? 'text-success-600 dark:text-success-400' : 'text-warning-600 dark:text-warning-400'}>{(linea.margen * 100).toFixed(1)}%</span>
-                      : <span className="text-gray-400">—</span>}
+                      : <span className="text-gray-500 dark:text-gray-400">—</span>}
                   </TD>
                 )}
                 <TD>
@@ -971,7 +971,7 @@ export default function NotaVentaDetalle() {
                     onClick={() => removeLinea(idx)}
                     disabled={lineas.length === 1 || isLocked}
                     aria-label="Eliminar línea"
-                    className="text-gray-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                    className="text-gray-500 dark:text-gray-400 hover:text-danger-600 dark:hover:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-500/10"
                   >
                     <Trash2 size={14} />
                   </Button>

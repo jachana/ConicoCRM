@@ -45,7 +45,7 @@ function fmtDate(iso: string) {
 }
 
 function MargenBadge({ value }: { value: number | null | undefined }) {
-  if (value == null) return <span className="text-gray-400 text-xs">—</span>
+  if (value == null) return <span className="text-gray-500 dark:text-gray-400 text-xs">—</span>
   const pct = Math.round(value * 1000) / 10
   const color = pct < 15 ? 'text-danger-600 dark:text-danger-400'
     : pct < 25 ? 'text-warning-600 dark:text-warning-400'
@@ -77,12 +77,12 @@ function FilterPill({ label, active, summary, isOpen, onToggle, onClear, childre
       >
         <button onClick={onToggle} className="flex items-center gap-1.5 pl-3 pr-1.5 py-1.5">
           <span className="whitespace-nowrap">{active && summary ? summary : label}</span>
-          <ChevronDown size={13} className={`transition-transform ${isOpen ? 'rotate-180' : ''} text-gray-400`} />
+          <ChevronDown size={13} className={`transition-transform ${isOpen ? 'rotate-180' : ''} text-gray-500 dark:text-gray-400`} />
         </button>
         {active && (
           <button onClick={(e) => { e.stopPropagation(); onClear() }}
             aria-label="Limpiar filtro"
-            className="pr-2 pl-0.5 py-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+            className="pr-2 pl-0.5 py-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
             <X size={13} />
           </button>
         )}
@@ -401,20 +401,20 @@ export default function Facturas() {
                         onClick={() => setProductos(prev => [...prev, r])}
                         className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-800 dark:text-gray-200 flex items-center justify-between gap-2">
                         <span className="truncate">{r.nombre}</span>
-                        {r.sku && <span className="text-xs text-gray-400 flex-shrink-0 font-num">{r.sku}</span>}
+                        {r.sku && <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 font-num">{r.sku}</span>}
                       </button>
                     ))}
                 </div>
               </>
             )}
             {productoSearch.length >= 1 && productoResults.filter(r => !productos.some(p => p.id === r.id)).length === 0 && (
-              <p className="px-3 py-2 text-xs text-gray-400">Sin resultados</p>
+              <p className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">Sin resultados</p>
             )}
           </FilterPill>
 
           {hasFilters && (
             <button onClick={clearAll}
-              className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 px-1 underline underline-offset-2 flex-shrink-0">
+              className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 px-1 underline underline-offset-2 flex-shrink-0">
               Limpiar todo
             </button>
           )}
@@ -461,7 +461,7 @@ export default function Facturas() {
                         <div>
                           <span className="text-xs text-gray-500 dark:text-gray-400 font-num">FAC-{String(f.numero).padStart(5, '0')}</span>
                           <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">{f.cliente?.nombre ?? '—'}</p>
-                          {f.empresa?.nombre && <p className="text-xs text-gray-400 leading-tight">{f.empresa.nombre}</p>}
+                          {f.empresa?.nombre && <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{f.empresa.nombre}</p>}
                         </div>
                         <div className="flex items-center gap-1 flex-wrap justify-end">
                           <DteBadge estado={f.dte_estado ?? 'no_emitida'} />

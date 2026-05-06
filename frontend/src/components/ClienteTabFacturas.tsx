@@ -58,7 +58,7 @@ export default function ClienteTabFacturas({ clienteId }: Props) {
   }
 
   function SortIndicator({ field }: { field: SortField }) {
-    if (sortField !== field) return <span className="text-gray-400 ml-1">↕</span>
+    if (sortField !== field) return <span className="text-gray-500 dark:text-gray-400 ml-1">↕</span>
     return <span className="text-brand-500 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
   }
 
@@ -99,7 +99,7 @@ export default function ClienteTabFacturas({ clienteId }: Props) {
           </PopoverContent>
         </Popover>
         <Input type="date" size="sm" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} className="w-40" />
-        <span className="text-gray-400 text-sm">→</span>
+        <span className="text-gray-500 dark:text-gray-400 text-sm">→</span>
         <Input type="date" size="sm" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} className="w-40" />
       </div>
 
@@ -137,7 +137,7 @@ export default function ClienteTabFacturas({ clienteId }: Props) {
                   </TD>
                   <TD className="text-right font-num text-gray-700 dark:text-gray-300">{fmtMoney(f.total)}</TD>
                   <TD className="text-right font-num text-success-600 dark:text-success-400">{fmtMoney(f.monto_pagado)}</TD>
-                  <TD className={`text-right font-num font-semibold ${f.pendiente > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400'}`}>
+                  <TD className={`text-right font-num font-semibold ${f.pendiente > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-500 dark:text-gray-400'}`}>
                     {f.pendiente > 0 ? fmtMoney(f.pendiente) : '—'}
                   </TD>
                 </TR>

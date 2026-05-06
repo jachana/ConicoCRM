@@ -1057,14 +1057,14 @@ export default function CotizacionDetalle() {
               <div className="sm:col-span-2 lg:col-span-3">
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 px-3 py-2.5 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300">
                   {selectedCliente.empresa && (
-                    <span className="flex items-center gap-1.5"><Building2 size={12} className="text-gray-400" />{selectedCliente.empresa.nombre}</span>
+                    <span className="flex items-center gap-1.5"><Building2 size={12} className="text-gray-500 dark:text-gray-400" />{selectedCliente.empresa.nombre}</span>
                   )}
                   <span className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-200">{selectedCliente.nombre}</span>
                   {selectedCliente.telefono && (
-                    <span className="flex items-center gap-1.5"><Phone size={12} className="text-gray-400" />{selectedCliente.telefono}</span>
+                    <span className="flex items-center gap-1.5"><Phone size={12} className="text-gray-500 dark:text-gray-400" />{selectedCliente.telefono}</span>
                   )}
                   {selectedCliente.email && (
-                    <span className="flex items-center gap-1.5"><Mail size={12} className="text-gray-400" />{selectedCliente.email}</span>
+                    <span className="flex items-center gap-1.5"><Mail size={12} className="text-gray-500 dark:text-gray-400" />{selectedCliente.email}</span>
                   )}
                   <button
                     type="button"
@@ -1272,7 +1272,7 @@ export default function CotizacionDetalle() {
           <TBody>
             {lineas.map((linea, idx) => (
               <TR key={linea._key} className={`align-top ${lineaDirty(idx) ? 'bg-warning-50 dark:bg-warning-500/5' : ''}`}>
-                <TD className="text-center text-gray-400 font-num">{idx + 1}</TD>
+                <TD className="text-center text-gray-500 dark:text-gray-400 font-num">{idx + 1}</TD>
                 <TD className="relative">
                   <Input
                     size="sm"
@@ -1285,7 +1285,7 @@ export default function CotizacionDetalle() {
                     placeholder="Buscar en catálogo..."
                   />
                   {linea.producto_id && (
-                    <div className="mt-1 flex flex-wrap gap-x-3 text-[11px] text-gray-400 dark:text-gray-500 px-1 font-num">
+                    <div className="mt-1 flex flex-wrap gap-x-3 text-[11px] text-gray-500 dark:text-gray-400 px-1 font-num">
                       {linea.sku && <span>SKU: {linea.sku}</span>}
                       {linea.formato && <span>{linea.formato}</span>}
                       {linea._stock != null && (
@@ -1317,7 +1317,7 @@ export default function CotizacionDetalle() {
                           variant="ghost"
                           onClick={() => handleResetPrecio(idx)}
                           aria-label="Restablecer precio"
-                          className="text-gray-400 hover:text-brand-600"
+                          className="text-gray-500 dark:text-gray-400 hover:text-brand-600"
                         >
                           <RotateCcw size={12} />
                         </Button>
@@ -1407,7 +1407,7 @@ export default function CotizacionDetalle() {
                           {linea.margen !== null ? `${(Number(linea.margen) * 100).toFixed(1)}` : '—'}
                         </span>
                       )}
-                      <span className="text-xs text-gray-400">%</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">%</span>
                     </div>
                   </TD>
                 )}
@@ -1420,7 +1420,7 @@ export default function CotizacionDetalle() {
                         onClick={() => removeLinea(idx)}
                         disabled={lineas.length === 1}
                         aria-label="Eliminar línea"
-                        className="text-gray-400 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+                        className="text-gray-500 dark:text-gray-400 hover:text-danger-600 dark:hover:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-500/10"
                       >
                         <Trash2 size={14} />
                       </Button>

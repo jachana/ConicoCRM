@@ -240,7 +240,7 @@ export function ImportBodegasSedesSection() {
           <div className="mt-3 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
             <FileSpreadsheet className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
             <span className="truncate font-medium">{file.name}</span>
-            <span className="text-gray-400 shrink-0">({(file.size / 1024).toFixed(1)} KB)</span>
+            <span className="text-gray-500 dark:text-gray-400 shrink-0">({(file.size / 1024).toFixed(1)} KB)</span>
           </div>
         )}
       </Card>

@@ -132,7 +132,7 @@ export default function CostUsageTab() {
               {empresas.map(e => (
                 <TR key={e.empresa_id ?? 'null'}>
                   <TD className="tabular-nums font-mono text-xs">
-                    {e.empresa_id ?? <span className="text-gray-400 italic">sin empresa</span>}
+                    {e.empresa_id ?? <span className="text-gray-500 dark:text-gray-400 italic">sin empresa</span>}
                   </TD>
                   <TD className="text-right tabular-nums">{e.request_count.toLocaleString('es-CL')}</TD>
                   <TD className="text-right tabular-nums">{e.lioren_call_count.toLocaleString('es-CL')}</TD>
@@ -154,7 +154,7 @@ export default function CostUsageTab() {
             </TBody>
           </Table>
 
-          <div className="text-xs text-gray-400 dark:text-gray-500">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
             Ordenado por costo Lioren descendente. Req. lentos: p95 ≥ 1s.
           </div>
         </>

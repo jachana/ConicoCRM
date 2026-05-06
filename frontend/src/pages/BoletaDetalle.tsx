@@ -137,7 +137,7 @@ export default function BoletaDetalle() {
         <Link to="/boletas" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white mb-4">
           <ArrowLeft size={16} /> Volver a boletas
         </Link>
-        <div className="text-gray-400 text-sm">No se encontró la boleta</div>
+        <div className="text-gray-500 dark:text-gray-400 text-sm">No se encontró la boleta</div>
       </div>
     )
   }

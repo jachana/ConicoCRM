@@ -109,11 +109,11 @@ export default function ModuleAuditModal({ slug, label, empresaId, onClose }: Pr
                       {log.user_name ?? 'Sistema'}
                     </span>
                     <span className="flex-shrink-0 text-gray-600 dark:text-gray-300">
-                      <span className={diff.before ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}>
+                      <span className={diff.before ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
                         {stateLabel(diff.before)}
                       </span>
                       {' → '}
-                      <span className={diff.after ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}>
+                      <span className={diff.after ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
                         {stateLabel(diff.after)}
                       </span>
                     </span>

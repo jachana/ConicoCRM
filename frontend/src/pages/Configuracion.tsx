@@ -191,7 +191,7 @@ export default function Configuracion() {
                     <div className="space-y-1 mb-4">
                       {bancos.map(b => (
                         <div key={b.id} className="flex items-center justify-between text-sm py-1">
-                          <span className={b.activo ? 'text-gray-900 dark:text-gray-100' : 'line-through text-gray-400'}>
+                          <span className={b.activo ? 'text-gray-900 dark:text-gray-100' : 'line-through text-gray-500 dark:text-gray-400'}>
                             {b.nombre}
                           </span>
                           <Button
@@ -486,7 +486,7 @@ function IntegracionesSection() {
             const color = int.configurada
               ? 'text-success-600 dark:text-success-400'
               : int.name === 'whatsapp'
-              ? 'text-gray-400 dark:text-gray-500'
+              ? 'text-gray-500 dark:text-gray-400'
               : 'text-danger-600 dark:text-danger-400'
             return (
               <div key={int.name} className="flex items-center gap-3 text-sm py-1">

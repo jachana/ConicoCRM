@@ -75,7 +75,7 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
             className="h-14 max-w-[140px] object-contain rounded border border-gray-200 dark:border-gray-700 bg-white p-1"
           />
         ) : (
-          <div className="h-14 w-[140px] flex items-center justify-center rounded border border-dashed border-gray-300 dark:border-gray-600 text-xs text-gray-400">
+          <div className="h-14 w-[140px] flex items-center justify-center rounded border border-dashed border-gray-300 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400">
             Sin logo
           </div>
         )}
