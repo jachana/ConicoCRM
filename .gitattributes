@@ -1,0 +1,8 @@
+# Force LF line endings for files that must not have CRLF (shell scripts, Docker)
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+*.dockerfile text eol=lf
+Makefile    text eol=lf
+
+# Default: let git decide based on platform
+*           text=auto
