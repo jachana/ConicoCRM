@@ -218,3 +218,82 @@ def test_invalidate_cache_for_empresa_swallows_errors():
     invalidate_cache_for_empresa(3, ["inventario"])  # must not raise
 
     cache_module.report_cache = None
+
+
+# ---------------------------------------------------------------------------
+# 6. E2E integration test with fakeredis
+# ---------------------------------------------------------------------------
+
+try:
+    import fakeredis
+    _FAKEREDIS_AVAILABLE = True
+except ImportError:
+    _FAKEREDIS_AVAILABLE = False
+
+
+@pytest.mark.skipif(not _FAKEREDIS_AVAILABLE, reason="fakeredis not installed")
+def test_e2e_set_and_invalidate_removes_key():
+    """Prime a cache key then invalidate it; verify cache.get returns None."""
+    fake_server = fakeredis.FakeServer()
+    fake_client = fakeredis.FakeRedis(server=fake_server, decode_responses=True)
+
+    with patch("redis.from_url", return_value=fake_client):
+        rc = ReportCache("redis://localhost:6379/0")
+
+    empresa_id = 42
+    endpoint = "ventas"
+    filters = {"mes": 3, "anio": 2025}
+    value = {"total": 1234, "items": []}
+
+    # Prime the cache.
+    rc.set(empresa_id, endpoint, filters, value, ttl=120)
+
+    # Verify the value is cached.
+    cached = rc.get(empresa_id, endpoint, filters)
+    assert cached == value, "Value should be retrievable after set"
+
+    # Invalidate the endpoint.
+    rc.invalidate_pattern(empresa_id, [endpoint])
+
+    # After invalidation the key must be gone.
+    result = rc.get(empresa_id, endpoint, filters)
+    assert result is None, "Value should be None after invalidation"
+
+
+@pytest.mark.skipif(not _FAKEREDIS_AVAILABLE, reason="fakeredis not installed")
+def test_e2e_invalidate_only_matching_empresa():
+    """Invalidation of empresa 1 must not affect empresa 2's cached keys."""
+    fake_server = fakeredis.FakeServer()
+    fake_client = fakeredis.FakeRedis(server=fake_server, decode_responses=True)
+
+    with patch("redis.from_url", return_value=fake_client):
+        rc = ReportCache("redis://localhost:6379/0")
+
+    filters = {"mes": 1}
+    rc.set(1, "ventas", filters, {"total": 100}, ttl=120)
+    rc.set(2, "ventas", filters, {"total": 200}, ttl=120)
+
+    # Invalidate empresa 1 only.
+    rc.invalidate_pattern(1, ["ventas"])
+
+    assert rc.get(1, "ventas", filters) is None
+    assert rc.get(2, "ventas", filters) == {"total": 200}
+
+
+@pytest.mark.skipif(not _FAKEREDIS_AVAILABLE, reason="fakeredis not installed")
+def test_e2e_invalidate_only_matching_endpoint():
+    """Invalidating 'ventas' must leave 'cobranza' keys intact."""
+    fake_server = fakeredis.FakeServer()
+    fake_client = fakeredis.FakeRedis(server=fake_server, decode_responses=True)
+
+    with patch("redis.from_url", return_value=fake_client):
+        rc = ReportCache("redis://localhost:6379/0")
+
+    filters = {"mes": 1}
+    rc.set(5, "ventas", filters, {"v": 1}, ttl=120)
+    rc.set(5, "cobranza", filters, {"c": 2}, ttl=120)
+
+    rc.invalidate_pattern(5, ["ventas"])
+
+    assert rc.get(5, "ventas", filters) is None
+    assert rc.get(5, "cobranza", filters) == {"c": 2}

@@ -355,7 +355,7 @@ def _after_commit(session: Session) -> None:
         for empresa_id, endpoints in pending.items():
             try:
                 cache.invalidate_pattern(empresa_id, list(endpoints))
-                logger.debug(
+                logger.info(
                     "cache.invalidated empresa_id=%s endpoints=%s",
                     empresa_id,
                     sorted(endpoints),
@@ -422,7 +422,7 @@ def invalidate_cache_for_empresa(empresa_id: int | None, endpoints: list[str]) -
         if cache is None:
             return
         cache.invalidate_pattern(empresa_id, endpoints)
-        logger.debug(
+        logger.info(
             "cache.invalidated empresa_id=%s endpoints=%s",
             empresa_id,
             endpoints,

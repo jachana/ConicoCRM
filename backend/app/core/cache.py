@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 from typing import Any, Optional
 
 import redis
@@ -11,15 +12,15 @@ from redis.exceptions import RedisError
 logger = logging.getLogger(__name__)
 
 TTL_SETTINGS: dict[str, int] = {
-    "ventas": 120,
-    "cobranza": 120,
-    "inventario": 60,
-    "compras": 120,
-    "margenes": 300,
-    "dte": 300,
-    "por_marca": 300,
-    "kpis": 60,
-    "default": 120,
+    "ventas": int(os.environ.get("CACHE_TTL_VENTAS", 120)),
+    "cobranza": int(os.environ.get("CACHE_TTL_COBRANZA", 120)),
+    "inventario": int(os.environ.get("CACHE_TTL_INVENTARIO", 60)),
+    "compras": int(os.environ.get("CACHE_TTL_COMPRAS", 120)),
+    "margenes": int(os.environ.get("CACHE_TTL_MARGENES", 300)),
+    "dte": int(os.environ.get("CACHE_TTL_DTE", 300)),
+    "por_marca": int(os.environ.get("CACHE_TTL_POR_MARCA", 300)),
+    "kpis": int(os.environ.get("CACHE_TTL_KPIS", 60)),
+    "default": int(os.environ.get("CACHE_TTL_DEFAULT", 120)),
 }
 
 
@@ -40,9 +41,9 @@ class ReportCache:
             logger.warning("cache.get error key=%s: %s", key, exc)
             return None
         if raw is None:
-            logger.debug("cache.miss key=%s", key)
+            logger.info("cache.miss key=%s", key)
             return None
-        logger.debug("cache.hit key=%s", key)
+        logger.info("cache.hit key=%s", key)
         return json.loads(raw)
 
     def set(self, empresa_id: int, endpoint: str, filters: dict, value: Any, ttl: int) -> None:
