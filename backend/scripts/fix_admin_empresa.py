@@ -34,15 +34,15 @@ def fix():
             empresa_id = result.first()[0]
             print(f"Created empresa 'Conico' id={empresa_id}")
 
-        # 2. Assign admin user to this empresa
+        # 2. Assign ALL users without an empresa to Conico
         result = conn.execute(text(
             "UPDATE users SET empresa_id = :eid "
-            "WHERE role = 'admin' "
+            "WHERE empresa_id IS NULL "
             "RETURNING id, email, empresa_id"
         ), {"eid": empresa_id})
         rows = result.fetchall()
         if not rows:
-            print("ERROR: no admin user found — skipping empresa assignment")
+            print("All users already have an empresa — nothing to update")
             return
         for r in rows:
             print(f"Assigned user id={r[0]} ({r[1]}) → empresa_id={r[2]}")
