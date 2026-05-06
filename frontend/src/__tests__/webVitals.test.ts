@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 vi.mock('web-vitals', () => ({
   onLCP: vi.fn(),
-  onFID: vi.fn(),
   onINP: vi.fn(),
   onCLS: vi.fn(),
   onTTFB: vi.fn(),
@@ -31,7 +30,6 @@ describe('webVitals', () => {
       initWebVitals()
 
       expect(wv.onLCP).toHaveBeenCalledOnce()
-      expect(wv.onFID).toHaveBeenCalledOnce()
       expect(wv.onINP).toHaveBeenCalledOnce()
       expect(wv.onCLS).toHaveBeenCalledOnce()
       expect(wv.onTTFB).toHaveBeenCalledOnce()
@@ -49,7 +47,7 @@ describe('webVitals', () => {
   })
 
   describe('send', () => {
-    const METRIC_NAMES = ['LCP', 'FID', 'INP', 'CLS', 'TTFB'] as const
+    const METRIC_NAMES = ['LCP', 'INP', 'CLS', 'TTFB'] as const
 
     it.each(METRIC_NAMES)('sends correct POST payload for %s', async (name) => {
       vi.stubEnv('VITE_TELEMETRY_SAMPLE_RATE', '1.0')

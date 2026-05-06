@@ -1,4 +1,4 @@
-import { onLCP, onFID, onINP, onCLS, onTTFB, type Metric } from 'web-vitals'
+import { onLCP, onINP, onCLS, onTTFB, type Metric } from 'web-vitals'
 
 function send(metric: Metric): void {
   const sampleRate = Number(import.meta.env.VITE_TELEMETRY_SAMPLE_RATE ?? '1.0')
@@ -23,7 +23,6 @@ function send(metric: Metric): void {
 export function initWebVitals(): void {
   if (import.meta.env.DEV) return
   onLCP(send)
-  onFID(send)
   onINP(send)
   onCLS(send)
   onTTFB(send)
