@@ -32,27 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[UX] Auditoria de print CSS / PDF por tipo DTE",
       "labels": [
         "DTE/SII",
         "Goal: Operations",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nActualmente `pdf.py` renderiza PDFs de DTEs pero con cobertura visual desigual entre tipos (Factura 33, Boleta 39/41, NC 61, ND 56, GD 52). Los usuarios no pueden validar la apariencia antes de emitir, generando errores de formato en documentos fiscales enviados a SII.\n\n**Acceptance Criteria**\n- El usuario visualiza un botón \"Vista previa\" en cada detalle DTE antes de emitir.\n- Al hacer clic, se abre modal o nueva pestaña mostrando el PDF renderizado correctamente para cada tipo DTE.\n- Header, líneas de detalle, totales, timbre y footer aparecen alineados y completos en todos los tipos.\n- Print CSS media rules se aplican correctamente sin saltos de página indeseados.\n- Snapshot visual de PDF (o screenshot) pasa para cada tipo DTE sin regresiones.\n- La auditoría documenta hallazgos y ajustes aplicados a cada plantilla.\n\n**Definition of Done**\n- Tests de regresión visual (snapshot PDF o screenshot) implementados y pasando.\n- Print CSS actualizado y validado en todos los tipos DTE.\n- Botón preview agregado a la UI de detalle DTE.\n- Código enviado a staging y validado por QA.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Archivo principal: `pdf.py` (renderización).\n- Plantillas Jinja2 o equivalente para cada tipo DTE (verificar rutas).\n- Endpoint: crear o reutilizar endpoint de preview (GET `/dtes/{id}/preview-pdf` o similar).\n- Frontend: agregar modal o iframe para mostrar PDF.\n- Testing: usar pytest + PDF snapshot (librería: `pdf2image` + `pillow` + pytest snapshot, o `pixelmatch` si es screenshot HTML).\n- Tipos DTE a auditar: 33 (Factura), 39 (Boleta), 41 (Boleta Exenta), 61 (Nota de Crédito), 56 (Nota de Débito), 52 (Guía de Despacho).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Agregar vista previa de PDF para Notas de Crédito y Débito con botón en UI y endpoints dedicados, asegurando correcta renderización visual.\n\n**Cambios / Decisiones** — Se crearon endpoints GET /api/dte/notas-credito/{id}/pdf y /notas-debito/{id}/pdf. Se añadieron plantillas Jinja2 nota_credito.html y nota_debito.html. Los detalles en frontend ahora muestran botón de PDF consistente con otras pantallas. NC usa color rojo y ND ámbar para diferenciación visual.",
       "checklist": [
-        "Render de prueba para cada tipo DTE",
-        "Checklist visual: header, lineas, totales, timbre, footer",
-        "Boton 'preview' en cada detalle antes de emitir",
-        "Print CSS: media print rules verificadas",
-        "Test de regresion visual (snapshot PDF si factible)",
-        "Auditar render actual de cada tipo DTE (33, 39, 41, 61, 56, 52) y documentar hallazgos visuales",
-        "Ajustar print CSS media rules en plantillas para header, líneas, totales, timbre y footer",
-        "Implementar botón 'Vista previa' en UI detalle DTE y conectar a endpoint de preview PDF",
-        "Crear o validar endpoint que retorna PDF sin emitir (GET `/dtes/{id}/preview-pdf`)",
-        "Escribir tests snapshot visual para cada tipo DTE y verificar pase",
-        "Validar en staging y confirmar no hay regresiones visuales",
-        "Mover Trello a 'In review'"
+        "Abrir detalle de Nota de Crédito y verificar botón 'PDF' visible",
+        "Hacer clic en botón PDF y confirmar carga del documento en rojo",
+        "Repetir para Nota de Débito, debe cargar PDF en color ámbar",
+        "Verificar endpoint /notas-credito/{id}/pdf responde con PDF válido",
+        "Verificar endpoint /notas-debito/{id}/pdf responde con PDF válido",
+        "Comparar contenido PDF con datos del DTE mostrado en pantalla",
+        "Validar estilos print CSS en vista previa de ambos tipos de nota"
       ]
     }
   ]
