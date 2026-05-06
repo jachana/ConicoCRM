@@ -32,7 +32,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Telemetry T4.1] /configuracion/telemetry: tab Routes",
       "labels": [
         "Core",
@@ -40,24 +40,15 @@
         "Design System",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nAdmins necesitan identificar rápidamente rutas lentas, congestionadas o propensas a errores para priorizar optimizaciones. Una vista centralizada de tendencias (sparklines) y drill-down por ruta acelera la investigación operacional.\n\n**Acceptance Criteria**\n- Tab 'Routes' visible en /configuracion/telemetry solo para admin (ModuloGuard core).\n- Tabla muestra columnas: ruta, cantidad de requests, p50, p95, p99, error_rate (%), sparkline 24h.\n- Filtros funcionales: período (24h | 7d | 30d), empresa (si multi-tenant).\n- Ordenamiento switcheable entre p95, count, error_rate.\n- Al hacer click en fila, abre modal/drawer con histograma de latencias (buckets por hora) para las últimas 24h.\n- Empty state cuando dataset vacío.\n- Sparkline es componente reutilizable (recharts o SVG manual si no disponible).\n- Tests unitarios e integración para render y mock API.\n\n**Definition of Done**\n- Endpoint backend implementado (GET /telemetry/routes?period=&company_id=) con paginación opcional.\n- Componente tabla + filtros + drill-down renderiza en /configuracion/telemetry.\n- Tests E2E o snapshot con mock data pasan.\n- Migration/seed de datos de prueba en staging.\n- Trello → In review.\n- Code review aprobado.\n- Deploy a staging completado.\n\n**Notas tecnicas**\n- Dependencia: T2.2 (backend telemetry pipeline).\n- Rutas a considerar: GET /telemetry/routes, GET /telemetry/routes/{routeId}/histogram.\n- Query debe usar índices en timestamps y route_id para performance.\n- Sparkline: recharts LineChart o componente SVG simple. Si ya existe librería de charts, reutilizar.\n- Modal drill-down: Drawer o Modal nativo (verificar Design System).\n- ModuloGuard.core + rol admin requerido.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Se implementa el tab 'Routes' en la página de telemetría para admins, mostrando métricas de rendimiento de rutas con sparklines y drill-down por ruta.\n\n**Cambios / Decisiones** — Se crea la página `/admin/telemetria` protegida por ModuloGuard.core. El tab 'Routes' incluye tabla con métricas (count, p50/p95/p99, error_rate, sparkline), filtros por período (24h/7d/30d) y ordenamiento por p95/count/error_rate. Se implementa componente reutilizable `Sparkline.tsx` con SVG. Al hacer click en una fila se abre modal con histograma de latencias (recharts). Se agregan 5 tests unitarios en `AdminTelemetria.test.tsx` cubriendo render, datos, colores y modal. Se usa endpoint backend existente.",
       "checklist": [
-        "Pagina /configuracion/telemetry (admin only, ModuloGuard core)",
-        "Tab Routes: tabla con columnas (route, count, p50, p95, p99, error_rate, sparkline_24h)",
-        "Toggle period (24h, 7d, 30d) y filter empresa",
-        "Order by switcher (p95 / count / error_rate)",
-        "Sparkline component reutilizable (libreria simple, recharts si ya esta o svg manual)",
-        "Click row -> Modal/Drawer con detalle de la ruta (24h con buckets)",
-        "Empty state cuando no hay datos",
-        "Test render con mock API",
-        "Implementar endpoint GET /telemetry/routes (filtros: period, company_id, sort_by).",
-        "Crear componente Tab Routes con tabla (route, count, p50, p95, p99, error_rate, sparkline).",
-        "Agregar filtros período (24h/7d/30d) y empresa, con toggle de orden (p95/count/error_rate).",
-        "Implementar componente Sparkline reutilizable (recharts o SVG).",
-        "Implementar drill-down modal/drawer al click de fila con histograma 24h.",
-        "Agregar empty state y loading states.",
-        "Tests unitarios + snapshot con mock API.",
-        "Deploy a staging y mover Trello a In review."
+        "Ir a /admin/telemetria como admin y verificar tab 'Routes'",
+        "Verificar tabla con columnas: ruta, count, p50/p95/p99, error %, sparkline",
+        "Cambiar período a 7d y 30d, confirmar cambio en datos y sparklines",
+        "Ordenar por p95, count y error_rate, validar reordenamiento",
+        "Hacer click en fila y verificar modal con histograma de 24h",
+        "Verificar estado vacío al filtrar por período sin datos",
+        "Revisar test unitarios en frontend/src/pages/AdminTelemetria.test.tsx"
       ]
     }
   ]
