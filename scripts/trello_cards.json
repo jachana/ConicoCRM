@@ -32,11 +32,19 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "revisar esquemas de colores apra el modo claro, algunos textos no se leen bien",
       "labels": [],
-      "desc": "",
-      "checklist": []
+      "desc": "**Resumen** — Revisar y corregir esquemas de colores en modo claro para mejorar la legibilidad de textos que actualmente no se leen bien.\n\n**Cambios / Decisiones** — Se ajustó el contraste de textos en modo claro para cumplir con estándares WCAG AA, modificando 54 archivos. Los cambios principales incluyen: `text-gray-400` → `text-gray-500` en áreas de contenido, `text-gray-300` → `text-gray-600` en contenido principal, y se corrigió la tematización completa de `ClienteMultiSelect` y `DteBadge` para soportar ambos modos. También se mejoraron los iconos y botones con variantes oscuras adecuadas.",
+      "checklist": [
+        "Abrir cualquier página en modo claro y verificar contraste de textos en grises",
+        "Revisar que textos en `ClienteMultiSelect` sean legibles en ambos modos",
+        "Verificar estados visuales de `DteBadge` en modo claro y oscuro",
+        "Inspeccionar elementos de tablas y formularios en `/empresas`",
+        "Validar textos en `CotizacionDetalle` y `FacturaDetalle`",
+        "Revisar iconos y botones en `Dashboard` y `Configuracion`",
+        "Probar filtros en `Empresas` y `Cotizaciones` en modo claro"
+      ]
     }
   ]
 }
