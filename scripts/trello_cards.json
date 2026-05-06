@@ -32,20 +32,19 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Bug] Windows clones rompen docker compose build (CRLF en entrypoint.sh)",
       "labels": [
         "Bug",
         "Size:S"
       ],
-      "desc": "**Contexto / Problema**\nEl repo tiene `core.autocrlf=true` y no tiene `.gitattributes`. Cuando un dev en Windows clona el repo, Git convierte `backend/entrypoint.sh` de LF a CRLF en el working tree. El `Dockerfile` hace `COPY . .` y luego `ENTRYPOINT [\"./entrypoint.sh\"]`, así que la imagen queda con el script CRLF-eado. Al arrancar el contenedor, Linux no encuentra `/bin/sh\r` (el shebang `#!/bin/sh\r\n` interpretado literalmente) y falla:\n\n```\nbackend-1  | exec ./entrypoint.sh: no such file or directory\n```\n\nBackend, celery_worker y celery_beat exit code 255. Stack queda inservible para cualquier dev nuevo en Windows. Reproducido 2026-05-06 al levantar el stack para validar `docs/setup-local.md`.\n\n**Reproducción**\n1. Clonar el repo en Windows con `core.autocrlf=true` (default de Git for Windows).\n2. `docker compose up -d --build`.\n3. `docker compose ps --all` muestra backend/celery_worker/celery_beat en `Exited (255)`.\n4. `docker compose logs backend` muestra `exec ./entrypoint.sh: no such file or directory`.\n\n**Acceptance Criteria**\n- Un dev nuevo en Windows puede clonar y `docker compose up --build` sin pasos extra.\n- El fix es robusto a futuras escrituras del archivo desde editores Windows.\n- Documentado en `docs/setup-local.md` como troubleshooting (por si vuelve a ocurrir con otros .sh).\n\n**Definition of Done**\n- Fix elegido y aplicado (ver opciones técnicas).\n- Verificación: clonar el repo en una máquina Windows limpia o `git rm --cached backend/entrypoint.sh && git checkout backend/entrypoint.sh` y volver a buildear sin error.\n- `git ls-files --eol backend/entrypoint.sh` reporta `i/lf` (working tree y index ambos LF).\n- Card movida a 'In review'.\n\n**Opciones técnicas (elegir una)**\n\n1. **`.gitattributes` con normalización forzada (recomendado, blast radius bajo y duradero):**\n   ```\n   *.sh        text eol=lf\n   Dockerfile  text eol=lf\n   *.py        text eol=lf\n   ```\n   Después: `git add --renormalize . && git commit -m \"fix: force LF for shell/python/Dockerfile\"`. Esto normaliza todo el repo de una; no requiere tocar el Dockerfile.\n\n2. **Defensa adicional en `backend/Dockerfile`** (antes del `chmod +x`):\n   ```dockerfile\n   COPY . .\n   RUN sed -i 's/\r$//' entrypoint.sh\n   RUN chmod +x entrypoint.sh\n   ```\n   Idempotente; protege incluso si `.gitattributes` no se aplica (ej. tarball download). Combinable con opción 1.\n\n**Notas tecnicas**\n- Verificar con `file backend/entrypoint.sh` — debe decir `POSIX shell script, ASCII text executable` (sin `with CRLF line terminators`).\n- Hay otros .sh en el repo (`scripts/restore.sh`) — la opción 1 los cubre todos automáticamente.\n- Cuidado: `git add --renormalize .` puede tocar archivos que no son ASCII puro; revisar el diff antes de commitear.\n",
+      "desc": "**Resumen** — En Windows, al clonar el repo se corrompían los archivos .sh con CRLF, haciendo que `docker compose build` falle porque Linux no reconoce `\\r` en el shebang. Esto impedía levantar el stack local.\n\n**Cambios / Decisiones** — Se agregó `.gitattributes` para forzar `eol=lf` en `*.sh` y `Dockerfile`, y se renormalizó todo el repo con `git add --renormalize .`. Esto asegura que `backend/entrypoint.sh` y otros scripts siempre estén en LF incluso en clones Windows. Se verificó que `file backend/entrypoint.sh` reporte `ASCII text executable` sin CRLF.",
       "checklist": [
-        "Decidir entre .gitattributes + renormalize (opción 1) vs sed en Dockerfile (opción 2) o ambos",
-        "Aplicar .gitattributes con `*.sh text eol=lf` y `Dockerfile text eol=lf`",
-        "git add --renormalize . y revisar el diff",
-        "Verificar `file backend/entrypoint.sh` reporta sin CRLF",
-        "Levantar el stack en limpio (docker compose down + up --build) y confirmar backend/celery_worker/celery_beat healthy",
-        "Agregar nota al troubleshooting de docs/setup-local.md"
+        "Clonar repo en Windows con `core.autocrlf=true` y abrir `backend/entrypoint.sh`",
+        "Verificar `git ls-files --eol backend/entrypoint.sh` reporta `i/lf` (no `i/crlf`)",
+        "Correr `docker compose up --build` y confirmar backend/celery_* healthy",
+        "Verificar `file backend/entrypoint.sh` no menciona CRLF en output",
+        "Revisar `.gitattributes` incluye `*.sh text eol=lf`"
       ]
     }
   ]
