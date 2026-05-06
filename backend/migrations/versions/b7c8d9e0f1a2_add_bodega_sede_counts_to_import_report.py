@@ -21,28 +21,32 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add bodega/sede-specific counts
-    op.add_column(
-        'payment_import_reports',
-        sa.Column('created_bodega_count', sa.Integer(), nullable=False, server_default='0')
-    )
-    op.add_column(
-        'payment_import_reports',
-        sa.Column('updated_bodega_count', sa.Integer(), nullable=False, server_default='0')
-    )
-    op.add_column(
-        'payment_import_reports',
-        sa.Column('created_sede_count', sa.Integer(), nullable=False, server_default='0')
-    )
-    op.add_column(
-        'payment_import_reports',
-        sa.Column('updated_sede_count', sa.Integer(), nullable=False, server_default='0')
-    )
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    # Guard: table may not exist yet (created later by c9d0e1f2g3h4 with these cols included)
+    if 'payment_import_reports' not in inspector.get_table_names():
+        return
+    existing = {c['name'] for c in inspector.get_columns('payment_import_reports')}
+    new_cols = [
+        ('created_bodega_count', sa.Integer()),
+        ('updated_bodega_count', sa.Integer()),
+        ('created_sede_count', sa.Integer()),
+        ('updated_sede_count', sa.Integer()),
+    ]
+    for col_name, col_type in new_cols:
+        if col_name not in existing:
+            op.add_column(
+                'payment_import_reports',
+                sa.Column(col_name, col_type, nullable=False, server_default='0'),
+            )
 
 
 def downgrade() -> None:
-    # Remove bodega/sede-specific counts
-    op.drop_column('payment_import_reports', 'updated_sede_count')
-    op.drop_column('payment_import_reports', 'created_sede_count')
-    op.drop_column('payment_import_reports', 'updated_bodega_count')
-    op.drop_column('payment_import_reports', 'created_bodega_count')
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    if 'payment_import_reports' not in inspector.get_table_names():
+        return
+    existing = {c['name'] for c in inspector.get_columns('payment_import_reports')}
+    for col_name in ('updated_sede_count', 'created_sede_count', 'updated_bodega_count', 'created_bodega_count'):
+        if col_name in existing:
+            op.drop_column('payment_import_reports', col_name)
