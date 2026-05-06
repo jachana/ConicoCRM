@@ -32,22 +32,30 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Telemetry T3.1] Web Vitals capture + POST endpoint",
+      "list": "In progress",
+      "name": "[Telemetry T3.2] Bundle analyzer en CI + perf budget",
       "labels": [
         "Core",
         "Goal: Operations",
         "Size:M"
       ],
-      "desc": "**Resumen** — Implementar captura automática de Web Vitals (LCP, FID, INP, CLS, TTFB) en el frontend y un endpoint POST para enviarlas al backend.\n\n**Cambios / Decisiones** — Se agregó la dependencia `web-vitals` v5.2.0. Se creó `frontend/src/lib/webVitals.ts` para registrar las 5 métricas y enviarlas vía POST a `/api/telemetry/web-vitals`. El envío se saltea en `development` y respeta un sample rate configurable con `VITE_TELEMETRY_SAMPLE_RATE` (por defecto 1.0). En backend, se implementó `backend/app/api/telemetry.py` que valida y loguea las métricas recibidas (sin persistir en DB). Se incluyeron 8 tests unitarios en frontend y 8 en backend.",
+      "desc": "**Contexto / Problema**\nActualmente no tenemos visibilidad del tamaño de bundle en cada build ni control de regresiones de performance. Necesitamos automatizar la detección de cambios no autorizados en el tamaño del bundle principal y dependencias.\n\n**Acceptance Criteria**\n- El bundle de main (gzipped) se reporta automáticamente en cada build de CI con un archivo HTML visualizable.\n- La build de CI falla si el bundle de main excede 350 KB gzipped o vendor excede 500 KB gzipped.\n- El reporte de bundle (stats.html) se descarga como artifact desde el run de GH Actions.\n- Un desarrollador puede ejecutar localmente el visualizer para inspeccionar el bundle antes de pushear.\n- La documentación en CONTRIBUTING.md explica cómo consultar el visualizer y respetar el budget.\n\n**Definition of Done**\n- rollup-plugin-visualizer (o equivalente para Vite) está instalado en package.json.\n- Script `size-check.js` implementado y validado contra fixtures.\n- Paso de CI que ejecuta `size-check.js` y falla si se excede budget está en `.github/workflows/*.yml`.\n- stats.html se genera en `dist/` y se sube como artifact en GH Actions.\n- Tests unitarios para `size-check.js` con casos: within budget, exceeds budget, malformed dist.\n- Documentación en CONTRIBUTING.md completada y revisada.\n- Trello card movida a In review.\n\n**Notas tecnicas**\n- Usar `rollup-plugin-visualizer` (npm) o `vite-plugin-bundle-analyzer` según build actual.\n- Script `scripts/size-check.js`: parsea archivos en `dist/`, suma tamaños gzipped, compara vs `config/perf-budget.json`.\n- Budget config: `{ \"main\": \"350KB\", \"vendor\": \"500KB\" }`.\n- GH Actions: agregar step que ejecuta `node scripts/size-check.js` después del build.\n- Artifact upload: `actions/upload-artifact@v3` con path `dist/stats.html`.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir BoletasList en staging, abrir DevTools → Network, verificar POST a /api/telemetry/web-vitals",
-        "En Network tab, validar que el payload tenga {metric, value, route, user_agent, timestamp}",
-        "Verificar en logs del backend que se imprimen las métricas recibidas",
-        "Revisar que el POST no se haga en ambiente local (development)",
-        "Validar comportamiento con sample rate < 1.0 (usar VITE_TELEMETRY_SAMPLE_RATE=0.5)",
-        "Revisar tests unitarios en frontend/src/__tests__/webVitals.test.ts",
-        "Verificar que todas las 5 Web Vitals (LCP, FID, INP, CLS, TTFB) se reporten"
+        "Instalar rollup-plugin-visualizer (o vite-plugin-bundle-analyzer)",
+        "Generar stats.html en build de CI",
+        "Subir stats.html como artifact en GH Actions",
+        "Script size-check.js que parsea dist/ y compara contra budget en config",
+        "Budget inicial: main 350KB gz, vendor 500KB gz",
+        "CI step que falla si excede budget",
+        "Documentar en CONTRIBUTING como inspeccionar visualizer",
+        "Instalar rollup-plugin-visualizer (o vite-plugin-bundle-analyzer) en package.json",
+        "Configurar plugin en build para generar stats.json y stats.html en dist/",
+        "Crear scripts/size-check.js que parsea dist/ y valida contra perf-budget.json",
+        "Agregar step en GH Actions que ejecute size-check.js y falle si se excede budget",
+        "Configurar upload de stats.html como artifact en GH Actions",
+        "Escribir tests unitarios para size-check.js (within, exceeds, malformed cases)",
+        "Documentar en CONTRIBUTING.md cómo inspeccionar visualizer localmente y respetar budget",
+        "Tests pasan, deploy a staging, Trello → In review"
       ]
     }
   ]
