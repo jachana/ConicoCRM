@@ -11,43 +11,53 @@
     "Live 1.0"
   ],
   "labels": {
-    "Wave 1": "red",
-    "Wave 2": "orange",
-    "Tier A": "yellow",
-    "DTE/SII": "green",
-    "Design System": "purple",
     "Core": "blue",
-    "Roadmap": "sky",
-    "Bug": "pink",
-    "Blocked": "black",
-    "Goal: SaaS-ready": "lime",
-    "Goal: UX Polish": "null",
-    "Goal: Performance": "null",
-    "Goal: Operations": "null",
-    "Goal: Docs": "null",
-    "Size:S": "green",
     "Size:M": "yellow",
+    "Roadmap": "sky",
     "Size:L": "orange",
-    "Size:XL": "red"
+    "DTE/SII": "green",
+    "Goal: Operations": "lime",
+    "Bug": "pink",
+    "Goal: SaaS-ready": "lime",
+    "Size:XL": "red",
+    "Design System": "purple",
+    "Goal: Docs": "lime",
+    "Goal: UX Polish": "lime",
+    "Wave 1": "red",
+    "Tier A": "yellow",
+    "Blocked": "black",
+    "Goal: Performance": "lime",
+    "Size:S": "green",
+    "Wave 2": "orange"
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Telemetry T1.5] Sentry Performance: per-route traces_sample_rate + dashboards",
+      "list": "In progress",
+      "name": "[Telemetry T4.1] /configuracion/telemetry: tab Routes",
       "labels": [
         "Core",
         "Goal: Operations",
-        "Size:M"
+        "Design System",
+        "Size:L"
       ],
-      "desc": "**Resumen** — Configurar muestreo de traces en Sentry por ruta, documentar dashboards y alertas, y etiquetar transacciones con empresa_id.\n\n**Cambios / Decisiones** — Se implementó `traces_sampler` en `core/observability.py` para asignar sample rates: 0.0 a `/healthz` y `/readyz`, 0.5 a `/api/dte/*` y `/api/lioren/*`, y 0.05 por defecto. Se agregó toggle de profiling via env var `SENTRY_TRACES_PROFILE`. Los nombres de transacciones usan templates de ruta y se etiquetan con `empresa_id` desde el scope de autenticación (`api/auth.py`). Se agregaron tests en `tests/test_observabilidad.py` y docs actualizados en `docs/observability.md` con instrucciones para crear dashboards y alertas sugeridas.",
+      "desc": "**Contexto / Problema**\nAdmins necesitan identificar rápidamente rutas lentas, congestionadas o propensas a errores para priorizar optimizaciones. Una vista centralizada de tendencias (sparklines) y drill-down por ruta acelera la investigación operacional.\n\n**Acceptance Criteria**\n- Tab 'Routes' visible en /configuracion/telemetry solo para admin (ModuloGuard core).\n- Tabla muestra columnas: ruta, cantidad de requests, p50, p95, p99, error_rate (%), sparkline 24h.\n- Filtros funcionales: período (24h | 7d | 30d), empresa (si multi-tenant).\n- Ordenamiento switcheable entre p95, count, error_rate.\n- Al hacer click en fila, abre modal/drawer con histograma de latencias (buckets por hora) para las últimas 24h.\n- Empty state cuando dataset vacío.\n- Sparkline es componente reutilizable (recharts o SVG manual si no disponible).\n- Tests unitarios e integración para render y mock API.\n\n**Definition of Done**\n- Endpoint backend implementado (GET /telemetry/routes?period=&company_id=) con paginación opcional.\n- Componente tabla + filtros + drill-down renderiza en /configuracion/telemetry.\n- Tests E2E o snapshot con mock data pasan.\n- Migration/seed de datos de prueba en staging.\n- Trello → In review.\n- Code review aprobado.\n- Deploy a staging completado.\n\n**Notas tecnicas**\n- Dependencia: T2.2 (backend telemetry pipeline).\n- Rutas a considerar: GET /telemetry/routes, GET /telemetry/routes/{routeId}/histogram.\n- Query debe usar índices en timestamps y route_id para performance.\n- Sparkline: recharts LineChart o componente SVG simple. Si ya existe librería de charts, reutilizar.\n- Modal drill-down: Drawer o Modal nativo (verificar Design System).\n- ModuloGuard.core + rol admin requerido.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Verificar sample rate 0.0 en /healthz y /readyz",
-        "Confirmar 50% sampling en /api/dte/* y /api/lioren/*",
-        "Validar nombre de transacción usa template, no ID",
-        "Chequear tag empresa_id en transacción Sentry",
-        "Probar SENTRY_TRACES_PROFILE=on activa profiling",
-        "Revisar docs: dashboards + alertas sugeridas",
-        "Validar tests unitarios del sampling logic"
+        "Pagina /configuracion/telemetry (admin only, ModuloGuard core)",
+        "Tab Routes: tabla con columnas (route, count, p50, p95, p99, error_rate, sparkline_24h)",
+        "Toggle period (24h, 7d, 30d) y filter empresa",
+        "Order by switcher (p95 / count / error_rate)",
+        "Sparkline component reutilizable (libreria simple, recharts si ya esta o svg manual)",
+        "Click row -> Modal/Drawer con detalle de la ruta (24h con buckets)",
+        "Empty state cuando no hay datos",
+        "Test render con mock API",
+        "Implementar endpoint GET /telemetry/routes (filtros: period, company_id, sort_by).",
+        "Crear componente Tab Routes con tabla (route, count, p50, p95, p99, error_rate, sparkline).",
+        "Agregar filtros período (24h/7d/30d) y empresa, con toggle de orden (p95/count/error_rate).",
+        "Implementar componente Sparkline reutilizable (recharts o SVG).",
+        "Implementar drill-down modal/drawer al click de fila con histograma 24h.",
+        "Agregar empty state y loading states.",
+        "Tests unitarios + snapshot con mock API.",
+        "Deploy a staging y mover Trello a In review."
       ]
     }
   ]
