@@ -22,6 +22,8 @@ SECRET_KEY=cambia-esto-por-un-secreto-largo
 CORS_ORIGINS=http://localhost:5173
 ```
 
+> Para la lista completa de variables de entorno (backend, frontend, Celery, backups, Sentry, etc.) con tipo, required/optional, defaults y ejemplos: ver [`docs/environment-variables.md`](docs/environment-variables.md).
+
 ### 3. Levantar servicios
 
 ```bash
