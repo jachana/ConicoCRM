@@ -1,0 +1,86 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+from typing import Any, Optional
+
+import redis
+from redis.exceptions import RedisError
+
+logger = logging.getLogger(__name__)
+
+TTL_SETTINGS: dict[str, int] = {
+    "ventas": 120,
+    "cobranza": 120,
+    "inventario": 60,
+    "compras": 120,
+    "margenes": 300,
+    "dte": 300,
+    "por_marca": 300,
+    "kpis": 60,
+    "default": 120,
+}
+
+
+class ReportCache:
+    def __init__(self, redis_url: str) -> None:
+        self._client = redis.from_url(redis_url, decode_responses=True)
+
+    def _build_key(self, empresa_id: int, endpoint: str, filters: dict) -> str:
+        sorted_filters = json.dumps(filters, sort_keys=True, ensure_ascii=False)
+        filters_hash = hashlib.md5(sorted_filters.encode("utf-8")).hexdigest()
+        return f"cache:report:{empresa_id}:{endpoint}:{filters_hash}"
+
+    def get(self, empresa_id: int, endpoint: str, filters: dict) -> Optional[Any]:
+        key = self._build_key(empresa_id, endpoint, filters)
+        try:
+            raw = self._client.get(key)
+        except RedisError as exc:
+            logger.warning("cache.get error key=%s: %s", key, exc)
+            return None
+        if raw is None:
+            logger.debug("cache.miss key=%s", key)
+            return None
+        logger.debug("cache.hit key=%s", key)
+        return json.loads(raw)
+
+    def set(self, empresa_id: int, endpoint: str, filters: dict, value: Any, ttl: int) -> None:
+        key = self._build_key(empresa_id, endpoint, filters)
+        try:
+            self._client.set(key, json.dumps(value, ensure_ascii=False), ex=ttl)
+        except RedisError as exc:
+            logger.warning("cache.set error key=%s: %s", key, exc)
+
+    def invalidate_pattern(self, empresa_id: int, endpoints: list[str]) -> None:
+        for endpoint in endpoints:
+            pattern = f"cache:report:{empresa_id}:{endpoint}:*"
+            cursor = 0
+            while True:
+                cursor, keys = self._client.scan(cursor, match=pattern, count=100)
+                if keys:
+                    self._client.delete(*keys)
+                if cursor == 0:
+                    break
+
+    def invalidate_empresa(self, empresa_id: int) -> None:
+        pattern = f"cache:report:{empresa_id}:*"
+        cursor = 0
+        while True:
+            cursor, keys = self._client.scan(cursor, match=pattern, count=100)
+            if keys:
+                self._client.delete(*keys)
+            if cursor == 0:
+                break
+
+
+report_cache: Optional[ReportCache] = None
+
+
+def init_report_cache(redis_url: str) -> None:
+    global report_cache
+    report_cache = ReportCache(redis_url)
+
+
+def get_report_cache() -> Optional[ReportCache]:
+    return report_cache
