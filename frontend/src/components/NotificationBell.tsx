@@ -26,8 +26,17 @@ function timeAgo(iso: string): string {
 
 function targetUrl(n: Notification): string | null {
   const p = n.payload as Record<string, unknown>
-  if (n.tipo === 'tarea_asignada' && typeof p.tarea_id === 'number') {
+  if (
+    (n.tipo === 'tarea_asignada' || n.tipo === 'tarea_vencida') &&
+    typeof p.tarea_id === 'number'
+  ) {
     return '/tareas'
+  }
+  if (
+    (n.tipo === 'aprobacion_pendiente' || n.tipo === 'aprobacion_resuelta') &&
+    typeof p.cotizacion_id === 'number'
+  ) {
+    return `/cotizaciones/${p.cotizacion_id}`
   }
   return null
 }
