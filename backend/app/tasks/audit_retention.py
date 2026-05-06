@@ -8,7 +8,7 @@ from app.config import settings
 from app.core.logging import logger
 from app.database import SessionLocal
 
-_BATCH_SIZE = 10_000
+_BATCH_SIZE = 2_000
 
 
 def _do_archive(db) -> int:
@@ -32,6 +32,7 @@ def _do_archive(db) -> int:
             .filter(AuditLog.created_at < cutoff)
             .order_by(AuditLog.created_at)
             .limit(_BATCH_SIZE)
+            .with_for_update(skip_locked=True)
             .all()
         )
         if not batch:
@@ -44,6 +45,7 @@ def _do_archive(db) -> int:
             for row in batch
         ]
         db.bulk_save_objects(archive_rows)
+        db.flush()  # guarantee inserts are written before source rows are deleted
 
         batch_ids = [r.id for r in batch]
         db.query(AuditLog).filter(AuditLog.id.in_(batch_ids)).delete(
