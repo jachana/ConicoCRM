@@ -45,6 +45,7 @@ import FacturaCompraDetalle from './pages/FacturaCompraDetalle'
 import TareasPage from './pages/Tareas'
 import TareasConfigPage from './pages/TareasConfig'
 import AdminAuditoria from './pages/AdminAuditoria'
+import AdminTelemetria from './pages/AdminTelemetria'
 import MigracionInicial from './pages/MigracionInicial'
 import Pipeline from './pages/Pipeline'
 import { useAuthStore } from './stores/auth'
@@ -128,6 +129,7 @@ export const router = createBrowserRouter([
       { path: 'tareas', element: <ModuloGuard slug="tareas"><TareasPage /></ModuloGuard> },
       { path: 'admin/tareas/config', element: <RequireAdmin><TareasConfigPage /></RequireAdmin> },
       { path: 'admin/auditoria', element: <RequireAdmin><AdminAuditoria /></RequireAdmin> },
+      { path: 'admin/telemetria', element: <RequireAdmin><AdminTelemetria /></RequireAdmin> },
       { path: 'admin/migracion', element: <RequireAdmin><MigracionInicial /></RequireAdmin> },
     ],
   },
