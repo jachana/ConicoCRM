@@ -2032,6 +2032,204 @@ def exportar_margenes_pdf(
 # GET /dte/export/pdf
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# GET /kpis  — Dashboard KPI tiles
+# ---------------------------------------------------------------------------
+
+@router.get("/kpis")
+def reporte_kpis(
+    periodo: str | None = Query(None),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    from datetime import date as _date
+    import re
+
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
+
+    today = _date.today()
+
+    if periodo is None:
+        year, month = today.year, today.month
+    else:
+        if not re.fullmatch(r"\d{4}-\d{2}", periodo):
+            raise HTTPException(status_code=422, detail="periodo debe tener formato YYYY-MM")
+        year, month = int(periodo[:4]), int(periodo[5:7])
+        if not (1 <= month <= 12):
+            raise HTTPException(status_code=422, detail="periodo debe tener formato YYYY-MM")
+
+    date_from = _date(year, month, 1)
+    # Last day of month
+    if month == 12:
+        date_to = _date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        date_to = _date(year, month + 1, 1) - timedelta(days=1)
+
+    # Previous month range
+    prev_date_to = date_from - timedelta(days=1)
+    prev_year, prev_month = prev_date_to.year, prev_date_to.month
+    prev_date_from = _date(prev_year, prev_month, 1)
+
+    # --- ventas: facturas ---
+    facturas = (
+        db.query(Factura)
+        .options(joinedload(Factura.cliente))
+        .filter(
+            Factura.fecha >= date_from,
+            Factura.fecha <= date_to,
+            Factura.estado != "anulada",
+        )
+        .all()
+    )
+    total_facturas = sum((f.total for f in facturas), _ZERO)
+    count_facturas = len(facturas)
+
+    # --- ventas: boletas ---
+    boletas = (
+        db.query(Boleta)
+        .filter(
+            Boleta.fecha >= date_from,
+            Boleta.fecha <= date_to,
+            Boleta.estado != "anulada",
+        )
+        .all()
+    )
+    total_boletas = sum((b.total for b in boletas), _ZERO)
+    count_boletas = len(boletas)
+
+    total_periodo = total_facturas + total_boletas
+    count_periodo = count_facturas + count_boletas
+
+    # --- ventas: previous period ---
+    prev_fac_total_raw = db.query(func.sum(Factura.total)).filter(
+        Factura.fecha >= prev_date_from,
+        Factura.fecha <= prev_date_to,
+        Factura.estado != "anulada",
+    ).scalar()
+    prev_bol_total_raw = db.query(func.sum(Boleta.total)).filter(
+        Boleta.fecha >= prev_date_from,
+        Boleta.fecha <= prev_date_to,
+        Boleta.estado != "anulada",
+    ).scalar()
+    prev_total = (
+        (Decimal(str(prev_fac_total_raw)) if prev_fac_total_raw else _ZERO)
+        + (Decimal(str(prev_bol_total_raw)) if prev_bol_total_raw else _ZERO)
+    )
+    if prev_total == _ZERO:
+        delta_pct = 0.0
+    else:
+        delta_pct = round(float((total_periodo - prev_total) / prev_total * 100), 1)
+
+    # --- sparkline: daily combined ---
+    daily_map: dict[_date, Decimal] = {}
+    for f in facturas:
+        daily_map[f.fecha] = daily_map.get(f.fecha, _ZERO) + f.total
+    for b in boletas:
+        daily_map[b.fecha] = daily_map.get(b.fecha, _ZERO) + b.total
+    sparkline = [
+        {"fecha": str(d), "monto": float(m)}
+        for d, m in sorted(daily_map.items())
+    ]
+
+    # --- top_clientes: from facturas only, top 5 ---
+    cliente_map: dict[int, dict] = {}
+    for f in facturas:
+        if f.cliente_id is None:
+            continue
+        entry = cliente_map.setdefault(
+            f.cliente_id,
+            {"nombre": f.cliente.nombre if f.cliente else "", "total": _ZERO, "count": 0},
+        )
+        entry["total"] += f.total
+        entry["count"] += 1
+    top_clientes = sorted(cliente_map.values(), key=lambda x: x["total"], reverse=True)[:5]
+    for c in top_clientes:
+        c["total"] = float(c["total"])
+
+    # --- dte_rejection ---
+    dte_rows = (
+        db.query(DteEmision)
+        .filter(
+            func.date(DteEmision.created_at) >= date_from,
+            func.date(DteEmision.created_at) <= date_to,
+        )
+        .all()
+    )
+    emitidas = len(dte_rows)
+    rechazadas = sum(1 for d in dte_rows if d.estado == "rechazada")
+    rate = round(rechazadas / emitidas * 100, 1) if emitidas else 0.0
+
+    # --- ar_aging: ALL unpaid overdue facturas (current state, no period filter) ---
+    all_unpaid = (
+        db.query(Factura)
+        .filter(
+            Factura.estado != "anulada",
+            Factura.fecha_vencimiento < today,
+        )
+        .all()
+    )
+    all_fac_ids = [f.id for f in all_unpaid]
+    pago_rows = (
+        db.query(Pago.factura_id, func.sum(Pago.monto))
+        .filter(Pago.factura_id.in_(all_fac_ids))
+        .group_by(Pago.factura_id)
+        .all()
+    ) if all_fac_ids else []
+    pago_map: dict[int, Decimal] = {fid: Decimal(str(m)) for fid, m in pago_rows}
+
+    aging_buckets: dict[str, dict] = {
+        "d_0_30": {"count": 0, "monto": _ZERO},
+        "d_31_60": {"count": 0, "monto": _ZERO},
+        "d_61_90": {"count": 0, "monto": _ZERO},
+        "d_90_plus": {"count": 0, "monto": _ZERO},
+    }
+    for f in all_unpaid:
+        saldo = f.total - pago_map.get(f.id, _ZERO)
+        if saldo <= _ZERO:
+            continue
+        dias = (today - f.fecha_vencimiento).days
+        if dias <= 30:
+            aging_buckets["d_0_30"]["count"] += 1
+            aging_buckets["d_0_30"]["monto"] += saldo
+        elif dias <= 60:
+            aging_buckets["d_31_60"]["count"] += 1
+            aging_buckets["d_31_60"]["monto"] += saldo
+        elif dias <= 90:
+            aging_buckets["d_61_90"]["count"] += 1
+            aging_buckets["d_61_90"]["monto"] += saldo
+        else:
+            aging_buckets["d_90_plus"]["count"] += 1
+            aging_buckets["d_90_plus"]["monto"] += saldo
+
+    ar_aging = {
+        k: {"count": v["count"], "monto": float(v["monto"])}
+        for k, v in aging_buckets.items()
+    }
+
+    return {
+        "periodo": f"{year:04d}-{month:02d}",
+        "ventas": {
+            "total": float(total_periodo),
+            "total_anterior": float(prev_total),
+            "delta_pct": delta_pct,
+            "count": count_periodo,
+            "sparkline": sparkline,
+        },
+        "top_clientes": top_clientes,
+        "dte_rejection": {
+            "rate": rate,
+            "rechazadas": rechazadas,
+            "emitidas": emitidas,
+        },
+        "ar_aging": ar_aging,
+    }
+
+
+# ---------------------------------------------------------------------------
+# GET /dte/export/pdf
+# ---------------------------------------------------------------------------
+
 @router.get("/dte/export/pdf")
 def exportar_dte_pdf(
     date_from: date = Query(...),
