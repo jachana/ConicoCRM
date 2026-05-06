@@ -19,8 +19,12 @@ function wrap(ui: React.ReactNode) {
   )
 }
 
+function listResponse(rows: any[]) {
+  return { data: { data: rows, pagination: { limit: 50, offset: 0, total: rows.length } } }
+}
+
 beforeEach(() => {
-  vi.mocked(api.get).mockResolvedValue({ data: [] })
+  vi.mocked(api.get).mockResolvedValue(listResponse([]))
 })
 
 describe('NotaVentas', () => {
@@ -35,34 +39,30 @@ describe('NotaVentas', () => {
   })
 
   it('renderiza NV de la lista', async () => {
-    vi.mocked(api.get).mockResolvedValue({
-      data: [{
-        id: 1, numero: 1, cotizacion_id: null,
-        cliente_id: 1, vendedor_id: null, empresa_id: null,
-        contacto: null, fecha: '2026-04-18',
-        estado: 'pendiente', nota: null, correo: null,
-        total_neto: 1000, total_iva: 190, total: 1190,
-        created_at: '2026-04-18T00:00:00Z', updated_at: '2026-04-18T00:00:00Z',
-        cliente: { id: 1, nombre: 'Empresa ABC', rut: null, email: null, telefono: null },
-      }],
-    })
+    vi.mocked(api.get).mockResolvedValue(listResponse([{
+      id: 1, numero: 1, cotizacion_id: null,
+      cliente_id: 1, vendedor_id: null, empresa_id: null,
+      contacto: null, fecha: '2026-04-18',
+      estado: 'pendiente', nota: null, correo: null,
+      total_neto: 1000, total_iva: 190, total: 1190,
+      created_at: '2026-04-18T00:00:00Z', updated_at: '2026-04-18T00:00:00Z',
+      cliente: { id: 1, nombre: 'Empresa ABC', rut: null, email: null, telefono: null },
+    }]))
     wrap(<NotaVentas />)
     expect(await screen.findByText('Empresa ABC')).toBeTruthy()
     expect(await screen.findByText('NV-00001')).toBeTruthy()
   })
 
   it('muestra badge de estado', async () => {
-    vi.mocked(api.get).mockResolvedValue({
-      data: [{
-        id: 1, numero: 1, cotizacion_id: null,
-        cliente_id: 1, vendedor_id: null, empresa_id: null,
-        contacto: null, fecha: '2026-04-18',
-        estado: 'despachada', nota: null, correo: null,
-        total_neto: 0, total_iva: 0, total: 0,
-        created_at: '2026-04-18T00:00:00Z', updated_at: '2026-04-18T00:00:00Z',
-        cliente: { id: 1, nombre: 'X', rut: null, email: null, telefono: null },
-      }],
-    })
+    vi.mocked(api.get).mockResolvedValue(listResponse([{
+      id: 1, numero: 1, cotizacion_id: null,
+      cliente_id: 1, vendedor_id: null, empresa_id: null,
+      contacto: null, fecha: '2026-04-18',
+      estado: 'despachada', nota: null, correo: null,
+      total_neto: 0, total_iva: 0, total: 0,
+      created_at: '2026-04-18T00:00:00Z', updated_at: '2026-04-18T00:00:00Z',
+      cliente: { id: 1, nombre: 'X', rut: null, email: null, telefono: null },
+    }]))
     wrap(<NotaVentas />)
     expect(await screen.findByText('Despachada')).toBeTruthy()
   })

@@ -173,7 +173,7 @@ def test_vendedor_cotizacion_list_hides_margen(client, vendedor_user, vendedor_t
         headers={"Authorization": f"Bearer {vendedor_token}"},
     )
     assert resp.status_code == 200
-    data = resp.json()
+    data = resp.json()["data"]
     assert len(data) > 0
     for cot in data:
         assert cot["margen_total"] is None
@@ -202,7 +202,7 @@ def test_admin_cotizacion_list_sees_margen(client, admin_user, admin_token, vend
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert resp.status_code == 200
-    data = resp.json()
+    data = resp.json()["data"]
     assert len(data) > 0
     # At least one cotizacion should have a non-null margen_total
     has_margen = any(cot["margen_total"] is not None for cot in data)

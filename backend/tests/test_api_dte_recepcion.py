@@ -6,12 +6,16 @@ from app.models.libro import DteRecepcion
 from app.models.empresa import Empresa
 from app.models.user import User
 from app.core.security import get_password_hash
+from app.core.modulos import OPTIONAL_MODULES
 
 
 @pytest.fixture
 def empresa1(db, setup_test_db):
     """Create a test empresa"""
-    empresa = Empresa(nombre="Empresa Test 1")
+    empresa = Empresa(
+        nombre="Empresa Test 1",
+        modulos_enabled={slug: True for slug in OPTIONAL_MODULES},
+    )
     db.add(empresa)
     db.commit()
     db.refresh(empresa)
@@ -21,7 +25,10 @@ def empresa1(db, setup_test_db):
 @pytest.fixture
 def empresa2(db, setup_test_db):
     """Create a second test empresa"""
-    empresa = Empresa(nombre="Empresa Test 2")
+    empresa = Empresa(
+        nombre="Empresa Test 2",
+        modulos_enabled={slug: True for slug in OPTIONAL_MODULES},
+    )
     db.add(empresa)
     db.commit()
     db.refresh(empresa)

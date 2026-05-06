@@ -483,7 +483,7 @@ def test_filter_facturas_by_empresa(client, admin_token):
     r = client.get(f"/api/facturas/?empresa_id={emp['id']}",
                    headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
-    ids = [f["id"] for f in r.json()]
+    ids = [f["id"] for f in r.json()["data"]]
     assert fac_id in ids
 
 
@@ -501,13 +501,13 @@ def test_filter_facturas_by_monto(client, admin_token):
     r = client.get("/api/facturas/?monto_min=40000",
                    headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
-    ids = [f["id"] for f in r.json()]
+    ids = [f["id"] for f in r.json()["data"]]
     assert fac_id in ids
 
     r = client.get("/api/facturas/?monto_max=100",
                    headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
-    assert fac_id not in [f["id"] for f in r.json()]
+    assert fac_id not in [f["id"] for f in r.json()["data"]]
 
 
 def test_filter_facturas_by_producto(client, admin_token):
@@ -526,7 +526,7 @@ def test_filter_facturas_by_producto(client, admin_token):
     r = client.get(f"/api/facturas/?producto_id={prod['id']}",
                    headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
-    ids = [f["id"] for f in r.json()]
+    ids = [f["id"] for f in r.json()["data"]]
     assert fac_id in ids
 
 

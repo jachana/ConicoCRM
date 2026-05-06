@@ -103,8 +103,11 @@ describe('BoletaNueva', () => {
     renderBoleta()
     // Switch to "Cliente registrado" mode
     fireEvent.click(screen.getByRole('button', { name: /cliente registrado/i }))
+    // Wait for empresa auto-select to enable the "seleccionar cliente" button
+    const selectClienteBtn = await screen.findByText(/seleccionar cliente/i)
+    await waitFor(() => expect(selectClienteBtn.closest('button')).not.toBeDisabled())
     // Open the modal via the select-client button
-    fireEvent.click(screen.getByText(/seleccionar cliente/i))
+    fireEvent.click(selectClienteBtn)
     // Modal should be visible
     expect(screen.getByTestId('mock-cliente-modal')).toBeInTheDocument()
     // Pick the client
