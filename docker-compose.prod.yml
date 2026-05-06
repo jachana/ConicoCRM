@@ -18,7 +18,7 @@ services:
   backend:
     build: ./backend
     restart: unless-stopped
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
+    command: sh -c "alembic upgrade head && python scripts/seed_admin.py && python scripts/fix_admin_empresa.py && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
     env_file:
       - path: .env.prod
         required: false
