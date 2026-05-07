@@ -96,25 +96,25 @@ function KPICard({ label, value, hint, delta, icon, accent, to }: KPICardProps) 
   const inner = (
     <div
       className={cn(
-        'relative h-full overflow-hidden rounded-xl border bg-gradient-to-br p-3 md:p-4 transition-all',
+        'relative h-full overflow-hidden rounded-lg border bg-gradient-to-br px-3 py-2 transition-all',
         'hover:shadow-md hover:-translate-y-0.5',
         ACCENTS[accent],
         'bg-white dark:bg-gray-900',
       )}
     >
-      <div className="flex items-start justify-between">
-        <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[10px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 truncate">
           {label}
         </div>
-        <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg', ACCENTS[accent])}>
+        <div className={cn('flex h-5 w-5 items-center justify-center rounded shrink-0', ACCENTS[accent])}>
           {icon}
         </div>
       </div>
-      <div className="mt-2 text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-50 tabular-nums">
+      <div className="mt-1 text-base md:text-lg font-bold text-gray-900 dark:text-gray-50 tabular-nums leading-tight">
         {value}
       </div>
-      <div className="mt-0.5 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-        {hint && <span>{hint}</span>}
+      <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+        {hint && <span className="truncate">{hint}</span>}
         {delta !== undefined && <DeltaPill delta={delta} />}
       </div>
     </div>
