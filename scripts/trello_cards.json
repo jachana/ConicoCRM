@@ -32,38 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[User Guide] Flujo de ventas: Cotizacion -> NV -> Factura",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:XL"
       ],
-      "desc": "**Contexto / Problema**\nLos usuarios de Conico CRM necesitan entender el flujo completo de ventas desde la cotización hasta la facturación y pago. Actualmente no existe una guía documentada que explique las transiciones de estado, restricciones legales DTE/SII y cómo ejecutar cada paso en la plataforma.\n\n**Acceptance Criteria**\n- Usuario puede seguir paso a paso cómo crear una cotización con líneas de producto/servicio.\n- Usuario entiende cómo enviar cotización por email y qué datos se incluyen en el PDF.\n- Usuario sabe qué son límites de crédito y cómo responde el sistema (warnings, bloqueos).\n- Usuario comprende el flujo de aprobación de margen y cuándo aplica.\n- Usuario puede convertir una cotización a NV (completa o parcialmente, seleccionando líneas).\n- Usuario entiende las transiciones de estado de NV (pendiente → enviada → entregada → pagada).\n- Usuario sabe cómo crear una Factura DTE tipo 33 a partir de una NV.\n- Usuario comprende qué significa 'emitir' una factura y los requisitos SII.\n- Usuario puede registrar pagos completos y parciales, actualizando el estado de la factura.\n\n**Definition of Done**\n- Guía publicada en docs.conico.cl con estructura clara por módulos.\n- Cada paso incluye screenshots actualizadas de la interfaz.\n- Ejemplos prácticos con datos ficticios completos.\n- Términos DTE/SII explicados en glosario adjunto.\n- Enlaces internos entre secciones funcionales.\n- Revisión de UX/Product para validar que guía refleja flujo real.\n- Card movido a 'In review' tras publicación en staging.\n\n**Notas tecnicas**\n- Flujo involucra modelos: Quotation, SalesOrder (NV), Invoice (DTE 33), Payment.\n- Estados SII: emitted, accepted, rejected, cancelled.\n- Validaciones: credit limit, margin threshold, NV dispatch before invoice creation.\n- Endpoints de referencia: /api/quotations, /api/sales-orders, /api/invoices, /api/payments.\n- Archivos base: app/models/quotation.rb, app/models/sales_order.rb, app/models/invoice.rb.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Crear una guía de usuario que explique el flujo de ventas en Conico CRM: desde la creación de una cotización hasta la emisión de factura y registro de pagos, incluyendo reglas de negocio y validaciones del SII.\n\n**Cambios / Decisiones** — Se ha creado el archivo `docs/guia-flujo-ventas.md` con la documentación completa del flujo. La guía cubre: creación y envío de cotizaciones (`/api/quotations`), límites de crédito, aprobación de márgenes, conversión a Nota de Venta (`/api/sales-orders`), estados de NV, generación de factura DTE tipo 33 (`/api/invoices`) y registro de pagos (`/api/payments`). Incluye ejemplos, glosario SII y enlaces internos.",
       "checklist": [
-        "Creating a quotation with line items",
-        "Quotation PDF and email send",
-        "Credit limit warnings",
-        "Margin approval flow",
-        "Converting quote to NV (partial selection)",
-        "NV state transitions (pending->dispatched->delivered->paid)",
-        "Creating Factura from NV",
-        "Emitting DTE type 33",
-        "Registering partial and full payments",
-        "Documentar creación de cotización y líneas de producto",
-        "Documentar envío de cotización por email y generación de PDF",
-        "Documentar límites de crédito, warnings y bloqueos",
-        "Documentar flujo de aprobación de margen",
-        "Documentar conversión de cotización a NV (completa y parcial)",
-        "Documentar transiciones de estado en NV",
-        "Documentar creación de Factura DTE 33 desde NV",
-        "Documentar emisión DTE y requisitos SII",
-        "Documentar registro de pagos completos y parciales",
-        "Recopilar screenshots y ejemplos con datos ficticios",
-        "Agregar glosario de términos DTE/SII",
-        "Revisar con Product/UX para alineación con interfaz real",
-        "Tests: validar que doc refleja comportamiento de sistema",
-        "Deploy a staging / Publicar en docs / Mover Trello a In review"
+        "Crear cotización con líneas de producto en /clientes/crear-cotizacion",
+        "Enviar cotización por email y verificar PDF generado correctamente",
+        "Convertir cotización a NV seleccionando solo algunas líneas",
+        "Verificar transición de estado de NV: Pendiente → Entregada",
+        "Generar factura tipo 33 desde NV en /facturas/crear-desde-nv",
+        "Registrar pago parcial en factura y confirmar nuevo estado",
+        "Validar términos SII en glosario al final de la guía"
       ]
     }
   ]
