@@ -33,19 +33,20 @@
   "cards": [
     {
       "list": "In review",
-      "name": "[Dashboard] KPI tiles clickeables a lista filtrada en modal (Phase 2)",
+      "name": "[Dashboard] KPI tiles: compactos en 1 fila + clickeables a lista filtrada",
       "labels": [
         "Core",
         "Size:M"
       ],
-      "desc": "**Resumen** — Hacer clickeables los KPI tiles del dashboard para abrir un modal con la lista filtrada de registros asociados.\n\n**Cambios / Decisiones** — Se implementó `KpiDrilldownModal` para mostrar datos filtrados de 4 tiles: Ventas hoy, Ventas mes, Por cobrar y Stock crítico. Cada fila en el modal incluye un enlace al detalle del registro. Se agregó el endpoint `ventas_detalle` para obtener notas de venta filtradas por rango de fechas. Se modificó `DashboardHero` para reemplazar links estáticos con botones que abren el modal. Se extendió `NVPorCobrarItem` con `nv_id` y `fecha` para navegación directa.",
+      "desc": "**Resumen** — Reducir el tamaño de los 4 tiles de KPI superiores para que quepan en una sola fila y hacerlos clickeables para mostrar un modal con listados filtrados.\n\n**Cambios / Decisiones** — Se ajustó el padding en `DashboardHero.tsx` para compactar los tiles. Se creó el componente `KpiDrilldownModal.tsx` para mostrar datos específicos al hacer clic en cada KPI (Ventas Hoy, Ventas Mes, Por Cobrar, Stock Crítico). Se agregó lógica en `dashboard.py` para manejar las consultas de datos detallados, como `ventas_detalle` y se extendió `NVPorCobrarItem` con `nv_id` y `fecha` para enlaces directos. Los tiles ahora usan `onClick` en lugar de `<Link>` para abrir el modal.",
       "checklist": [
-        "Hacer clic en tile 'Ventas Hoy' y verificar modal con facturas del día",
-        "Hacer clic en tile 'Ventas Mes' y verificar modal con facturas del mes",
-        "Hacer clic en tile 'Por Cobrar' y verificar modal con facturas impagas",
-        "Hacer clic en tile 'Stock Crítico' y verificar modal con productos bajo mínimo",
-        "Verificar enlaces en filas del modal redirigen a detalles correctos",
-        "Cerrar modal con botón X o haciendo clic fuera del mismo"
+        "Abrir dashboard y verificar que los 4 KPI tiles estén en 1 fila",
+        "Hacer clic en 'Ventas Hoy' y validar modal con facturas del día",
+        "Hacer clic en 'Ventas Mes' y validar modal con facturas del mes",
+        "Hacer clic en 'Por Cobrar' y validar modal con facturas impagas",
+        "Hacer clic en 'Stock Crítico' y validar modal con productos bajo mínimo",
+        "Verificar enlaces en filas de modal redirigen a detalles",
+        "Confirmar diseño responsive no rompe con los nuevos estilos"
       ]
     }
   ]
