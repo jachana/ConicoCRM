@@ -32,30 +32,21 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[User Guide] Reportes y exportaciones",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nLos usuarios de Conico necesitan una guía clara y completa para utilizar los reportes de ventas, márgenes y KPIs, así como las opciones de exportación. Sin documentación centralizada, los usuarios invierten tiempo probando y contactando soporte.\n\n**Acceptance Criteria**\n- Guía accesible en Help Center o Knowledge Base con al menos 5 secciones temáticas.\n- Cada sección incluye: descripción del reporte, pasos paso a paso (con screenshots), interpretación de métricas (neto, bruto, margen %, ticket promedio).\n- Cobertura de: Reporte de Ventas (rango fechas, filtro vendedor, desglose producto/cliente), Reporte por Marca, Análisis de Márgenes (lista vs efectivo), Tarjetas KPI, exportación a Excel/CSV.\n- Usuario puede completar una tarea de análisis típica (ej: comparar márgenes por marca en 3 meses) sin contactar soporte.\n- Documentación revisada por Product y disponible en es-CL.\n\n**Definition of Done**\n- Documento redactado en Markdown y versionado en repo de docs.\n- Screenshots/GIFs actualizadas con interfaz actual de Conico.\n- Revisión aprobada por Product Owner y UX.\n- Publicado en staging de Knowledge Base.\n- Link disponible desde contextual help en cada módulo de reportes.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Paths típicos: /reportes/ventas, /reportes/marcas, /reportes/margenes, /export (Excel/CSV).\n- Métricas clave: neto (monto total - devoluciones), bruto (antes descuentos), margen % = (bruto - costo) / bruto, ticket promedio = venta total / cantidad transacciones.\n- Integración con Help Center (ej: Zendesk, GitBook, o similar).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Crear una guía de usuario para los reportes de ventas, márgenes, KPIs y exportaciones en Conico, con instrucciones claras y ejemplos prácticos.\n\n**Cambios / Decisiones** — Se creó el archivo `docs/guia-reportes-exportaciones.md` con 5 secciones: Reporte de Ventas, Reporte por Marca, Análisis de Márgenes, Tarjetas KPI y Exportación a Excel/CSV. Cada sección incluye descripción, pasos con texto y referencias a métricas clave (neto, bruto, margen %, ticket promedio). Se integrará con el Help Center y se añadirán screenshots/GIFs en pasos posteriores.",
       "checklist": [
-        "Sales report: date range and vendor filter",
-        "Reading KPIs (net, gross, margin %, avg ticket)",
-        "Breakdown by product and by customer",
-        "Por-marca report: brand + customer aggregation",
-        "Margin analysis: list vs effective margin",
-        "Exporting to Excel and CSV",
-        "Redactar sección: Reporte de Ventas (rango fechas, filtro vendedor, desglose producto/cliente)",
-        "Redactar sección: Reporte por Marca (agregación marca + cliente)",
-        "Redactar sección: Análisis de Márgenes (margen lista vs efectivo, KPIs bruto/neto/margen %/ticket promedio)",
-        "Redactar sección: Filtros avanzados y tarjetas KPI",
-        "Redactar sección: Exportación a Excel y CSV (paso a paso)",
-        "Añadir screenshots/GIFs de cada flujo en interfaz actual",
-        "Revisar con Product Owner y UX; aplicar feedback",
-        "Publicar en staging de Knowledge Base y validar links",
-        "Mover Trello a 'In review'"
+        "Abrir guía en docs/guia-reportes-exportaciones.md",
+        "Validar sección 'Reporte de Ventas' con filtros y desgloses",
+        "Revisar sección 'Análisis de Márgenes' y fórmulas explicadas",
+        "Verificar sección 'Exportación a Excel/CSV' y formatos",
+        "Confirmar estructura general y navegación del documento",
+        "Validar métricas definidas (neto, bruto, margen %, ticket promedio)"
       ]
     }
   ]
