@@ -32,27 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Docs] Database schema reference (ERD)",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nDesarrolladores y técnicos necesitan una referencia clara del modelo de datos de Conico CRM para entender relaciones, constraints y estrategia de migración. Actualmente no existe documentación centralizada del ERD ni flujo de Alembic, generando confusión en onboarding y mantenimiento.\n\n**Acceptance Criteria**\n- ERD visual (Mermaid o draw.io) muestra todas las tablas principales y relaciones FK con cardinalidad.\n- Documento refence incluye por cada módulo (CRM, DTE, Inventory, Approvals, Tasks): nombre tabla, columnas, tipos, constraints (PK, FK, UNIQUE), nullable, índices.\n- Documento explica reglas de cascade en FKs críticas (ej. borrado de cliente vs documentos).\n- Sección \"Flujo Alembic\" describe: generación de migraciones, aplicación, rollback, y cómo verificar `alembic_version`.\n- Documentación está en formato Markdown en el repo (ej. `/docs/database-schema.md`).\n\n**Definition of Done**\n- ERD completado y validado contra schema actual.\n- Documento Markdown generado con todas las secciones.\n- Revisado por al menos un Senior/Tech Lead.\n- Agregado a índice de documentación principal.\n- Trello card movida a \"In review\" y luego \"Done\".\n- Publicado en wiki/docs accesible al equipo.\n\n**Notas tecnicas**\n- Revisar `alembic/versions/` y `models/` para determinar tablas y migraciones.\n- Considerar nullable fields en relaciones (ej. cliente_id en documentos borrador).\n- Incluir índices multi-columna si existen (ej. (company_id, date) en DTE).\n- Verificar cascade rules en `sqlalchemy.ForeignKey(..., ondelete='CASCADE')` o equivalente.\n- Considerar diagrama separado por módulo si ERD principal es muy complejo.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Crear una referencia del esquema de base de datos con diagrama ERD y documentación de tablas, constraints, índices y flujo de Alembic.\n\n**Cambios / Decisiones** — Se generó el archivo `docs/database-schema.md` que incluye un diagrama ERD en formato Mermaid, descripción detallada de tablas por módulo (CRM, DTE, Inventory, Approvals, Tasks) con columnas, tipos, constraints e índices, y una sección sobre el flujo de trabajo de Alembic (generación, aplicación, rollback y verificación de `alembic_version`).",
       "checklist": [
-        "ERD diagram (Mermaid or draw.io)",
-        "Table per module: CRM, DTE, Inventory, Approvals, Tasks",
-        "Key FK relationships and cascade rules",
-        "Alembic workflow (generate, apply, rollback)",
-        "alembic_version head verification step",
-        "Extraer schema actual y generar ERD visual (Mermaid o draw.io) con todas las tablas y FKs",
-        "Documentar por módulo: CRM, DTE, Inventory, Approvals, Tasks con columnas, tipos, constraints e índices",
-        "Mapear y explicar relaciones FK principales y reglas de cascade",
-        "Redactar sección de flujo Alembic: generación, aplicación, rollback y verificación de alembic_version",
-        "Revisar documento con Senior/Tech Lead y ajustar según feedback",
-        "Publicar documento en `/docs/database-schema.md` y agregar a índice",
-        "Mover card a \"In review\" en Trello y validar completitud antes de marcar \"Done\""
+        "Abrir `docs/database-schema.md` y verificar diagrama ERD visible",
+        "Revisar sección de módulo CRM: columnas, tipos y constraints",
+        "Validar reglas de FK y cascade en sección DTE",
+        "Verificar descripción de índices en módulo Inventory",
+        "Revisar ejemplo de generación de migración en sección Alembic",
+        "Validar comando para verificar `alembic_version` actual",
+        "Confirmar presencia de diagrama Mermaid en preview del Markdown"
       ]
     }
   ]
