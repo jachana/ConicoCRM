@@ -308,6 +308,7 @@ def deuda_empresa(
                 id=f.id,
                 numero=f.numero,
                 fecha=f.fecha,
+                fecha_vencimiento=f.fecha_vencimiento,
                 contacto=f.contacto,
                 total=f.total,
                 monto_pagado=f.monto_pagado or D("0"),

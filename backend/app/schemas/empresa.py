@@ -82,6 +82,7 @@ class FacturaResumen(BaseModel):
     id: int
     numero: int
     fecha: date
+    fecha_vencimiento: date | None = None
     contacto: str | None = None
     total: Decimal
     monto_pagado: Decimal
