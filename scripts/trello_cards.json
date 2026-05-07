@@ -32,19 +32,28 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Docs] Celery background jobs reference",
+      "list": "In progress",
+      "name": "[Docs] Audit log system internals",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:M"
       ],
-      "desc": "**Resumen** — Crear una referencia centralizada en markdown sobre las tareas Celery de Conico, incluyendo sus triggers, cadencia, reintentos y comportamiento ante fallos.\n\n**Cambios / Decisiones** — Se creó el documento `docs/celery-jobs.md` que incluye: descripción de 9 tareas Celery (DTE emission/polling, CRM auto-tasks, cobranza reminders, CAF alerts, telemetry rollups, audit archival), sus políticas de reintentos, configuración de Beat schedule, y guía para monitoreo usando Flower y logs. Se documentó cómo agregar nuevas tareas periódicas.",
+      "desc": "**Contexto / Problema**\nEl sistema de auditoría es crítico para cumplimiento y debugging, pero su arquitectura interna no está documentada. Los desarrolladores y operadores necesitan entender cómo funciona para extender, mantener y auditar correctamente.\n\n**Acceptance Criteria**\n- Documento markdown completo que explique la arquitectura de event listeners de SQLAlchemy y middleware ASGI.\n- Descripción clara del formato de diff (estructura para create/update/delete).\n- Lista exhaustiva de modelos auditados y campos sensibles excluidos.\n- Referencia de parámetros de filtrado en la API de auditoría.\n- Guía paso a paso para exportar auditoría a CSV.\n- Ejemplos de código o payloads JSON reales en cada sección.\n\n**Definition of Done**\n- Documento escrito en es-CL y revisado por tech lead.\n- Alojado en la wiki/docs del proyecto con URL clara.\n- Todos los ejemplos de código verificados contra la base actual.\n- PR mergeado a rama de docs.\n- Card movida a Done.\n\n**Notas tecnicas**\n- Ubicación esperada: `docs/audit-log-system.md` o similar en repo.\n- Incluir rutas clave: `conico_crm/audit/models.py`, `conico_crm/audit/listeners.py`, `conico_crm/middleware/audit.py`.\n- Referencia de API: endpoint `/api/audit` con query params (model, user_id, date_range, action).\n- Campos excluidos: contraseñas, tokens, API keys (verificar contra `AUDIT_EXCLUDED_FIELDS`).\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir docs/celery-jobs.md y verificar sección de tareas Celery",
-        "Verificar presencia de DTE polling, ReglaTarea y Cobranza",
-        "Revisar configuración de Beat schedule y ejemplo de nueva tarea",
-        "Validar sección de monitoreo con Flower y logs"
+        "Architecture: event listeners + middleware",
+        "Diff format: create/update/delete shapes",
+        "List of audited models",
+        "Excluded sensitive fields",
+        "API filter reference",
+        "CSV export usage",
+        "Investigar listeners de SQLAlchemy y arquitectura de eventos",
+        "Documentar flujo middleware ASGI para request context",
+        "Explicar formato diff (create/update/delete) con ejemplos",
+        "Listar todos los modelos auditados y campos sensibles excluidos",
+        "Documentar parámetros y ejemplos de API `/api/audit`",
+        "Incluir guía de exportación a CSV con ejemplos de comando",
+        "Revisar documento con tech lead y mergear a repo"
       ]
     }
   ]
