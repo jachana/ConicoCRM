@@ -32,7 +32,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[User Guide] Notas de Credito y Debito",
       "labels": [
         "Roadmap",
@@ -40,20 +40,15 @@
         "Goal: Docs",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nLos usuarios de Conico necesitan entender cuándo y cómo emitir Notas de Crédito (NC, tipo DTE 61) y Notas de Débito (ND, tipo DTE 56) para corregir facturas, anular boletas/guías y hacer correcciones parciales. Sin una guía clara, cometen errores en la emisión y afectan el cumplimiento tributario.\n\n**Acceptance Criteria**\n- El usuario puede identificar la diferencia entre NC y ND según el escenario (corrección de precio, anulación, retención, etc.).\n- La guía explica cómo vincular una NC/ND a la factura o boleta original en Conico.\n- Se documentan los casos: corrección total, corrección parcial, anulación de boleta, anulación de guía.\n- Se clarifica el impacto en el estado del documento original (anulado, parcialmente corregido).\n- Se incluyen ejemplos con montos y líneas de detalle.\n- Se explica el tipo de DTE (61 para NC, 56 para ND) y cuándo cada uno es requerido por SII.\n- La guía es accesible desde el help center o panel de usuario de Conico.\n\n**Definition of Done**\n- Documento redactado en es-CL markdown con ejemplos y capturas de pantalla.\n- Revisado por experto tributario/SII (interno o externo) para validar normativa.\n- Publicado en help center o wiki interna de Conico.\n- Trello card movido a \"In review\" y luego a \"Done\".\n- Links internos a flujos de emisión de NC/ND en la aplicación están funcionales.\n\n**Notas tecnicas**\n- Endpoints relevantes: POST /dte/credit-note, POST /dte/debit-note.\n- Schema: revisar campos de linked_document_id, document_type, line_items, reason_code (SII).\n- Documentos SII: Resolución exenta sobre NC (art. 32 DL 825) y ND.\n- Incluir códigos de razón de rechazo/corrección si aplica en Conico.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Se creó una guía para usuarios de Conico sobre cómo y cuándo emitir Notas de Crédito (DTE 61) y Notas de Débito (DTE 56), incluyendo su vinculación a documentos originales, casos de uso y ejemplos.\n\n**Cambios / Decisiones** — Se redactó el documento `docs/guia-notas-credito-debito.md` con explicaciones sobre diferencias entre NC y ND, cuándo usar cada una según normativa SII, ejemplos de correcciones totales/parciales, impacto en estado de documentos y cómo usar los endpoints `POST /dte/credit-note` y `POST /dte/debit-note`. Se incluyeron códigos de razón SII y secciones para anulaciones y ajustes.",
       "checklist": [
-        "When to issue a NC vs ND",
-        "Linking NC to a factura or boleta",
-        "Line items and amounts",
-        "DTE emission type 61 / 56",
-        "Effect on invoice state (annulled/partial)",
-        "Investigar normativa SII: diferencia NC 61 vs ND 56, casos de uso",
-        "Redactar sección: cuándo emitir NC (correcciones de precio, descuentos)",
-        "Redactar sección: cuándo emitir ND (retenciones, anticipos, ajustes)",
-        "Documentar flujo de vinculación NC/ND a documento origen en Conico (con screenshots)",
-        "Incluir ejemplos con líneas de detalle y cálculos de monto",
-        "Revisar y validar por equipo tributario/SII",
-        "Publicar en help center; validar links y Deploy/Mover a In review"
+        "Abrir docs/guia-notas-credito-debito.md y verificar secciones claras",
+        "Validar ejemplos con líneas de detalle y cálculo de montos",
+        "Revisar que se explique cómo vincular NC/ND a factura o boleta",
+        "Confirmar diferencias entre NC (61) y ND (56) según SII",
+        "Verificar listado de casos: corrección, anulación, retención",
+        "Chequear que se mencionen endpoints POST /dte/*",
+        "Validar que se indique impacto en estado de documento original"
       ]
     }
   ]
