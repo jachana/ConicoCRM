@@ -32,20 +32,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Core] Modulos habilitables/deshabilitables por empresa",
+      "list": "In progress",
+      "name": "[Telemetry] Phase 1: backend data collection",
       "labels": [
         "Core",
-        "Goal: SaaS-ready",
+        "Goal: Operations",
         "Size:XL"
       ],
-      "desc": "**Resumen**\nSistema completo de módulos habilitables por empresa: backend con registro central, campo JSONB en empresas, dependency require_modulo en routers opcionales, frontend con hook, ModuloGuard, Sidebar filtrado y tab admin con toggles, cascade-confirm y auditoría.\n\n**Cambios / Decisiones**\n- `backend/app/core/modulos.py`: CORE_MODULES + OPTIONAL_MODULES, compute_effective_modulos(), validate_toggle()\n- `backend/app/models/empresa.py`: modulos_enabled JSONB DEFAULT '{}'\n- `backend/app/api/modulos.py`: GET/PATCH /empresas/{id}/modulos + GET /me/modulos\n- `frontend/src/hooks/useModulos.ts` + `ModuloGuard.tsx` + Sidebar filtrado\n- `frontend/src/components/config/ModulesTab.tsx` (527 líneas): tab admin completo con toggles, cascade modal y auditoría",
+      "desc": "**Contexto / Problema**\nConico necesita visibilidad operacional sobre costos y desempeño en runtime. Phase 1 establece captura de datos en puntos clave de la arquitectura (HTTP, base de datos, APIs externas, Celery) como fundación para observabilidad; sin agregación ni UI aún.\n\n**Acceptance Criteria**\n- Cada request captura empresa_id, response_size y query_count en logs estructurados.\n- Queries SQL que tarden >200ms generan eventos en logs con query fingerprint y duración.\n- Llamadas a Lioren registran count, latency (ms) y cost (USD) por endpoint.\n- Tareas Celery exponen métricas de duración, retry count y estado de finalización.\n- Sentry Performance captura traces por ruta HTTP con sample rate configurado por entorno.\n- Todos los puntos de medición son accesibles vía logs estructurados o dashboard Sentry.\n\n**Definition of Done**\n- Tests unitarios y de integración para cada componente pasan en CI/CD.\n- Migraciones (si las hay) se ejecutan exitosamente en staging.\n- Code review completado y aprobado.\n- Deployado a staging; telemetría visible en logs y Sentry durante smoke tests.\n- Trello card movido a \"In review\".\n\n**Notas técnicas**\n- RequestLoggerMiddleware: ubicado en app/middleware/logging.py; usar structlog para contexto.\n- SQLAlchemy: event listener en app/db.py; usar sqlalchemy.event.listen(Engine, 'after_cursor_execute').\n- Lioren: wrapper en app/services/lioren_client.py; interceptar response antes de return.\n- Celery: usar @task decorator y signals (task_prerun, task_postrun) en app/tasks/__init__.py.\n- Sentry: configurar en app/config.py; usar traces_sample_rate = {dev: 1.0, prod: 0.1}.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Ir a /configuracion → Módulos y verificar listado completo por categoría",
-        "Deshabilitar módulo padre y confirmar cascade modal con dependientes",
-        "Verificar Sidebar oculta módulos deshabilitados inmediatamente",
-        "Confirmar 403 al acceder ruta con módulo off",
-        "Abrir historial de auditoría de un módulo y verificar entradas"
+        "[Telemetry T1.1] RequestLoggerMiddleware: agregar empresa_id + response_size + query_count",
+        "[Telemetry T1.2] SQLAlchemy slow-query event listener (>200ms)",
+        "[Telemetry T1.3] Lioren client wrapper instrumentado (count, latency, cost)",
+        "[Telemetry T1.4] Celery task metrics via signals",
+        "[Telemetry T1.5] Sentry Performance: per-route traces_sample_rate + dashboards setup",
+        "Implementar enriquecimiento RequestLoggerMiddleware (empresa_id, response_size, query_count)",
+        "Agregar SQLAlchemy slow-query listener (threshold >200ms)",
+        "Instrumentar Lioren client wrapper (count, latency, cost)",
+        "Configurar Celery task metrics vía signals",
+        "Tunar Sentry Performance (traces_sample_rate, dashboards)",
+        "Ejecutar tests e integración en CI/CD",
+        "Deploy a staging y mover Trello a In review"
       ]
     }
   ]
