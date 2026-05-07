@@ -32,19 +32,21 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Inventario] Solo facturas mueven stock (no NV)",
       "labels": [
         "Core",
         "Size:S"
       ],
-      "desc": "Auditar y corregir todos los lugares de la app que muestran o calculan movimientos de stock usando NV como trigger. Solo la emision de una Factura debe descontar stock. Las NV son promesas de venta, no despachos.\n\n---\n**Audit 2026-05-06**: Tras inspeccion, scope real es W1-08 completo (no Size:S):\n- NV mueve stock en 4 lugares: crear_nv, crear_nv_from_cotizacion, cambiar_estado (cancelada), eliminar_nv\n- Factura NO mueve stock actualmente — necesita ser agregado en emision\n- Boletas y guias despacho tambien necesitan auditar\n- Reclasificar como Size:L con migracion de datos historica.",
+      "desc": "**Resumen** — Solo la emisión de facturas y boletas debe mover stock, no las notas de venta. Se corrigió la lógica para que NV no descuente stock.\n\n**Cambios / Decisiones** — Se eliminó el descuento de stock en todas las operaciones de NV (crear, aprobar costo, editar líneas). Se creó `app/services/factura_stock.py` con la lógica centralizada para descontar stock al emitir factura o boleta. Los puntos afectados fueron: `nota_ventas.py` (movimientos convertidos en no-op), `facturas.py` (llama al nuevo servicio), `aprobaciones_costo.py` (ya no mueve stock). Se actualizaron tests para validar que NV no genere movimientos.",
       "checklist": [
-        "Auditar backend: identificar todos los puntos donde NV descuenta o reserva stock",
-        "Auditar frontend: indicadores/textos que digan que NV mueve stock",
-        "Corregir logica: stock se descuenta solo al emitir Factura (no al crear NV)",
-        "Revisar historial de movimientos: que NV no aparezca como movimiento de stock",
-        "Tests: verificar que crear NV no altera el stock y crear Factura si lo altera"
+        "Crear NV y verificar que stock_actual no cambia",
+        "Aprobar costo de NV y verificar sin movimientos de stock",
+        "Editar líneas de NV y verificar que stock no se vea afectado",
+        "Emitir factura y verificar descuento en stock_actual",
+        "Anular factura y verificar reversa de stock",
+        "Crear boleta y verificar que mueve stock",
+        "Revisar movimientos de inventario no incluyan NV"
       ]
     }
   ]
