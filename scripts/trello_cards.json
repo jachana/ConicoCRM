@@ -32,18 +32,21 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Catalogo] Historial muestra saldo acumulado por transaccion",
       "labels": [
         "Core",
         "Size:S"
       ],
-      "desc": "En el historial del catalogo/producto, cada entrada debe mostrar el saldo resultante despues de esa transaccion, de modo que el usuario pueda verificar que los movimientos cuadran con el stock actual.",
+      "desc": "**Resumen** — En el historial de movimientos de un producto, mostrar el saldo acumulado después de cada transacción para facilitar la verificación del stock.\n\n**Cambios / Decisiones** — Se agregó una columna de saldo al historial del producto. Se calcula el saldo acumulado en orden cronológico en el backend (`/api/productos`). Se actualizó el esquema de movimiento de inventario y se muestra el saldo en la tabla del frontend (`ProductoHistorial.tsx`).",
       "checklist": [
-        "Agregar columna Saldo al historial de movimientos de producto",
-        "Calcular saldo acumulado en orden cronologico (running balance)",
-        "Verificar que el saldo final coincide con el stock actual del producto",
-        "Mostrar diferencias/alertas si hay descuadre"
+        "Abrir historial de un producto en /inventario/productos/:id",
+        "Verificar que cada fila muestra un saldo acumulado",
+        "Confirmar que el último saldo coincide con el stock actual",
+        "Revisar que el saldo cambia correctamente al aplicar filtros de fecha",
+        "Verificar orden cronológico de los movimientos",
+        "Comprobar que no hay saldos negativos inesperados",
+        "Validar que coincida el stock en API /api/productos/:id/historial"
       ]
     },
     {
