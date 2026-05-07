@@ -32,21 +32,19 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Catalogo] Historial muestra saldo acumulado por transaccion",
+      "list": "In progress",
+      "name": "[Inventario] Solo facturas mueven stock (no NV)",
       "labels": [
         "Core",
         "Size:S"
       ],
-      "desc": "**Resumen** — En el historial de movimientos de un producto, mostrar el saldo acumulado después de cada transacción para facilitar la verificación del stock.\n\n**Cambios / Decisiones** — Se agregó una columna de saldo al historial del producto. Se calcula el saldo acumulado en orden cronológico en el backend (`/api/productos`). Se actualizó el esquema de movimiento de inventario y se muestra el saldo en la tabla del frontend (`ProductoHistorial.tsx`).",
+      "desc": "Auditar y corregir todos los lugares de la app que muestran o calculan movimientos de stock usando NV como trigger. Solo la emision de una Factura debe descontar stock. Las NV son promesas de venta, no despachos.",
       "checklist": [
-        "Abrir historial de un producto en /inventario/productos/:id",
-        "Verificar que cada fila muestra un saldo acumulado",
-        "Confirmar que el último saldo coincide con el stock actual",
-        "Revisar que el saldo cambia correctamente al aplicar filtros de fecha",
-        "Verificar orden cronológico de los movimientos",
-        "Comprobar que no hay saldos negativos inesperados",
-        "Validar que coincida el stock en API /api/productos/:id/historial"
+        "Auditar backend: identificar todos los puntos donde NV descuenta o reserva stock",
+        "Auditar frontend: indicadores/textos que digan que NV mueve stock",
+        "Corregir logica: stock se descuenta solo al emitir Factura (no al crear NV)",
+        "Revisar historial de movimientos: que NV no aparezca como movimiento de stock",
+        "Tests: verificar que crear NV no altera el stock y crear Factura si lo altera"
       ]
     },
     {
