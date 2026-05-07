@@ -32,19 +32,20 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Dashboard] KPI tiles clickeables a lista filtrada en modal (Phase 2)",
       "labels": [
         "Core",
         "Size:M"
       ],
-      "desc": "Phase 2 de la mejora de KPI tiles. Phase 1 (compactar tiles) ya enviado. Falta hacer cada tile clickeable que abra un modal con la lista filtrada correspondiente.",
+      "desc": "**Resumen** — Hacer clickeables los KPI tiles del dashboard para abrir un modal con la lista filtrada de registros asociados.\n\n**Cambios / Decisiones** — Se implementó `KpiDrilldownModal` para mostrar datos filtrados de 4 tiles: Ventas hoy, Ventas mes, Por cobrar y Stock crítico. Cada fila en el modal incluye un enlace al detalle del registro. Se agregó el endpoint `ventas_detalle` para obtener notas de venta filtradas por rango de fechas. Se modificó `DashboardHero` para reemplazar links estáticos con botones que abren el modal. Se extendió `NVPorCobrarItem` con `nv_id` y `fecha` para navegación directa.",
       "checklist": [
-        "Click Ventas Hoy: modal con facturas/boletas del dia",
-        "Click Ventas Mes: modal con facturas/boletas del mes",
-        "Click Por Cobrar: modal con facturas impagas",
-        "Click Stock Critico: modal con productos bajo minimo",
-        "Modal: tabla con enlaces a cada registro"
+        "Hacer clic en tile 'Ventas Hoy' y verificar modal con facturas del día",
+        "Hacer clic en tile 'Ventas Mes' y verificar modal con facturas del mes",
+        "Hacer clic en tile 'Por Cobrar' y verificar modal con facturas impagas",
+        "Hacer clic en tile 'Stock Crítico' y verificar modal con productos bajo mínimo",
+        "Verificar enlaces en filas del modal redirigen a detalles correctos",
+        "Cerrar modal con botón X o haciendo clic fuera del mismo"
       ]
     }
   ]
