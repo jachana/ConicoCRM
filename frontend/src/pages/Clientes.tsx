@@ -158,7 +158,7 @@ export default function Clientes() {
           {/* Mobile cards */}
           <div className="md:hidden space-y-2">
             {clientes.map(c => (
-              <Card key={c.id} className="p-4">
+              <Card key={c.id} className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" onClick={() => setVerCliente(c)}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -174,7 +174,7 @@ export default function Clientes() {
                       {c.email && <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{c.email}</span>}
                     </div>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
                     <Button size="xs" variant="link" onClick={() => setVerCliente(c)}>Ver</Button>
                     <Button size="xs" variant="link" onClick={() => abrirEditar(c)}>Editar</Button>
                     <Button
@@ -217,7 +217,7 @@ export default function Clientes() {
               </THead>
               <TBody>
                 {clientes.map(c => (
-                  <TR key={c.id}>
+                  <TR key={c.id} interactive onClick={() => setVerCliente(c)}>
                     <TD className="font-medium text-gray-900 dark:text-gray-100">
                       <div className="flex items-center gap-2">
                         {c.nombre}
@@ -228,7 +228,7 @@ export default function Clientes() {
                     <TD className="text-gray-500 dark:text-gray-400 font-num">{c.rut ?? '—'}</TD>
                     <TD className="text-gray-500 dark:text-gray-400">{c.email ?? '—'}</TD>
                     <TD className="text-gray-500 dark:text-gray-400">{c.telefono ?? '—'}</TD>
-                    <TD>
+                    <TD onClick={e => e.stopPropagation()}>
                       {eliminandoId === c.id ? (
                         <div className="flex items-center justify-end gap-2 text-xs">
                           {deleteError

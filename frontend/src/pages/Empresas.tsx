@@ -401,7 +401,7 @@ export default function Empresas() {
                   const deudaVencida = Number(d?.deuda_vencida ?? 0)
                   const dimmed = deudaTotal === 0
                   return (
-                    <TR key={e.id} className={dimmed ? 'opacity-70' : ''}>
+                    <TR key={e.id} interactive className={dimmed ? 'opacity-70' : ''} onClick={() => setDetalleEmpresa(e)}>
                       <TD className="font-medium text-gray-900 dark:text-gray-100">{e.nombre}</TD>
                       <TD className="text-gray-500 dark:text-gray-400 font-num">{e.rut ?? '—'}</TD>
                       <TD className="text-gray-500 dark:text-gray-400">{e.sector ?? '—'}</TD>
@@ -416,7 +416,7 @@ export default function Empresas() {
                       <TD className={`text-right font-num whitespace-nowrap ${deudaVencida > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-500 dark:text-gray-400'}`}>
                         {deudaVencida > 0 ? fmt(deudaVencida) : '—'}
                       </TD>
-                      <TD>
+                      <TD onClick={ev => ev.stopPropagation()}>
                         {eliminandoId === e.id ? (
                           <div className="flex items-center justify-end gap-2 text-xs">
                             {deleteError
