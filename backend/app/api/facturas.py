@@ -226,6 +226,7 @@ def _upsert_from_xml(db: Session, xml_bytes: bytes) -> tuple[Factura, str]:
 
 @router.get("/export/excel")
 def exportar_excel(
+    ids: list[int] | None = Query(None),
     estado: list[str] | None = Query(None),
     cliente_id: int | None = Query(None),
     empresa_id: int | None = Query(None),
@@ -249,28 +250,31 @@ def exportar_excel(
             selectinload(Factura.lineas),
         )
     )
-    if estado:
-        q = q.filter(Factura.estado.in_(estado))
-    if cliente_id:
-        q = q.filter(Factura.cliente_id == cliente_id)
-    if empresa_id:
-        q = q.filter(Factura.empresa_id == empresa_id)
-    if vendedor_id:
-        q = q.filter(Factura.vendedor_id == vendedor_id)
-    if fecha_desde:
-        q = q.filter(Factura.fecha >= fecha_desde)
-    if fecha_hasta:
-        q = q.filter(Factura.fecha <= fecha_hasta)
-    if monto_min is not None:
-        q = q.filter(Factura.total >= monto_min)
-    if monto_max is not None:
-        q = q.filter(Factura.total <= monto_max)
-    if producto_id:
-        q = q.join(FacturaLinea, FacturaLinea.factura_id == Factura.id).filter(
-            FacturaLinea.producto_id.in_(producto_id)
-        ).distinct()
-    if texto:
-        q = _apply_text_search(q, db, texto)
+    if ids:
+        q = q.filter(Factura.id.in_(ids))
+    else:
+        if estado:
+            q = q.filter(Factura.estado.in_(estado))
+        if cliente_id:
+            q = q.filter(Factura.cliente_id == cliente_id)
+        if empresa_id:
+            q = q.filter(Factura.empresa_id == empresa_id)
+        if vendedor_id:
+            q = q.filter(Factura.vendedor_id == vendedor_id)
+        if fecha_desde:
+            q = q.filter(Factura.fecha >= fecha_desde)
+        if fecha_hasta:
+            q = q.filter(Factura.fecha <= fecha_hasta)
+        if monto_min is not None:
+            q = q.filter(Factura.total >= monto_min)
+        if monto_max is not None:
+            q = q.filter(Factura.total <= monto_max)
+        if producto_id:
+            q = q.join(FacturaLinea, FacturaLinea.factura_id == Factura.id).filter(
+                FacturaLinea.producto_id.in_(producto_id)
+            ).distinct()
+        if texto:
+            q = _apply_text_search(q, db, texto)
     facturas = q.order_by(Factura.fecha.desc(), Factura.numero.desc()).all()
 
     col_keys = [k for k in (columns or _FAC_DEFAULT_COLUMNS) if k in _FAC_EXPORT_COLUMNS]
