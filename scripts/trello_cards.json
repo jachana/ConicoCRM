@@ -32,25 +32,24 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Telemetry] Phase 2: aggregation + admin API",
+      "list": "In progress",
+      "name": "[Telemetry] Phase 3: frontend metrics",
       "labels": [
         "Core",
         "Goal: Operations",
         "Size:XL"
       ],
-      "desc": "**Contexto / Problema**\nPhase 1 captura logs granulares de desempeño y costo por ruta. Sin agregación, los logs crecen sin límite y las consultas ad-hoc son lentas. Necesitamos rollup horario a tabla optimizada + endpoints admin que alimenten el dashboard operacional, permitiendo a gerentes identificar cuellos de botella y anomalías de costo sin overhead en producción.\n\n**Acceptance Criteria**\n- Los logs Phase 1 se agregan cada hora en tabla `perf_rollup` con totales por ruta/empresa (latencia p50/p95/p99, error_count, request_count).\n- `GET /admin/telemetry/routes` devuelve top-N rutas ordenadas por latencia, request count o error rate; filtrable por empresa y rango de fechas.\n- `GET /admin/telemetry/cost` devuelve costo acumulado por empresa (basado en Lioren + request count); filtrable por período.\n- Ambos endpoints responden en <200ms incluso con 100k+ registros agregados.\n- El dashboard puede consumir ambos endpoints sin errores de autenticación ni schema.\n\n**Definition of Done**\n- Migración Alembic aplicada en staging.\n- Celery task registrada y testeable sin Redis en local (mock o integration).\n- Cobertura de tests ≥80% para agregador + endpoints.\n- Endpoints documentados en Swagger/OpenAPI.\n- Trello: todas las 3 tarjetas hijas en \"Review\".\n- Desplegado a staging + validado por Product.\n\n**Notas tecnicas**\n- Tabla `perf_rollup`: (id, empresa_id, ruta, timestamp_hora, latency_p50, latency_p95, latency_p99, error_count, request_count).\n- Celery task: `aggregate_perf_logs_hourly()`, scheduled cada hora.\n- Endpoints bajo namespace `/admin/telemetry/`; requieren `permission:telemetry_read` o superior.\n- Considerar índices en (empresa_id, timestamp_hora, ruta) para queries rápidas.\n- SII/Lioren rate: consultar desde tabla `empresa_cost_config` o environment variable.\n\n<!-- conico-refined -->",
+      "desc": "**Contexto / Problema**\nFase 3 del programa de observabilidad de costo y desempeño. Necesitamos capturar métricas de desempeño del lado del cliente (Core Web Vitals) e implementar control de tamaño de bundle en CI para detectar regresiones de performance antes de producción.\n\n**Acceptance Criteria**\n- Web Vitals (LCP, FID, CLS, INP) se capturan automáticamente en cada sesión de usuario.\n- Las métricas se envían vía POST a endpoint de telemetría y se registran en logs.\n- Bundle size se analiza en cada CI run.\n- Existe un perf budget definido que bloquea merge si se excede.\n- Dashboard de telemetría muestra evolución de Web Vitals por percentil (p50, p75, p95).\n\n**Definition of Done**\n- Pruebas unitarias para capture logic y POST payload.\n- Pruebas e2e verificando envío de métricas en staging.\n- Bundle analyzer integrado en GitHub Actions / CI.\n- Perf budget configurado y documentado.\n- Despliegue a staging y validación manual.\n- Trello cards T3.1 y T3.2 movidas a In Review.\n\n**Notas tecnicas**\n- T3.1: Usar web-vitals lib (npm), POST a /api/telemetry/metrics, headers con session_id.\n- T3.2: webpack-bundle-analyzer o esbuild plugin, límite inicial en perf-budget.json.\n- Ambas fases son independientes; T3.2 puede parallelizarse.\n\n<!-- conico-refined -->",
       "checklist": [
-        "[Telemetry T2.1] perf_rollup table + Celery hourly aggregator desde logs",
-        "[Telemetry T2.2] GET /admin/telemetry/routes (top slow / busy / errors)",
-        "[Telemetry T2.3] GET /admin/telemetry/cost (Lioren + requests per empresa)",
-        "T2.1: Crear migración + tabla perf_rollup con índices",
-        "T2.1: Implementar agregador Celery horario y testear",
-        "T2.2: Codificar GET /admin/telemetry/routes con filtros",
-        "T2.3: Codificar GET /admin/telemetry/cost con cálculo Lioren",
-        "Escribir tests unitarios + integration (≥80% coverage)",
-        "Documentar endpoints en Swagger",
-        "Deploy a staging + validar con Product"
+        "[Telemetry T3.1] Web Vitals (LCP/FID/CLS/INP) -> POST + log",
+        "[Telemetry T3.2] Bundle analyzer en CI + perf budget",
+        "[ ] T3.1: Instalar y configurar librería web-vitals",
+        "[ ] T3.1: Implementar POST a endpoint de telemetría con LCP/FID/CLS/INP",
+        "[ ] T3.1: Agregar logging y manejo de errores",
+        "[ ] T3.2: Integrar bundle analyzer en CI pipeline",
+        "[ ] T3.2: Definir y parametrizar perf budget",
+        "[ ] Escribir tests unitarios y e2e",
+        "[ ] Desplegar a staging y mover cards a In Review"
       ]
     }
   ]
