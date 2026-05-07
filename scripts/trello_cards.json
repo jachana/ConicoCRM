@@ -32,21 +32,20 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Dashboard] KPI tiles: compactos en 1 fila + clickeables a lista filtrada",
+      "list": "In progress",
+      "name": "[UX] Hipervínculos en toda la app (navegación por FK)",
       "labels": [
         "Core",
         "Size:M"
       ],
-      "desc": "**Resumen** — Reducir el tamaño de los 4 tiles de KPI superiores para que quepan en una sola fila y hacerlos clickeables para mostrar un modal con listados filtrados.\n\n**Cambios / Decisiones** — Se ajustó el padding en `DashboardHero.tsx` para compactar los tiles. Se creó el componente `KpiDrilldownModal.tsx` para mostrar datos específicos al hacer clic en cada KPI (Ventas Hoy, Ventas Mes, Por Cobrar, Stock Crítico). Se agregó lógica en `dashboard.py` para manejar las consultas de datos detallados, como `ventas_detalle` y se extendió `NVPorCobrarItem` con `nv_id` y `fecha` para enlaces directos. Los tiles ahora usan `onClick` en lugar de `<Link>` para abrir el modal.",
+      "desc": "Cualquier referencia a una entidad (factura, boleta, nota de venta, cliente, empresa, producto) debe renderizarse como un enlace clickeable que lleve directamente a ese registro. Aplica en tablas, modales, detalles, historial y cualquier campo que muestre un ID o nombre relacionado por FK.",
       "checklist": [
-        "Abrir dashboard y verificar que los 4 KPI tiles estén en 1 fila",
-        "Hacer clic en 'Ventas Hoy' y validar modal con facturas del día",
-        "Hacer clic en 'Ventas Mes' y validar modal con facturas del mes",
-        "Hacer clic en 'Por Cobrar' y validar modal con facturas impagas",
-        "Hacer clic en 'Stock Crítico' y validar modal con productos bajo mínimo",
-        "Verificar enlaces en filas de modal redirigen a detalles",
-        "Confirmar diseño responsive no rompe con los nuevos estilos"
+        "Facturas referenciadas en NV, boletas, historial → link a /facturas/:id",
+        "Clientes referenciados en facturas, NV, cotizaciones → link a /clientes/:id",
+        "Empresas referenciadas en documentos → link a /empresas/:id",
+        "Productos en líneas de detalle → link a /productos/:id",
+        "Notas de venta referenciadas en facturas → link a /notas-venta/:id",
+        "Auditar todas las tablas/listas de la app para detectar FKs sin link"
       ]
     }
   ]
