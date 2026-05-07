@@ -220,6 +220,7 @@ def exportar_excel(
     fecha_desde: date | None = Query(None),
     fecha_hasta: date | None = Query(None),
     estado: list[str] | None = Query(None),
+    ids: list[int] | None = Query(None),
     perms: tuple[User, Session] = require_permission("boletas", "view"),
 ):
     _, db = perms
@@ -228,12 +229,15 @@ def exportar_excel(
         joinedload(Boleta.vendedor),
         selectinload(Boleta.lineas),
     )
-    if fecha_desde:
-        q = q.filter(Boleta.fecha >= fecha_desde)
-    if fecha_hasta:
-        q = q.filter(Boleta.fecha <= fecha_hasta)
-    if estado:
-        q = q.filter(Boleta.estado.in_(estado))
+    if ids:
+        q = q.filter(Boleta.id.in_(ids))
+    else:
+        if fecha_desde:
+            q = q.filter(Boleta.fecha >= fecha_desde)
+        if fecha_hasta:
+            q = q.filter(Boleta.fecha <= fecha_hasta)
+        if estado:
+            q = q.filter(Boleta.estado.in_(estado))
     boletas = q.order_by(Boleta.fecha.desc(), Boleta.numero.desc()).all()
 
     wb = openpyxl.Workbook()

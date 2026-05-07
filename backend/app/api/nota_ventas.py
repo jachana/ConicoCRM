@@ -202,15 +202,18 @@ def _load_nv(db: Session, nv_id: int) -> NotaVenta:
 
 @router.get("/export/excel")
 def exportar_excel(
+    ids: list[int] | None = Query(None),
     perms: tuple[User, Session] = require_permission("nota_venta", "view"),
 ):
     _, db = perms
-    nvs = (
+    q = (
         db.query(NotaVenta)
         .options(joinedload(NotaVenta.cliente), joinedload(NotaVenta.vendedor))
         .order_by(NotaVenta.fecha.desc(), NotaVenta.numero.desc())
-        .all()
     )
+    if ids:
+        q = q.filter(NotaVenta.id.in_(ids))
+    nvs = q.all()
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Notas de Venta"

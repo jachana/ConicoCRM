@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Eye, Download, Mail, Trash2, Plus, FileSpreadsheet, Inbox } from 'lucide-react'
@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import {
   listarBoletas,
   exportarBoletasExcel,
+  exportarBoletasSeleccion,
   enviarEmailBoleta,
   anularBoleta,
   type BoletaListFilters,
@@ -18,6 +19,7 @@ import { openPdf } from '../lib/pdf'
 import DteBadge from '../components/DteBadge'
 import BoletaAnularModal from '../components/BoletaAnularModal'
 import BoletaEmailModal from '../components/BoletaEmailModal'
+import BulkActionBar from '../components/BulkActionBar'
 import {
   Button, Input, FormField, Badge, EmptyState, Skeleton, Tooltip,
   Table, THead, TBody, TR, TH, TD,
@@ -85,6 +87,9 @@ export default function BoletasList() {
   const [anularTarget, setAnularTarget] = useState<BoletaListItem | null>(null)
   const [emailTarget, setEmailTarget] = useState<BoletaListItem | null>(null)
 
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [isExporting, setIsExporting] = useState(false)
+
   const filters: BoletaListFilters = useMemo(() => ({
     fecha_desde: fechaDesde || undefined,
     fecha_hasta: fechaHasta || undefined,
@@ -96,6 +101,10 @@ export default function BoletasList() {
     page,
     page_size: PAGE_SIZE,
   }), [fechaDesde, fechaHasta, patente, estados, dteEstado, metodoPago, vendedorId, page])
+
+  useEffect(() => {
+    setSelectedIds(new Set())
+  }, [filters])
 
   const { data: boletas = [], isLoading, isFetching } = useQuery<BoletaListItem[]>({
     queryKey: ['boletas-list', filters],
@@ -127,6 +136,36 @@ export default function BoletasList() {
       downloadBlob(blob, `boletas-${date}.xlsx`)
     } catch {
       toast.error('Error al exportar')
+    }
+  }
+
+  async function handleBulkExport() {
+    setIsExporting(true)
+    try {
+      const blob = await exportarBoletasSeleccion(Array.from(selectedIds))
+      const date = new Date().toISOString().split('T')[0]
+      downloadBlob(blob, `boletas-seleccion-${date}.xlsx`)
+    } catch {
+      toast.error('Error al exportar')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  function toggleRow(id: number) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (selectedIds.size === boletas.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(boletas.map(b => b.id)))
     }
   }
 
@@ -259,6 +298,18 @@ export default function BoletasList() {
             <Table>
               <THead>
                 <TR>
+                  <TH className="w-10">
+                    <input
+                      type="checkbox"
+                      className="rounded accent-brand-500"
+                      checked={boletas.length > 0 && selectedIds.size === boletas.length}
+                      ref={el => {
+                        if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < boletas.length
+                      }}
+                      onChange={toggleAll}
+                      aria-label="Seleccionar todas"
+                    />
+                  </TH>
                   <TH>Nº</TH>
                   <TH>Fecha</TH>
                   <TH>Tipo</TH>
@@ -278,6 +329,15 @@ export default function BoletasList() {
                   const canAnular = b.estado !== 'anulada'
                   return (
                     <TR key={b.id} interactive onClick={() => navigate(`/boletas/${b.id}`)}>
+                      <TD onClick={e => e.stopPropagation()} className="w-10">
+                        <input
+                          type="checkbox"
+                          className="rounded accent-brand-500"
+                          checked={selectedIds.has(b.id)}
+                          onChange={() => toggleRow(b.id)}
+                          aria-label={`Seleccionar boleta ${b.numero}`}
+                        />
+                      </TD>
                       <TD className="font-num font-medium text-gray-900 dark:text-gray-100">
                         {String(b.numero).padStart(5, '0')}
                       </TD>
@@ -379,6 +439,13 @@ export default function BoletasList() {
           error={sendEmailMut.error ? 'No se pudo enviar' : null}
         />
       )}
+
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        onClear={() => setSelectedIds(new Set())}
+        onExport={handleBulkExport}
+        isExporting={isExporting}
+      />
     </div>
   )
 }

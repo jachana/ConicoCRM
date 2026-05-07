@@ -13,6 +13,18 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalTitle, ModalDescription,
   Tooltip,
 } from '../components/ui'
+import BulkActionBar from '../components/BulkActionBar'
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+}
 
 const ESTADO_LABELS: Record<string, string> = {
   pendiente:  'Pendiente',
@@ -48,8 +60,11 @@ export default function NotaVentas() {
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState('')
   const [page, setPage] = useState(1)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [isExporting, setIsExporting] = useState(false)
 
-  useEffect(() => { setPage(1) }, [estado, fechaDesde, fechaHasta, debouncedBusqueda])
+  useEffect(() => { setPage(1); setSelectedIds(new Set()) }, [estado, fechaDesde, fechaHasta, debouncedBusqueda])
+  useEffect(() => { setSelectedIds(new Set()) }, [page])
 
   const params = useMemo(() => {
     const p = new URLSearchParams()
@@ -76,6 +91,21 @@ export default function NotaVentas() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['nota_ventas'] }); setDeleteId(null); setDeleteError('') },
     onError: (err: any) => setDeleteError(err?.response?.data?.detail || 'Error al eliminar'),
   })
+
+  async function handleBulkExport() {
+    if (selectedIds.size === 0) return
+    setIsExporting(true)
+    try {
+      const params = new URLSearchParams()
+      selectedIds.forEach(id => params.append('ids', String(id)))
+      const response = await api.get(`/api/nota_ventas/export/excel?${params.toString()}`, { responseType: 'blob' })
+      downloadBlob(response.data, 'notas-venta-seleccion.xlsx')
+    } catch (err) {
+      console.error('Error exportando NVs', err)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-7xl">
@@ -135,6 +165,28 @@ export default function NotaVentas() {
           <Table>
             <THead>
               <TR>
+                <TH className="w-8">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 dark:border-gray-600"
+                    checked={nvs.length > 0 && nvs.every(nv => selectedIds.has(nv.id))}
+                    ref={el => {
+                      if (el) el.indeterminate = nvs.some(nv => selectedIds.has(nv.id)) && !nvs.every(nv => selectedIds.has(nv.id))
+                    }}
+                    onChange={e => {
+                      if (e.target.checked) {
+                        setSelectedIds(prev => new Set([...prev, ...nvs.map(nv => nv.id)]))
+                      } else {
+                        setSelectedIds(prev => {
+                          const next = new Set(prev)
+                          nvs.forEach(nv => next.delete(nv.id))
+                          return next
+                        })
+                      }
+                    }}
+                    onClick={e => e.stopPropagation()}
+                  />
+                </TH>
                 <TH>Nº</TH>
                 <TH>Fecha</TH>
                 <TH>Cliente</TH>
@@ -148,6 +200,22 @@ export default function NotaVentas() {
             <TBody>
               {nvs.map(nv => (
                 <TR key={nv.id} interactive onClick={() => navigate(`/notas-venta/${nv.id}`)}>
+                  <TD onClick={e => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 dark:border-gray-600"
+                      checked={selectedIds.has(nv.id)}
+                      onChange={e => {
+                        setSelectedIds(prev => {
+                          const next = new Set(prev)
+                          if (e.target.checked) next.add(nv.id)
+                          else next.delete(nv.id)
+                          return next
+                        })
+                      }}
+                      onClick={e => e.stopPropagation()}
+                    />
+                  </TD>
                   <TD className="font-num font-medium text-gray-900 dark:text-gray-100">
                     NV-{String(nv.numero).padStart(5, '0')}
                   </TD>
@@ -209,6 +277,13 @@ export default function NotaVentas() {
           </Button>
         </div>
       )}
+
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        onClear={() => setSelectedIds(new Set())}
+        onExport={handleBulkExport}
+        isExporting={isExporting}
+      />
 
       <Modal open={deleteId !== null} onOpenChange={(o) => { if (!o) { setDeleteId(null); setDeleteError('') } }}>
         <ModalContent size="sm">

@@ -8,6 +8,7 @@ import { Eye, ChevronDown, X, Inbox, FileSpreadsheet, Search } from 'lucide-reac
 import { api } from '../lib/api'
 import type { FacturaList, FlatLine } from '../types'
 import ExportPreviewPanel from '../components/ExportPreviewPanel'
+import BulkActionBar from '../components/BulkActionBar'
 import DteBadge from '../components/DteBadge'
 import { FACTURA_COLUMN_DEFS } from '../lib/columnDefs'
 import {
@@ -161,6 +162,9 @@ export default function Facturas() {
   })
 
   const [page, setPage] = useState(1)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [isExporting, setIsExporting] = useState(false)
+  const selectAllRef = useRef<HTMLInputElement>(null)
 
   // Reset page when filters change
   useEffect(() => { setPage(1) }, [estados, clienteId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda])
@@ -181,6 +185,9 @@ export default function Facturas() {
     p.append('offset', String((page - 1) * 50))
     return p.toString()
   }, [estados, clienteId, empresaId, fechaDesde, fechaHasta, montoMin, montoMax, productos, debouncedBusqueda, page])
+
+  // Clear selection when filters or page change
+  useEffect(() => { setSelectedIds(new Set()) }, [listParams])
 
   const { data: listResponse, isLoading, isFetching } = useQuery<{ data: FacturaList[], pagination: { limit: number, offset: number, total: number } }>({
     queryKey: ['facturas-list', listParams],
@@ -244,6 +251,62 @@ export default function Facturas() {
     setBusqueda('')
   }
 
+  // Bulk selection helpers
+  const allSelected = facturas.length > 0 && facturas.every(f => selectedIds.has(f.id))
+  const someSelected = facturas.some(f => selectedIds.has(f.id))
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someSelected && !allSelected
+    }
+  }, [someSelected, allSelected])
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelectedIds(prev => {
+        const next = new Set(prev)
+        facturas.forEach(f => next.delete(f.id))
+        return next
+      })
+    } else {
+      setSelectedIds(prev => {
+        const next = new Set(prev)
+        facturas.forEach(f => next.add(f.id))
+        return next
+      })
+    }
+  }
+
+  function toggleRow(id: number) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  async function handleBulkExport() {
+    setIsExporting(true)
+    try {
+      const idsParam = Array.from(selectedIds).map(id => `ids=${id}`).join('&')
+      const sep = exportBaseUrl.includes('?') ? '&' : '?'
+      const url = `${exportBaseUrl}${sep}${idsParam}`
+      const response = await api.get(url, { responseType: 'blob' })
+      const blob = new Blob([response.data], { type: response.headers['content-type'] ?? 'application/octet-stream' })
+      const href = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = href
+      a.download = `facturas-seleccion-${new Date().toISOString().split('T')[0]}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(href)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   const fechaSummary = fechaDesde && fechaHasta
     ? `${fmtDate(fechaDesde)} – ${fmtDate(fechaHasta)}`
     : fechaDesde ? `Desde ${fmtDate(fechaDesde)}`
@@ -255,6 +318,7 @@ export default function Facturas() {
     : `Máx $${Number(montoMax).toLocaleString()}`
 
   return (
+    <>
     <div className="p-4 md:p-6">
 
       {/* Header */}
@@ -495,6 +559,16 @@ export default function Facturas() {
                   <Table>
                     <THead>
                       <TR>
+                        <TH className="w-8">
+                          <input
+                            ref={selectAllRef}
+                            type="checkbox"
+                            className="rounded border-gray-300 accent-brand-500"
+                            checked={allSelected}
+                            onChange={toggleSelectAll}
+                            aria-label="Seleccionar todos"
+                          />
+                        </TH>
                         <TH>Nº</TH>
                         <TH>Fecha</TH>
                         <TH>Cliente / Empresa</TH>
@@ -507,6 +581,15 @@ export default function Facturas() {
                     <TBody>
                       {facturas.map(f => (
                         <TR key={f.id} interactive onClick={() => navigate(`/facturas/${f.id}`)}>
+                          <TD onClick={e => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 accent-brand-500"
+                              checked={selectedIds.has(f.id)}
+                              onChange={() => toggleRow(f.id)}
+                              aria-label={`Seleccionar factura ${f.numero}`}
+                            />
+                          </TD>
                           <TD className="font-medium text-gray-900 dark:text-white font-num">
                             FAC-{String(f.numero).padStart(5, '0')}
                           </TD>
@@ -579,5 +662,13 @@ export default function Facturas() {
 
       </div>
     </div>
+
+    <BulkActionBar
+      selectedCount={selectedIds.size}
+      onClear={() => setSelectedIds(new Set())}
+      onExport={handleBulkExport}
+      isExporting={isExporting}
+    />
+    </>
   )
 }

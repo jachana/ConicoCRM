@@ -125,6 +125,7 @@ export interface BoletaListFilters {
   dte_estado?: BoletaDteEstado[];
   metodo_pago?: BoletaMetodoPago;
   vendedor_id?: number;
+  ids?: number[];
   page?: number;
   page_size?: number;
 }
@@ -192,6 +193,14 @@ export async function exportarBoletasExcel(
   const params = cleanParams(filtros);
   const { data } = await api.get<Blob>('/api/boletas/export/excel', {
     params,
+    responseType: 'blob',
+  });
+  return data;
+}
+
+export async function exportarBoletasSeleccion(ids: number[]): Promise<Blob> {
+  const { data } = await api.get<Blob>('/api/boletas/export/excel', {
+    params: { ids },
     responseType: 'blob',
   });
   return data;
