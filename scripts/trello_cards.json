@@ -32,21 +32,19 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[UX] Hipervínculos en toda la app (navegación por FK)",
+      "list": "In progress",
+      "name": "[UX] Listas clickeables + columnas configurables por admin",
       "labels": [
         "Core",
         "Size:M"
       ],
-      "desc": "**Resumen** — Hacer clickeables todas las referencias a entidades relacionadas en la app, como facturas, clientes o productos, para navegar directamente al detalle.\n\n**Cambios / Decisiones** — Se creó el componente `EntityLink` para mostrar FKs como enlaces clickeables sin interferir con la navegación de filas. Soporta entidades como factura, cliente, empresa, producto, etc. Se integró en listas y detalles de facturas, boletas, notas de venta, cotizaciones, guías, cobranzas y más. Clientes, empresas y productos abren detalle en modal vía `?detalle=N`.",
+      "desc": "En listas como Clientes y Empresas, cada fila debe ser clickeable y abrir la ficha de detalle (modo lectura, no edición). Además, los admins deben poder elegir qué columnas se muestran en cada tabla mediante un menú de configuración por pestaña (visible/oculto por columna).",
       "checklist": [
-        "Abrir /facturas y clickear un cliente o producto en la tabla",
-        "En /notas-venta, clickear una factura relacionada en la lista",
-        "Ver un detalle de boleta y clickear la empresa o cliente asociado",
-        "En /cotizaciones, clickear cliente o productos en líneas de detalle",
-        "En cualquier lista, verificar que clickear FK no afecta selección de fila",
-        "Abrir /clientes con ?detalle=123 y validar apertura automática del modal",
-        "Revisar que enlaces de productos/redirecciones sean correctos"
+        "Filas de listas (Clientes, Empresas, etc.) clickeables → abren vista detalle en modo lectura",
+        "Vista detalle separada de la vista de edición (no abrir form de edición al hacer click)",
+        "Menú de columnas visibles (ícono engranaje o similar) en cada tabla",
+        "Persistir preferencia de columnas por usuario/rol en localStorage o backend",
+        "Auditar qué listas necesitan este patrón: Clientes, Empresas, Productos, NV, Facturas, etc."
       ]
     }
   ]
