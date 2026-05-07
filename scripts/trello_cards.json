@@ -32,20 +32,21 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Seguridad] Vendedor solo ve Empresas/Clientes asignados (y sus documentos)",
       "labels": [
         "Core",
         "Size:M"
       ],
-      "desc": "Los vendedores deben ver unicamente las Empresas y Clientes que tienen asignados. Este filtro debe propagarse a todos los modulos relacionados: Facturas, NV, Cotizaciones, Cobranza, etc. Un vendedor no asignado a una empresa no debe ver ni sus documentos ni su informacion.",
+      "desc": "**Resumen** — Los vendedores solo deben ver las Empresas y Clientes asignados, y propagar este filtro a todos los módulos relacionados como facturas, notas de venta, cotizaciones, etc.\n\n**Cambios / Decisiones** — Se agregó el campo `vendedor_id` en las tablas `empresas` y `clientes` con una migración. En el backend, los endpoints de listado (`GET /empresas`, `GET /clientes`) ahora filtran por `vendedor_id` para usuarios con rol vendedor. Para entidades asociadas (facturas, notas, etc.) se hace 403 si no están asignados. Los usuarios admin/subadmin ven todo sin restricciones. Además, al crear un cliente, automáticamente se asigna al vendedor logueado. Se añadieron tests específicos para validar que un vendedor no pueda acceder a datos ajenos.",
       "checklist": [
-        "Modelo: campo vendedor_asignado en Empresa y/o Cliente (ya existe o crear)",
-        "Backend: filtrar GET /empresas y /clientes por vendedor_id del usuario logueado (rol vendedor)",
-        "Backend: propagar filtro a /facturas, /nota_ventas, /cotizaciones, /cobranza",
-        "Frontend: ocultar Empresas/Clientes no asignados en selectores y listas",
-        "Admin y subadmin siguen viendo todo sin filtro",
-        "Tests: vendedor A no puede ver empresa asignada a vendedor B"
+        "Iniciar sesión como vendedor A y listar /empresas, verificar solo se muestran las asignadas",
+        "Iniciar sesión como vendedor A y acceder a detalle de empresa NO asignada, debería dar 403",
+        "Crear un cliente nuevo desde vendedor A, verificar que queda asignado a ese vendedor",
+        "Iniciar sesión como admin, verificar que se listan todas las empresas/clientes sin filtro",
+        "Intentar acceder desde vendedor a factura de cliente no asignado, verificar 403",
+        "Exportar listado de clientes como vendedor, validar que solo aparecen los asignados",
+        "Revisar tests en backend/tests/test_vendedor_scoping.py para confirmar cobertura de casos"
       ]
     }
   ]
