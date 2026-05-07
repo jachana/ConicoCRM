@@ -32,27 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Docs] Architecture overview",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nConico CRM carece de documentación técnica centralizada sobre su arquitectura. Nuevos desarrolladores y stakeholders no tienen una referencia clara del flujo de datos, componentes clave (FastAPI, React, PostgreSQL, Redis, Celery, Lioren) ni cómo interactúan. Esto ralentiza onboarding y dificulta decisiones de diseño.\n\n**Acceptance Criteria**\n- Documento o página web con diagrama de componentes mostrando frontend, backend, base de datos, Redis, workers Celery y Lioren.\n- Tabla con tech stack indicando tecnología, versión y propósito (ej: FastAPI 0.x para API REST).\n- Walkthrough paso-a-paso del ciclo de vida de una solicitud HTTP (request → handler → DB query → response).\n- Diagrama de flujo de emisión DTE mostrando validación SII, almacenamiento y notificación.\n- Resumen de jobs en background (Celery): tipos, frecuencia, triggers.\n- Documento accesible en repositorio o wiki del equipo.\n\n**Definition of Done**\n- Documento en Markdown o página HTML hospedada en repositorio (docs/ o wiki).\n- Mínimo dos diagramas (componentes y DTE pipeline) en formato PNG/SVG.\n- Reviewed por al menos un ingeniero senior.\n- Links desde README principal.\n- Card movida a \"In review\" y luego a \"Done\".\n\n**Notas tecnicas**\n- Repositorio: docs/ carpeta o Git Wiki.\n- Herramientas sugeridas: Excalidraw, Miro, PlantUML o draw.io (exportar SVG).\n- Incluir endpoints clave de FastAPI y modelos Pydantic relevantes.\n- Mencionar SII/DTE endpoints y tokens de autenticación (sin secrets).\n- Celery tasks: listar jobs críticos (validación DTE, notificaciones, reportes).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Crear documentación centralizada de la arquitectura de Conico CRM, incluyendo diagramas y vistas técnicas clave.\n\n**Cambios / Decisiones**\n- Se añadió archivo `docs/architecture.md` con diagramas en Mermaid.\n- Incluye diagrama de componentes (Frontend, FastAPI, PostgreSQL, Redis, Celery, Lioren).\n- Agregado diagrama del pipeline de emisión DTE mostrando interacción con SII.\n- Se usó sintaxis Mermaid para generar visualizaciones directamente en el Markdown.",
       "checklist": [
-        "Component diagram (frontend / backend / DB / Redis / Celery / Lioren)",
-        "Tech stack table with versions",
-        "Request lifecycle walkthrough",
-        "DTE emission pipeline diagram",
-        "Background jobs overview",
-        "Crear diagrama de componentes (frontend/backend/DB/Redis/Celery/Lioren)",
-        "Documentar tabla de tech stack con versiones y propósitos",
-        "Escribir walkthrough del ciclo de vida de request HTTP",
-        "Crear diagrama del pipeline de emisión DTE",
-        "Listar y describir jobs Celery (tipos, triggers, frecuencia)",
-        "Reviews técnico y merge a repositorio docs",
-        "Deploy a wiki/docs site y mover card a Done"
+        "Abrir docs/architecture.md y verificar diagrama de componentes",
+        "Revisar que esté el diagrama del pipeline DTE con interacción SII",
+        "Validar que los elementos mencionados (FastAPI, Redis, etc.) estén descritos",
+        "Verificar que ambos diagramas se muestren correctamente en formato Mermaid",
+        "Confirmar que el documento esté vinculado desde README principal",
+        "Aprobar contenido técnico con al menos un desarrollador senior",
+        "Mover card a 'In review' tras finalizar revisión"
       ]
     }
   ]
