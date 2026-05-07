@@ -24,12 +24,38 @@ from app.schemas.nota_alerta import NotaAlertaOut
 router = APIRouter()
 
 
+def _vendedor_cliente_filter(query, user: User):
+    """Restrict to clientes assigned to vendedor (directly or via empresa)."""
+    return query.outerjoin(Empresa, Empresa.id == Cliente.empresa_id).filter(
+        or_(Cliente.vendedor_id == user.id, Empresa.vendedor_id == user.id)
+    )
+
+
+def _enforce_cliente_scope(c: Cliente, user: User, db: Session) -> None:
+    """Raise 403 if vendedor accesses a cliente not assigned (directly or via empresa)."""
+    if user.role != "vendedor":
+        return
+    if c.vendedor_id == user.id:
+        return
+    if c.empresa_id is not None:
+        emp = db.get(Empresa, c.empresa_id)
+        if emp is not None and emp.vendedor_id == user.id:
+            return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="No tienes acceso a este cliente",
+    )
+
+
 @router.get("/export/excel")
 def exportar_excel(
     perms: tuple[User, Session] = require_permission("clientes", "view"),
 ):
-    _, db = perms
-    clientes = db.query(Cliente).options(joinedload(Cliente.empresa)).order_by(Cliente.nombre).all()
+    current_user, db = perms
+    clientes_q = db.query(Cliente).options(joinedload(Cliente.empresa))
+    if current_user.role == "vendedor":
+        clientes_q = _vendedor_cliente_filter(clientes_q, current_user)
+    clientes = clientes_q.order_by(Cliente.nombre).all()
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Clientes"
@@ -56,10 +82,15 @@ def listar_clientes(
     empresa_id: int | None = Query(None),
     perms: tuple[User, Session] = require_permission("clientes", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     query = db.query(Cliente)
+    is_vendedor = current_user.role == "vendedor"
+    if is_vendedor:
+        query = _vendedor_cliente_filter(query, current_user)
     if q:
-        query = query.outerjoin(Cliente.empresa).filter(
+        if not is_vendedor:
+            query = query.outerjoin(Cliente.empresa)
+        query = query.filter(
             unaccent_ilike(Cliente.nombre, f"%{q}%")
             | Cliente.rut.ilike(f"%{q}%")
             | unaccent_ilike(Empresa.nombre, f"%{q}%")
@@ -75,8 +106,16 @@ def crear_cliente(
     body: ClienteCreate,
     perms: tuple[User, Session] = require_permission("clientes", "create"),
 ):
-    _, db = perms
-    cliente = Cliente(**body.model_dump())
+    current_user, db = perms
+    if current_user.role == "vendedor" and body.vendedor_id not in (None, current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No puedes asignar el cliente a otro vendedor",
+        )
+    data = body.model_dump()
+    if current_user.role == "vendedor":
+        data["vendedor_id"] = current_user.id
+    cliente = Cliente(**data)
     db.add(cliente)
     try:
         db.commit()
@@ -92,10 +131,11 @@ def obtener_cliente(
     cliente_id: int,
     perms: tuple[User, Session] = require_permission("clientes", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     c = db.get(Cliente, cliente_id)
     if not c:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
+    _enforce_cliente_scope(c, current_user, db)
     return c
 
 
@@ -105,11 +145,18 @@ def actualizar_cliente(
     body: ClienteUpdate,
     perms: tuple[User, Session] = require_permission("clientes", "edit"),
 ):
-    _, db = perms
+    current_user, db = perms
     c = db.get(Cliente, cliente_id)
     if not c:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
-    for field, value in body.model_dump(exclude_unset=True).items():
+    _enforce_cliente_scope(c, current_user, db)
+    datos = body.model_dump(exclude_unset=True)
+    if "vendedor_id" in datos and current_user.role == "vendedor":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo administradores pueden reasignar el vendedor",
+        )
+    for field, value in datos.items():
         setattr(c, field, value)
     try:
         db.commit()
@@ -125,10 +172,11 @@ def eliminar_cliente(
     cliente_id: int,
     perms: tuple[User, Session] = require_permission("clientes", "delete"),
 ):
-    _, db = perms
+    current_user, db = perms
     c = db.get(Cliente, cliente_id)
     if not c:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
+    _enforce_cliente_scope(c, current_user, db)
     db.delete(c)
     db.commit()
 
@@ -154,6 +202,7 @@ def facturas_cliente(
     c = db.get(Cliente, cliente_id)
     if not c:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
+    _enforce_cliente_scope(c, current_user, db)
 
     query = db.query(Factura).filter(Factura.cliente_id == cliente_id)
     if current_user.role == "vendedor":
@@ -217,6 +266,7 @@ def notas_cliente(
     c = db.get(Cliente, cliente_id)
     if not c:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
+    _enforce_cliente_scope(c, current_user, db)
 
     # Get quotation IDs for this customer using a subquery (avoid N+1 query)
     cot_subquery = db.query(Cotizacion.id).filter(Cotizacion.cliente_id == cliente_id)

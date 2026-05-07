@@ -18,6 +18,7 @@ class ClienteBase(BaseModel):
     direccion_despacho: str | None = None
     notas: str | None = None
     empresa_id: int | None = None
+    vendedor_id: int | None = None
     recibe_correo: bool = True
     despacho_o_retiro: str | None = None
     comuna: str | None = None
@@ -56,6 +57,7 @@ class ClienteUpdate(BaseModel):
     forma_captacion: str | None = None
     compromiso: str | None = None
     es_nuevo: bool | None = None
+    vendedor_id: int | None = None
 
 
 class ClienteOut(ClienteBase):

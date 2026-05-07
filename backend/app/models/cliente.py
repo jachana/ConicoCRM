@@ -25,6 +25,9 @@ class Cliente(Base):
     forma_captacion: Mapped[str | None] = mapped_column(String(100), nullable=True)
     compromiso: Mapped[str | None] = mapped_column(Text, nullable=True)
     es_nuevo: Mapped[bool] = mapped_column(Boolean, default=False)
+    vendedor_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

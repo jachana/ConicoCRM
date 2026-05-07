@@ -451,6 +451,9 @@ def test_obtener_notas_cliente_monto_field_optional(client, admin_token, cliente
 
 def test_obtener_notas_cliente_vendedor_ve_solo_sus_notas(client, vendedor_token, cliente, db, vendedor_user, admin_user):
     """Vendedor sees only notes from their own quotations, not admin's."""
+    # Assign cliente to vendedor so the new scope check doesn't 403 the request
+    cliente.vendedor_id = vendedor_user.id
+    db.commit()
     # Create two quotations: one for admin, one for vendedor
     cot_admin = Cotizacion(
         numero=60001,

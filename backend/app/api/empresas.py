@@ -87,12 +87,24 @@ def _export_pdf(title: str, headers: list[str], rows: list[list]) -> "StreamingR
 router = APIRouter()
 
 
+def _enforce_empresa_scope(empresa: Empresa, user: User) -> None:
+    """Raise 403 if vendedor accesses an empresa not assigned to them."""
+    if user.role == "vendedor" and empresa.vendedor_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes acceso a esta empresa",
+        )
+
+
 @router.get("/export/excel")
 def exportar_excel(
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
-    _, db = perms
-    empresas = db.query(Empresa).order_by(Empresa.nombre).all()
+    current_user, db = perms
+    empresas_q = db.query(Empresa)
+    if current_user.role == "vendedor":
+        empresas_q = empresas_q.filter(Empresa.vendedor_id == current_user.id)
+    empresas = empresas_q.order_by(Empresa.nombre).all()
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Empresas"
@@ -119,7 +131,7 @@ def listar_empresas(
     producto_ids: list[int] = Query(default=[]),
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
 
     ultima_compra_subq = (
         sa_select(
@@ -134,6 +146,9 @@ def listar_empresas(
     query = db.query(Empresa, ultima_compra_subq.c.ultima_compra).outerjoin(
         ultima_compra_subq, ultima_compra_subq.c.empresa_id == Empresa.id
     )
+
+    if current_user.role == "vendedor":
+        query = query.filter(Empresa.vendedor_id == current_user.id)
 
     if q:
         like = f"%{q}%"
@@ -177,14 +192,11 @@ def listar_empresas(
 def listar_sectores(
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
-    _, db = perms
-    rows = (
-        db.query(Empresa.sector)
-        .filter(Empresa.sector.isnot(None))
-        .distinct()
-        .order_by(Empresa.sector)
-        .all()
-    )
+    current_user, db = perms
+    q = db.query(Empresa.sector).filter(Empresa.sector.isnot(None))
+    if current_user.role == "vendedor":
+        q = q.filter(Empresa.vendedor_id == current_user.id)
+    rows = q.distinct().order_by(Empresa.sector).all()
     return [r[0] for r in rows]
 
 
@@ -195,7 +207,7 @@ def deuda_bulk(
     from datetime import date, timedelta
     from decimal import Decimal as D
 
-    _, db = perms
+    current_user, db = perms
     today = date.today()
 
     def _plazo_dias(plazo: str | None) -> int | None:
@@ -209,7 +221,10 @@ def deuda_bulk(
             return 0
         return None
 
-    empresas = db.query(Empresa).order_by(Empresa.nombre).all()
+    empresas_q = db.query(Empresa)
+    if current_user.role == "vendedor":
+        empresas_q = empresas_q.filter(Empresa.vendedor_id == current_user.id)
+    empresas = empresas_q.order_by(Empresa.nombre).all()
     result = []
     for e in empresas:
         facturas = (
@@ -255,7 +270,12 @@ def crear_empresa(
     body: EmpresaCreate,
     perms: tuple[User, Session] = require_permission("empresas", "create"),
 ):
-    _, db = perms
+    current_user, db = perms
+    if current_user.role == "vendedor" and body.vendedor_id not in (None, current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No puedes asignar la empresa a otro vendedor",
+        )
     if body.rut and not validate_rut(body.rut):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="RUT inválido")
     ruts_adicionales = body.ruts_adicionales or []
@@ -263,6 +283,8 @@ def crear_empresa(
         if not validate_rut(r):
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"RUT adicional inválido: {r}")
     data = body.model_dump(exclude={"ruts_adicionales"})
+    if current_user.role == "vendedor":
+        data["vendedor_id"] = current_user.id
     empresa = Empresa(**data)
     db.add(empresa)
     try:
@@ -286,10 +308,11 @@ def deuda_empresa(
     empresa_id: int,
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    _enforce_empresa_scope(e, current_user)
     facturas = (
         db.query(Factura)
         .filter(Factura.empresa_id == empresa_id, Factura.estado != "anulada")
@@ -324,10 +347,11 @@ def credito_empresa(
     empresa_id: int,
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    _enforce_empresa_scope(e, current_user)
     if e.linea_credito is None:
         return EmpresaCreditoOut(linea_credito=None, credito_usado=None, credito_disponible=None)
     from decimal import Decimal as D
@@ -361,10 +385,11 @@ def facturas_empresa(
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    _enforce_empresa_scope(e, current_user)
 
     query = db.query(Factura).filter(Factura.empresa_id == empresa_id)
     if estado:
@@ -414,10 +439,11 @@ def productos_empresa(
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    _enforce_empresa_scope(e, current_user)
 
     query = (
         db.query(FacturaLinea, Factura.fecha, Factura.id, Factura.numero)
@@ -482,10 +508,11 @@ def exportar_facturas_empresa(
     if format not in ("xlsx", "csv", "pdf"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="format debe ser xlsx, csv o pdf")
 
-    _, db = perms
+    current_user, db = perms
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    _enforce_empresa_scope(e, current_user)
 
     query = db.query(Factura).filter(Factura.empresa_id == empresa_id)
     if estado:
@@ -539,10 +566,11 @@ def exportar_productos_empresa(
     if format not in ("xlsx", "csv", "pdf"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="format debe ser xlsx, csv o pdf")
 
-    _, db = perms
+    current_user, db = perms
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    _enforce_empresa_scope(e, current_user)
 
     query = (
         db.query(FacturaLinea, Factura.fecha, Factura.id, Factura.numero)
@@ -586,10 +614,11 @@ def obtener_empresa(
     empresa_id: int,
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    _enforce_empresa_scope(e, current_user)
     return e
 
 
@@ -603,11 +632,14 @@ def actualizar_empresa(
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    _enforce_empresa_scope(e, user)
     datos = body.model_dump(exclude_unset=True)
     if "rut" in datos and datos["rut"] != e.rut:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="El RUT no puede modificarse después de creada la empresa")
     if "linea_credito" in datos and user.role == "vendedor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores pueden modificar la línea de crédito")
+    if "vendedor_id" in datos and user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores pueden reasignar el vendedor")
     nuevos_ruts = datos.pop("ruts_adicionales", None)
     if nuevos_ruts is not None:
         for r in nuevos_ruts:
@@ -633,10 +665,11 @@ def eliminar_empresa(
     empresa_id: int,
     perms: tuple[User, Session] = require_permission("empresas", "delete"),
 ):
-    _, db = perms
+    current_user, db = perms
     e = db.get(Empresa, empresa_id)
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    _enforce_empresa_scope(e, current_user)
     has_clientes = db.query(ClienteModel.id).filter(ClienteModel.empresa_id == empresa_id).first()
     if has_clientes:
         raise HTTPException(
@@ -654,9 +687,11 @@ def listar_contactos(
     empresa_id: int,
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
-    _, db = perms
-    if not db.get(Empresa, empresa_id):
+    current_user, db = perms
+    e = db.get(Empresa, empresa_id)
+    if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    _enforce_empresa_scope(e, current_user)
     return db.query(ContactoEmpresa).filter(ContactoEmpresa.empresa_id == empresa_id).order_by(ContactoEmpresa.id).all()
 
 

@@ -35,6 +35,9 @@ class Empresa(Base):
     ubicacion: Mapped[str | None] = mapped_column(String(500), nullable=True)
     logo_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     modulos_enabled: Mapped[dict] = mapped_column(JSON, default=dict, server_default=text("'{}'"))
+    vendedor_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

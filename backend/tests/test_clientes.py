@@ -276,6 +276,8 @@ def test_facturas_cliente_vendedor_solo_ve_propias(
     from app.models.factura import Factura
 
     c = client.post("/api/clientes/", json={"nombre": "ClienteVendedorFac"}, headers={"Authorization": f"Bearer {admin_token}"}).json()
+    # Assign cliente to vendedor so the new scope check doesn't 403 the request
+    client.patch(f"/api/clientes/{c['id']}", json={"vendedor_id": vendedor_user.id}, headers={"Authorization": f"Bearer {admin_token}"})
     f_propia = _crear_factura_para_cliente(client, admin_token, c["id"], total_neto=1000)
     f_ajena = _crear_factura_para_cliente(client, admin_token, c["id"], total_neto=2000)
 
