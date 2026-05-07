@@ -32,27 +32,32 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Telemetry] Cost & performance observability",
+      "list": "In progress",
+      "name": "[UX] Bulk actions en listas (multi-select)",
       "labels": [
         "Core",
-        "Goal: Operations",
+        "Goal: UX Polish",
         "Size:XL"
       ],
-      "desc": "**Contexto / Problema**\nActualmente no tenemos visibilidad sobre qué operaciones consumen más recursos (latencia, llamadas externas, costo Lioren) ni podemos atribuir costos por empresa. Esto impide decisiones informadas sobre cachés, optimizaciones y futura facturación por uso. Contamos con base existente (Sentry + RequestLoggerMiddleware) pero hay gaps críticos: logs sin empresa_id/query_count/response_size, sin tracing de slow queries SQLAlchemy, sin instrumentación de Lioren y Celery, sin rollups, sin Web Vitals frontend, y sin UI admin.\n\n**Acceptance Criteria**\n- Los logs de request incluyen empresa_id, query_count, response_size, y request_id para trazabilidad.\n- Las slow queries SQLAlchemy (>500ms) se capturan automáticamente con stack trace.\n- Cada llamada a Lioren API registra latencia y costo estimado.\n- Las tareas Celery reportan duración, estado, y empresa_id.\n- Existen rollups horarios/diarios en DB de latencia/llamadas/costo por ruta y empresa.\n- El endpoint admin `/admin/telemetry/metrics` expone datos agregados filtrables por fecha, empresa, y tipo de operación.\n- La UI admin muestra dashboards de costo, latencia P95, y top operaciones costosas.\n- Web Vitals (LCP, FID, CLS) se reportan desde frontend y se almacenan.\n- El runbook documente cómo interpretar cada métrica y dónde investigar anomalías.\n\n**Definition of Done**\n- Todos los 12 subcards (4 fases) están completados y desplegados a staging.\n- Coverage de tests ≥85% en nuevas funciones de telemetry.\n- Runbook publicado en docs internas.\n- Verificación manual: dashboard admin muestra datos correctos para empresa de prueba.\n- Trello card movida a In Review.\n- Aprobación de review técnico (telemetry + cost attribution correcta).\n\n**Notas tecnicas**\n- **Base existente**: Sentry + RequestLoggerMiddleware (request_id, user_id, route, method, status, latency_ms).\n- **Herramientas**: Sentry Performance (tracing on-demand, sample rate bajo en prod), SQLAlchemy event listeners, Celery signals.\n- **Almacenamiento**: Rollups en tabla `telemetry_rollups` (empresa_id, route, method, period, p50_latency, p95_latency, call_count, avg_response_size, total_cost_lioren).\n- **Endpoints nuevos**: POST `/admin/telemetry/metrics` (filtros), GET `/admin/telemetry/dashboard` (UI).\n- **Frontend**: Web Vitals vía web-vitals.js, POST a `/api/metrics/web-vitals`.\n- **Lioren integration**: Wrapper en `lib/lioren_client.py` que registra cada llamada.\n- **Celery**: Usar signals `before_task_publish`, `task_success`, `task_failure`.\n\n<!-- conico-refined -->",
+      "desc": "**Contexto / Problema**\nLos usuarios power necesitan realizar acciones en masa sobre múltiples registros (facturas, notas de venta, boletas) sin repetir operaciones. Actualmente no hay soporte de multi-select, generando pérdida de tiempo y fricción.\n\n**Acceptance Criteria**\n- El usuario puede seleccionar múltiples registros en cualquier lista usando checkboxes.\n- Al seleccionar ≥1 registro aparece una barra flotante con acciones disponibles (Exportar, Enviar email, Anular).\n- El usuario puede hacer click en \"Seleccionar todo\" para marcar/desmarcar todos en la página actual.\n- Bulk export en Facturas genera un archivo con los registros seleccionados.\n- Bulk export en Notas de Venta genera un archivo con los registros seleccionados.\n- Bulk send email en Facturas envía a destinatarios de cada factura seleccionada.\n- Bulk send email en Boletas envía a destinatarios de cada boleta seleccionada.\n- Backend expone endpoints `/bulk/export` y `/bulk/send-email` con validaciones de permisos.\n- La selección persiste al cambiar de página (o se indica claramente que se resetea).\n\n**Definition of Done**\n- Componente checkbox column testeado e integrado en tabla base.\n- Action bar UI desarrollada y responsive.\n- Unit tests para checkbox + action bar logic (frontend).\n- Backend endpoints `/bulk/export` y `/bulk/send-email` con autenticación.\n- Integration tests para flujos bulk (export, send-email).\n- E2E tests en Facturas y Notas de Venta.\n- Feature deployada a staging y validada con product.\n- Trello card movida a \"In Review\".\n\n**Notas tecnicas**\n- Checkbox component: reutilizable, basado en Design System (ref: `src/components/Table/CheckboxColumn.tsx`).\n- Action bar: componente flotante estilo sticky footer o overlay.\n- Backend: `/api/v1/bulk/export` (POST, body: {module, ids}) → genera job async, retorna presigned URL o stream directo.\n- Backend: `/api/v1/bulk/send-email` (POST, body: {module, ids, template?}) → queue de emails via SQS/Celery.\n- Email: usar template existente de \"Envío factura\"; incluir remitente validado por DTE.\n- Validación: solo usuarios con permisos de lectura/exportación pueden bulk export; solo con permisos de \"envío\" pueden bulk send-email.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Phase 1 - backend data collection (5 atomic cards)",
-        "Phase 2 - aggregation + admin API (3 atomic cards)",
-        "Phase 3 - frontend metrics (2 atomic cards)",
-        "Phase 4 - admin UI (2 atomic cards)",
-        "Documentar runbook: como interpretar dashboards y donde investigar cada tipo de problema",
-        "✓ Fase 1: Instrumentar request logger, SQLAlchemy, Lioren, Celery con empresa_id y metricas (5 cards atomicas, <=3h c/u)",
-        "✓ Fase 2: Crear rollups horarios en DB y endpoint admin `/admin/telemetry/metrics` (3 cards atomicas)",
-        "✓ Fase 3: Implementar Web Vitals frontend y reporte a backend (2 cards atomicas)",
-        "✓ Fase 4: Construir UI admin dashboard y runbook (2 cards atomicas)",
-        "✓ Tests: Validar rollups con datos mock, endpoint admin, ingestion de Web Vitals (coverage ≥85%)",
-        "✓ Documentar runbook: interpretación de metricas, troubleshooting por anomalia",
-        "✓ Desplegar a staging, validación manual, mover Trello a In Review"
+        "Componente reusable de checkbox column + select-all",
+        "Barra flotante de acciones cuando hay seleccion",
+        "Bulk export en Facturas",
+        "Bulk export en NotaVentas",
+        "Bulk send email en Facturas/Boletas",
+        "Backend: endpoints bulk donde falten",
+        "Crear componente CheckboxColumn reutilizable en Design System con select-all toggle",
+        "Diseñar e implementar barra de acciones flotante (UI + posicionamiento)",
+        "Desarrollar backend: GET /bulk/export con stream o async job + validaciones",
+        "Implementar bulk export en Facturas (test manual + E2E)",
+        "Implementar bulk export en Notas de Venta (test manual + E2E)",
+        "Desarrollar backend: POST /bulk/send-email con queue de emails + validaciones DTE",
+        "Implementar bulk send-email en Facturas y Boletas (test manual + E2E)",
+        "Unit tests: checkbox logic, action bar visibility, permission checks",
+        "Integration tests: export + send-email backends",
+        "Deploy a staging y validar con product",
+        "Mover Trello a In Review"
       ]
     }
   ]
