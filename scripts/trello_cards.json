@@ -32,24 +32,25 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Telemetry] Phase 3: frontend metrics",
+      "list": "In progress",
+      "name": "[Telemetry] Phase 4: admin UI",
       "labels": [
         "Core",
+        "Design System",
         "Goal: Operations",
         "Size:XL"
       ],
-      "desc": "**Contexto / Problema**\nFase 3 del programa de observabilidad de costo y desempeño. Necesitamos capturar métricas de desempeño del lado del cliente (Core Web Vitals) e implementar control de tamaño de bundle en CI para detectar regresiones de performance antes de producción.\n\n**Acceptance Criteria**\n- Web Vitals (LCP, FID, CLS, INP) se capturan automáticamente en cada sesión de usuario.\n- Las métricas se envían vía POST a endpoint de telemetría y se registran en logs.\n- Bundle size se analiza en cada CI run.\n- Existe un perf budget definido que bloquea merge si se excede.\n- Dashboard de telemetría muestra evolución de Web Vitals por percentil (p50, p75, p95).\n\n**Definition of Done**\n- Pruebas unitarias para capture logic y POST payload.\n- Pruebas e2e verificando envío de métricas en staging.\n- Bundle analyzer integrado en GitHub Actions / CI.\n- Perf budget configurado y documentado.\n- Despliegue a staging y validación manual.\n- Trello cards T3.1 y T3.2 movidas a In Review.\n\n**Notas tecnicas**\n- T3.1: Usar web-vitals lib (npm), POST a /api/telemetry/metrics, headers con session_id.\n- T3.2: webpack-bundle-analyzer o esbuild plugin, límite inicial en perf-budget.json.\n- Ambas fases son independientes; T3.2 puede parallelizarse.\n\n<!-- conico-refined -->",
+      "desc": "**Contexto / Problema**\nFase 4 de observabilidad de costos y performance en Conico. Se requiere construir la UI administrativa que consuma los endpoints desarrollados en Phase 2, permitiendo que administradores monitonicen latencia, errores y uso de recursos por empresa.\n\n**Acceptance Criteria**\n- Administrador accede a `/configuracion/telemetry` y visualiza pestaña Routes con métricas de latencia y errores por ruta.\n- Administrador accede a pestaña Cost & Usage y visualiza consumo de recursos segmentado por empresa.\n- Ambas pestañas cargan datos desde endpoints Phase 2 sin errores.\n- Datos se actualizan correctamente al interactuar con filtros o intervalos de tiempo.\n- Interfaz respeta Design System de Conico (colores, tipografía, componentes estándar).\n\n**Definition of Done**\n- Ambas pestañas (T4.1 y T4.2) implementadas y funcionales.\n- Tests unitarios y de integración en verde.\n- Componentes reutilizables registrados en Design System si aplica.\n- Desplegado a staging y validado por Product.\n- Tarjeta movida a \"In Review\" en Trello.\n- Documentación de endpoints consumidos actualizada.\n\n**Notas tecnicas**\n- Requiere Phase 2 completada (endpoints `/api/telemetry/routes` y `/api/telemetry/cost-usage`).\n- Ruta: `/configuracion/telemetry` (nueva sección en admin).\n- Componentes: tab container, data tables con paginación, filtros por empresa, rangos de fecha.\n- State management: usar patrón existente en Conico (Redux o similar).\n\n<!-- conico-refined -->",
       "checklist": [
-        "[Telemetry T3.1] Web Vitals (LCP/FID/CLS/INP) -> POST + log",
-        "[Telemetry T3.2] Bundle analyzer en CI + perf budget",
-        "[ ] T3.1: Instalar y configurar librería web-vitals",
-        "[ ] T3.1: Implementar POST a endpoint de telemetría con LCP/FID/CLS/INP",
-        "[ ] T3.1: Agregar logging y manejo de errores",
-        "[ ] T3.2: Integrar bundle analyzer en CI pipeline",
-        "[ ] T3.2: Definir y parametrizar perf budget",
-        "[ ] Escribir tests unitarios y e2e",
-        "[ ] Desplegar a staging y mover cards a In Review"
+        "[Telemetry T4.1] /configuracion/telemetry tab Routes",
+        "[Telemetry T4.2] /configuracion/telemetry tab Cost & Usage",
+        "Implementar pestaña Routes con tabla latencia/errores por ruta",
+        "Implementar pestaña Cost & Usage con desglose por empresa",
+        "Conectar ambas pestañas a endpoints Phase 2",
+        "Escribir tests unitarios e integración (>80% coverage)",
+        "Validar diseño con Design System y Product",
+        "Desplegar a staging y verificar en navegador",
+        "Mover a In Review y documentar endpoints"
       ]
     }
   ]
