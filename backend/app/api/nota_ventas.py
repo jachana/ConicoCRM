@@ -152,37 +152,13 @@ def _validate_despacho(retiro: bool, sede_id: int | None) -> None:
 
 
 def _registrar_movimientos_salida(db: Session, nv_id: int, lineas: list, usuario_id: int | None) -> None:
-    for linea in lineas:
-        if linea.producto_id and linea.cantidad > 0:
-            producto = db.get(Producto, linea.producto_id)
-            if producto:
-                producto.stock_actual -= linea.cantidad
-                db.add(MovimientoInventario(
-                    producto_id=linea.producto_id,
-                    tipo="salida",
-                    cantidad=linea.cantidad,
-                    signo=-1,
-                    referencia_tipo="nota_venta",
-                    referencia_id=nv_id,
-                    usuario_id=usuario_id,
-                ))
+    """No-op. NVs ya no mueven stock — solo facturas/boletas descuentan stock al emitirse."""
+    return
 
 
 def _registrar_movimientos_devolucion(db: Session, nv_id: int, lineas: list, usuario_id: int | None) -> None:
-    for linea in lineas:
-        if linea.producto_id and linea.cantidad > 0:
-            producto = db.get(Producto, linea.producto_id)
-            if producto:
-                producto.stock_actual += linea.cantidad
-                db.add(MovimientoInventario(
-                    producto_id=linea.producto_id,
-                    tipo="entrada",
-                    cantidad=linea.cantidad,
-                    signo=1,
-                    referencia_tipo="nota_venta",
-                    referencia_id=nv_id,
-                    usuario_id=usuario_id,
-                ))
+    """No-op. NVs ya no mueven stock — no hay nada que revertir al cancelar/eliminar."""
+    return
 
 
 def _load_nv(db: Session, nv_id: int) -> NotaVenta:
@@ -511,38 +487,9 @@ def reemplazar_lineas(
         if linea.producto_id:
             new_qtys[linea.producto_id] = new_qtys.get(linea.producto_id, 0) + linea.cantidad
 
-    # apply delta: positive delta = more sold = subtract from stock; negative = less sold = add back
-    all_ids = set(old_qtys) | set(new_qtys)
-    for prod_id in all_ids:
-        delta = new_qtys.get(prod_id, 0) - old_qtys.get(prod_id, 0)
-        if delta == 0:
-            continue
-        producto = db.get(Producto, prod_id)
-        if not producto:
-            continue
-        if delta > 0:
-            producto.stock_actual -= delta
-            db.add(MovimientoInventario(
-                producto_id=prod_id,
-                tipo="salida",
-                cantidad=delta,
-                signo=-1,
-                referencia_tipo="nota_venta",
-                referencia_id=nv_id,
-                usuario_id=current_user.id,
-            ))
-        else:
-            restore = abs(delta)
-            producto.stock_actual += restore
-            db.add(MovimientoInventario(
-                producto_id=prod_id,
-                tipo="ajuste",
-                cantidad=restore,
-                signo=1,
-                referencia_tipo="nota_venta",
-                referencia_id=nv_id,
-                usuario_id=current_user.id,
-            ))
+    # NVs ya no mueven stock — el delta de cantidades en una NV no afecta producto.stock_actual.
+    # Stock se descuenta solo al emitir factura/boleta. Mantenemos los old_qtys/new_qtys cálculos
+    # arriba por si futuro código los requiere para auditoría.
 
     db.commit()
     return _load_nv(db, nv_id)

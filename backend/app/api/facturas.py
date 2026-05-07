@@ -396,6 +396,8 @@ def crear_factura(
         nv_to_lock = db.get(NotaVenta, body.nv_id)
         if nv_to_lock:
             nv_to_lock.is_locked = True
+    from app.services.factura_stock import descontar_stock_factura
+    descontar_stock_factura(db, factura, usuario_id=current_user.id)
     db.commit()
     return _load_factura(db, factura.id)
 
@@ -468,6 +470,8 @@ def crear_factura_desde_nv(
     _recalcular_totales(factura)
     nv.is_locked = True
     nv.estado = "facturada"
+    from app.services.factura_stock import descontar_stock_factura
+    descontar_stock_factura(db, factura, usuario_id=current_user.id)
     db.commit()
     return _load_factura(db, factura.id)
 
@@ -624,7 +628,12 @@ def cambiar_estado(
             detail="Factura ya enviada al SII; no se puede anular directamente. Use Nota de Crédito.",
         )
 
+    prev_estado = factura.estado
     factura.estado = body.estado
+    if body.estado == "anulada" and prev_estado == "emitida":
+        from app.services.factura_stock import revertir_stock_factura
+        factura_full = _load_factura(db, factura.id)
+        revertir_stock_factura(db, factura_full, usuario_id=current_user.id)
     db.commit()
     return _load_factura(db, factura_id)
 

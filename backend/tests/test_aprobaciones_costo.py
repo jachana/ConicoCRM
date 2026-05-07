@@ -50,7 +50,7 @@ def _create_nv_sin_costo(client, token):
 # ── tests ─────────────────────────────────────────────────────────────────────
 
 def test_aprobar_nv_costo_cero(client, admin_token, db):
-    """Admin can approve a cost-zero NV; estado becomes pendiente and stock movements are created."""
+    """Admin can approve a cost-zero NV; estado becomes pendiente and NO stock movements are created (NVs no longer move stock)."""
     from app.models.movimiento_inventario import MovimientoInventario
 
     nv = _create_nv_sin_costo(client, admin_token)
@@ -64,17 +64,14 @@ def test_aprobar_nv_costo_cero(client, admin_token, db):
     data = r.json()
     assert data["estado"] == "pendiente"
 
-    # Verify stock movements were created for the NV
+    # NVs no longer create stock movements — only facturas/boletas do at emission time.
     movs = db.query(MovimientoInventario).filter(
         MovimientoInventario.referencia_tipo == "nota_venta",
         MovimientoInventario.referencia_id == nv_id,
-        MovimientoInventario.tipo == "salida",
     ).all()
-    assert len(movs) == 1, "Expected exactly one salida movement after approval"
-    total_consumed = sum(m.cantidad for m in movs)
-    assert total_consumed == linea["cantidad"]
+    assert len(movs) == 0, "NV approval must not create stock movements anymore"
 
-    # precio_costo must NOT be mutated by stock-tracking approval
+    # precio_costo must NOT be mutated by approval
     producto = db.get(Producto, producto_id)
     assert producto.precio_costo == Decimal("0")
 

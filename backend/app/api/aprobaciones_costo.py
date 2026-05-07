@@ -25,20 +25,7 @@ def aprobar_costo(
     if nv.estado != "pendiente_aprobacion_costo":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La NV no está pendiente de aprobación de costo")
 
-    for linea in nv.lineas:
-        if linea.producto_id and linea.cantidad > 0:
-            producto = db.get(Producto, linea.producto_id)
-            producto.stock_actual -= linea.cantidad
-            db.add(MovimientoInventario(
-                producto_id=linea.producto_id,
-                tipo="salida",
-                cantidad=linea.cantidad,
-                signo=-1,
-                referencia_tipo="nota_venta",
-                referencia_id=nv_id,
-                usuario_id=current_user.id,
-            ))
-
+    # NVs ya no mueven stock — solo facturas/boletas descuentan stock al emitirse.
     nv.estado = "pendiente"
     db.commit()
     from app.api.nota_ventas import _load_nv
