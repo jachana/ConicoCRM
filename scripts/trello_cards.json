@@ -32,20 +32,40 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Core] Modulos toggle - Phase 1: backend foundation",
+      "list": "In progress",
+      "name": "[Core] Modulos toggle - Phase 2: frontend gating",
       "labels": [
         "Core",
         "Goal: SaaS-ready",
         "Size:XL"
       ],
-      "desc": "**Resumen**\nBackend foundation para módulos habilitables por empresa: registro central de módulos, campo JSONB en tabla empresas, endpoints admin y dependency FastAPI que retorna 403 cuando el módulo está deshabilitado.\n\n**Cambios / Decisiones**\n- `backend/app/core/modulos.py`: registro CORE_MODULES + OPTIONAL_MODULES, `compute_effective_modulos()`, `validate_toggle()`\n- `backend/app/models/empresa.py`: campo `modulos_enabled` JSONB DEFAULT '{}`\n- `backend/app/api/modulos.py`: GET/PATCH /empresas/{id}/modulos, GET /me/modulos con validación de dependencias\n- Dependency `require_modulo(slug)` aplicada en routers opcionales (boletas, facturas, GD, OC, inventario, pagos, etc.)",
+      "desc": "**Contexto / Problema**\nPhase 1 expone el estado de módulos habilitados via `/me/modulos`. Phase 2 consume ese estado en el frontend para gatear acceso: ocultar items de Sidebar, bloquear rutas, esconder CTAs, filtrar tabs y acciones según módulos. Prerequisito: Phase 1 mergeada.\n\n**Acceptance Criteria**\n- El usuario ve solo items de Sidebar cuyo módulo está habilitado en su empresa.\n- Al navegar a una ruta de módulo deshabilitado, es redirigido a /404 con mensaje 'Módulo no habilitado, contacta admin'.\n- Botones 'Nueva X' (Factura, Boleta, GD, NC, ND, OC, etc.) desaparecen si el módulo está off.\n- Tabs en Reportes y Dashboard se filtran según módulos activos.\n- Acciones contextuales (ej: 'Crear Factura' desde detalle de NV) se ocultan si facturas está off.\n- Sidebar muestra skeleton mientras `/me/modulos` carga.\n- empresa con boletas OFF no accede a `/boletas/*` ni ve 'Boletas' en sidebar.\n\n**Definition of Done**\n- Todas las 5 cards child (P2.1–P2.5) merged a develop.\n- Tests unitarios: `useModulos()` con mock, `isModuloEnabled()` retorna correcto, `<ModuloGuard>` redirige.\n- E2E smoke: empresa con boletas OFF; verificar sidebar, rutas bloqueadas, CTAs ocultos.\n- Sidebar loading skeleton renderiza mientras query está pending.\n- Deployment a staging validado.\n- Card movida a 'In review'.\n\n**Notas tecnicas**\n- Archivo: `frontend/src/lib/modulos.ts` espejo constante `MODULOS` del backend.\n- Hook: `useModulos()` con react-query, cache 5min, refetch on focus.\n- Helpers: `isModuloEnabled(slug: string)`, `useModuloEnabled(slug: string)`.\n- Componente: `<ModuloGuard slug=\"...\">` wrapper para rutas protegidas.\n- Sidebar.tsx, Dashboard.tsx, Reportes.tsx, rutas: `/facturas/*`, `/boletas/*`, `/inventario/*`, `/nc/*`, `/nd/*`, `/oc/*`, `/listas-precios/*`, `/pagos/*`, `/cobranza/*`, `/rrhh/*`, `/pipeline/*`, `/tareas/*`, `/libros/*`, `/dte-recepcion/*`.\n- Deps modulares: facturas→{pagos, cobranza, NC, ND, libros, aprobaciones_margen}; boletas→{NC}; inventario→{GD}; GD→{NC}; NC requires ≥1 of {facturas, boletas, GD}; ND requires facturas; proveedores→{OC, facturas_compra}; OC requires proveedores; facturas_compra→{aprobaciones_costo}; listas_precios→{precios_especiales}; tareas→{reglas_tareas}; rrhh_empleados→{vacaciones, documentos}; libros requires facturas; dte_emission auto-on si ≥1 of {facturas, boletas, GD, NC, ND} ON.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Verificar GET /me/modulos retorna módulos del usuario actual",
-        "Verificar PATCH /empresas/{id}/modulos requiere rol admin",
-        "Verificar que ruta con módulo deshabilitado retorna 403",
-        "Verificar cascade: deshabilitar módulo padre desactiva dependientes",
-        "Verificar campo modulos_enabled en tabla empresas con psql"
+        "Hook useModulos() con react-query (cache 5min, refetch on focus)",
+        "Helper isModuloEnabled(slug) y useModuloEnabled(slug)",
+        "Constante MODULOS en frontend/src/lib/modulos.ts (mirror del backend)",
+        "Filtrar Sidebar.tsx: ocultar items cuyo modulo esta off",
+        "Filtrar topbar/quick-actions y CTAs en Dashboard segun modulos",
+        "Componente <ModuloGuard slug=\"...\"> wrapper para rutas",
+        "Aplicar ModuloGuard en rutas de modulos opcionales (Boletas, Facturas, GD, NC, ND, OC, Inventario, Listas, Pagos, Cobranza, RRHH, Pipeline, Tareas, Libros, DTE recepcion)",
+        "Redirigir a /404 con mensaje 'Modulo no habilitado, contacta admin' cuando off",
+        "Ocultar tabs en Reportes y Dashboard segun modulos",
+        "Filtrar tipos de DTE disponibles (NV detail no muestra 'Crear factura' si facturas off, etc.)",
+        "Loading state mientras /me/modulos esta cargando (skeleton sidebar)",
+        "Tests: sidebar oculta items; route redirige; CTA oculto",
+        "E2E smoke: empresa con boletas off no muestra modulo en sidebar ni rutas",
+        "[Modulos P2.1] Mirror modulos.ts + useModulos hook + helpers",
+        "[Modulos P2.2] Componente <ModuloGuard> + envolver rutas opcionales",
+        "[Modulos P2.3] Filtrar Sidebar por modulos habilitados",
+        "[Modulos P2.4] Ocultar CTAs Dashboard + filtrar tabs Reportes",
+        "[Modulos P2.5] Ocultar acciones cross-module en detalles",
+        "Crear hook useModulos() + helpers isModuloEnabled(), useModuloEnabled()",
+        "Espejo constante MODULOS en frontend/src/lib/modulos.ts",
+        "Crear componente <ModuloGuard> + envolver rutas opcionales",
+        "Filtrar Sidebar.tsx: ocultar items, mostrar skeleton en loading",
+        "Ocultar CTAs (Nueva Factura, etc.) + filtrar tabs Dashboard/Reportes",
+        "Escribir tests: sidebar, rutas, CTAs; E2E smoke empresa boletas OFF",
+        "Merge a develop + deploy a staging + mover Trello a 'In review'"
       ]
     }
   ]
