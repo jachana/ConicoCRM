@@ -16,6 +16,7 @@ import {
 import { openPdf } from '../lib/pdf'
 import DteBadge from '../components/DteBadge'
 import ConfirmModal from '../components/ui/ConfirmModal'
+import EntityLink from '../components/EntityLink'
 import {
   Button, Input, Badge, Card, CardContent,
   Table, THead, TBody, TR, TH, TD,
@@ -165,7 +166,9 @@ export default function GuiaDespachoDetalle() {
           <CardContent className="p-4">
             <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Receptor</h2>
             <div className="text-sm text-gray-900 dark:text-white">
-              {guia.cliente?.nombre ?? '—'}
+              {guia.cliente?.id ? (
+                <EntityLink kind="cliente" id={guia.cliente.id}>{guia.cliente.nombre}</EntityLink>
+              ) : (guia.cliente?.nombre ?? '—')}
               {guia.cliente?.rut && <span className="text-gray-500 dark:text-gray-400 ml-1">({guia.cliente.rut})</span>}
             </div>
           </CardContent>
@@ -218,12 +221,9 @@ export default function GuiaDespachoDetalle() {
         <Card className="mb-4">
           <CardContent className="p-4">
             <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Nota de Venta vinculada</h2>
-            <button
-              onClick={() => navigate(`/notas-venta/${guia.nota_venta_id}`)}
-              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-num"
-            >
+            <EntityLink kind="nv" id={guia.nota_venta_id} className="text-sm font-num">
               N°{String(guia.nota_venta?.numero ?? guia.nota_venta_id).padStart(5, '0')} →
-            </button>
+            </EntityLink>
           </CardContent>
         </Card>
       )}

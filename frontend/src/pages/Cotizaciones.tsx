@@ -10,6 +10,7 @@ import { Plus, FileText, Mail, Trash2, Eye, ChevronDown, X, Download, Inbox, Sea
 import { api } from '../lib/api'
 import type { Cotizacion } from '../types'
 import ExportPreviewPanel from '../components/ExportPreviewPanel'
+import EntityLink from '../components/EntityLink'
 import { COTIZACION_COLUMN_DEFS } from '../lib/columnDefs'
 import type { FlatLine } from '../types'
 import {
@@ -459,8 +460,18 @@ export default function Cotizaciones() {
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>
                       <span className="text-xs text-gray-500 dark:text-gray-400 font-num">COT-{String(c.numero).padStart(5, '0')}</span>
-                      <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">{c.cliente?.nombre ?? '—'}</p>
-                      {c.empresa?.nombre && <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{c.empresa.nombre}</p>}
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">
+                        {c.cliente?.id ? (
+                          <EntityLink kind="cliente" id={c.cliente.id}>{c.cliente.nombre}</EntityLink>
+                        ) : (c.cliente?.nombre ?? '—')}
+                      </p>
+                      {c.empresa?.nombre && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                          {c.empresa.id ? (
+                            <EntityLink kind="empresa" id={c.empresa.id}>{c.empresa.nombre}</EntityLink>
+                          ) : c.empresa.nombre}
+                        </p>
+                      )}
                     </div>
                     <Badge variant={ESTADO_VARIANT[c.estado] ?? 'neutral'} size="sm">
                       {ESTADO_LABELS[c.estado] ?? c.estado}
@@ -517,9 +528,19 @@ export default function Cotizaciones() {
                         COT-{String(c.numero).padStart(5, '0')}
                       </TD>
                       <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">{fmtDate(c.fecha)}</TD>
-                      <TD>
-                        <div className="text-gray-900 dark:text-white leading-tight">{c.cliente?.nombre ?? '-'}</div>
-                        {c.empresa?.nombre && <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{c.empresa.nombre}</div>}
+                      <TD onClick={e => e.stopPropagation()}>
+                        <div className="text-gray-900 dark:text-white leading-tight">
+                          {c.cliente?.id ? (
+                            <EntityLink kind="cliente" id={c.cliente.id}>{c.cliente.nombre}</EntityLink>
+                          ) : (c.cliente?.nombre ?? '-')}
+                        </div>
+                        {c.empresa?.nombre && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                            {c.empresa.id ? (
+                              <EntityLink kind="empresa" id={c.empresa.id}>{c.empresa.nombre}</EntityLink>
+                            ) : c.empresa.nombre}
+                          </div>
+                        )}
                       </TD>
                       <TD className="font-medium text-gray-900 dark:text-white whitespace-nowrap text-right font-num">{fmtMoney(c.total)}</TD>
                       {!isVendedor && <TD className="text-right"><MargenBadge value={c.margen_total} /></TD>}

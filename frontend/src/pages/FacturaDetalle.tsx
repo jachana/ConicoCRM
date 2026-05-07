@@ -12,6 +12,7 @@ import DteBadge from '../components/DteBadge'
 import TareasRelacionadas from '../components/TareasRelacionadas'
 import FacturaAdjuntos from '../components/FacturaAdjuntos'
 import ConfirmModal from '../components/ui/ConfirmModal'
+import EntityLink from '../components/EntityLink'
 import {
   Button, Input, Textarea, FormField, Badge, Card, CardContent,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
@@ -703,14 +704,20 @@ export default function FacturaDetalle() {
               <div>
                 <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Cliente</span>
                 <span className="text-sm text-gray-900 dark:text-white font-medium">
-                  {factura.cliente?.nombre ?? '—'}
+                  {factura.cliente?.id ? (
+                    <EntityLink kind="cliente" id={factura.cliente.id}>{factura.cliente.nombre}</EntityLink>
+                  ) : (factura.cliente?.nombre ?? '—')}
                   {factura.cliente?.rut ? <span className="text-gray-500 font-normal"> · {factura.cliente.rut}</span> : null}
                 </span>
               </div>
               {factura.empresa && (
                 <div>
                   <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Empresa</span>
-                  <span className="text-sm text-gray-900 dark:text-white">{factura.empresa.nombre}</span>
+                  <span className="text-sm text-gray-900 dark:text-white">
+                    {factura.empresa.id ? (
+                      <EntityLink kind="empresa" id={factura.empresa.id}>{factura.empresa.nombre}</EntityLink>
+                    ) : factura.empresa.nombre}
+                  </span>
                 </div>
               )}
               {factura.banco_receptor && (

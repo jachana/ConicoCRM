@@ -20,6 +20,7 @@ import DteBadge from '../components/DteBadge'
 import BoletaAnularModal from '../components/BoletaAnularModal'
 import BoletaEmailModal from '../components/BoletaEmailModal'
 import BulkActionBar from '../components/BulkActionBar'
+import EntityLink from '../components/EntityLink'
 import {
   Button, Input, FormField, Badge, EmptyState, Skeleton, Tooltip,
   Table, THead, TBody, TR, TH, TD,
@@ -325,7 +326,7 @@ export default function BoletasList() {
               </THead>
               <TBody>
                 {boletas.map(b => {
-                  const receptor = b.cliente?.nombre ?? b.nombre_receptor ?? '—'
+                  const receptorTexto = b.cliente?.nombre ?? b.nombre_receptor ?? '—'
                   const canAnular = b.estado !== 'anulada'
                   return (
                     <TR key={b.id} interactive onClick={() => navigate(`/boletas/${b.id}`)}>
@@ -343,7 +344,11 @@ export default function BoletasList() {
                       </TD>
                       <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">{fmtDate(b.fecha)}</TD>
                       <TD className="text-gray-700 dark:text-gray-300">{b.tipo_dte}</TD>
-                      <TD className="text-gray-900 dark:text-gray-100">{receptor}</TD>
+                      <TD className="text-gray-900 dark:text-gray-100" onClick={e => e.stopPropagation()}>
+                        {b.cliente?.id ? (
+                          <EntityLink kind="cliente" id={b.cliente.id}>{b.cliente.nombre}</EntityLink>
+                        ) : receptorTexto}
+                      </TD>
                       <TD className="text-gray-700 dark:text-gray-300 font-num">{b.patente_vehiculo ?? '—'}</TD>
                       <TD className="font-num font-medium text-right text-gray-900 dark:text-gray-100 whitespace-nowrap">{fmtMoney(b.total)}</TD>
                       <TD className="text-gray-700 dark:text-gray-300 capitalize">{b.metodo_pago}</TD>

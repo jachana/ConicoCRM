@@ -19,6 +19,7 @@ import {
 import { openPdf } from '../lib/pdf'
 import DteBadge from '../components/DteBadge'
 import ConfirmModal from '../components/ui/ConfirmModal'
+import EntityLink from '../components/EntityLink'
 import {
   Button, Input, Badge, EmptyState, Skeleton, Card,
   Table, THead, TBody, TR, TH, TD,
@@ -293,19 +294,16 @@ export default function GuiasDespachoList() {
                       {String(g.numero).padStart(5, '0')}
                     </TD>
                     <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">{fmtDate(g.fecha)}</TD>
-                    <TD className="text-gray-900 dark:text-white">{g.cliente?.nombre ?? '—'}</TD>
+                    <TD className="text-gray-900 dark:text-white" onClick={e => e.stopPropagation()}>
+                      {g.cliente?.id ? (
+                        <EntityLink kind="cliente" id={g.cliente.id}>{g.cliente.nombre}</EntityLink>
+                      ) : (g.cliente?.nombre ?? '—')}
+                    </TD>
                     <TD className="text-gray-700 dark:text-gray-300 text-xs">{motivoLabel}</TD>
                     <TD className="text-gray-700 dark:text-gray-300 font-num" onClick={e => e.stopPropagation()}>
-                      {g.nota_venta_id
-                        ? (
-                          <button
-                            onClick={() => navigate(`/notas-venta/${g.nota_venta_id}`)}
-                            className="text-brand-600 dark:text-brand-400 hover:underline"
-                          >
-                            N°{g.nota_venta_id}
-                          </button>
-                        )
-                        : '—'}
+                      {g.nota_venta_id ? (
+                        <EntityLink kind="nv" id={g.nota_venta_id}>N°{g.nota_venta_id}</EntityLink>
+                      ) : '—'}
                     </TD>
                     <TD className="font-medium text-gray-900 dark:text-white whitespace-nowrap text-right font-num">{fmtMoney(g.total)}</TD>
                     <TD>

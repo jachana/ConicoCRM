@@ -14,6 +14,7 @@ import {
   Tooltip,
 } from '../components/ui'
 import BulkActionBar from '../components/BulkActionBar'
+import EntityLink from '../components/EntityLink'
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
@@ -222,7 +223,11 @@ export default function NotaVentas() {
                   <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">
                     {new Date(nv.fecha + 'T00:00:00').toLocaleDateString('es-CL')}
                   </TD>
-                  <TD className="text-gray-900 dark:text-gray-100">{nv.cliente?.nombre ?? '-'}</TD>
+                  <TD className="text-gray-900 dark:text-gray-100" onClick={e => e.stopPropagation()}>
+                    {nv.cliente?.id ? (
+                      <EntityLink kind="cliente" id={nv.cliente.id}>{nv.cliente.nombre}</EntityLink>
+                    ) : (nv.cliente?.nombre ?? '-')}
+                  </TD>
                   <TD className="text-gray-500 dark:text-gray-400">{nv.contacto ?? '-'}</TD>
                   <TD className="font-num font-medium text-gray-900 dark:text-gray-100 text-right whitespace-nowrap">
                     {fmtMoney(nv.total)}

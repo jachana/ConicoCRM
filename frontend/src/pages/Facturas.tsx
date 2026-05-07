@@ -10,6 +10,7 @@ import type { FacturaList, FlatLine } from '../types'
 import ExportPreviewPanel from '../components/ExportPreviewPanel'
 import BulkActionBar from '../components/BulkActionBar'
 import DteBadge from '../components/DteBadge'
+import EntityLink from '../components/EntityLink'
 import { FACTURA_COLUMN_DEFS } from '../lib/columnDefs'
 import {
   Button, Input, Badge, EmptyState, Skeleton, Card, CardContent,
@@ -524,8 +525,18 @@ export default function Facturas() {
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
                           <span className="text-xs text-gray-500 dark:text-gray-400 font-num">FAC-{String(f.numero).padStart(5, '0')}</span>
-                          <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">{f.cliente?.nombre ?? '—'}</p>
-                          {f.empresa?.nombre && <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{f.empresa.nombre}</p>}
+                          <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight mt-0.5">
+                            {f.cliente?.id ? (
+                              <EntityLink kind="cliente" id={f.cliente.id}>{f.cliente.nombre}</EntityLink>
+                            ) : (f.cliente?.nombre ?? '—')}
+                          </p>
+                          {f.empresa?.nombre && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                              {f.empresa.id ? (
+                                <EntityLink kind="empresa" id={f.empresa.id}>{f.empresa.nombre}</EntityLink>
+                              ) : f.empresa.nombre}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-1 flex-wrap justify-end">
                           <DteBadge estado={f.dte_estado ?? 'no_emitida'} />
@@ -594,9 +605,19 @@ export default function Facturas() {
                             FAC-{String(f.numero).padStart(5, '0')}
                           </TD>
                           <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">{fmtDate(f.fecha)}</TD>
-                          <TD>
-                            <div className="text-gray-900 dark:text-white leading-tight">{f.cliente?.nombre ?? '—'}</div>
-                            {f.empresa?.nombre && <div className="text-xs text-gray-400 leading-tight">{f.empresa.nombre}</div>}
+                          <TD onClick={e => e.stopPropagation()}>
+                            <div className="text-gray-900 dark:text-white leading-tight">
+                              {f.cliente?.id ? (
+                                <EntityLink kind="cliente" id={f.cliente.id}>{f.cliente.nombre}</EntityLink>
+                              ) : (f.cliente?.nombre ?? '—')}
+                            </div>
+                            {f.empresa?.nombre && (
+                              <div className="text-xs text-gray-400 leading-tight">
+                                {f.empresa.id ? (
+                                  <EntityLink kind="empresa" id={f.empresa.id}>{f.empresa.nombre}</EntityLink>
+                                ) : f.empresa.nombre}
+                              </div>
+                            )}
                           </TD>
                           <TD className="font-medium text-gray-900 dark:text-white whitespace-nowrap text-right font-num">{fmtMoney(f.total)}</TD>
                           {!isVendedor && <TD className="text-right"><MargenBadge value={f.margen_total} /></TD>}

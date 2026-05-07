@@ -12,6 +12,7 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from '../components/ui'
+import EntityLink from '../components/EntityLink'
 
 type Tab = 'dashboard' | 'facturas' | 'recordatorios'
 
@@ -147,7 +148,11 @@ function DashboardTab() {
             <TBody>
               {data.por_empresa.map(e => (
                 <TR key={e.empresa_id}>
-                  <TD>{e.empresa_nombre}</TD>
+                  <TD>
+                    {e.empresa_id ? (
+                      <EntityLink kind="empresa" id={e.empresa_id}>{e.empresa_nombre}</EntityLink>
+                    ) : e.empresa_nombre}
+                  </TD>
                   <TD className="text-right font-num">{fmt(e.total)}</TD>
                   <TD className="text-right text-danger-600 dark:text-danger-400 font-num">{fmt(e.vencido)}</TD>
                 </TR>
@@ -220,10 +225,16 @@ function FacturasTab() {
             <TBody>
               {facturas.map(f => (
                 <TR key={f.id} interactive>
-                  <TD className="font-num font-medium text-gray-900 dark:text-gray-100">{f.numero.toString().padStart(5, '0')}</TD>
+                  <TD className="font-num font-medium text-gray-900 dark:text-gray-100">
+                    <EntityLink kind="factura" id={f.id}>{f.numero.toString().padStart(5, '0')}</EntityLink>
+                  </TD>
                   <TD className="font-num">{fmtDate(f.fecha)}</TD>
                   <TD className="font-num">{fmtDate(f.fecha_vencimiento)}</TD>
-                  <TD>{f.empresa?.nombre ?? '—'}</TD>
+                  <TD>
+                    {f.empresa?.id ? (
+                      <EntityLink kind="empresa" id={f.empresa.id}>{f.empresa.nombre}</EntityLink>
+                    ) : (f.empresa?.nombre ?? '—')}
+                  </TD>
                   <TD>
                     <Badge variant={ESTADO_VARIANT[f.estado] ?? 'neutral'} className="capitalize">{f.estado}</Badge>
                   </TD>
@@ -394,8 +405,14 @@ function RecordatoriosTab() {
           <TBody>
             {items.map(item => (
               <TR key={item.id} interactive>
-                <TD className="font-num font-medium text-gray-900 dark:text-gray-100">{item.numero.toString().padStart(5, '0')}</TD>
-                <TD>{item.empresa_nombre ?? item.cliente_nombre ?? '—'}</TD>
+                <TD className="font-num font-medium text-gray-900 dark:text-gray-100">
+                  <EntityLink kind="factura" id={item.id}>{item.numero.toString().padStart(5, '0')}</EntityLink>
+                </TD>
+                <TD>
+                  {item.empresa_id ? (
+                    <EntityLink kind="empresa" id={item.empresa_id}>{item.empresa_nombre ?? '—'}</EntityLink>
+                  ) : (item.empresa_nombre ?? item.cliente_nombre ?? '—')}
+                </TD>
                 <TD className="text-right font-num">{fmt(item.saldo)}</TD>
                 <TD className="text-right text-danger-600 dark:text-danger-400 font-medium font-num">{item.dias_vencida}</TD>
                 <TD className="font-num">{item.ultimo_recordatorio ? fmtDate(item.ultimo_recordatorio) : 'Nunca'}</TD>

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useDebounce } from '../hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { Plus, Search, FileSpreadsheet, Inbox, Eye } from 'lucide-react'
@@ -47,6 +48,26 @@ export default function Clientes() {
     queryFn: () => api.get(`/api/clientes/?q=${encodeURIComponent(debouncedBusqueda)}`).then(r => r.data),
     placeholderData: keepPreviousData,
   })
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    const detalleId = searchParams.get('detalle')
+    if (!detalleId || verCliente) return
+    const found = clientes.find(c => c.id === Number(detalleId))
+    if (found) {
+      setVerCliente(found)
+      const next = new URLSearchParams(searchParams)
+      next.delete('detalle')
+      setSearchParams(next, { replace: true })
+      return
+    }
+    api.get(`/api/clientes/${detalleId}`).then(r => {
+      setVerCliente(r.data)
+      const next = new URLSearchParams(searchParams)
+      next.delete('detalle')
+      setSearchParams(next, { replace: true })
+    }).catch(() => {})
+  }, [searchParams, clientes, verCliente, setSearchParams])
 
   const { data: empresas = [] } = useQuery<Empresa[]>({
     queryKey: ['empresas'],

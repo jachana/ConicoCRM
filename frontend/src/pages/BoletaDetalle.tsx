@@ -15,6 +15,7 @@ import { openPdf } from '../lib/pdf'
 import DteBadge from '../components/DteBadge'
 import BoletaAnularModal from '../components/BoletaAnularModal'
 import BoletaEmailModal from '../components/BoletaEmailModal'
+import EntityLink from '../components/EntityLink'
 import {
   Button, Badge, Skeleton, Card, CardContent,
   Table, THead, TBody, TR, TH, TD,
@@ -197,7 +198,11 @@ export default function BoletaDetalle() {
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Receptor</h2>
               <dl className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm">
                 <dt className="text-gray-500 dark:text-gray-400">Nombre</dt>
-                <dd className="text-gray-900 dark:text-white">{receptorNombre}</dd>
+                <dd className="text-gray-900 dark:text-white">
+                  {boleta.cliente?.id ? (
+                    <EntityLink kind="cliente" id={boleta.cliente.id}>{boleta.cliente.nombre}</EntityLink>
+                  ) : receptorNombre}
+                </dd>
                 <dt className="text-gray-500 dark:text-gray-400">RUT</dt>
                 <dd className="text-gray-900 dark:text-white">{receptorRut ?? '—'}</dd>
                 {boleta.patente_vehiculo && (
