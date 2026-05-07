@@ -32,7 +32,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Core] Modulos toggle - Phase 3: admin UI",
       "labels": [
         "Core",
@@ -40,29 +40,13 @@
         "Goal: SaaS-ready",
         "Size:XL"
       ],
-      "desc": "**Contexto / Problema**\nPhase 3 del feature de módulos habilitables/deshabilitables por empresa. Requiere Phase 1 (API de persistencia) y Phase 2 (gating en lógica). Se necesita UI admin en `/configuracion/empresa` como tab 'Modulos' para que administradores controlen qué módulos están activos, visualicen dependencias y reciban confirmación cascada al desactivar módulos padre con dependientes activos.\n\n**Acceptance Criteria**\n- El tab 'Modulos' en `/configuracion/empresa` es visible solo para usuarios con rol admin.\n- Los módulos se agrupan por categoría: Ventas, Compras, Inventario y Precios, Finanzas, DTE/SII, CRM, RRHH, Aprobaciones.\n- Cada módulo muestra: label, descripción, indicador \"requiere X\" o \"habilita X\", y toggle interactivo.\n- Los toggles de módulos sin dependencias satisfechas aparecen deshabilitados visualmente (grayed out).\n- Al intentar desactivar un módulo padre que tiene dependientes activos, aparece modal de confirmación listando los módulos que quedarán inactivos.\n- Cambios se reflejan inmediatamente en el sidebar (invalidando la query `useModulos`).\n- Se visualiza auditoría por módulo: quién y cuándo cambió cada uno.\n- Existen botones 'Habilitar todos' y 'Apagar todos los opcionales'.\n- El diseño es consistente con el resto de `/configuracion` (estilos, modales, variantes danger donde aplique).\n- Tests validan: toggle simple, prompts cascada, bloqueo de toggles inválidos.\n\n**Definition of Done**\n- Las 4 cards child ([Modulos P3.1] a [Modulos P3.4]) completadas y pasando tests unitarios e integración.\n- Migraciones (si aplican) ejecutadas en staging.\n- Desplegado a staging y verificado por QA.\n- Card movida a \"In review\" en Trello.\n- Documentación de admin (Help Center) actualizada.\n\n**Notas tecnicas**\n- Ruta: `/src/pages/configuracion/empresa/ModulosTab.tsx` (nuevo).\n- Hook existente: `useModulos()` para invalidación en sidebar.\n- Endpoint PATCH `/api/v1/empresa/{id}/modulos/{modulo_key}` (Phase 1).\n- Schema: tabla `empresa_modulos` con campos `modulo_key`, `habilitado`, `updated_by`, `updated_at`.\n- Grafo de dependencias disponible en card umbrella '[Core] Modulos habilitables/deshabilitables por empresa'.\n- Módulos CORE (no toggleables): empresas, clientes, contactos, productos, marcas, tipos_producto, productos_documentos, tags, bodegas, sedes_despacho, auth, users, permissions, auditoria, notifications, search, dashboard, config.\n- Módulos OPTIONAL con dependencias: facturas→{pagos, cobranza, NC, ND, libros, aprobaciones_margen}, boletas→{NC}, inventario→{GD}, GD→{NC}, NC requiere ≥1 de {facturas, boletas, GD}, ND requiere facturas, proveedores→{OC, facturas_compra}, OC requiere proveedores, facturas_compra→{aprobaciones_costo}, listas_precios→{precios_especiales}, facturas→pagos→{cobranza, bancos_receptores}, tareas→{reglas_tareas}, rrhh_empleados→{vacaciones, documentos}, libros requiere facturas, dte_emission auto-on si alguno de {facturas, boletas, GD, NC, ND} está on.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen**\nTab admin de Módulos en /configuracion: listado agrupado por categoría, toggles con cascade-aware disable, modal de confirmación al apagar padre, auditoría visible por módulo, y acciones bulk (habilitar todos / apagar todos opcionales).\n\n**Cambios / Decisiones**\n- `frontend/src/components/config/ModulesTab.tsx` (527 líneas): tab completo con grupos por categoría\n- Toggle interactivo con disable visual cuando dependencia padre está off\n- Modal de confirmación cascade al apagar módulo padre con dependientes activos\n- `frontend/src/components/config/ModuleAuditModal.tsx`: historial de cambios por módulo (actor, timestamp, antes/después)\n- Acciones bulk: habilitar todos / deshabilitar todos los opcionales con cascade prompt\n- Integrado en pestaña 'Módulos' de /configuracion (visible solo para admin)",
       "checklist": [
-        "Tab 'Modulos' en /configuracion/empresa (admin only)",
-        "Listado agrupado por categoria: Ventas, Compras, Inventario y Precios, Finanzas, DTE/SII, CRM, RRHH, Aprobaciones",
-        "Toggle por modulo con label + descripcion + indicador 'requiere X' o 'habilita X'",
-        "Disable visual de toggles que no se pueden activar (parent off)",
-        "Modal de confirmacion al apagar parent: 'Tambien quedaran inactivos: X, Y, Z. Continuar?'",
-        "Reflejar inmediatamente en sidebar (invalidar query useModulos)",
-        "Mostrar quien y cuando cambio cada modulo (auditoria visible)",
-        "Boton 'Habilitar todos' / 'Apagar todos los opcionales'",
-        "Tests: toggle simple, cascade prompt, validacion de dependencia bloquea toggle",
-        "Diseno consistente con el resto de /configuracion (Modal, danger variant donde aplique)",
-        "[Modulos P3.1] Tab 'Modulos' en /configuracion/empresa (read-only listado)",
-        "[Modulos P3.2] Toggle interactivo + dependency-aware disable visual",
-        "[Modulos P3.3] Modal cascade-confirm al apagar parent con dependents on",
-        "[Modulos P3.4] Audit visible per-modulo + acciones bulk",
-        "Crear [Modulos P3.1]: Tab read-only y listado agrupado",
-        "Crear [Modulos P3.2]: Toggles interactivos con validación de dependencias",
-        "Crear [Modulos P3.3]: Modal de confirmación cascada",
-        "Crear [Modulos P3.4]: Auditoría visible + acciones bulk",
-        "Tests: cobertura E2E en cada card child",
-        "Deploy a staging y QA sign-off",
-        "Mover Trello a In review"
+        "Ir a /configuracion → pestaña Módulos y confirmar listado agrupado por categoría",
+        "Deshabilitar un módulo padre y confirmar modal de cascade con dependientes",
+        "Usar 'Habilitar todos' y verificar que todos los toggles quedan activos",
+        "Usar 'Deshabilitar todos' y confirmar modal cascade + resultado",
+        "Abrir historial de auditoría de un módulo y verificar entradas"
       ]
     }
   ]
