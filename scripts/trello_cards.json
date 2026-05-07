@@ -32,7 +32,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[User Guide] Guias de Despacho 52",
       "labels": [
         "Roadmap",
@@ -40,22 +40,15 @@
         "Goal: Docs",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nLos usuarios de Conico CRM necesitan documentación clara y paso a paso para crear, emitir y anular Guías de Despacho (DTE tipo 52). La ausencia de guía integral genera dudas sobre motivos válidos, workflow de borradores, integración DTE y casos de anulación.\n\n**Acceptance Criteria**\n- Guía publicada en centro de ayuda describe cuándo usar una Guía de Despacho y cuándo usar alternativas.\n- Sección de \"Motivos\" explica cada tipo (entrega cliente, devolución, traslado, etc.) con ejemplo de cuándo aplicar cada uno.\n- Guía paso a paso muestra cómo crear desde cero vs. prefillando desde Nota de Venta, incluyendo selección de empresa, cliente y sitio de despacho.\n- Sección \"Emitir DTE\" describe flujo borrador → emitida, validaciones previas y manejo de errores SII.\n- Sección \"Anular\" explica cuándo y cómo se anula una guía emitida, incluyendo límites legales (plazo SII).\n- Sección \"Distribución\" cubre descarga de PDF y envío por email con plantilla de ejemplo.\n- Todas las instrucciones validadas contra la interfaz actual de Conico y requisitos legales DTE.\n\n**Definition of Done**\n- Documento escrito en markdown, es-CL, con estructura clara (h2/h3, listas, tablas donde aplique).\n- Screenshots o GIFs de cada paso principal insertados en el documento.\n- Validación legal: requisitos SII y plazos de anulación verificados con normativa actual.\n- Documento alojado en repositorio de docs y publicado en centro de ayuda (o wiki interna).\n- Revisión por Product Owner y al menos un usuario SME confirmando claridad y exactitud.\n- Trello card movida a \"In Review\".\n\n**Notas tecnicas**\n- Referencia DTE tipo 52: Guía de Despacho según Resolución SII.\n- Validar contra flujo actual en `app/models/dispatch_guide.rb` y endpoints REST de emisión.\n- Incluir ejemplos de errores comunes (RUT inválido, cliente sin dirección, cantidad en NV agotada).\n- Considerar footnotes sobre cambios futuros (ej. integración API SII v2).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Crear una guía de usuario para Guías de Despacho (DTE tipo 52) que explique su uso, creación, emisión, anulación y distribución según normativa SII y flujo en Conico CRM.\n\n**Cambios / Decisiones** — Se creó el documento `docs/guia-guias-de-despacho.md` con secciones sobre cuándo usar la guía, tipos de motivos, creación desde cero o desde Nota de Venta, emisión DTE, anulación y distribución. Incluye ejemplos, validaciones y requisitos legales. No se modificaron archivos de la app ni se agregaron librerías.",
       "checklist": [
-        "When to use a dispatch guide",
-        "Motive types explained",
-        "Creating from scratch vs from NV",
-        "Company + client + dispatch site selection",
-        "Emitting DTE type 52",
-        "Annulling a guide",
-        "PDF and email",
-        "Investigar y documentar todos los motivos válidos de Guía de Despacho con ejemplos reales.",
-        "Escribir sección: Crear desde cero vs. prefillando desde Nota de Venta (con screenshots).",
-        "Documentar workflow borrador → emitida y validaciones previas de DTE.",
-        "Escribir guía de anulación incluyendo límites legales SII y proceso en Conico.",
-        "Documentar descarga de PDF y envío por email con plantilla ejemplo.",
-        "Validar exactitud contra interfaz actual y normas SII; obtener aprobación de PO.",
-        "Publicar en centro de ayuda y mover card a In Review."
+        "Abrir docs/guia-guias-de-despacho.md y revisar estructura general",
+        "Verificar sección 'Motivos' con ejemplos de uso real",
+        "Validar instrucciones de creación desde NV y desde cero",
+        "Revisar sección de emisión: borrador → emitida y validaciones",
+        "Confirmar proceso de anulación y plazos según SII",
+        "Verificar sección de distribución: PDF y envío de email",
+        "Validar que todos los pasos coincidan con UI actual de Conico"
       ]
     }
   ]
