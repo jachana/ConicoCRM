@@ -32,22 +32,28 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[User Guide] Usuarios, roles y permisos",
+      "list": "In progress",
+      "name": "[User Guide] Inventario y control de stock",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:L"
       ],
-      "desc": "**Resumen** — Crear una guía de usuario que explique cómo gestionar usuarios, roles (Admin/SubAdmin/Vendedor), permisos granulares, impersonación y 2FA.\n\n**Cambios / Decisiones** — Se creó el documento `docs/guia-usuarios-roles-permisos.md` con los siguientes temas: creación y desactivación de usuarios, matriz de permisos por rol, override de permisos individuales, uso de la función «View As», y configuración de 2FA. La guía incluye referencias a endpoints como `GET /api/v1/admin/impersonate` y estructura de permisos en `permission_overrides`. No se incluyeron screenshots ni publicación en Centro de Ayuda en este commit.",
+      "desc": "**Contexto / Problema**\nLos usuarios de Conico necesitan entender cómo funciona el control de stock: desde la deducción automática al emitir notas de venta, consulta de movimientos, ajustes manuales, alertas de bajo stock y el indicador de costo obsoleto. Una guía clara reduce consultas de soporte y acelera la adopción.\n\n**Acceptance Criteria**\n- Guía documenta cómo el stock se deduce automáticamente al crear/emitir una NV.\n- Explica cómo consultar stock actual por producto en catálogo e inventario.\n- Muestra cómo filtrar historial de movimientos por tipo (entrada, salida, ajuste) y rango de fechas.\n- Detalla pasos para ajuste manual (suma/resta con razón registrada).\n- Guía la configuración de umbrales de alerta de bajo stock y comportamiento del badge.\n- Incluye capturas o GIF de cada flujo; lenguaje es claro y orientado a SME.\n\n**Definition of Done**\n- Documento en Markdown/formato wiki alojado en repositorio de docs o Notion.\n- Revisión lingüística y UX (confirmado con Product).\n- Enlazado desde help center y/o onboarding in-app si aplica.\n- Trello card movida a \"In review\".\n- Versión final aprobada y deployada a staging/prod docs.\n\n**Notas tecnicas**\n- Referir endpoints: GET /products/{id}/stock, POST /inventory/adjustments, GET /inventory/movements.\n- Mencionar campos relevantes: stock_atual, min_threshold, cost_indicator, adjustment_reason.\n- Incluir ejemplos con valores reales (ej. producto con stock=50, umbral=10).\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir docs/guia-usuarios-roles-permisos.md y validar secciones completas",
-        "Verificar explicación de creación y desactivación de usuarios",
-        "Revisar matriz de permisos Admin vs SubAdmin vs Vendedor",
-        "Validar sección de override de permisos por usuario",
-        "Confirmar documentación de función View As y su endpoint",
-        "Verificar pasos de configuración de 2FA (TOTP/SMS)",
-        "Validar que no haya typos ni errores de formato markdown"
+        "How stock deduction works (NV emit trigger)",
+        "Viewing current stock per product",
+        "Movement history (filters by type/date)",
+        "Manual adjustment (add/subtract + reason)",
+        "Low-stock alert thresholds config",
+        "Sidebar badge and catalog indicator",
+        "Redactar sección: Deducción automática de stock en emisión de NV (flujo + captura)",
+        "Redactar sección: Consulta de stock actual y movimientos (con filtros por tipo/fecha)",
+        "Redactar sección: Ajuste manual de inventario (pasos + campos obligatorios)",
+        "Redactar sección: Configuración de umbrales y alertas de bajo stock",
+        "Agregar sección: Indicador de costo obsoleto y badge en sidebar",
+        "Revisar con Product y ajustar según feedback",
+        "Deploy a docs (staging) y mover Trello a \"In review\""
       ]
     }
   ]
