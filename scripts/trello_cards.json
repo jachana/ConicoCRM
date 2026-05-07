@@ -32,45 +32,20 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Core] Modulos toggle - Phase 1: backend foundation",
       "labels": [
         "Core",
         "Goal: SaaS-ready",
         "Size:XL"
       ],
-      "desc": "**Contexto / Problema**\nConico debe soportar activación/desactivación de módulos opcionales por empresa para modularizar el producto SaaS y permitir diferentes tiers de suscripción. Phase 1 construye la fundación backend: registry centralizado, validación de dependencias, persistencia per-empresa, gating automático (403) en routers opcionales, y auditoria de cambios. Sin cambios UI aún.\n\n**Acceptance Criteria**\n- Todo router de módulo opcional retorna 403 con detail descriptivo cuando su módulo está deshabilitado para la empresa del usuario actual.\n- Admin puede consultar módulos habilitados (efectivos + raw) y cambiar toggles vía PATCH /empresas/{id}/modulos; cambios violando dependencias son rechazados con 400.\n- Dependencias en cascada se calculan automáticamente: dte_emission se activa si cualquiera de {facturas, boletas, GD, NC, ND} está on; facturas activa pagos; pagos activa cobranza + bancos_receptores; etc.\n- Empresas existentes post-migración mantienen acceso a todos módulos (comportamiento actual).\n- Current user consulta sus módulos efectivos vía GET /me/modulos.\n- Cambios a módulos se registran en auditoria con actor, timestamp, diff (before/after).\n- Tests validan: 403 cuando módulo off, 400 en toggle inválido, cascade calculation correcta, no regresiones en empresas existentes.\n\n**Definition of Done**\n- Migración Alembic aplicada: columna empresas.modulos_enabled (JSONB) con DEFAULT '{}'.\n- Backfill completado: empresas existentes tienen modulos_enabled con flags explícitos true.\n- Función compute_effective_modulos(stored_dict) implementada y testeada.\n- Función validate_toggle(slug, action, current_state) implementada y testeada.\n- Dependency FastAPI require_modulo(slug) implementada y aplicada a 15+ routers opcionales.\n- Endpoints PATCH /empresas/{id}/modulos y GET /me/modulos implementados con validación.\n- Auditoria de cambios registra diff (slug, before, after, actor, timestamp).\n- Suite de tests cubre: 403 gating, validación de deps, cascade calculation, backfill integrity, E2E admin toggle.\n- Documentación actualizada: docs/architecture/modulos.md con matriz y grafo de dependencias.\n- Trello card movida a \"In review\" tras merge a develop.\n\n**Notas tecnicas**\n- Archivo principal: backend/app/core/modulos.py con CORE_MODULES set y OPTIONAL_MODULES registry.\n- Migración Alembic: alembic/versions/[timestamp]_add_empresa_modulos_enabled.py.\n- Routers afectados (require_modulo): boletas, facturas, GD, NC, ND, OC, inventario, listas_precios, pagos, cobranza, bancos_receptores, rrhh_empleados, vacaciones, oportunidades, tareas, libros, dte_recepcion, aprobaciones_margen, aprobaciones_costo, tareas.reglas_tareas.\n- Dependency FastAPI se instancia como require_modulo = ModuleGate(slug) en headers.\n- Schema: EmpresaModulosUpdate con validación server-side pre-persistencia.\n- Auditoria: registro en tabla audit_logs con tipo_evento='modulo_toggle'.\n- Grafo de deps (ver card umbrella para detalle completo): facturas->{pagos,cobranza,NC,ND,libros,aprobaciones_margen}; boletas->{NC}; inventario->{GD}; GD->{NC}; NC requires >=1 of {facturas,boletas,GD}; ND requires facturas; proveedores->{OC,facturas_compra}; OC requires proveedores; facturas_compra->{aprobaciones_costo}; listas_precios->{precios_especiales}; tareas->{reglas_tareas}; rrhh_empleados->{vacaciones,documentos}; dte_emission auto-on si >=1 of {facturas,boletas,GD,NC,ND}.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen**\nBackend foundation para módulos habilitables por empresa: registro central de módulos, campo JSONB en tabla empresas, endpoints admin y dependency FastAPI que retorna 403 cuando el módulo está deshabilitado.\n\n**Cambios / Decisiones**\n- `backend/app/core/modulos.py`: registro CORE_MODULES + OPTIONAL_MODULES, `compute_effective_modulos()`, `validate_toggle()`\n- `backend/app/models/empresa.py`: campo `modulos_enabled` JSONB DEFAULT '{}`\n- `backend/app/api/modulos.py`: GET/PATCH /empresas/{id}/modulos, GET /me/modulos con validación de dependencias\n- Dependency `require_modulo(slug)` aplicada en routers opcionales (boletas, facturas, GD, OC, inventario, pagos, etc.)",
       "checklist": [
-        "Crear backend/app/core/modulos.py con registro {slug, label, categoria, requires:[], dependents:[]} para todos los modulos optional",
-        "Definir set CORE_MODULES (no toggleable) y OPTIONAL_MODULES",
-        "Funcion compute_effective_modulos(stored_dict) que aplica dependencias (auto-on de dte_emission, etc.)",
-        "Funcion validate_toggle(slug, action, current_state) que detecta violaciones de dependencia",
-        "Migracion Alembic: empresas.modulos_enabled JSONB NOT NULL DEFAULT '{}' (interpretado como 'todos on')",
-        "Backfill: empresas existentes mantienen comportamiento actual (todos los flags true explicitos)",
-        "Schema EmpresaModulosUpdate con validacion server-side de dependencias",
-        "Dependency FastAPI require_modulo(slug) que mira current_user.empresa_id y retorna 403 con detail descriptivo",
-        "Aplicar require_modulo a TODOS los routers optional (boletas, facturas, GD, NC, ND, OC, inventario, listas_precios, pagos, cobranza, bancos_receptores, rrhh*, oportunidades, tareas, libros, dte_recepcion, aprobaciones*)",
-        "Endpoint GET /empresas/{id}/modulos (admin only) - efectivo + raw stored",
-        "Endpoint PATCH /empresas/{id}/modulos (admin only) con validacion atomica",
-        "Endpoint GET /me/modulos para current user (lista efectiva)",
-        "Audit log: capturar diff (slug, before, after, actor) en cambios",
-        "Tests: 403 cuando modulo off; toggle con dependencia rota es 400; cascade calculation correcta; auto-on de dte_emission",
-        "Tests: empresas existentes post-migracion siguen funcionando sin regresiones",
-        "Documentar matriz de modulos y dependencias en docs/architecture/modulos.md",
-        "[Modulos P1.1] Registro central de modulos + grafo de dependencias",
-        "[Modulos P1.2] Migracion Alembic + Empresa.modulos_enabled + backfill",
-        "[Modulos P1.3] require_modulo dependency + cascade calculator + unit tests",
-        "[Modulos P1.4] Wire require_modulo a routers de ventas DTE",
-        "[Modulos P1.5] Wire require_modulo a procurement + inventario + finanzas",
-        "[Modulos P1.6] Wire require_modulo a RRHH + CRM + libros + DTE recepcion + aprobaciones",
-        "[Modulos P1.7] Endpoints admin /empresas/{id}/modulos + /me/modulos + audit",
-        "Crear backend/app/core/modulos.py con registry CORE_MODULES y OPTIONAL_MODULES (slug, label, categoria, requires[], dependents[])",
-        "Implementar compute_effective_modulos(stored_dict) y validate_toggle(slug, action, current_state) con cobertura de deps",
-        "Crear migración Alembic: empresas.modulos_enabled JSONB DEFAULT '{}' + backfill empresas existentes",
-        "Implementar FastAPI dependency require_modulo(slug) que gatea con 403; aplicar a 15+ routers opcionales",
-        "Crear endpoints PATCH /empresas/{id}/modulos (admin) y GET /me/modulos (user) con validación",
-        "Registrar auditoria de cambios: slug, before, after, actor, timestamp en audit_logs",
-        "Tests + docs: 403 gating, validación deps, cascade calc, backfill integrity, E2E toggle, matriz de deps en docs/architecture/modulos.md"
+        "Verificar GET /me/modulos retorna módulos del usuario actual",
+        "Verificar PATCH /empresas/{id}/modulos requiere rol admin",
+        "Verificar que ruta con módulo deshabilitado retorna 403",
+        "Verificar cascade: deshabilitar módulo padre desactiva dependientes",
+        "Verificar campo modulos_enabled en tabla empresas con psql"
       ]
     }
   ]
