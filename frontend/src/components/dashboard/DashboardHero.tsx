@@ -1,5 +1,5 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
 import {
   TrendingUp,
   TrendingDown,
@@ -14,6 +14,7 @@ import { useModulos } from '../../hooks/useModulos'
 import { isModuloEnabled } from '../../lib/modulos'
 import type { DashboardSummaryOut } from '../../types/dashboard'
 import { cn } from '../../lib/cn'
+import KpiDrilldownModal, { type KpiDrilldownKind } from './KpiDrilldownModal'
 
 function formatCLP(n: number): string {
   return n.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
@@ -78,7 +79,7 @@ interface KPICardProps {
   delta?: number | null
   icon: React.ReactNode
   accent: 'brand' | 'emerald' | 'amber' | 'rose'
-  to?: string
+  onClick?: () => void
 }
 
 const ACCENTS: Record<KPICardProps['accent'], string> = {
@@ -92,11 +93,11 @@ const ACCENTS: Record<KPICardProps['accent'], string> = {
     'from-rose-500/10 to-rose-500/0 border-rose-500/20 text-rose-700 dark:text-rose-300',
 }
 
-function KPICard({ label, value, hint, delta, icon, accent, to }: KPICardProps) {
+function KPICard({ label, value, hint, delta, icon, accent, onClick }: KPICardProps) {
   const inner = (
     <div
       className={cn(
-        'relative h-full overflow-hidden rounded-lg border bg-gradient-to-br px-3 py-2 transition-all',
+        'relative h-full overflow-hidden rounded-lg border bg-gradient-to-br px-3 py-2 transition-all text-left',
         'hover:shadow-md hover:-translate-y-0.5',
         ACCENTS[accent],
         'bg-white dark:bg-gray-900',
@@ -119,7 +120,17 @@ function KPICard({ label, value, hint, delta, icon, accent, to }: KPICardProps) 
       </div>
     </div>
   )
-  return to ? <Link to={to} className="block h-full">{inner}</Link> : inner
+  return onClick ? (
+    <button
+      type="button"
+      onClick={onClick}
+      className="block h-full w-full text-left focus:outline-none focus:ring-2 focus:ring-brand-500/40 rounded-lg"
+    >
+      {inner}
+    </button>
+  ) : (
+    inner
+  )
 }
 
 interface DashboardHeroProps {
@@ -128,6 +139,8 @@ interface DashboardHeroProps {
 }
 
 export default function DashboardHero({ userName, presetName }: DashboardHeroProps) {
+  const [drilldown, setDrilldown] = useState<KpiDrilldownKind | null>(null)
+
   const { data, isLoading } = useQuery<DashboardSummaryOut>({
     queryKey: ['dashboard-summary'],
     queryFn: () => api.get('/api/dashboard/summary').then(r => r.data),
@@ -191,6 +204,7 @@ export default function DashboardHero({ userName, presetName }: DashboardHeroPro
               delta={ventasDelta}
               icon={<TrendingUp size={14} />}
               accent="brand"
+              onClick={() => setDrilldown('hoy')}
             />
           )}
           {showFacturas && (
@@ -201,6 +215,7 @@ export default function DashboardHero({ userName, presetName }: DashboardHeroPro
               delta={mesDelta}
               icon={<Wallet size={14} />}
               accent="emerald"
+              onClick={() => setDrilldown('mes')}
             />
           )}
           {showNV && (
@@ -210,7 +225,7 @@ export default function DashboardHero({ userName, presetName }: DashboardHeroPro
               hint={data ? formatCLP(data.nv_pendientes_monto) : undefined}
               icon={<FileText size={14} />}
               accent="amber"
-              to="/notas-venta"
+              onClick={() => setDrilldown('cobrar')}
             />
           )}
           {showInventario && (
@@ -226,11 +241,12 @@ export default function DashboardHero({ userName, presetName }: DashboardHeroPro
               }
               icon={<AlertTriangle size={14} />}
               accent={data && data.stock_critico_count > 0 ? 'rose' : 'emerald'}
-              to="/inventario"
+              onClick={() => setDrilldown('stock')}
             />
           )}
         </div>
       )}
+      <KpiDrilldownModal kind={drilldown} onClose={() => setDrilldown(null)} />
     </div>
   )
 }

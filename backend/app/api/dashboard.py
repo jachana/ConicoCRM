@@ -30,6 +30,8 @@ from app.schemas.dashboard_layout import (
     TopClienteItem,
     TopProductoItem,
     VendedorMetricaItem,
+    VentasDetalleItem,
+    VentasDetalleOut,
     VentasPeriodoOut,
     VentasPeriodoSerie,
 )
@@ -247,9 +249,11 @@ def _data_nv_por_cobrar(db, current_user, date_from, date_to, limit):
     total_monto = sum(float(nv.total) for nv in nvs)
     items = [
         NVPorCobrarItem(
+            nv_id=nv.id,
             numero=nv.numero,
             cliente=nv.cliente.nombre if nv.cliente else str(nv.cliente_id),
             total=float(nv.total),
+            fecha=nv.fecha.isoformat() if nv.fecha else None,
         )
         for nv in nvs
     ]
@@ -259,6 +263,36 @@ def _data_nv_por_cobrar(db, current_user, date_from, date_to, limit):
     if current_user.role == "vendedor":
         count_q = count_q.filter(NotaVenta.vendedor_id == current_user.id)
     return NVPorCobrarOut(total_monto=total_monto, count=count_q.scalar() or 0, items=items)
+
+
+def _data_ventas_detalle(db, current_user, date_from, date_to, limit):
+    """List of NVs in sold-states for the given date range — used by KPI drilldown modals."""
+    sold_states = ["pagada", "entregada", "despachada"]
+    q = db.query(NotaVenta).filter(NotaVenta.estado.in_(sold_states))
+    q = _vendor_filter(q, NotaVenta, current_user)
+    q = _date_filter(q, NotaVenta, date_from, date_to)
+    nvs = (
+        q.options(joinedload(NotaVenta.cliente))
+        .order_by(NotaVenta.fecha.desc(), NotaVenta.numero.desc())
+        .limit(limit)
+        .all()
+    )
+    items = [
+        VentasDetalleItem(
+            nv_id=nv.id,
+            numero=nv.numero,
+            cliente=nv.cliente.nombre if nv.cliente else str(nv.cliente_id),
+            total=float(nv.total),
+            fecha=nv.fecha.isoformat() if nv.fecha else "",
+            estado=nv.estado,
+        )
+        for nv in nvs
+    ]
+    count_q = db.query(func.count(NotaVenta.id)).filter(NotaVenta.estado.in_(sold_states))
+    count_q = _vendor_filter(count_q, NotaVenta, current_user)
+    count_q = _date_filter(count_q, NotaVenta, date_from, date_to)
+    total_monto = sum(it.total for it in items)
+    return VentasDetalleOut(total_monto=total_monto, count=count_q.scalar() or 0, items=items)
 
 
 def _data_cotizaciones_por_vendedor(db, current_user, date_from, date_to, limit):
@@ -303,6 +337,7 @@ _ADMIN_ONLY = {"cotizaciones_por_vendedor", "ventas_por_vendedor"}
 
 _DATA_HANDLERS = {
     "ventas_periodo": _data_ventas_periodo,
+    "ventas_detalle": _data_ventas_detalle,
     "cotizaciones_abiertas": _data_cotizaciones_abiertas,
     "top_clientes": _data_top_clientes,
     "top_productos": _data_top_productos,

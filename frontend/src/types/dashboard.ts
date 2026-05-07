@@ -98,15 +98,32 @@ export interface StockCriticoItem {
 }
 
 export interface NVPorCobrarItem {
+  nv_id: number
   numero: number
   cliente: string
   total: number
+  fecha?: string | null
 }
 
 export interface NVPorCobrarOut {
   total_monto: number
   count: number
   items: NVPorCobrarItem[]
+}
+
+export interface VentasDetalleItem {
+  nv_id: number
+  numero: number
+  cliente: string
+  total: number
+  fecha: string
+  estado: string
+}
+
+export interface VentasDetalleOut {
+  total_monto: number
+  count: number
+  items: VentasDetalleItem[]
 }
 
 export interface VendedorMetricaItem {

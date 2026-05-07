@@ -87,15 +87,32 @@ class StockCriticoItem(BaseModel):
 
 
 class NVPorCobrarItem(BaseModel):
+    nv_id: int
     numero: int
     cliente: str
     total: float
+    fecha: str | None = None
 
 
 class NVPorCobrarOut(BaseModel):
     total_monto: float
     count: int
     items: list[NVPorCobrarItem]
+
+
+class VentasDetalleItem(BaseModel):
+    nv_id: int
+    numero: int
+    cliente: str
+    total: float
+    fecha: str
+    estado: str
+
+
+class VentasDetalleOut(BaseModel):
+    total_monto: float
+    count: int
+    items: list[VentasDetalleItem]
 
 
 class VendedorMetricaItem(BaseModel):
