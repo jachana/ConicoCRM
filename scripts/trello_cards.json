@@ -32,22 +32,28 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[User Guide] Inventario y control de stock",
+      "list": "In progress",
+      "name": "[User Guide] Ordenes de Compra y recepcion",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:L"
       ],
-      "desc": "**Resumen** — Crear una guía de usuario que explique el control de stock en Conico, incluyendo deducción automática, consulta de inventario, ajustes manuales y alertas.\n\n**Cambios / Decisiones** — Se creó el documento `docs/guia-inventario.md` con secciones sobre:\n- Deducción automática de stock al emitir una nota de venta.\n- Consulta de stock actual y movimientos filtrados por tipo y fecha.\n- Ajustes manuales de inventario registrando razón.\n- Configuración de umbrales de bajo stock y visualización del indicador de costo obsoleto.\nLa guía incluye ejemplos con datos reales y menciona endpoints como `GET /products/{id}/stock`, `POST /inventory/adjustments` y campos como `stock_actual`, `min_threshold`.",
+      "desc": "**Contexto / Problema**\nLos usuarios de Conico necesitan documentación clara y paso a paso para gestionar órdenes de compra: desde crear una OC hasta recibir bienes y actualizar inventario. Sin esta guía, los nuevos usuarios pierden tiempo experimentando o contactan soporte innecesariamente.\n\n**Acceptance Criteria**\n- Guía en formato markdown/HTML publicada en el sitio de documentación (help.conico.cl o similar).\n- Cubre creación de OC desde cero con captura de pantallas anotadas.\n- Explica cómo enviar OC por email con PDF, incluyendo configuración de plantilla.\n- Documenta flujo de recepción parcial (ej: pedir 100 unidades, recibir 50 hoy, 50 mañana).\n- Documenta recepción total y cómo el sistema actualiza automáticamente el stock.\n- Muestra cómo cancelar una OC y qué restricciones aplican (ej: no cancelar si ya se recibió).\n- Incluye sección sobre exportación a Excel (formato de columnas, filtros aplicables).\n- Guía probada por 2+ usuarios reales sin preguntas de soporte sobre estos temas.\n\n**Definition of Done**\n- Documento escrito en es-CL, con tono claro y directo para SMEs.\n- Mínimo 6 capturas de pantalla o GIFs mostrando cada flujo principal.\n- Revisado por PM y al menos 1 usuario beta; feedback incorporado.\n- Publicado en la plataforma de documentación interna/externa.\n- Trello card movida a \"Done\".\n- Link a la guía compartido en el canal de Slack #docs.\n\n**Notas tecnicas**\n- Coordinar con UI/UX para obtener capturas de pantalla actualizadas de producción.\n- Si existen restricciones de negocio en recepción (ej: no recibir más del 10% extra), documentarlas.\n- Mencionar comportamiento de campos: RUT proveedor, N° de OC, fechas, estado (Borrador, Enviada, Parcialmente recibida, Recibida, Cancelada).\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir docs/guia-inventario.md y verificar estructura completa",
-        "Buscar menciones a endpoints como GET /products/{id}/stock",
-        "Verificar sección de ajuste manual con razón obligatoria",
-        "Revisar ejemplo de configuración de umbral de bajo stock",
-        "Confirmar capturas o ejemplos con valores reales incluidos",
-        "Validar documentación del indicador de costo obsoleto",
-        "Ver enlaces a secciones desde help center o onboarding"
+        "Creating a purchase order",
+        "Sending to supplier (PDF + email)",
+        "Partial and full receipt flow",
+        "Stock update on receipt",
+        "Cancelling an OC",
+        "Excel export",
+        "Redactar sección 'Crear una Orden de Compra' con 3+ ejemplos",
+        "Redactar y capturar flujo 'Enviar OC por email con PDF'",
+        "Redactar y capturar recepción parcial vs. total con impacto en stock",
+        "Redactar y capturar cancelación de OC con restricciones",
+        "Redactar sección Excel export y validar formato de datos",
+        "Revisar con 2+ usuarios beta y recopilar feedback",
+        "Publicar en documentación y compartir link en Slack"
       ]
     }
   ]
