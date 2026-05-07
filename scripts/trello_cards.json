@@ -33,6 +33,23 @@
   "cards": [
     {
       "list": "In progress",
+      "name": "[Dashboard] KPI tiles: compactos en 1 fila + clickeables a lista filtrada",
+      "labels": [
+        "Core",
+        "Size:M"
+      ],
+      "desc": "Los 4 tiles de KPI superiores (Ventas Hoy, Ventas Mes, Por Cobrar, Stock Critico) son demasiado grandes y ocupan 2 filas. Deben reducirse para caber en 1 sola fila y ser clickeables para abrir un modal/panel con el listado filtrado correspondiente (ej: click en Por Cobrar abre facturas pendientes; click en Stock Critico abre productos bajo minimo).",
+      "checklist": [
+        "Reducir altura/padding de los 4 KPI tiles superiores para que quepan en 1 fila",
+        "Click en Ventas Hoy: abre modal con facturas/boletas del dia",
+        "Click en Ventas Mes: abre modal con facturas/boletas del mes",
+        "Click en Por Cobrar: abre modal con facturas impagas (15 docs / M)",
+        "Click en Stock Critico: abre modal con productos bajo minimo",
+        "Modal muestra tabla filtrada con enlaces a cada registro"
+      ]
+    },
+    {
+      "list": "In progress",
       "name": "[W1-05 checkpoint] Validar payload tipo 52 contra Lioren sandbox",
       "labels": [
         "Wave 1",
@@ -46,22 +63,6 @@
         "Confirmar field names ind_traslado + destino.direccion + destino.comuna",
         "Quitar TODO(W1-05-sandbox) en dte_service.py",
         "Documentar resultado en .planning/phases/01-gu-a-de-despacho-52-backend/01-03-SUMMARY.md"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Inventario] Solo facturas mueven stock (no NV)",
-      "labels": [
-        "Core",
-        "Size:S"
-      ],
-      "desc": "Auditar y corregir todos los lugares de la app que muestran o calculan movimientos de stock usando NV como trigger. Solo la emision de una Factura debe descontar stock. Las NV son promesas de venta, no despachos.\n\n---\n**Audit 2026-05-06**: Tras inspeccion, scope real es W1-08 completo (no Size:S):\n- NV mueve stock en 4 lugares: crear_nv, crear_nv_from_cotizacion, cambiar_estado (cancelada), eliminar_nv\n- Factura NO mueve stock actualmente — necesita ser agregado en emision\n- Boletas y guias despacho tambien necesitan auditar\n- Reclasificar como Size:L con migracion de datos historica.",
-      "checklist": [
-        "Auditar backend: identificar todos los puntos donde NV descuenta o reserva stock",
-        "Auditar frontend: indicadores/textos que digan que NV mueve stock",
-        "Corregir logica: stock se descuenta solo al emitir Factura (no al crear NV)",
-        "Revisar historial de movimientos: que NV no aparezca como movimiento de stock",
-        "Tests: verificar que crear NV no altera el stock y crear Factura si lo altera"
       ]
     }
   ]
