@@ -32,7 +32,7 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Telemetry] Phase 2: aggregation + admin API",
       "labels": [
         "Core",
