@@ -32,28 +32,21 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Docs] Audit log system internals",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nEl sistema de auditoría es crítico para cumplimiento y debugging, pero su arquitectura interna no está documentada. Los desarrolladores y operadores necesitan entender cómo funciona para extender, mantener y auditar correctamente.\n\n**Acceptance Criteria**\n- Documento markdown completo que explique la arquitectura de event listeners de SQLAlchemy y middleware ASGI.\n- Descripción clara del formato de diff (estructura para create/update/delete).\n- Lista exhaustiva de modelos auditados y campos sensibles excluidos.\n- Referencia de parámetros de filtrado en la API de auditoría.\n- Guía paso a paso para exportar auditoría a CSV.\n- Ejemplos de código o payloads JSON reales en cada sección.\n\n**Definition of Done**\n- Documento escrito en es-CL y revisado por tech lead.\n- Alojado en la wiki/docs del proyecto con URL clara.\n- Todos los ejemplos de código verificados contra la base actual.\n- PR mergeado a rama de docs.\n- Card movida a Done.\n\n**Notas tecnicas**\n- Ubicación esperada: `docs/audit-log-system.md` o similar en repo.\n- Incluir rutas clave: `conico_crm/audit/models.py`, `conico_crm/audit/listeners.py`, `conico_crm/middleware/audit.py`.\n- Referencia de API: endpoint `/api/audit` con query params (model, user_id, date_range, action).\n- Campos excluidos: contraseñas, tokens, API keys (verificar contra `AUDIT_EXCLUDED_FIELDS`).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Documentar la arquitectura interna del sistema de auditoría para facilitar su mantenimiento y extensión.\n\n**Cambios / Decisiones** — Se creó el documento `docs/audit-log-system.md` con la arquitectura de event listeners de SQLAlchemy y middleware ASGI. Incluye el formato de diff para create/update/delete, lista de modelos auditados, campos excluidos sensibles (según `AUDIT_EXCLUDED_FIELDS`), referencia de filtros de la API `/api/audit` y guía para exportar a CSV con ejemplos reales.",
       "checklist": [
-        "Architecture: event listeners + middleware",
-        "Diff format: create/update/delete shapes",
-        "List of audited models",
-        "Excluded sensitive fields",
-        "API filter reference",
-        "CSV export usage",
-        "Investigar listeners de SQLAlchemy y arquitectura de eventos",
-        "Documentar flujo middleware ASGI para request context",
-        "Explicar formato diff (create/update/delete) con ejemplos",
-        "Listar todos los modelos auditados y campos sensibles excluidos",
-        "Documentar parámetros y ejemplos de API `/api/audit`",
-        "Incluir guía de exportación a CSV con ejemplos de comando",
-        "Revisar documento con tech lead y mergear a repo"
+        "Abrir docs/audit-log-system.md y verificar secciones completas",
+        "Validar ejemplos de diff en create/update/delete",
+        "Revisar lista de modelos auditados y campos excluidos",
+        "Probar endpoint /api/audit con filtros y verificar respuesta",
+        "Ejecutar exportación a CSV según guía y validar salida",
+        "Confirmar rutas y referencias a listeners y middleware"
       ]
     }
   ]
