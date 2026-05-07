@@ -32,28 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[User Guide] Ordenes de Compra y recepcion",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nLos usuarios de Conico necesitan documentación clara y paso a paso para gestionar órdenes de compra: desde crear una OC hasta recibir bienes y actualizar inventario. Sin esta guía, los nuevos usuarios pierden tiempo experimentando o contactan soporte innecesariamente.\n\n**Acceptance Criteria**\n- Guía en formato markdown/HTML publicada en el sitio de documentación (help.conico.cl o similar).\n- Cubre creación de OC desde cero con captura de pantallas anotadas.\n- Explica cómo enviar OC por email con PDF, incluyendo configuración de plantilla.\n- Documenta flujo de recepción parcial (ej: pedir 100 unidades, recibir 50 hoy, 50 mañana).\n- Documenta recepción total y cómo el sistema actualiza automáticamente el stock.\n- Muestra cómo cancelar una OC y qué restricciones aplican (ej: no cancelar si ya se recibió).\n- Incluye sección sobre exportación a Excel (formato de columnas, filtros aplicables).\n- Guía probada por 2+ usuarios reales sin preguntas de soporte sobre estos temas.\n\n**Definition of Done**\n- Documento escrito en es-CL, con tono claro y directo para SMEs.\n- Mínimo 6 capturas de pantalla o GIFs mostrando cada flujo principal.\n- Revisado por PM y al menos 1 usuario beta; feedback incorporado.\n- Publicado en la plataforma de documentación interna/externa.\n- Trello card movida a \"Done\".\n- Link a la guía compartido en el canal de Slack #docs.\n\n**Notas tecnicas**\n- Coordinar con UI/UX para obtener capturas de pantalla actualizadas de producción.\n- Si existen restricciones de negocio en recepción (ej: no recibir más del 10% extra), documentarlas.\n- Mencionar comportamiento de campos: RUT proveedor, N° de OC, fechas, estado (Borrador, Enviada, Parcialmente recibida, Recibida, Cancelada).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Crear una guía de usuario para órdenes de compra y recepción de bienes, incluyendo creación, envío, recepción parcial/total, actualización de stock, cancelación y exportación a Excel.\n\n**Cambios / Decisiones** — Se creó el archivo `docs/guia-ordenes-de-compra.md` con la documentación completa en español (es-CL). La guía incluye capturas de pantalla y explica flujos como creación de OC, envío por email con PDF, recepción parcial y total, impacto en inventario, cancelación de OC y exportación a Excel. No se modificaron otras partes del sistema ya que es solo documentación.",
       "checklist": [
-        "Creating a purchase order",
-        "Sending to supplier (PDF + email)",
-        "Partial and full receipt flow",
-        "Stock update on receipt",
-        "Cancelling an OC",
-        "Excel export",
-        "Redactar sección 'Crear una Orden de Compra' con 3+ ejemplos",
-        "Redactar y capturar flujo 'Enviar OC por email con PDF'",
-        "Redactar y capturar recepción parcial vs. total con impacto en stock",
-        "Redactar y capturar cancelación de OC con restricciones",
-        "Redactar sección Excel export y validar formato de datos",
-        "Revisar con 2+ usuarios beta y recopilar feedback",
-        "Publicar en documentación y compartir link en Slack"
+        "Abrir docs/guia-ordenes-de-compra.md y revisar secciones completas",
+        "Verificar existencia de 6+ capturas de pantalla anotadas",
+        "Validar explicación de flujo: crear OC → enviar PDF → recibir parcial/total",
+        "Revisar sección de cancelación de OC y sus restricciones",
+        "Comprobar documentación del impacto automático en stock al recibir",
+        "Validar instrucciones para exportar a Excel y formato de columnas",
+        "Confirmar mención de estados: Borrador, Enviada, Recibida, Cancelada"
       ]
     }
   ]
