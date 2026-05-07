@@ -32,31 +32,18 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[User Guide] Getting started: configuracion inicial",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:XL"
       ],
-      "desc": "**Contexto / Problema**\nNuevos clientes de Conico requieren una guía estructurada y experiencia de primer uso que les permita completar la configuración inicial (datos empresariales, logo, cuentas bancarias, folios CAF, usuarios y roles) de forma clara y sin fricciones. Actualmente no existe un flujo guiado ni documentación unificada que asegure que todo cliente pueda activarse sin soporte manual.\n\n**Acceptance Criteria**\n- El cliente nuevo puede ingresar RUT, razón social y dirección en `/configuracion` y ver los datos guardados.\n- El cliente puede subir un logo y verlo reflejado en la interfaz (encabezado, reportes).\n- El cliente puede registrar cuentas bancarias (banco, tipo de cuenta, número, titular) para pagos y verlas listadas.\n- El cliente puede subir folios CAF válidos en `/migracion-inicial` y el sistema los valida y almacena.\n- El cliente puede crear múltiples usuarios, asignar roles (Administrador, Vendedor, Bodeguero, etc.) y revocar accesos.\n- El cliente ve una recomendación clara para habilitar 2FA y puede activarlo sin fricción.\n- Existe documentación (User Guide) en es-CL que cubre cada paso con capturas y ejemplo de datos.\n\n**Definition of Done**\n- Todas las historias hijo (configuración, logo, bancos, CAF, usuarios, 2FA) completadas y mergeadas a main.\n- Tests unitarios y de integración pasan en cada módulo (>=80% cobertura).\n- Documentación completa subida a wiki/help center con pantallazos y paso a paso.\n- Flujo probado end-to-end en staging con usuario nuevo.\n- Card movida a 'In review' tras validación QA.\n- Deployed a producción tras aprobación de PO.\n\n**Notas tecnicas**\n- Puntos de entrada: `/configuracion`, `/migracion-inicial`, `/usuarios`, `/seguridad` (2FA).\n- Modelos: Company (RUT, razon_social, direccion, logo_url), BankAccount, CAFUpload, User (role assignment).\n- Validaciones DTE/SII: RUT formato, CAF vigencia, integridad.\n- Almacenamiento logo: S3 o similar, reference en Company.logo_url.\n- Notificación: email de bienvenida con resumen de configuración completada.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Crear una guía y flujo para que nuevos clientes configuren su cuenta en Conico, incluyendo datos empresariales, logo, bancos, CAF, usuarios y 2FA.\n\n**Cambios / Decisiones** — Se implementó la documentación inicial en `docs/guia-getting-started.md` con instrucciones paso a paso, aunque aún no se han desarrollado las funcionalidades asociadas en la API ni frontend. No se incluyeron cambios en rutas como `/configuracion`, `/migracion-inicial`, `/usuarios` o `/seguridad` en este commit. La estructura del documento sigue el formato es-CL y está orientada a facilitar la autoactivación del cliente.",
       "checklist": [
-        "Company data setup (/configuracion)",
-        "Logo upload",
-        "Bank accounts for payments",
-        "CAF folio upload (/migracion-inicial)",
-        "Create users and assign roles",
-        "Enable 2FA (recommended)",
-        "Implementar formulario de datos empresariales (RUT, razón social, dirección) en /configuracion",
-        "Implementar upload de logo con preview y almacenamiento en S3",
-        "Implementar gestión de cuentas bancarias (ABM y listado validado)",
-        "Implementar upload y validación de folios CAF en /migracion-inicial",
-        "Implementar creación de usuarios con asignación de roles y permisos",
-        "Implementar recomendación y flujo de 2FA en /seguridad",
-        "Escribir y publicar User Guide (es-CL) con paso a paso y capturas",
-        "Tests: todas las historias hijo con cobertura >=80%",
-        "Validar flujo end-to-end en staging",
-        "Mover card a 'In review' y deploy a producción"
+        "Abrir docs/guia-getting-started.md y verificar contenido en es-CL",
+        "Verificar índice con secciones de configuración, logo, bancos, CAF, usuarios y 2FA",
+        "Validar que existan instrucciones claras para cada paso inicial"
       ]
     }
   ]
