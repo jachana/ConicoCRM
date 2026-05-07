@@ -32,32 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[User Guide] Gestion de Clientes y Empresas",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:XL"
       ],
-      "desc": "**Contexto / Problema**\nLos usuarios de Conico CRM necesitan documentación clara y completa sobre la gestión de datos maestros (clientes y empresas), así como funcionalidades avanzadas como sedes de despacho, historial unificado y líneas de crédito. La ausencia de guías aumenta los tiempos de onboarding y genera tickets de soporte repetitivos.\n\n**Acceptance Criteria**\n- Documentación en es-CL publicada en Help Center / Wiki interno sobre cada tema.\n- Cada guía incluye pasos secuenciales con capturas de pantalla o videos.\n- Guías reflejan el flujo actual de la aplicación (validaciones RUT, campos obligatorios, límites).\n- Ejemplos concretos: plantilla Excel, casos de uso de sedes, alertas de línea de crédito.\n- Equipo de soporte valida que las guías resuelven preguntas comunes.\n\n**Definition of Done**\n- Todas las guías redactadas y editadas en el repositorio de docs.\n- Capturas/videos actualizados con la versión actual de la UI.\n- Publicadas en el sitio de documentación (accesibles desde la app).\n- Link a Help Center integrado en flujos relevantes (ej: botón Help en formulario de cliente).\n- Trello: tarjetas hijas movidas a 'Done', tarjeta padre a 'In Review'.\n\n**Notas tecnicas**\n- Validación RUT: RFC 19.537.987-6 format, máx 11 dígitos + guión.\n- Campo SedeDespacho: tabla relacionada a empresa, máx 10 registros por empresa.\n- Timeline: auditoría de documentos (created_at, modified_by, document_type).\n- Líneas de crédito: campo `credit_limit` en tabla company, alertas en dashboard.\n- Importación Excel: plantilla en `/resources/templates/clients_import.xlsx`, validación en backend `ImportService`.\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Documentar en español la gestión de clientes y empresas en Conico CRM, incluyendo sedes, historial y líneas de crédito.\n\n**Cambios / Decisiones** — Se creó una guía en `docs/guia-clientes-empresas.md` que cubre: creación de clientes con validación de RUT, vinculación con empresas, gestión de hasta 10 sedes de despacho por empresa, visualización del historial (timeline) de documentos, configuración de líneas de crédito y uso de la plantilla Excel para importaciones. La guía incluye ejemplos y notas sobre validaciones y límites del sistema.",
       "checklist": [
-        "Creating a client (fields, RUT validation)",
-        "Creating a company and linking clients",
-        "Dispatch sites (SedeDespacho)",
-        "Timeline view: reading document history",
-        "Credit line setup and warnings",
-        "Excel import (template + validation rules)",
-        "Redactar guía: Crear cliente (campos, validación RUT, errores comunes)",
-        "Redactar guía: Crear empresa y vincular clientes",
-        "Redactar guía: Sedes de despacho (definición, límites, casos de uso)",
-        "Redactar guía: Timeline y historial de documentos",
-        "Redactar guía: Líneas de crédito (setup, advertencias, reportes)",
-        "Redactar guía: Importación Excel (descargar plantilla, validaciones, troubleshooting)",
-        "Capturar pantallas/videos y validar con equipo UX",
-        "Editar y revisar ortografía/coherencia con native speaker es-CL",
-        "Publicar en Help Center y validar links desde la app",
-        "Tests: verificar que Help Center es accesible sin errores 404",
-        "Deploy a producción y mover tarjetas a Done"
+        "Abrir guía en docs/guia-clientes-empresas.md y revisar secciones",
+        "Validar ejemplos de RUT y errores comunes en sección de clientes",
+        "Verificar que se documenten límites de sedes (máx 10) y su gestión",
+        "Revisar que se mencione el campo `credit_limit` y alertas asociadas",
+        "Confirmar que se incluye link a plantilla Excel de importación",
+        "Chequear que se describan los campos obligatorios en formularios",
+        "Validar que se muestre cómo acceder al timeline de documentos"
       ]
     }
   ]
