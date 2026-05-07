@@ -32,21 +32,46 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Core] Modulos toggle - Phase 3: admin UI",
+      "list": "In progress",
+      "name": "[Core] Modulos habilitables/deshabilitables por empresa",
       "labels": [
         "Core",
-        "Design System",
         "Goal: SaaS-ready",
         "Size:XL"
       ],
-      "desc": "**Resumen**\nTab admin de Módulos en /configuracion: listado agrupado por categoría, toggles con cascade-aware disable, modal de confirmación al apagar padre, auditoría visible por módulo, y acciones bulk (habilitar todos / apagar todos opcionales).\n\n**Cambios / Decisiones**\n- `frontend/src/components/config/ModulesTab.tsx` (527 líneas): tab completo con grupos por categoría\n- Toggle interactivo con disable visual cuando dependencia padre está off\n- Modal de confirmación cascade al apagar módulo padre con dependientes activos\n- `frontend/src/components/config/ModuleAuditModal.tsx`: historial de cambios por módulo (actor, timestamp, antes/después)\n- Acciones bulk: habilitar todos / deshabilitar todos los opcionales con cascade prompt\n- Integrado en pestaña 'Módulos' de /configuracion (visible solo para admin)",
+      "desc": "**Contexto / Problema**\nClientes usan distintos subsets de Conico (ej: boletas, inventario, RRHH). Hoy todos los módulos están siempre activos, generando confusión en UX y overhead operacional. Necesitamos un sistema flexible de habilitación/deshabilitación por empresa que respete dependencias entre módulos y simplifique SaaS onboarding.\n\n**Acceptance Criteria**\n- Un administrador puede habilitar/deshabilitar módulos opcionales por empresa desde `/configuracion/empresa`.\n- Al deshabilitar un módulo padre (ej: facturas), los módulos dependientes (pagos, cobranza) son deshabilitados automáticamente con confirmación.\n- Un usuario cuyo módulo está deshabilitado recibe 403 al intentar acceder a endpoints del módulo y ve sidebar/botones ocultos.\n- Los módulos core (empresas, clientes, productos, auth) nunca son toggleables.\n- Cada cambio de estado de módulo es auditado con timestamp, usuario y motivo (si aplica).\n- Un tenant puede tener boletas on y otro off; no interfieren.\n- La matriz de dependencias está documentada y accesible.\n\n**Definition of Done**\n- Phase 1 completada y mergeada: modelo DB, API gates, migrations Alembic.\n- Phase 2 completada y mergeada: hooks frontend, sidebar gating, route guards.\n- Phase 3 completada y mergeada: admin UI con toggle cascade y confirmaciones.\n- Tests unitarios en backend (403 response, dependency resolution) y frontend (nav hidden, routes blocked).\n- Smoke test E2E: al menos 2 tenants con configuraciones distintas funcionan.\n- Documentación en `docs/architecture/modulos.md` con matriz de dependencias.\n- Card movida a In Review; todas las subtareas cerradas.\n\n**Notas tecnicas**\n- **Schema**: `empresas.modulos_enabled` JSONB con estructura `{\"facturas\": true, \"boletas\": false, ...}` o tabla normalizada `empresa_modulos(empresa_id, slug, enabled)`.\n- **Dependency graph**: core (no toggle), optional con deps: facturas→{pagos, cobranza, nota_credito, nota_debito, libros, aprobaciones_margen}, boletas→{nota_credito}, inventario→{guias_despacho}, guias_despacho→{nota_credito}, proveedores→{ordenes_compra, facturas_compra}, etc. dte_emission auto-on si cualquiera de {facturas, boletas, GD, NC, ND} on.\n- **FastAPI decorator**: `@require_modulo('slug')` retorna 403 si empresa.modulos_enabled[slug]==false.\n- **Frontend hook**: `useModulos()` retorna set de slugs habilitados; `isModuloEnabled(slug)` boolean.\n- **Endpoints**: GET/PATCH `/empresas/{id}/modulos`, GET `/me/modulos`.\n- **Audit table**: `audit_log` con evento 'modulo_toggle' incluye old/new state.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Ir a /configuracion → pestaña Módulos y confirmar listado agrupado por categoría",
-        "Deshabilitar un módulo padre y confirmar modal de cascade con dependientes",
-        "Usar 'Habilitar todos' y verificar que todos los toggles quedan activos",
-        "Usar 'Deshabilitar todos' y confirmar modal cascade + resultado",
-        "Abrir historial de auditoría de un módulo y verificar entradas"
+        "Definir registro central de modulos (slug, label, dependencias entre modulos)",
+        "Modelo: empresas.modulos_enabled JSONB (default = todos true) o tabla empresa_modulos",
+        "Migracion Alembic + backfill default a empresas existentes",
+        "Dependency FastAPI require_modulo('boletas') que retorna 403 si deshabilitado",
+        "Aplicar dependency a todos los routers de modulos opcionales",
+        "Endpoint GET /empresas/{id}/modulos + PATCH para admin",
+        "Endpoint /me/modulos que devuelve modulos visibles al usuario actual",
+        "Frontend: hook useModulos() + helper isModuloEnabled(slug)",
+        "Frontend: filtrar Sidebar/nav por modulos habilitados",
+        "Frontend: ocultar botones 'nueva X' en dashboard/listas cuando modulo off",
+        "Frontend: route guard que redirige a /404 o /home si modulo off",
+        "UI admin en /configuracion/empresa: toggle por modulo con descripcion",
+        "Auditoria: log de cambios en modulos_enabled (audit_log)",
+        "Tests: backend 403 cuando modulo off; frontend nav hidden",
+        "Documentar matriz de modulos y dependencias",
+        "Phase 1 - backend foundation (card aparte)",
+        "Phase 2 - frontend gating (card aparte)",
+        "Phase 3 - admin UI (card aparte)",
+        "Phase 4 (futuro) - tier presets para SaaS pricing",
+        "Smoke test E2E: Conico con boletas off; otro tenant con boletas on",
+        "Documentacion en docs/architecture/modulos.md publicada",
+        "Fase 1: Diseñar registro central (slug, label, parent_slug, dependents) e implementar modelo DB con migration",
+        "Fase 1: Codificar FastAPI decorator @require_modulo() y aplicar a todos routers opcionales",
+        "Fase 1: Crear endpoints GET/PATCH /empresas/{id}/modulos y GET /me/modulos; audit logs",
+        "Fase 1: Tests unitarios (403 cuando modulo off, dependency resolution) y push a staging",
+        "Fase 2: Implementar hook useModulos() y helper isModuloEnabled()",
+        "Fase 2: Gating en Sidebar y routes (redirect a /404 si modulo off); ocultar botones CTAs",
+        "Fase 2: Tests frontend (nav items hidden, routes blocked) y push a staging",
+        "Fase 3: Admin UI en /configuracion/empresa con toggles, descripciones y cascade confirm prompts",
+        "Fase 3: Tests E2E con 2+ tenants distintos; documenta matriz en docs/architecture/modulos.md",
+        "Smoke test completo + mover card a In Review"
       ]
     }
   ]
