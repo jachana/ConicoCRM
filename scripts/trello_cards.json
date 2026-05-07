@@ -32,23 +32,32 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[User Guide] Notas de Credito y Debito",
+      "list": "In progress",
+      "name": "[User Guide] Boletas electronicas 39 y 41",
       "labels": [
         "Roadmap",
         "DTE/SII",
         "Goal: Docs",
         "Size:L"
       ],
-      "desc": "**Resumen** — Se creó una guía para usuarios de Conico sobre cómo y cuándo emitir Notas de Crédito (DTE 61) y Notas de Débito (DTE 56), incluyendo su vinculación a documentos originales, casos de uso y ejemplos.\n\n**Cambios / Decisiones** — Se redactó el documento `docs/guia-notas-credito-debito.md` con explicaciones sobre diferencias entre NC y ND, cuándo usar cada una según normativa SII, ejemplos de correcciones totales/parciales, impacto en estado de documentos y cómo usar los endpoints `POST /dte/credit-note` y `POST /dte/debit-note`. Se incluyeron códigos de razón SII y secciones para anulaciones y ajustes.",
+      "desc": "**Contexto / Problema**\nLos usuarios de Conico necesitan entender cómo emitir boletas electrónicas tipo 39 (gravadas) y 41 (exentas), diferenciando entre ventas anónimas e identificadas, y cómo gestionar casos especiales como venta de vehículos con patente. La guía debe cubrir el ciclo completo: emisión, estados DTE, métodos de pago y anulación con NC 61.\n\n**Acceptance Criteria**\n- La guía explica claramente la diferencia entre boleta tipo 39 (gravada) y tipo 41 (exenta) con ejemplos prácticos.\n- Se documenta el flujo de venta anónima usando RUT genérico 66666666-6 y el flujo de venta identificada con búsqueda de cliente.\n- Se incluyen pasos para registrar patente en vehículos (campo específico del flujo automotriz).\n- Se detallan los métodos de pago soportados en emisión de boletas.\n- Se explica el ciclo de estados DTE (emisión, aceptado, rechazado) y cómo validarlos.\n- Se documenta el proceso de anulación de boleta (generación automática de NC tipo 61) con casos de uso y limitaciones.\n- La guía incluye capturas de pantalla o videos mostrando cada flujo desde la interfaz de Conico.\n- El documento está en es-CL, formateado con títulos, subtítulos y viñetas claras.\n\n**Definition of Done**\n- Documento escrito en Markdown y publicado en la base de conocimiento de Conico.\n- Revisado y aprobado por el equipo de Soporte y Producto.\n- Incluye links internos a otras guías relacionadas (ej: DTE, métodos de pago).\n- Trello card movida a \"In review\".\n- Publicado en staging/producción según proceso de documentación.\n\n**Notas tecnicas**\n- Boleta tipo 39: IVA incluido (15%), RUT identificado o genérico 66666666-6.\n- Boleta tipo 41: Sin IVA, exclusivamente para clientes exentos o pequeños productores.\n- RUT genérico anónimo: 66666666-6 (sin validación de identidad).\n- Anulación genera NC (Nota de Crédito) tipo 61 automáticamente; requiere motivo y referencia a boleta original.\n- Estados DTE: Emitido → Aceptado | Rechazado | Reparo. Validar vía web service SII si es necesario.\n- Campo patente: presente en boletas para ventas de vehículos; formato CHI-xxxx o similar.\n- Endpoints relevantes: `/api/boletas`, `/api/boletas/{id}/cancel`, `/api/dte-status`.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir docs/guia-notas-credito-debito.md y verificar secciones claras",
-        "Validar ejemplos con líneas de detalle y cálculo de montos",
-        "Revisar que se explique cómo vincular NC/ND a factura o boleta",
-        "Confirmar diferencias entre NC (61) y ND (56) según SII",
-        "Verificar listado de casos: corrección, anulación, retención",
-        "Chequear que se mencionen endpoints POST /dte/*",
-        "Validar que se indique impacto en estado de documento original"
+        "Type 39 vs 41 difference",
+        "Anonymous sale (generic RUT 66666666-6)",
+        "Identified receiver (customer lookup)",
+        "License plate field (automotive flow)",
+        "Payment methods",
+        "DTE emission and state polling",
+        "Annulling a boleta (creates NC 61)",
+        "Documentar diferencia boleta 39 (gravada) vs 41 (exenta) con ejemplos",
+        "Explicar flujo venta anónima (RUT 66666666-6) y flujo identificada (lookup cliente)",
+        "Detallar campo patente en ventas automotrices",
+        "Listar métodos de pago soportados en emisión",
+        "Documentar ciclo DTE: emisión, estados, validación con SII",
+        "Explicar anulación de boleta y generación automática de NC 61",
+        "Incluir capturas/videos de cada flujo en interfaz Conico",
+        "Tests: revisar ortografía, links internos, formato es-CL",
+        "Deploy: publicar en KB staging, validar con Soporte; mover Trello a In review"
       ]
     }
   ]
