@@ -39,7 +39,7 @@ from app.services.producto_parser import (
     parse_productos_xlsx,
 )
 from app.utils.search import producto_ids_matching
-from app.schemas.movimiento_inventario import MovimientoListOut
+from app.schemas.movimiento_inventario import MovimientoListOut, MovimientoOut
 
 
 def _sync_tipos(producto: Producto, tipo_ids: list[int], db: Session) -> None:
@@ -374,13 +374,28 @@ def listar_movimientos_producto(
     if not db.get(Producto, producto_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
     from sqlalchemy.orm import joinedload
-    q = (
-        db.query(MovimientoInventario)
+
+    saldo_expr = func.sum(
+        MovimientoInventario.signo * MovimientoInventario.cantidad
+    ).over(
+        order_by=MovimientoInventario.created_at.asc(),
+        partition_by=MovimientoInventario.producto_id,
+    ).label("saldo")
+
+    base = (
+        db.query(MovimientoInventario, saldo_expr)
         .options(joinedload(MovimientoInventario.producto), joinedload(MovimientoInventario.usuario))
         .filter(MovimientoInventario.producto_id == producto_id)
     )
-    total = q.count()
-    items = q.order_by(MovimientoInventario.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    total = db.query(MovimientoInventario).filter(MovimientoInventario.producto_id == producto_id).count()
+    rows = base.order_by(MovimientoInventario.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+
+    items = []
+    for mov, saldo in rows:
+        out = MovimientoOut.model_validate(mov)
+        out.saldo = int(saldo) if saldo is not None else None
+        items.append(out)
+
     return MovimientoListOut(items=items, total=total, page=page, page_size=page_size)
 
 

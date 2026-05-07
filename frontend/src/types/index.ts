@@ -544,6 +544,7 @@ export interface MovimientoInventario {
   usuario_id: number | null
   lote_costo_id: number | null
   created_at: string
+  saldo: number | null
   producto?: { id: number; nombre: string; sku: string | null } | null
   usuario?: { id: number; name: string } | null
 }

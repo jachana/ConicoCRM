@@ -56,6 +56,7 @@ export default function ProductoHistorial({ productoId }: { productoId: number }
                 <TH>Fecha</TH>
                 <TH>Tipo</TH>
                 <TH className="text-right">Cant.</TH>
+                <TH className="text-right">Saldo</TH>
                 <TH>Referencia</TH>
                 <TH>Motivo</TH>
               </TR>
@@ -71,6 +72,11 @@ export default function ProductoHistorial({ productoId }: { productoId: number }
                   </TD>
                   <TD className="text-right font-num font-medium">
                     {m.signo > 0 ? '+' : '−'}{m.cantidad}
+                  </TD>
+                  <TD className="text-right font-num font-semibold">
+                    {m.saldo != null
+                      ? <span className={m.saldo < 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-900 dark:text-gray-100'}>{m.saldo}</span>
+                      : '—'}
                   </TD>
                   <TD className="text-gray-500 dark:text-gray-400">
                     {m.referencia_tipo ? `${m.referencia_tipo} #${m.referencia_id}` : '—'}

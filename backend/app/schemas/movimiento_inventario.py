@@ -54,6 +54,7 @@ class MovimientoOut(BaseModel):
     nota: str | None = None
     usuario_id: int | None = None
     created_at: datetime
+    saldo: int | None = None
     producto: ProductoMinOut | None = None
     usuario: UsuarioMinOut | None = None
     model_config = {"from_attributes": True}
