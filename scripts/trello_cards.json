@@ -32,22 +32,30 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[User Guide] Ordenes de Compra y recepcion",
+      "list": "In progress",
+      "name": "[User Guide] Reportes y exportaciones",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:L"
       ],
-      "desc": "**Resumen** — Crear una guía de usuario para órdenes de compra y recepción de bienes, incluyendo creación, envío, recepción parcial/total, actualización de stock, cancelación y exportación a Excel.\n\n**Cambios / Decisiones** — Se creó el archivo `docs/guia-ordenes-de-compra.md` con la documentación completa en español (es-CL). La guía incluye capturas de pantalla y explica flujos como creación de OC, envío por email con PDF, recepción parcial y total, impacto en inventario, cancelación de OC y exportación a Excel. No se modificaron otras partes del sistema ya que es solo documentación.",
+      "desc": "**Contexto / Problema**\nLos usuarios de Conico necesitan una guía clara y completa para utilizar los reportes de ventas, márgenes y KPIs, así como las opciones de exportación. Sin documentación centralizada, los usuarios invierten tiempo probando y contactando soporte.\n\n**Acceptance Criteria**\n- Guía accesible en Help Center o Knowledge Base con al menos 5 secciones temáticas.\n- Cada sección incluye: descripción del reporte, pasos paso a paso (con screenshots), interpretación de métricas (neto, bruto, margen %, ticket promedio).\n- Cobertura de: Reporte de Ventas (rango fechas, filtro vendedor, desglose producto/cliente), Reporte por Marca, Análisis de Márgenes (lista vs efectivo), Tarjetas KPI, exportación a Excel/CSV.\n- Usuario puede completar una tarea de análisis típica (ej: comparar márgenes por marca en 3 meses) sin contactar soporte.\n- Documentación revisada por Product y disponible en es-CL.\n\n**Definition of Done**\n- Documento redactado en Markdown y versionado en repo de docs.\n- Screenshots/GIFs actualizadas con interfaz actual de Conico.\n- Revisión aprobada por Product Owner y UX.\n- Publicado en staging de Knowledge Base.\n- Link disponible desde contextual help en cada módulo de reportes.\n- Trello card movida a \"In review\".\n\n**Notas tecnicas**\n- Paths típicos: /reportes/ventas, /reportes/marcas, /reportes/margenes, /export (Excel/CSV).\n- Métricas clave: neto (monto total - devoluciones), bruto (antes descuentos), margen % = (bruto - costo) / bruto, ticket promedio = venta total / cantidad transacciones.\n- Integración con Help Center (ej: Zendesk, GitBook, o similar).\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir docs/guia-ordenes-de-compra.md y revisar secciones completas",
-        "Verificar existencia de 6+ capturas de pantalla anotadas",
-        "Validar explicación de flujo: crear OC → enviar PDF → recibir parcial/total",
-        "Revisar sección de cancelación de OC y sus restricciones",
-        "Comprobar documentación del impacto automático en stock al recibir",
-        "Validar instrucciones para exportar a Excel y formato de columnas",
-        "Confirmar mención de estados: Borrador, Enviada, Recibida, Cancelada"
+        "Sales report: date range and vendor filter",
+        "Reading KPIs (net, gross, margin %, avg ticket)",
+        "Breakdown by product and by customer",
+        "Por-marca report: brand + customer aggregation",
+        "Margin analysis: list vs effective margin",
+        "Exporting to Excel and CSV",
+        "Redactar sección: Reporte de Ventas (rango fechas, filtro vendedor, desglose producto/cliente)",
+        "Redactar sección: Reporte por Marca (agregación marca + cliente)",
+        "Redactar sección: Análisis de Márgenes (margen lista vs efectivo, KPIs bruto/neto/margen %/ticket promedio)",
+        "Redactar sección: Filtros avanzados y tarjetas KPI",
+        "Redactar sección: Exportación a Excel y CSV (paso a paso)",
+        "Añadir screenshots/GIFs de cada flujo en interfaz actual",
+        "Revisar con Product Owner y UX; aplicar feedback",
+        "Publicar en staging de Knowledge Base y validar links",
+        "Mover Trello a 'In review'"
       ]
     }
   ]
