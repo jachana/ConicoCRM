@@ -32,22 +32,32 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[User Guide] Flujo de ventas: Cotizacion -> NV -> Factura",
+      "list": "In progress",
+      "name": "[User Guide] Gestion de Clientes y Empresas",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:XL"
       ],
-      "desc": "**Resumen** — Crear una guía de usuario que explique el flujo de ventas en Conico CRM: desde la creación de una cotización hasta la emisión de factura y registro de pagos, incluyendo reglas de negocio y validaciones del SII.\n\n**Cambios / Decisiones** — Se ha creado el archivo `docs/guia-flujo-ventas.md` con la documentación completa del flujo. La guía cubre: creación y envío de cotizaciones (`/api/quotations`), límites de crédito, aprobación de márgenes, conversión a Nota de Venta (`/api/sales-orders`), estados de NV, generación de factura DTE tipo 33 (`/api/invoices`) y registro de pagos (`/api/payments`). Incluye ejemplos, glosario SII y enlaces internos.",
+      "desc": "**Contexto / Problema**\nLos usuarios de Conico CRM necesitan documentación clara y completa sobre la gestión de datos maestros (clientes y empresas), así como funcionalidades avanzadas como sedes de despacho, historial unificado y líneas de crédito. La ausencia de guías aumenta los tiempos de onboarding y genera tickets de soporte repetitivos.\n\n**Acceptance Criteria**\n- Documentación en es-CL publicada en Help Center / Wiki interno sobre cada tema.\n- Cada guía incluye pasos secuenciales con capturas de pantalla o videos.\n- Guías reflejan el flujo actual de la aplicación (validaciones RUT, campos obligatorios, límites).\n- Ejemplos concretos: plantilla Excel, casos de uso de sedes, alertas de línea de crédito.\n- Equipo de soporte valida que las guías resuelven preguntas comunes.\n\n**Definition of Done**\n- Todas las guías redactadas y editadas en el repositorio de docs.\n- Capturas/videos actualizados con la versión actual de la UI.\n- Publicadas en el sitio de documentación (accesibles desde la app).\n- Link a Help Center integrado en flujos relevantes (ej: botón Help en formulario de cliente).\n- Trello: tarjetas hijas movidas a 'Done', tarjeta padre a 'In Review'.\n\n**Notas tecnicas**\n- Validación RUT: RFC 19.537.987-6 format, máx 11 dígitos + guión.\n- Campo SedeDespacho: tabla relacionada a empresa, máx 10 registros por empresa.\n- Timeline: auditoría de documentos (created_at, modified_by, document_type).\n- Líneas de crédito: campo `credit_limit` en tabla company, alertas en dashboard.\n- Importación Excel: plantilla en `/resources/templates/clients_import.xlsx`, validación en backend `ImportService`.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Crear cotización con líneas de producto en /clientes/crear-cotizacion",
-        "Enviar cotización por email y verificar PDF generado correctamente",
-        "Convertir cotización a NV seleccionando solo algunas líneas",
-        "Verificar transición de estado de NV: Pendiente → Entregada",
-        "Generar factura tipo 33 desde NV en /facturas/crear-desde-nv",
-        "Registrar pago parcial en factura y confirmar nuevo estado",
-        "Validar términos SII en glosario al final de la guía"
+        "Creating a client (fields, RUT validation)",
+        "Creating a company and linking clients",
+        "Dispatch sites (SedeDespacho)",
+        "Timeline view: reading document history",
+        "Credit line setup and warnings",
+        "Excel import (template + validation rules)",
+        "Redactar guía: Crear cliente (campos, validación RUT, errores comunes)",
+        "Redactar guía: Crear empresa y vincular clientes",
+        "Redactar guía: Sedes de despacho (definición, límites, casos de uso)",
+        "Redactar guía: Timeline y historial de documentos",
+        "Redactar guía: Líneas de crédito (setup, advertencias, reportes)",
+        "Redactar guía: Importación Excel (descargar plantilla, validaciones, troubleshooting)",
+        "Capturar pantallas/videos y validar con equipo UX",
+        "Editar y revisar ortografía/coherencia con native speaker es-CL",
+        "Publicar en Help Center y validar links desde la app",
+        "Tests: verificar que Help Center es accesible sin errores 404",
+        "Deploy a producción y mover tarjetas a Done"
       ]
     }
   ]
