@@ -32,28 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[User Guide] Inventario y control de stock",
       "labels": [
         "Roadmap",
         "Goal: Docs",
         "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nLos usuarios de Conico necesitan entender cómo funciona el control de stock: desde la deducción automática al emitir notas de venta, consulta de movimientos, ajustes manuales, alertas de bajo stock y el indicador de costo obsoleto. Una guía clara reduce consultas de soporte y acelera la adopción.\n\n**Acceptance Criteria**\n- Guía documenta cómo el stock se deduce automáticamente al crear/emitir una NV.\n- Explica cómo consultar stock actual por producto en catálogo e inventario.\n- Muestra cómo filtrar historial de movimientos por tipo (entrada, salida, ajuste) y rango de fechas.\n- Detalla pasos para ajuste manual (suma/resta con razón registrada).\n- Guía la configuración de umbrales de alerta de bajo stock y comportamiento del badge.\n- Incluye capturas o GIF de cada flujo; lenguaje es claro y orientado a SME.\n\n**Definition of Done**\n- Documento en Markdown/formato wiki alojado en repositorio de docs o Notion.\n- Revisión lingüística y UX (confirmado con Product).\n- Enlazado desde help center y/o onboarding in-app si aplica.\n- Trello card movida a \"In review\".\n- Versión final aprobada y deployada a staging/prod docs.\n\n**Notas tecnicas**\n- Referir endpoints: GET /products/{id}/stock, POST /inventory/adjustments, GET /inventory/movements.\n- Mencionar campos relevantes: stock_atual, min_threshold, cost_indicator, adjustment_reason.\n- Incluir ejemplos con valores reales (ej. producto con stock=50, umbral=10).\n\n<!-- conico-refined -->",
+      "desc": "**Resumen** — Crear una guía de usuario que explique el control de stock en Conico, incluyendo deducción automática, consulta de inventario, ajustes manuales y alertas.\n\n**Cambios / Decisiones** — Se creó el documento `docs/guia-inventario.md` con secciones sobre:\n- Deducción automática de stock al emitir una nota de venta.\n- Consulta de stock actual y movimientos filtrados por tipo y fecha.\n- Ajustes manuales de inventario registrando razón.\n- Configuración de umbrales de bajo stock y visualización del indicador de costo obsoleto.\nLa guía incluye ejemplos con datos reales y menciona endpoints como `GET /products/{id}/stock`, `POST /inventory/adjustments` y campos como `stock_actual`, `min_threshold`.",
       "checklist": [
-        "How stock deduction works (NV emit trigger)",
-        "Viewing current stock per product",
-        "Movement history (filters by type/date)",
-        "Manual adjustment (add/subtract + reason)",
-        "Low-stock alert thresholds config",
-        "Sidebar badge and catalog indicator",
-        "Redactar sección: Deducción automática de stock en emisión de NV (flujo + captura)",
-        "Redactar sección: Consulta de stock actual y movimientos (con filtros por tipo/fecha)",
-        "Redactar sección: Ajuste manual de inventario (pasos + campos obligatorios)",
-        "Redactar sección: Configuración de umbrales y alertas de bajo stock",
-        "Agregar sección: Indicador de costo obsoleto y badge en sidebar",
-        "Revisar con Product y ajustar según feedback",
-        "Deploy a docs (staging) y mover Trello a \"In review\""
+        "Abrir docs/guia-inventario.md y verificar estructura completa",
+        "Buscar menciones a endpoints como GET /products/{id}/stock",
+        "Verificar sección de ajuste manual con razón obligatoria",
+        "Revisar ejemplo de configuración de umbral de bajo stock",
+        "Confirmar capturas o ejemplos con valores reales incluidos",
+        "Validar documentación del indicador de costo obsoleto",
+        "Ver enlaces a secciones desde help center o onboarding"
       ]
     }
   ]
