@@ -32,19 +32,21 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[UX] Listas clickeables Phase 2 (Productos detalle + columnas configurables)",
       "labels": [
         "Core",
         "Size:M"
       ],
-      "desc": "Phase 2 del card [UX] Listas clickeables. Phase 1 cubrió rows clickeables en Clientes y Empresas (abre modal detail).\n\nFalta:\n- Productos: crear modal detail read-only (separado del modal de edición) y hacer rows clickeables.\n- Menú de columnas visibles por tabla (engranaje), persistido por usuario en localStorage.\n- Auditar otras listas (NV, Facturas, Cotizaciones, Boletas, etc.) para aplicar el mismo patrón si corresponde.",
+      "desc": "**Resumen** — Completar Phase 2 de listas clickeables: agregar modal de detalle read-only para Productos, hacer filas clickeables, y permitir configurar columnas visibles por tabla mediante un menú persistido en localStorage.\n\n**Cambios / Decisiones** — Se creó `ProductoDetailModal` con vista read-only y tabs, replicando la UX de detalles de Clientes/Empresas. Las filas de la tabla Productos ahora abren el modal al hacer clic (excepto en modo bulk). Se introdujo `ColumnsMenu` (ícono de engranaje) y el hook `useColumnVisibility` para gestionar columnas visibles, persistidas por tabla en localStorage. Se aplicó a las tablas de Clientes, Empresas y Productos. Columnas marcadas como `alwaysVisible` no pueden ocultarse.",
       "checklist": [
-        "Crear ProductoDetailModal read-only (datos + tabs)",
-        "Productos: rows clickeables → ProductoDetailModal",
-        "Diseñar componente ColumnConfigMenu (engranaje, lista de columnas con checkbox)",
-        "Persistencia preferencia columnas por usuario en localStorage (clave por tabla)",
-        "Aplicar a Clientes, Empresas, Productos, NV, Facturas"
+        "Abrir listado de Productos, hacer clic en una fila y verificar que abre ProductoDetailModal",
+        "En listado de Productos, usar Cmd+K o ?detalle=<id> y verificar redirección a modal detail",
+        "Hacer clic en el engranaje de columnas en Productos y alternar visibilidad de algunas columnas",
+        "Recargar la página y verificar que las preferencias de columnas persisten",
+        "Revisar otras tablas (Clientes, Empresas) y confirmar funcionamiento de menú de columnas",
+        "En móvil o tablet, verificar que las filas siguen siendo clickeables y abren el detalle",
+        "Probar toggles de columnas con flag alwaysVisible y validar que no se pueden ocultar"
       ]
     }
   ]
