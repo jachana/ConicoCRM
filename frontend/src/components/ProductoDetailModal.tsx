@@ -1,0 +1,129 @@
+import type { ReactNode } from 'react'
+import type { Producto } from '../types'
+import {
+  Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter,
+  Card, CardContent, Button, Badge,
+} from './ui'
+import { Pencil } from 'lucide-react'
+
+interface Props {
+  producto: Producto | null
+  onClose: () => void
+  onEdit?: (p: Producto) => void
+  showCosto?: boolean
+}
+
+function fmtCLP(n: number | string | null | undefined) {
+  const v = Number(n ?? 0)
+  if (!v) return '—'
+  return '$' + Math.round(v).toLocaleString('es-CL')
+}
+
+export default function ProductoDetailModal({ producto, onClose, onEdit, showCosto = true }: Props) {
+  if (!producto) return null
+
+  const subtitleParts = [producto.sku, producto.formato, producto.marca?.nombre].filter(Boolean)
+  const subtitle = subtitleParts.join(' · ')
+  const stockBajo = producto.stock_actual < producto.stock_minimo
+
+  return (
+    <Modal open onOpenChange={(o) => { if (!o) onClose() }}>
+      <ModalContent size="2xl" className="flex flex-col max-h-[90vh] p-0">
+        <ModalHeader className="px-6 pt-5 pb-3">
+          <ModalTitle>{producto.nombre}</ModalTitle>
+          {subtitle && <ModalDescription>{subtitle}</ModalDescription>}
+        </ModalHeader>
+
+        <ModalBody className="px-6 py-5 overflow-y-auto">
+          {onEdit && (
+            <div className="flex justify-end mb-3">
+              <Button size="sm" variant="outline" leftIcon={<Pencil size={14} />} onClick={() => onEdit(producto)}>
+                Editar
+              </Button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="SKU" value={producto.sku ?? '—'} />
+            <Field label="Formato" value={producto.formato ?? '—'} />
+            <Field label="Marca" value={producto.marca?.nombre ?? '—'} />
+            <Field label="Volumen" value={producto.volumen != null ? String(producto.volumen) : '—'} />
+
+            <Field label="Precio venta" value={fmtCLP(producto.precio_venta)} />
+            <Field label="Precio venta c/IVA" value={fmtCLP(producto.precio_con_iva)} />
+
+            {showCosto && (
+              <>
+                <Field label="Precio costo" value={fmtCLP(producto.precio_costo)} />
+                <Field label="Costo c/IVA" value={fmtCLP(producto.costo_con_iva)} />
+              </>
+            )}
+
+            <Field
+              label="Stock actual"
+              value={
+                <span className={stockBajo ? 'text-danger-600 dark:text-danger-400 font-semibold' : ''}>
+                  {producto.stock_actual}
+                  {stockBajo && <span className="ml-1 text-xs">⚠ bajo mínimo</span>}
+                </span>
+              }
+            />
+            <Field label="Stock mínimo" value={String(producto.stock_minimo)} />
+
+            {producto.descripcion && (
+              <Field label="Descripción" value={producto.descripcion} className="col-span-2" />
+            )}
+
+            {producto.tipos && producto.tipos.length > 0 && (
+              <div className="col-span-2">
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Tipos</div>
+                <div className="flex flex-wrap gap-1">
+                  {producto.tipos.map(t => (
+                    <Badge key={t.id} variant="brand" size="sm">{t.nombre}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {producto.specs && producto.specs.length > 0 && (
+              <div className="col-span-2">
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Especificaciones</div>
+                <div className="flex flex-wrap gap-1">
+                  {producto.specs.map(s => (
+                    <Badge key={s} variant="info" size="sm">{s}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {producto.tags && producto.tags.length > 0 && (
+              <div className="col-span-2">
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Tags</div>
+                <div className="flex flex-wrap gap-1">
+                  {producto.tags.map(t => (
+                    <Badge key={t} variant="neutral" size="sm">{t}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </ModalBody>
+
+        <ModalFooter>
+          <Button variant="outline" onClick={onClose}>Cerrar</Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  )
+}
+
+function Field({ label, value, className }: { label: string; value: ReactNode; className?: string }) {
+  return (
+    <Card variant="subtle" className={className}>
+      <CardContent className="py-2.5">
+        <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{label}</div>
+        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{value || '—'}</div>
+      </CardContent>
+    </Card>
+  )
+}

@@ -7,6 +7,9 @@ import { toast } from 'sonner'
 import { api } from '../lib/api'
 import type { Producto, TipoProducto } from '../types'
 import ProductoModal from '../components/ProductoModal'
+import ProductoDetailModal from '../components/ProductoDetailModal'
+import ColumnsMenu from '../components/ColumnsMenu'
+import { useColumnVisibility, type ColumnDef } from '../hooks/useColumnVisibility'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
 import {
@@ -59,6 +62,17 @@ export default function Productos() {
     setSpecsFiltro(prev => prev.includes(spec) ? prev.filter(s => s !== spec) : [...prev, spec])
   }
 
+  const COLUMNS: ColumnDef[] = [
+    { key: 'nombre',        label: 'Nombre', alwaysVisible: true },
+    { key: 'marca',         label: 'Marca' },
+    { key: 'tipos',         label: 'Tipos' },
+    { key: 'precio_costo',  label: 'Precio costo' },
+    { key: 'precio_venta',  label: 'Precio venta' },
+    { key: 'stock_actual',  label: 'Stock' },
+    { key: 'stock_minimo',  label: 'Stock mínimo' },
+  ]
+  const cols = useColumnVisibility('productos-table', COLUMNS)
+
   const availableSpecs = useMemo(() => {
     const set = new Set<string>()
     for (const p of productos) {
@@ -69,6 +83,7 @@ export default function Productos() {
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editando, setEditando] = useState<Producto | null>(null)
+  const [detalleProducto, setDetalleProducto] = useState<Producto | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<Producto | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
@@ -86,14 +101,13 @@ export default function Productos() {
 
   const [searchParams, setSearchParams] = useSearchParams()
 
-  // Deep-link: ?detalle=<id> opens producto modal (e.g. from Cmd+K)
+  // Deep-link: ?detalle=<id> opens producto detail modal (e.g. from Cmd+K)
   useEffect(() => {
     const detalleId = searchParams.get('detalle')
     if (!detalleId || productos.length === 0) return
     const target = productos.find(p => p.id === Number(detalleId))
     if (target) {
-      setEditando(target)
-      setModalOpen(true)
+      setDetalleProducto(target)
       setSearchParams(prev => {
         const next = new URLSearchParams(prev)
         next.delete('detalle')
@@ -238,6 +252,7 @@ export default function Productos() {
           )}
           {!bulkMode && (
             <>
+              <ColumnsMenu api={cols} />
               <Button variant="outline" leftIcon={<FileSpreadsheet size={16} />} onClick={exportarExcel}>
                 Exportar Excel
               </Button>
@@ -401,13 +416,13 @@ export default function Productos() {
                   </TH>
                 )}
                 <TH>Nombre</TH>
-                <TH>Marca</TH>
-                {!bulkMode && <TH>Tipos</TH>}
-                {!isVendedor && <TH className="text-right">Precio costo</TH>}
-                <TH className="text-right">Precio venta</TH>
+                {(bulkMode || cols.isVisible('marca')) && <TH>Marca</TH>}
+                {!bulkMode && cols.isVisible('tipos') && <TH>Tipos</TH>}
+                {!isVendedor && (bulkMode || cols.isVisible('precio_costo')) && <TH className="text-right">Precio costo</TH>}
+                {(bulkMode || cols.isVisible('precio_venta')) && <TH className="text-right">Precio venta</TH>}
                 {bulkMode && <TH className="text-right w-32">Precio nuevo</TH>}
-                {!bulkMode && <TH className="text-right">Stock</TH>}
-                {!bulkMode && <TH className="text-right">Mín.</TH>}
+                {!bulkMode && cols.isVisible('stock_actual') && <TH className="text-right">Stock</TH>}
+                {!bulkMode && cols.isVisible('stock_minimo') && <TH className="text-right">Mín.</TH>}
                 {!bulkMode && <TH className="w-24" />}
               </TR>
             </THead>
@@ -420,9 +435,13 @@ export default function Productos() {
                 const ovInvalido = ovNum !== null && (Number.isNaN(ovNum) || ovNum <= 0)
                 const cambia = ovNum !== null && !ovInvalido && roundCLP(ovNum) !== roundCLP(Number(p.precio_venta) || 0)
                 return (
-                  <TR key={p.id}>
+                  <TR
+                    key={p.id}
+                    interactive={!bulkMode}
+                    onClick={bulkMode ? undefined : () => setDetalleProducto(p)}
+                  >
                     {bulkMode && (
-                      <TD>
+                      <TD onClick={ev => ev.stopPropagation()}>
                         <input
                           type="checkbox"
                           aria-label={`Seleccionar ${p.nombre}`}
@@ -435,7 +454,7 @@ export default function Productos() {
                       <div className="font-medium text-gray-900 dark:text-white">{p.nombre}</div>
                       {p.descripcion && <div className="text-xs text-gray-400 truncate max-w-xs">{p.descripcion}</div>}
                       {!bulkMode && p.specs && p.specs.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
+                        <div className="flex flex-wrap gap-1 mt-1" onClick={ev => ev.stopPropagation()}>
                           {p.specs.map(s => (
                             <button
                               type="button"
@@ -455,10 +474,12 @@ export default function Productos() {
                         </div>
                       )}
                     </TD>
-                    <TD className="text-gray-500 dark:text-gray-400 text-xs">
-                      {p.marca ? p.marca.nombre : <span className="text-gray-300 dark:text-gray-600">—</span>}
-                    </TD>
-                    {!bulkMode && (
+                    {(bulkMode || cols.isVisible('marca')) && (
+                      <TD className="text-gray-500 dark:text-gray-400 text-xs">
+                        {p.marca ? p.marca.nombre : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                      </TD>
+                    )}
+                    {!bulkMode && cols.isVisible('tipos') && (
                       <TD>
                         {p.tipos && p.tipos.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
@@ -471,12 +492,16 @@ export default function Productos() {
                         )}
                       </TD>
                     )}
-                    {!isVendedor && <TD className="text-right text-gray-500 dark:text-gray-400 font-num">{formatPrecio(Number(p.precio_costo ?? 0))}</TD>}
-                    <TD className={`text-right font-num ${cambia ? 'text-gray-400 line-through' : 'font-medium text-gray-900 dark:text-white'}`}>
-                      {formatPrecio(Number(p.precio_venta))}
-                    </TD>
+                    {!isVendedor && (bulkMode || cols.isVisible('precio_costo')) && (
+                      <TD className="text-right text-gray-500 dark:text-gray-400 font-num">{formatPrecio(Number(p.precio_costo ?? 0))}</TD>
+                    )}
+                    {(bulkMode || cols.isVisible('precio_venta')) && (
+                      <TD className={`text-right font-num ${cambia ? 'text-gray-400 line-through' : 'font-medium text-gray-900 dark:text-white'}`}>
+                        {formatPrecio(Number(p.precio_venta))}
+                      </TD>
+                    )}
                     {bulkMode && (
-                      <TD className="text-right">
+                      <TD className="text-right" onClick={ev => ev.stopPropagation()}>
                         <Input
                           type="number"
                           value={ov ?? ''}
@@ -488,20 +513,24 @@ export default function Productos() {
                     )}
                     {!bulkMode && (
                       <>
-                        <TD className={`text-right font-num ${stockBajo ? 'text-danger-600 dark:text-danger-400 font-semibold' : 'text-gray-900 dark:text-white font-medium'}`}>
-                          {stockBajo ? (
-                            <Tooltip label="Stock bajo mínimo">
-                              <span className="inline-flex items-center gap-1">
-                                {p.stock_actual}
-                                <span className="text-danger-500 text-xs">⚠</span>
-                              </span>
-                            </Tooltip>
-                          ) : (
-                            p.stock_actual
-                          )}
-                        </TD>
-                        <TD className="text-right text-gray-400 font-num">{p.stock_minimo}</TD>
-                        <TD>
+                        {cols.isVisible('stock_actual') && (
+                          <TD className={`text-right font-num ${stockBajo ? 'text-danger-600 dark:text-danger-400 font-semibold' : 'text-gray-900 dark:text-white font-medium'}`}>
+                            {stockBajo ? (
+                              <Tooltip label="Stock bajo mínimo">
+                                <span className="inline-flex items-center gap-1">
+                                  {p.stock_actual}
+                                  <span className="text-danger-500 text-xs">⚠</span>
+                                </span>
+                              </Tooltip>
+                            ) : (
+                              p.stock_actual
+                            )}
+                          </TD>
+                        )}
+                        {cols.isVisible('stock_minimo') && (
+                          <TD className="text-right text-gray-400 font-num">{p.stock_minimo}</TD>
+                        )}
+                        <TD onClick={ev => ev.stopPropagation()}>
                           <div className="flex items-center gap-1">
                             <Tooltip label="Editar">
                               <Button size="icon-sm" variant="ghost" onClick={() => abrirEditar(p)}>
@@ -537,6 +566,15 @@ export default function Productos() {
           userRole={effectiveRole ?? user?.role ?? 'vendedor'}
         />
       )}
+
+      <ProductoDetailModal
+        key={detalleProducto?.id}
+        producto={detalleProducto}
+        onClose={() => setDetalleProducto(null)}
+        onEdit={canEdit ? (p) => { setDetalleProducto(null); abrirEditar(p) } : undefined}
+        showCosto={!isVendedor}
+      />
+
 
       <Modal open={!!confirmDelete} onOpenChange={open => { if (!open) { setConfirmDelete(null); setDeleteError(null) } }}>
         <ModalContent size="sm">

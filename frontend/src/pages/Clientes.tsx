@@ -7,6 +7,8 @@ import { api } from '../lib/api'
 import { validateRut } from '../utils/rut'
 import type { Cliente, Empresa } from '../types'
 import ClienteDetailModal from '../components/ClienteDetailModal'
+import ColumnsMenu from '../components/ColumnsMenu'
+import { useColumnVisibility, type ColumnDef } from '../hooks/useColumnVisibility'
 import {
   Button, Input, Textarea, FormField, Badge, EmptyState, Skeleton,
   Table, THead, TBody, TR, TH, TD,
@@ -76,6 +78,15 @@ export default function Clientes() {
 
   const empresaSeleccionada = empresas.find(e => e.id === form.empresa_id) ?? null
 
+  const COLUMNS: ColumnDef[] = [
+    { key: 'nombre',   label: 'Nombre', alwaysVisible: true },
+    { key: 'empresa',  label: 'Empresa' },
+    { key: 'rut',      label: 'RUT' },
+    { key: 'email',    label: 'Email' },
+    { key: 'telefono', label: 'Teléfono' },
+  ]
+  const cols = useColumnVisibility('clientes-table', COLUMNS)
+
   function abrirCrear() { setEditando(null); setForm(EMPTY_FORM); setError(null); setModalOpen(true) }
   function abrirEditar(c: Cliente) {
     setEditando(c)
@@ -124,6 +135,9 @@ export default function Clientes() {
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Clientes</h1>
         <div className="flex gap-2">
+          <div className="hidden md:block">
+            <ColumnsMenu api={cols} />
+          </div>
           <Button variant="outline" size="sm" leftIcon={<FileSpreadsheet />} onClick={exportExcel} className="hidden sm:inline-flex">
             Exportar Excel
           </Button>
@@ -207,27 +221,29 @@ export default function Clientes() {
             <Table>
               <THead>
                 <TR>
-                  <TH>Nombre</TH>
-                  <TH>Empresa</TH>
-                  <TH>RUT</TH>
-                  <TH>Email</TH>
-                  <TH>Teléfono</TH>
+                  {cols.isVisible('nombre')   && <TH>Nombre</TH>}
+                  {cols.isVisible('empresa')  && <TH>Empresa</TH>}
+                  {cols.isVisible('rut')      && <TH>RUT</TH>}
+                  {cols.isVisible('email')    && <TH>Email</TH>}
+                  {cols.isVisible('telefono') && <TH>Teléfono</TH>}
                   <TH className="text-right">Acciones</TH>
                 </TR>
               </THead>
               <TBody>
                 {clientes.map(c => (
                   <TR key={c.id} interactive onClick={() => setVerCliente(c)}>
-                    <TD className="font-medium text-gray-900 dark:text-gray-100">
-                      <div className="flex items-center gap-2">
-                        {c.nombre}
-                        {c.es_nuevo && <Badge variant="brand" size="sm">Nuevo</Badge>}
-                      </div>
-                    </TD>
-                    <TD className="text-gray-500 dark:text-gray-400">{c.empresa?.nombre ?? '—'}</TD>
-                    <TD className="text-gray-500 dark:text-gray-400 font-num">{c.rut ?? '—'}</TD>
-                    <TD className="text-gray-500 dark:text-gray-400">{c.email ?? '—'}</TD>
-                    <TD className="text-gray-500 dark:text-gray-400">{c.telefono ?? '—'}</TD>
+                    {cols.isVisible('nombre') && (
+                      <TD className="font-medium text-gray-900 dark:text-gray-100">
+                        <div className="flex items-center gap-2">
+                          {c.nombre}
+                          {c.es_nuevo && <Badge variant="brand" size="sm">Nuevo</Badge>}
+                        </div>
+                      </TD>
+                    )}
+                    {cols.isVisible('empresa')  && <TD className="text-gray-500 dark:text-gray-400">{c.empresa?.nombre ?? '—'}</TD>}
+                    {cols.isVisible('rut')      && <TD className="text-gray-500 dark:text-gray-400 font-num">{c.rut ?? '—'}</TD>}
+                    {cols.isVisible('email')    && <TD className="text-gray-500 dark:text-gray-400">{c.email ?? '—'}</TD>}
+                    {cols.isVisible('telefono') && <TD className="text-gray-500 dark:text-gray-400">{c.telefono ?? '—'}</TD>}
                     <TD onClick={e => e.stopPropagation()}>
                       {eliminandoId === c.id ? (
                         <div className="flex items-center justify-end gap-2 text-xs">

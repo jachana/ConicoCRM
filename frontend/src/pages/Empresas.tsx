@@ -9,6 +9,8 @@ import { validateRut, cleanRut } from '../utils/rut'
 import type { Empresa, EmpresaListItem, DeudaBulkItem, SedeDespacho } from '../types'
 import EmpresaFilters from '../components/EmpresaFilters'
 import EmpresaDetailModal from '../components/EmpresaDetailModal'
+import ColumnsMenu from '../components/ColumnsMenu'
+import { useColumnVisibility, type ColumnDef } from '../hooks/useColumnVisibility'
 import {
   Button, Input, Textarea, EmptyState, Skeleton, FormField,
   Card, CardContent,
@@ -302,11 +304,22 @@ export default function Empresas() {
     { field: 'deuda_vencida', label: 'Vencida', align: 'right' },
   ]
 
+  const COLUMNS: ColumnDef[] = [
+    { key: 'nombre',        label: 'Nombre', alwaysVisible: true },
+    { key: 'rut',           label: 'RUT' },
+    { key: 'sector',        label: 'Sector' },
+    { key: 'ultima_compra', label: 'Última Compra' },
+    { key: 'deuda_total',   label: 'Deuda' },
+    { key: 'deuda_vencida', label: 'Vencida' },
+  ]
+  const cols = useColumnVisibility('empresas-table', COLUMNS)
+
   return (
     <div className="p-4 md:p-6 max-w-7xl">
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Empresas</h1>
         <div className="flex items-center gap-2">
+          <ColumnsMenu api={cols} />
           <Button
             variant="outline"
             size="sm"
@@ -380,7 +393,7 @@ export default function Empresas() {
             <Table>
               <THead>
                 <TR>
-                  {HEADERS.map(({ field, label, align }) => (
+                  {HEADERS.filter(({ field }) => cols.isVisible(field)).map(({ field, label, align }) => (
                     <TH
                       key={field}
                       onClick={() => toggleSort(field)}
@@ -402,20 +415,32 @@ export default function Empresas() {
                   const dimmed = deudaTotal === 0
                   return (
                     <TR key={e.id} interactive className={dimmed ? 'opacity-70' : ''} onClick={() => setDetalleEmpresa(e)}>
-                      <TD className="font-medium text-gray-900 dark:text-gray-100">{e.nombre}</TD>
-                      <TD className="text-gray-500 dark:text-gray-400 font-num">{e.rut ?? '—'}</TD>
-                      <TD className="text-gray-500 dark:text-gray-400">{e.sector ?? '—'}</TD>
-                      <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">
-                        {e.ultima_compra
-                          ? new Date(e.ultima_compra + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
-                          : '—'}
-                      </TD>
-                      <TD className={`text-right font-num font-semibold whitespace-nowrap ${deudaTotal > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                        {deudaTotal > 0 ? fmt(deudaTotal) : '—'}
-                      </TD>
-                      <TD className={`text-right font-num whitespace-nowrap ${deudaVencida > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                        {deudaVencida > 0 ? fmt(deudaVencida) : '—'}
-                      </TD>
+                      {cols.isVisible('nombre') && (
+                        <TD className="font-medium text-gray-900 dark:text-gray-100">{e.nombre}</TD>
+                      )}
+                      {cols.isVisible('rut') && (
+                        <TD className="text-gray-500 dark:text-gray-400 font-num">{e.rut ?? '—'}</TD>
+                      )}
+                      {cols.isVisible('sector') && (
+                        <TD className="text-gray-500 dark:text-gray-400">{e.sector ?? '—'}</TD>
+                      )}
+                      {cols.isVisible('ultima_compra') && (
+                        <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">
+                          {e.ultima_compra
+                            ? new Date(e.ultima_compra + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
+                            : '—'}
+                        </TD>
+                      )}
+                      {cols.isVisible('deuda_total') && (
+                        <TD className={`text-right font-num font-semibold whitespace-nowrap ${deudaTotal > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                          {deudaTotal > 0 ? fmt(deudaTotal) : '—'}
+                        </TD>
+                      )}
+                      {cols.isVisible('deuda_vencida') && (
+                        <TD className={`text-right font-num whitespace-nowrap ${deudaVencida > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                          {deudaVencida > 0 ? fmt(deudaVencida) : '—'}
+                        </TD>
+                      )}
                       <TD onClick={ev => ev.stopPropagation()}>
                         {eliminandoId === e.id ? (
                           <div className="flex items-center justify-end gap-2 text-xs">
