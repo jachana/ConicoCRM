@@ -158,12 +158,13 @@ class TestPresetCRUD:
 
 from datetime import date
 from app.models.nota_venta import NotaVenta
+from app.models.factura import Factura
 from app.models.cliente import Cliente
 from decimal import Decimal
 
 
 def _seed_data(vendedor_id: int, cliente_id: int | None = None) -> None:
-    """Seeds one NV pendiente and one NV pagada for vendedor."""
+    """Seeds one NV pendiente, one NV pagada, and one Factura emitida (por cobrar) for vendedor."""
     db = TestingSession()
 
     if cliente_id is None:
@@ -196,6 +197,18 @@ def _seed_data(vendedor_id: int, cliente_id: int | None = None) -> None:
         total=Decimal("2380"),
     )
     db.add(nv2)
+
+    factura = Factura(
+        numero=8001,
+        cliente_id=cliente_id,
+        vendedor_id=vendedor_id,
+        fecha=date.today(),
+        estado="emitida",
+        total_neto=Decimal("1000"),
+        total_iva=Decimal("190"),
+        total=Decimal("1190"),
+    )
+    db.add(factura)
     db.commit()
     db.close()
 
@@ -291,7 +304,21 @@ class TestDataEndpoints:
         items = r.json()
         assert any(i["nombre"] == "Bajo Stock" for i in items)
 
-    def test_nv_por_cobrar(self, client, setup_test_db):
+    def test_factura_por_cobrar(self, client, setup_test_db):
+        _make_user("admin", "a@test.cl")
+        v = _make_user("vendedor", "v@test.cl")
+        _seed_data(v.id)
+        tok = _token(client, "a@test.cl")
+        r = client.get("/api/dashboard/data/factura_por_cobrar",
+                       headers={"Authorization": f"Bearer {tok}"})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["count"] >= 1
+        assert body["total_monto"] >= 1190
+        assert all("factura_id" in it for it in body["items"])
+
+    def test_nv_por_cobrar_legacy_alias_returns_facturas(self, client, setup_test_db):
+        """Legacy widget id `nv_por_cobrar` (still in saved layouts) must return factura data."""
         _make_user("admin", "a@test.cl")
         v = _make_user("vendedor", "v@test.cl")
         _seed_data(v.id)
@@ -301,7 +328,7 @@ class TestDataEndpoints:
         assert r.status_code == 200
         body = r.json()
         assert body["count"] >= 1
-        assert body["total_monto"] >= 1190
+        assert all("factura_id" in it for it in body["items"])
 
     def test_vendedor_cannot_call_admin_only_widgets(self, client, setup_test_db):
         _make_user("vendedor", "v@test.cl")
@@ -349,15 +376,15 @@ class TestSummary:
         for key in (
             "ventas_hoy", "ventas_hoy_count", "ventas_ayer",
             "ventas_mes", "ventas_mes_count", "ventas_mes_anterior",
-            "nv_pendientes_count", "nv_pendientes_monto",
+            "facturas_pendientes_count", "facturas_pendientes_monto",
             "cotizaciones_abiertas_count", "stock_critico_count",
         ):
             assert key in body, f"missing key: {key}"
-        # Seed inserts one pagada (today) and one pendiente
+        # Seed inserts one pagada NV (today), one pendiente NV, one emitida Factura
         assert body["ventas_hoy_count"] == 1
         assert body["ventas_mes_count"] == 1
-        assert body["nv_pendientes_count"] == 1
-        assert body["nv_pendientes_monto"] >= 1190
+        assert body["facturas_pendientes_count"] == 1
+        assert body["facturas_pendientes_monto"] >= 1190
 
     def test_summary_vendedor_scoped(self, client, setup_test_db):
         _make_user("admin", "a@test.cl")
@@ -370,7 +397,7 @@ class TestSummary:
         assert r.status_code == 200
         body = r.json()
         assert body["ventas_hoy_count"] == 0
-        assert body["nv_pendientes_count"] == 0
+        assert body["facturas_pendientes_count"] == 0
 
     def test_summary_requires_auth(self, client, setup_test_db):
         r = client.get("/api/dashboard/summary")

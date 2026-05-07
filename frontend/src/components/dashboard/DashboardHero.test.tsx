@@ -47,7 +47,7 @@ describe('DashboardHero module gating', () => {
     expect(screen.getByText('Stock crítico')).toBeTruthy()
   })
 
-  it('hides ventas tiles when facturas is off', () => {
+  it('hides ventas + por-cobrar tiles when facturas is off', () => {
     mockUseModulos.mockReturnValue({
       effective: { facturas: false, notas_venta: true, inventario: true } as never,
       isLoading: false,
@@ -56,18 +56,6 @@ describe('DashboardHero module gating', () => {
     renderHero()
     expect(screen.queryByText('Ventas hoy')).toBeNull()
     expect(screen.queryByText('Ventas mes')).toBeNull()
-    expect(screen.getByText('Por cobrar')).toBeTruthy()
-    expect(screen.getByText('Stock crítico')).toBeTruthy()
-  })
-
-  it('hides Por cobrar tile when notas_venta is off', () => {
-    mockUseModulos.mockReturnValue({
-      effective: { facturas: true, notas_venta: false, inventario: true } as never,
-      isLoading: false,
-      error: null,
-    })
-    renderHero()
-    expect(screen.getByText('Ventas hoy')).toBeTruthy()
     expect(screen.queryByText('Por cobrar')).toBeNull()
     expect(screen.getByText('Stock crítico')).toBeTruthy()
   })

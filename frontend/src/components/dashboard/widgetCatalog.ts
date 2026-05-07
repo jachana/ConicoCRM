@@ -67,11 +67,11 @@ export const WIDGET_CATALOG: WidgetDef[] = [
   },
   {
     type: 'nv_por_cobrar',
-    label: 'NV por cobrar',
+    label: 'Facturas por cobrar',
     chartTypes: ['kpi', 'table'],
     hasDateRange: false,
     adminOnly: false,
-    modulo: 'notas_venta',
+    modulo: 'facturas',
     defaultGrid: {
       kpi: { w: 3, h: 3 },
       table: { w: 6, h: 5 },

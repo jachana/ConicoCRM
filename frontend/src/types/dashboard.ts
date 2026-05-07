@@ -97,18 +97,20 @@ export interface StockCriticoItem {
   stock_minimo: number
 }
 
-export interface NVPorCobrarItem {
-  nv_id: number
+export interface FacturaPorCobrarItem {
+  factura_id: number
   numero: number
   cliente: string
   total: number
+  saldo: number
   fecha?: string | null
+  fecha_vencimiento?: string | null
 }
 
-export interface NVPorCobrarOut {
+export interface FacturaPorCobrarOut {
   total_monto: number
   count: number
-  items: NVPorCobrarItem[]
+  items: FacturaPorCobrarItem[]
 }
 
 export interface VentasDetalleItem {
@@ -140,8 +142,8 @@ export interface DashboardSummaryOut {
   ventas_mes: number
   ventas_mes_count: number
   ventas_mes_anterior: number
-  nv_pendientes_count: number
-  nv_pendientes_monto: number
+  facturas_pendientes_count: number
+  facturas_pendientes_monto: number
   cotizaciones_abiertas_count: number
   stock_critico_count: number
 }

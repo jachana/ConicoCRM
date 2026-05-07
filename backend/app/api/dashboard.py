@@ -12,6 +12,7 @@ from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.cotizacion import Cotizacion
 from app.models.dashboard_layout import DashboardLayout
+from app.models.factura import Factura
 from app.models.nota_venta import NotaVenta, NotaVentaLinea
 from app.models.producto import Producto
 from app.models.user import User
@@ -21,9 +22,9 @@ from app.schemas.dashboard_layout import (
     CreatePresetPayload,
     DashboardSummaryOut,
     EstadoCount,
+    FacturaPorCobrarItem,
+    FacturaPorCobrarOut,
     LayoutPayload,
-    NVPorCobrarItem,
-    NVPorCobrarOut,
     PresetOut,
     PresetPayload,
     StockCriticoItem,
@@ -242,27 +243,46 @@ def _data_stock_critico(db, current_user, date_from, date_to, limit):
     ]
 
 
-def _data_nv_por_cobrar(db, current_user, date_from, date_to, limit):
-    q = db.query(NotaVenta).filter(NotaVenta.estado.in_(["pendiente", "despachada"]))
-    q = _vendor_filter(q, NotaVenta, current_user)
-    nvs = q.options(joinedload(NotaVenta.cliente)).order_by(NotaVenta.numero.desc()).limit(limit).all()
-    total_monto = sum(float(nv.total) for nv in nvs)
-    items = [
-        NVPorCobrarItem(
-            nv_id=nv.id,
-            numero=nv.numero,
-            cliente=nv.cliente.nombre if nv.cliente else str(nv.cliente_id),
-            total=float(nv.total),
-            fecha=nv.fecha.isoformat() if nv.fecha else None,
-        )
-        for nv in nvs
-    ]
-    count_q = db.query(func.count(NotaVenta.id)).filter(
-        NotaVenta.estado.in_(["pendiente", "despachada"])
+_FACTURA_PENDIENTE = ("emitida", "parcial")
+
+
+def _factura_saldo(f: Factura) -> float:
+    from decimal import Decimal
+    return float(f.total - (f.monto_pagado or Decimal("0")))
+
+
+def _data_factura_por_cobrar(db, current_user, date_from, date_to, limit):
+    q = db.query(Factura).filter(Factura.estado.in_(_FACTURA_PENDIENTE))
+    q = _vendor_filter(q, Factura, current_user)
+    facturas = (
+        q.options(joinedload(Factura.cliente), joinedload(Factura.empresa))
+        .order_by(Factura.numero.desc())
+        .limit(limit)
+        .all()
     )
+    items = []
+    for f in facturas:
+        cliente_label = (
+            f.empresa.nombre if f.empresa
+            else f.cliente.nombre if f.cliente
+            else str(f.cliente_id or f.empresa_id or "—")
+        )
+        items.append(
+            FacturaPorCobrarItem(
+                factura_id=f.id,
+                numero=f.numero,
+                cliente=cliente_label,
+                total=float(f.total),
+                saldo=_factura_saldo(f),
+                fecha=f.fecha.isoformat() if f.fecha else None,
+                fecha_vencimiento=f.fecha_vencimiento.isoformat() if f.fecha_vencimiento else None,
+            )
+        )
+    total_monto = sum(it.saldo for it in items)
+    count_q = db.query(func.count(Factura.id)).filter(Factura.estado.in_(_FACTURA_PENDIENTE))
     if current_user.role == "vendedor":
-        count_q = count_q.filter(NotaVenta.vendedor_id == current_user.id)
-    return NVPorCobrarOut(total_monto=total_monto, count=count_q.scalar() or 0, items=items)
+        count_q = count_q.filter(Factura.vendedor_id == current_user.id)
+    return FacturaPorCobrarOut(total_monto=total_monto, count=count_q.scalar() or 0, items=items)
 
 
 def _data_ventas_detalle(db, current_user, date_from, date_to, limit):
@@ -342,7 +362,8 @@ _DATA_HANDLERS = {
     "top_clientes": _data_top_clientes,
     "top_productos": _data_top_productos,
     "stock_critico": _data_stock_critico,
-    "nv_por_cobrar": _data_nv_por_cobrar,
+    "nv_por_cobrar": _data_factura_por_cobrar,
+    "factura_por_cobrar": _data_factura_por_cobrar,
     "cotizaciones_por_vendedor": _data_cotizaciones_por_vendedor,
     "ventas_por_vendedor": _data_ventas_por_vendedor,
 }
@@ -380,11 +401,11 @@ def get_summary(
     ventas_mes, mes_count = _sum_count(month_start, today)
     ventas_mes_anterior, _ = _sum_count(prev_month_start, prev_month_end)
 
-    pend_q = db.query(NotaVenta).filter(NotaVenta.estado.in_(["pendiente", "despachada"]))
-    pend_q = _vendor_filter(pend_q, NotaVenta, current_user)
+    pend_q = db.query(Factura).filter(Factura.estado.in_(_FACTURA_PENDIENTE))
+    pend_q = _vendor_filter(pend_q, Factura, current_user)
     pend_rows = pend_q.all()
-    nv_pendientes_count = len(pend_rows)
-    nv_pendientes_monto = sum(float(nv.total) for nv in pend_rows)
+    facturas_pendientes_count = len(pend_rows)
+    facturas_pendientes_monto = sum(_factura_saldo(f) for f in pend_rows)
 
     cot_q = db.query(func.count(Cotizacion.id)).filter(
         Cotizacion.estado.in_(["abierta", "no_definido"])
@@ -407,8 +428,8 @@ def get_summary(
         ventas_mes=ventas_mes,
         ventas_mes_count=mes_count,
         ventas_mes_anterior=ventas_mes_anterior,
-        nv_pendientes_count=nv_pendientes_count,
-        nv_pendientes_monto=nv_pendientes_monto,
+        facturas_pendientes_count=facturas_pendientes_count,
+        facturas_pendientes_monto=facturas_pendientes_monto,
         cotizaciones_abiertas_count=cotizaciones_abiertas_count,
         stock_critico_count=stock_critico_count,
     )

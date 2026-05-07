@@ -9,7 +9,7 @@ import type { WidgetConfig } from '../../types/dashboard'
 import type {
   VentasPeriodoOut, CotizacionesAbiertasOut,
   TopClienteItem, TopProductoItem,
-  StockCriticoItem, NVPorCobrarOut, VendedorMetricaItem,
+  StockCriticoItem, FacturaPorCobrarOut, VendedorMetricaItem,
 } from '../../types/dashboard'
 import { WIDGET_BY_TYPE } from './widgetCatalog'
 
@@ -198,26 +198,26 @@ function RenderStockCritico({ data }: { data: StockCriticoItem[] }) {
   )
 }
 
-function RenderNVPorCobrar({ data, chart }: { data: NVPorCobrarOut; chart: string }) {
+function RenderFacturaPorCobrar({ data, chart }: { data: FacturaPorCobrarOut; chart: string }) {
   if (chart === 'kpi') return (
     <div className="flex flex-col items-center justify-center h-full gap-1 px-2">
       <span className="text-3xl font-bold text-warning-500 dark:text-warning-400 w-full text-center break-all leading-tight">{formatMoney(data.total_monto)}</span>
-      <span className="text-xs text-gray-500 dark:text-gray-400 text-center">{data.count} NV por cobrar</span>
+      <span className="text-xs text-gray-500 dark:text-gray-400 text-center">{data.count} factura{data.count === 1 ? '' : 's'} por cobrar</span>
     </div>
   )
   return (
     <div className="overflow-auto h-full">
       <table className="w-full text-xs">
         <thead><tr className="border-b border-gray-200 dark:border-gray-700">
-          <th className="text-left py-1 px-2 text-gray-600 dark:text-gray-300">NV</th>
+          <th className="text-left py-1 px-2 text-gray-600 dark:text-gray-300">Factura</th>
           <th className="text-left py-1 px-2 text-gray-600 dark:text-gray-300">Cliente</th>
-          <th className="text-right py-1 px-2 text-gray-600 dark:text-gray-300">Total</th>
+          <th className="text-right py-1 px-2 text-gray-600 dark:text-gray-300">Saldo</th>
         </tr></thead>
         <tbody>{data.items.map((r, i) => (
           <tr key={i} className="border-b border-gray-100 dark:border-gray-800">
             <td className="py-1 px-2 dark:text-gray-200">#{r.numero}</td>
             <td className="py-1 px-2 truncate max-w-[120px] dark:text-gray-200">{r.cliente}</td>
-            <td className="py-1 px-2 text-right dark:text-gray-200">{formatMoney(r.total)}</td>
+            <td className="py-1 px-2 text-right dark:text-gray-200">{formatMoney(r.saldo)}</td>
           </tr>
         ))}</tbody>
       </table>
@@ -254,7 +254,7 @@ function WidgetContent({ widget, data }: { widget: WidgetConfig; data: unknown }
     case 'top_clientes': return <RenderTopClientes data={data as TopClienteItem[]} chart={widget.chart} />
     case 'top_productos': return <RenderTopProductos data={data as TopProductoItem[]} chart={widget.chart} />
     case 'stock_critico': return <RenderStockCritico data={data as StockCriticoItem[]} />
-    case 'nv_por_cobrar': return <RenderNVPorCobrar data={data as NVPorCobrarOut} chart={widget.chart} />
+    case 'nv_por_cobrar': return <RenderFacturaPorCobrar data={data as FacturaPorCobrarOut} chart={widget.chart} />
     case 'cotizaciones_por_vendedor':
     case 'ventas_por_vendedor': return <RenderVendedorMetrica data={data as VendedorMetricaItem[]} chart={widget.chart} />
     default: return <div className="text-xs text-gray-500 dark:text-gray-400">Widget desconocido</div>

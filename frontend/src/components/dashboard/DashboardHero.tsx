@@ -150,7 +150,6 @@ export default function DashboardHero({ userName, presetName }: DashboardHeroPro
 
   const { effective: modulos } = useModulos()
   const showFacturas = isModuloEnabled(modulos, 'facturas')
-  const showNV = isModuloEnabled(modulos, 'notas_venta')
   const showInventario = isModuloEnabled(modulos, 'inventario')
 
   const g = greeting(userName || 'Hola')
@@ -163,7 +162,7 @@ export default function DashboardHero({ userName, presetName }: DashboardHeroPro
   const ventasDelta = data ? pctDelta(data.ventas_hoy, data.ventas_ayer) : null
   const mesDelta = data ? pctDelta(data.ventas_mes, data.ventas_mes_anterior) : null
 
-  const visibleCount = [showFacturas, showFacturas, showNV, showInventario].filter(Boolean).length
+  const visibleCount = [showFacturas, showFacturas, showFacturas, showInventario].filter(Boolean).length
 
   return (
     <div className="border-b border-gray-200 dark:border-gray-800 bg-gradient-to-br from-brand-500/5 via-transparent to-transparent dark:from-brand-500/[0.07] px-4 md:px-6 pt-4 pb-3">
@@ -218,11 +217,11 @@ export default function DashboardHero({ userName, presetName }: DashboardHeroPro
               onClick={() => setDrilldown('mes')}
             />
           )}
-          {showNV && (
+          {showFacturas && (
             <KPICard
               label="Por cobrar"
-              value={data ? `${data.nv_pendientes_count}` : '—'}
-              hint={data ? formatCLP(data.nv_pendientes_monto) : undefined}
+              value={data ? `${data.facturas_pendientes_count}` : '—'}
+              hint={data ? formatCLP(data.facturas_pendientes_monto) : undefined}
               icon={<FileText size={14} />}
               accent="amber"
               onClick={() => setDrilldown('cobrar')}

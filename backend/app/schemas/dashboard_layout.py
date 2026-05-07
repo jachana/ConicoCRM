@@ -86,18 +86,20 @@ class StockCriticoItem(BaseModel):
     stock_minimo: int
 
 
-class NVPorCobrarItem(BaseModel):
-    nv_id: int
+class FacturaPorCobrarItem(BaseModel):
+    factura_id: int
     numero: int
     cliente: str
     total: float
+    saldo: float
     fecha: str | None = None
+    fecha_vencimiento: str | None = None
 
 
-class NVPorCobrarOut(BaseModel):
+class FacturaPorCobrarOut(BaseModel):
     total_monto: float
     count: int
-    items: list[NVPorCobrarItem]
+    items: list[FacturaPorCobrarItem]
 
 
 class VentasDetalleItem(BaseModel):
@@ -129,7 +131,7 @@ class DashboardSummaryOut(BaseModel):
     ventas_mes: float
     ventas_mes_count: int
     ventas_mes_anterior: float
-    nv_pendientes_count: int
-    nv_pendientes_monto: float
+    facturas_pendientes_count: int
+    facturas_pendientes_monto: float
     cotizaciones_abiertas_count: int
     stock_critico_count: int

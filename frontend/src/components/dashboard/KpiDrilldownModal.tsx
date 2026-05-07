@@ -11,7 +11,7 @@ import {
 import { api } from '../../lib/api'
 import type {
   VentasDetalleOut,
-  NVPorCobrarOut,
+  FacturaPorCobrarOut,
   StockCriticoItem,
 } from '../../types/dashboard'
 
@@ -25,7 +25,7 @@ interface Props {
 const TITLES: Record<KpiDrilldownKind, string> = {
   hoy: 'Ventas de hoy',
   mes: 'Ventas del mes',
-  cobrar: 'Notas de venta por cobrar',
+  cobrar: 'Facturas por cobrar',
   stock: 'Productos bajo stock mínimo',
 }
 
@@ -52,7 +52,7 @@ function endpointFor(kind: KpiDrilldownKind): string {
     case 'mes':
       return `/api/dashboard/data/ventas_detalle?date_from=${monthStartIso}&date_to=${todayIso}&limit=100`
     case 'cobrar':
-      return `/api/dashboard/data/nv_por_cobrar?limit=100`
+      return `/api/dashboard/data/factura_por_cobrar?limit=100`
     case 'stock':
       return `/api/dashboard/data/stock_critico?limit=100`
   }
@@ -112,41 +112,41 @@ function VentasTable({ data }: { data: VentasDetalleOut }) {
   )
 }
 
-function PorCobrarTable({ data }: { data: NVPorCobrarOut }) {
+function PorCobrarTable({ data }: { data: FacturaPorCobrarOut }) {
   if (!data.items.length) {
-    return <EmptyState text="Sin notas de venta pendientes." />
+    return <EmptyState text="Sin facturas pendientes." />
   }
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 dark:border-gray-700 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            <th className="text-left font-medium py-2 pr-3">NV</th>
-            <th className="text-left font-medium py-2 pr-3">Fecha</th>
+            <th className="text-left font-medium py-2 pr-3">Factura</th>
+            <th className="text-left font-medium py-2 pr-3">Vence</th>
             <th className="text-left font-medium py-2 pr-3">Cliente</th>
-            <th className="text-right font-medium py-2 pl-3">Monto</th>
+            <th className="text-right font-medium py-2 pl-3">Saldo</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
           {data.items.map(it => (
-            <tr key={it.nv_id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <tr key={it.factura_id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <td className="py-2 pr-3">
                 <Link
-                  to={`/notas-venta/${it.nv_id}`}
+                  to={`/facturas/${it.factura_id}`}
                   className="text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-1"
                 >
-                  NV-{String(it.numero).padStart(4, '0')}
+                  F-{String(it.numero).padStart(5, '0')}
                   <ExternalLink size={12} />
                 </Link>
               </td>
               <td className="py-2 pr-3 text-gray-600 dark:text-gray-400 tabular-nums">
-                {it.fecha ?? '—'}
+                {it.fecha_vencimiento ?? it.fecha ?? '—'}
               </td>
               <td className="py-2 pr-3 text-gray-900 dark:text-gray-100 truncate max-w-[280px]">
                 {it.cliente}
               </td>
               <td className="py-2 pl-3 text-right font-medium text-gray-900 dark:text-gray-100 tabular-nums">
-                {formatCLP(it.total)}
+                {formatCLP(it.saldo)}
               </td>
             </tr>
           ))}
