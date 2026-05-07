@@ -32,23 +32,28 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[User Guide] Guias de Despacho 52",
+      "list": "In progress",
+      "name": "[User Guide] Usuarios, roles y permisos",
       "labels": [
         "Roadmap",
-        "DTE/SII",
         "Goal: Docs",
         "Size:L"
       ],
-      "desc": "**Resumen** — Crear una guía de usuario para Guías de Despacho (DTE tipo 52) que explique su uso, creación, emisión, anulación y distribución según normativa SII y flujo en Conico CRM.\n\n**Cambios / Decisiones** — Se creó el documento `docs/guia-guias-de-despacho.md` con secciones sobre cuándo usar la guía, tipos de motivos, creación desde cero o desde Nota de Venta, emisión DTE, anulación y distribución. Incluye ejemplos, validaciones y requisitos legales. No se modificaron archivos de la app ni se agregaron librerías.",
+      "desc": "**Contexto / Problema**\nLos usuarios de Conico necesitan documentación clara sobre cómo gestionar usuarios, entender la jerarquía de roles (Admin/SubAdmin/Vendedor), configurar permisos granulares y 2FA. Actualmente no existe guía consolidada que evite confusiones en setup inicial y troubleshooting.\n\n**Acceptance Criteria**\n- Usuario Admin encuentra guía paso a paso para crear y desactivar usuarios.\n- Matriz de permisos documenta diferencias entre Admin, SubAdmin y Vendedor (funcionalidades, restricciones).\n- Se explica cómo Admin puede hacer override de permisos por usuario individual.\n- Admin entiende cómo usar «View As» (impersonación) para verificar acceso de otros usuarios.\n- Guía incluye pasos para activar 2FA en cuentas de usuario.\n- Guía es accesible desde Centro de Ayuda o Knowledge Base dentro de la aplicación.\n- Todos los pasos son verificables con screenshots o GIF demostrativo.\n\n**Definition of Done**\n- Documento redactado en formato markdown o wiki (es-CL) con estructura jerárquica.\n- Screenshots/GIFs de cada paso capturados en ambiente staging o producción.\n- Revisión técnica por PM/Product Owner confirma precisión de roles y permisos.\n- Revisión editorial verifica claridad, ortografía y tono amigable.\n- Documento publicado en Centro de Ayuda (Zendesk, GitBook, o wiki corporativo).\n- Trello card movida a «Done».\n- Link a guía agregado en onboarding o correo de bienvenida si aplica.\n\n**Notas tecnicas**\n- Roles se definen en schema: user.role (enum: 'Admin', 'SubAdmin', 'Vendedor').\n- Permisos granulares en tabla permission_overrides (user_id, feature_key, allowed).\n- 2FA configurado vía módulo auth (TOTP o SMS, según settings).\n- «View As» endpoint: GET /api/v1/admin/impersonate?user_id=X.\n- Tomar en cuenta configuración de MFA obligatoria por role en company_settings.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir docs/guia-guias-de-despacho.md y revisar estructura general",
-        "Verificar sección 'Motivos' con ejemplos de uso real",
-        "Validar instrucciones de creación desde NV y desde cero",
-        "Revisar sección de emisión: borrador → emitida y validaciones",
-        "Confirmar proceso de anulación y plazos según SII",
-        "Verificar sección de distribución: PDF y envío de email",
-        "Validar que todos los pasos coincidan con UI actual de Conico"
+        "Creating a new user",
+        "Role overview: Admin vs SubAdmin vs Vendedor",
+        "Permission matrix toggles",
+        "Activating and deactivating users",
+        "Admin View As feature",
+        "2FA setup for users",
+        "Documentar pasos para crear usuario (email, nombre, rol inicial).",
+        "Crear matriz de permisos: Admin vs SubAdmin vs Vendedor (funcionalidades y restricciones).",
+        "Explicar cómo hacer override de permisos por usuario (UI y flujo).",
+        "Documentar activación/desactivación de usuarios y efectos en acceso.",
+        "Incluir guía: cómo Admin usa View As y para qué sirve.",
+        "Documentar setup de 2FA (TOTP o SMS, pasos cliente).",
+        "Revisar y publicar en Centro de Ayuda; mover Trello a Done."
       ]
     }
   ]
