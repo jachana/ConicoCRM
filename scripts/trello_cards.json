@@ -32,22 +32,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[User Guide] Gestion de Clientes y Empresas",
+      "list": "In progress",
+      "name": "[Docs] Database schema reference (ERD)",
       "labels": [
         "Roadmap",
         "Goal: Docs",
-        "Size:XL"
+        "Size:L"
       ],
-      "desc": "**Resumen** — Documentar en español la gestión de clientes y empresas en Conico CRM, incluyendo sedes, historial y líneas de crédito.\n\n**Cambios / Decisiones** — Se creó una guía en `docs/guia-clientes-empresas.md` que cubre: creación de clientes con validación de RUT, vinculación con empresas, gestión de hasta 10 sedes de despacho por empresa, visualización del historial (timeline) de documentos, configuración de líneas de crédito y uso de la plantilla Excel para importaciones. La guía incluye ejemplos y notas sobre validaciones y límites del sistema.",
+      "desc": "**Contexto / Problema**\nDesarrolladores y técnicos necesitan una referencia clara del modelo de datos de Conico CRM para entender relaciones, constraints y estrategia de migración. Actualmente no existe documentación centralizada del ERD ni flujo de Alembic, generando confusión en onboarding y mantenimiento.\n\n**Acceptance Criteria**\n- ERD visual (Mermaid o draw.io) muestra todas las tablas principales y relaciones FK con cardinalidad.\n- Documento refence incluye por cada módulo (CRM, DTE, Inventory, Approvals, Tasks): nombre tabla, columnas, tipos, constraints (PK, FK, UNIQUE), nullable, índices.\n- Documento explica reglas de cascade en FKs críticas (ej. borrado de cliente vs documentos).\n- Sección \"Flujo Alembic\" describe: generación de migraciones, aplicación, rollback, y cómo verificar `alembic_version`.\n- Documentación está en formato Markdown en el repo (ej. `/docs/database-schema.md`).\n\n**Definition of Done**\n- ERD completado y validado contra schema actual.\n- Documento Markdown generado con todas las secciones.\n- Revisado por al menos un Senior/Tech Lead.\n- Agregado a índice de documentación principal.\n- Trello card movida a \"In review\" y luego \"Done\".\n- Publicado en wiki/docs accesible al equipo.\n\n**Notas tecnicas**\n- Revisar `alembic/versions/` y `models/` para determinar tablas y migraciones.\n- Considerar nullable fields en relaciones (ej. cliente_id en documentos borrador).\n- Incluir índices multi-columna si existen (ej. (company_id, date) en DTE).\n- Verificar cascade rules en `sqlalchemy.ForeignKey(..., ondelete='CASCADE')` o equivalente.\n- Considerar diagrama separado por módulo si ERD principal es muy complejo.\n\n<!-- conico-refined -->",
       "checklist": [
-        "Abrir guía en docs/guia-clientes-empresas.md y revisar secciones",
-        "Validar ejemplos de RUT y errores comunes en sección de clientes",
-        "Verificar que se documenten límites de sedes (máx 10) y su gestión",
-        "Revisar que se mencione el campo `credit_limit` y alertas asociadas",
-        "Confirmar que se incluye link a plantilla Excel de importación",
-        "Chequear que se describan los campos obligatorios en formularios",
-        "Validar que se muestre cómo acceder al timeline de documentos"
+        "ERD diagram (Mermaid or draw.io)",
+        "Table per module: CRM, DTE, Inventory, Approvals, Tasks",
+        "Key FK relationships and cascade rules",
+        "Alembic workflow (generate, apply, rollback)",
+        "alembic_version head verification step",
+        "Extraer schema actual y generar ERD visual (Mermaid o draw.io) con todas las tablas y FKs",
+        "Documentar por módulo: CRM, DTE, Inventory, Approvals, Tasks con columnas, tipos, constraints e índices",
+        "Mapear y explicar relaciones FK principales y reglas de cascade",
+        "Redactar sección de flujo Alembic: generación, aplicación, rollback y verificación de alembic_version",
+        "Revisar documento con Senior/Tech Lead y ajustar según feedback",
+        "Publicar documento en `/docs/database-schema.md` y agregar a índice",
+        "Mover card a \"In review\" en Trello y validar completitud antes de marcar \"Done\""
       ]
     }
   ]
