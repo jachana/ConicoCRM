@@ -1,10 +1,87 @@
 # Conico — Arquitectura de Alto Nivel
 
-> Estado: documento vivo. Última revisión: 2026-04-24. Mantener sincronizado con `PROGRESS.md` y `docs/backlog.md`.
+> Estado: documento vivo. Última revisión: 2026-05-06. Mantener sincronizado con `PROGRESS.md` y `docs/backlog.md`.
 >
 > Variables de entorno: ver [`docs/environment-variables.md`](environment-variables.md) para la referencia canónica (backend, frontend, Celery, backups, Sentry).
 >
 > Integraciones externas: ver [`docs/integrations/dte-lioren.md`](integrations/dte-lioren.md) para el deep-dive de la integración DTE/Lioren (auth, payloads, webhook HMAC, polling, CAF).
+>
+> Referencia de esquema: ver [`docs/database-schema.md`](database-schema.md) para ERD completo, columnas y flujo Alembic.
+
+---
+
+## Diagrama de componentes
+
+```mermaid
+graph TB
+    subgraph Cliente["Cliente (browser)"]
+        FE["React 18 + Vite\n(TypeScript, TanStack Query,\nTailwind, Radix)"]
+    end
+
+    subgraph Backend["Backend (FastAPI)"]
+        API["FastAPI\n/api/*"]
+        AUTH["JWT Auth\n(access + refresh)"]
+        WORKER["Celery Worker"]
+        BEAT["Celery Beat\n(scheduler)"]
+    end
+
+    subgraph Data["Datos"]
+        PG[("PostgreSQL\n(prod)")]
+        REDIS[("Redis\n(cache + broker)")]
+    end
+
+    subgraph External["Externos"]
+        LIOREN["Lioren\n(proveedor SII)"]
+        SII["SII Chile"]
+        S3["S3 / Storage\n(logos, adjuntos)"]
+        SENTRY["Sentry\n(errores)"]
+    end
+
+    FE -- "HTTP/REST\n(axios)" --> API
+    API -- "SQLAlchemy ORM" --> PG
+    API -- "cache / sessions" --> REDIS
+    API -- "enqueue task" --> REDIS
+    REDIS -- "broker" --> WORKER
+    BEAT -- "scheduled tasks" --> REDIS
+    WORKER -- "DTE XML\n(HMAC signed)" --> LIOREN
+    LIOREN -- "forwarding" --> SII
+    SII -- "status callbacks" --> LIOREN
+    LIOREN -- "webhook" --> API
+    API -- "upload/download" --> S3
+    API -- "errors" --> SENTRY
+    WORKER -- "errors" --> SENTRY
+```
+
+## Pipeline de emisión DTE
+
+```mermaid
+sequenceDiagram
+    actor U as Usuario
+    participant FE as Frontend
+    participant API as FastAPI
+    participant DB as PostgreSQL
+    participant W as Celery Worker
+    participant L as Lioren (SII)
+
+    U->>FE: Clic "Emitir DTE"
+    FE->>API: POST /api/facturas/{id}/emitir
+    API->>DB: Verifica CAF vigente y folios disponibles
+    API->>DB: Asigna folio; dte_estado = "pendiente"
+    API->>W: Encola task emit_dte(factura_id)
+    API-->>FE: 202 Accepted
+
+    W->>DB: Lee factura + lineas + CAF
+    W->>W: Genera XML DTE firmado
+    W->>L: POST /dte/emitir (XML + HMAC)
+    L-->>W: 200 OK (token de seguimiento)
+    W->>DB: dte_estado = "procesando"
+
+    L->>API: Webhook POST /api/dte/callback
+    API->>DB: dte_estado = "aceptada" | "rechazada"
+    API-->>L: 200 OK
+
+    Note over FE,DB: Frontend polling /api/facturas/{id}<br/>actualiza badge DTE en tiempo real
+```
 
 ---
 
