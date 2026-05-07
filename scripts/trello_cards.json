@@ -32,21 +32,20 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Inventario] Solo facturas mueven stock (no NV)",
+      "list": "In progress",
+      "name": "PDF cotización no muestra validez/vigencia",
       "labels": [
-        "Core",
-        "Size:S"
+        "Bug"
       ],
-      "desc": "**Resumen** — Solo la emisión de facturas y boletas debe mover stock, no las notas de venta. Se corrigió la lógica para que NV no descuente stock.\n\n**Cambios / Decisiones** — Se eliminó el descuento de stock en todas las operaciones de NV (crear, aprobar costo, editar líneas). Se creó `app/services/factura_stock.py` con la lógica centralizada para descontar stock al emitir factura o boleta. Los puntos afectados fueron: `nota_ventas.py` (movimientos convertidos en no-op), `facturas.py` (llama al nuevo servicio), `aprobaciones_costo.py` (ya no mueve stock). Se actualizaron tests para validar que NV no genere movimientos.",
+      "desc": "REABIERTO 2026-04-28: el commit 051fddd (fix(cotizacion): mostrar validez/vigencia en PDF) no se ve reflejado en el PDF generado — verificar despliegue, template path y caché. La fecha de validez sigue sin aparecer.\n\nOriginal: el PDF generado para cotizaciones no incluye la fecha de validez (vigencia). El cliente no sabe hasta cuándo es válida la oferta.",
       "checklist": [
-        "Crear NV y verificar que stock_actual no cambia",
-        "Aprobar costo de NV y verificar sin movimientos de stock",
-        "Editar líneas de NV y verificar que stock no se vea afectado",
-        "Emitir factura y verificar descuento en stock_actual",
-        "Anular factura y verificar reversa de stock",
-        "Crear boleta y verificar que mueve stock",
-        "Revisar movimientos de inventario no incluyan NV"
+        "Identificar campo de vigencia en modelo Cotización",
+        "Agregar campo 'Válido hasta' en template PDF de cotización",
+        "Manejar caso donde vigencia es null/no definida",
+        "REGRESIÓN: reproducir en producción/staging — confirmar que el deploy 051fddd está vivo (Coolify last_online_at + commit)",
+        "Verificar template renderiza el campo (no else silencioso por null)",
+        "Forzar regeneración (no servir PDF cacheado)",
+        "Test E2E: crear cotización con vigencia → descargar PDF → assert texto 'Válido hasta' presente"
       ]
     }
   ]
