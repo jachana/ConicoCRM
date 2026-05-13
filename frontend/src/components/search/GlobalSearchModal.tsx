@@ -21,15 +21,15 @@ interface Props {
   onOpenChange: (v: boolean) => void
 }
 
-const URL_BY_TIPO: Record<RecentTipo, (id: number) => string> = {
+export const URL_BY_TIPO: Record<RecentTipo, (id: number) => string> = {
   producto:      id => `/catalogo?detalle=${id}`,
-  cliente:       () => '/clientes',
+  cliente:       id => `/clientes?detalle=${id}`,
   empresa:       id => `/empresas?detalle=${id}`,
   cotizacion:    id => `/cotizaciones/${id}`,
   nota_venta:    id => `/notas-venta/${id}`,
   factura:       id => `/facturas/${id}`,
   orden_compra:  id => `/ordenes-compra/${id}`,
-  empleado:      () => '/rrhh',
+  empleado:      id => `/rrhh?detalle=${id}`,
 }
 
 export default function GlobalSearchModal({ open, onOpenChange }: Props) {

@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 import RRHH from './RRHH'
 
 vi.mock('../lib/api', () => ({
@@ -15,9 +16,13 @@ vi.mock('../lib/api', () => ({
 
 const { api } = await import('../lib/api')
 
-function wrap(ui: React.ReactNode) {
+function wrap(ui: React.ReactNode, initialEntries: string[] = ['/']) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>)
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={initialEntries}>{ui}</MemoryRouter>
+    </QueryClientProvider>
+  )
 }
 
 beforeEach(() => {
@@ -49,6 +54,20 @@ describe('RRHH', () => {
     await screen.findByText('RRHH')
     fireEvent.click(screen.getByText(/agregar empleado/i))
     expect(screen.getByText(/nuevo empleado/i)).toBeTruthy()
+  })
+
+  it('abre modal de detalle automáticamente cuando la URL trae ?detalle=<id>', async () => {
+    vi.mocked(api.get).mockImplementation((url: string) => {
+      if (url.includes('/documentos')) return Promise.resolve({ data: [] })
+      if (url.includes('/vacaciones')) return Promise.resolve({ data: [] })
+      if (url.match(/\/api\/empleados\/\d+$/)) {
+        return Promise.resolve({ data: { id: 5, nombre: 'Pedro Soto', cargo: 'Vendedor', sueldo_base: null, fecha_ingreso: null, is_active: true, created_at: '' } })
+      }
+      return Promise.resolve({ data: [] })
+    })
+    wrap(<RRHH />, ['/rrhh?detalle=5'])
+    await waitFor(() => expect(screen.getByText('Pedro Soto')).toBeTruthy())
+    expect(screen.getByText(/documentos/i)).toBeTruthy()
   })
 
   it('abre modal de detalle al hacer clic en un empleado', async () => {

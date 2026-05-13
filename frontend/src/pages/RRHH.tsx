@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Search, Pencil, Trash2, Upload, Download, Users } from 'lucide-react'
 import { toast } from 'sonner'
@@ -52,6 +53,26 @@ export default function RRHH() {
     queryKey: ['empleados', busqueda],
     queryFn: () => api.get(`/api/empleados/?q=${encodeURIComponent(busqueda)}`).then(r => r.data),
   })
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    const detalleId = searchParams.get('detalle')
+    if (!detalleId || detalle) return
+    const found = empleados.find(e => e.id === Number(detalleId))
+    if (found) {
+      setDetalle(found)
+      const next = new URLSearchParams(searchParams)
+      next.delete('detalle')
+      setSearchParams(next, { replace: true })
+      return
+    }
+    api.get(`/api/empleados/${detalleId}`).then(r => {
+      setDetalle(r.data)
+      const next = new URLSearchParams(searchParams)
+      next.delete('detalle')
+      setSearchParams(next, { replace: true })
+    }).catch(() => {})
+  }, [searchParams, empleados, detalle, setSearchParams])
 
   const { data: docs = [] } = useQuery<EmpleadoDocumento[]>({
     queryKey: ['empleado-docs', detalle?.id],

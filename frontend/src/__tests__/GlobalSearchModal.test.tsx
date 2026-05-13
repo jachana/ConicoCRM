@@ -59,4 +59,23 @@ describe('GlobalSearchModal', () => {
     render(wrap(<GlobalSearchModal open={true} onOpenChange={() => {}} />))
     expect(screen.getByText(/Empieza a escribir/i)).toBeInTheDocument()
   })
+
+})
+
+describe('URL_BY_TIPO', () => {
+  it('cliente includes id deep-link', async () => {
+    const { URL_BY_TIPO } = await import('../components/search/GlobalSearchModal')
+    expect(URL_BY_TIPO.cliente(42)).toBe('/clientes?detalle=42')
+  })
+
+  it('empleado includes id deep-link', async () => {
+    const { URL_BY_TIPO } = await import('../components/search/GlobalSearchModal')
+    expect(URL_BY_TIPO.empleado(7)).toBe('/rrhh?detalle=7')
+  })
+
+  it('empresa, producto continue to use id deep-link', async () => {
+    const { URL_BY_TIPO } = await import('../components/search/GlobalSearchModal')
+    expect(URL_BY_TIPO.empresa(3)).toBe('/empresas?detalle=3')
+    expect(URL_BY_TIPO.producto(9)).toBe('/catalogo?detalle=9')
+  })
 })
