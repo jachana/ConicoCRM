@@ -32,21 +32,22 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "selecting a person with ctrl+k sould lead me to the open modal with that person",
       "labels": [
         "Size:S",
         "Bug",
         "Goal: UX Polish"
       ],
-      "desc": "**Contexto / Problema**\nAl usar Cmd+K (búsqueda global) y seleccionar un cliente o empleado, no se abre el modal de detalle: el cliente lleva a /clientes (lista) y el empleado a /rrhh (lista), perdiendo el contexto del seleccionado.\n\n**Causa**\nEn frontend/src/components/search/GlobalSearchModal.tsx (URL_BY_TIPO):\n- cliente: () => /clientes  -- ignora el id\n- empleado: () => /rrhh     -- ignora el id\n\n**Propuesta**\n- cliente: id => /clientes?detalle=<id>  (la pagina Clientes ya soporta deep-link, ver Clientes.tsx:54-72)\n- empleado: id => /rrhh?detalle=<id>     (anadir soporte deep-link en RRHH.tsx)\n\n**Acceptance Criteria**\n- Cmd+K -> seleccionar cliente -> /clientes con el modal de detalle abierto en ese cliente.\n- Cmd+K -> seleccionar empleado -> /rrhh con el modal de detalle abierto en ese empleado.\n- Si el id no existe, abrir la lista sin modal (no romper).",
+      "desc": "**Resumen** — Al seleccionar un cliente o empleado desde la búsqueda global (Cmd+K), se debe abrir el modal de detalle correspondiente en lugar de solo ir a la lista general.\n\n**Cambios / Decisiones** — Se modificó `URL_BY_TIPO` en `frontend/src/components/search/GlobalSearchModal.tsx` para incluir el ID en la URL como `?detalle=<id>` tanto para clientes como empleados. Se añadió soporte de deep-link en `frontend/src/pages/RRHH.tsx` para manejar el parámetro `detalle` y abrir automáticamente el modal, similar a lo ya implementado en `Clientes.tsx`. Se actualizaron y agregaron tests en `frontend/src/__tests__/GlobalSearchModal.test.tsx` y `frontend/src/pages/RRHH.test.tsx` para validar el comportamiento.",
       "checklist": [
-        "Fix URL_BY_TIPO.cliente para pasar el id",
-        "Anadir deep-link ?detalle= en RRHH.tsx",
-        "Fix URL_BY_TIPO.empleado para pasar el id",
-        "Test: cliente seleccionado en Cmd+K abre modal",
-        "Test: empleado seleccionado en Cmd+K abre modal",
-        "Mover tarjeta a In review"
+        "Abrir Cmd+K, buscar y seleccionar un cliente existente",
+        "Verificar que se abre /clientes?detalle=<id> con modal abierto",
+        "Abrir Cmd+K, buscar y seleccionar un empleado existente",
+        "Verificar que se abre /rrhh?detalle=<id> con modal abierto",
+        "Probar cliente inexistente: /clientes?detalle=9999",
+        "Probar empleado inexistente: /rrhh?detalle=9999",
+        "Verificar que se muestra la lista sin romperse"
       ]
     }
   ]
