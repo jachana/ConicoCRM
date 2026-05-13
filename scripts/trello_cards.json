@@ -33,19 +33,20 @@
   "cards": [
     {
       "list": "In progress",
-      "name": "PDF cotización no muestra validez/vigencia",
+      "name": "[NV] Listado: reemplazar columna Contacto por Empresa (con link)",
       "labels": [
-        "Bug"
+        "Goal: UX Polish",
+        "Size:S"
       ],
-      "desc": "REABIERTO 2026-04-28: el commit 051fddd (fix(cotizacion): mostrar validez/vigencia en PDF) no se ve reflejado en el PDF generado — verificar despliegue, template path y caché. La fecha de validez sigue sin aparecer.\n\nOriginal: el PDF generado para cotizaciones no incluye la fecha de validez (vigencia). El cliente no sabe hasta cuándo es válida la oferta.",
+      "desc": "**Contexto / Problema**\nEn el listado de Notas de Venta (`/notas-venta`), las columnas son `Nº | Fecha | Cliente | Contacto | …`. La columna 'Contacto' (texto libre) aporta poco valor en el listado; la información que el usuario realmente quiere ver junto al Cliente es la **Empresa** asociada.\n\n**Propuesta**\n- Reemplazar la columna 'Contacto' por 'Empresa'.\n- El nombre de Empresa debe ser un link clickable (igual que ya lo es Cliente, vía `EntityLink kind=\"empresa\"`).\n\n**Acceptance Criteria**\n- Listado de NV muestra columnas: Nº | Fecha | Cliente | Empresa | …\n- Click en Empresa navega al detalle de la empresa.\n- Si la NV no tiene empresa asociada, mostrar '—'.\n- Búsqueda y filtros del listado siguen funcionando.\n\n**Notas técnicas**\n- Archivo: `frontend/src/pages/NotaVentas.tsx` (líneas 193-231).\n- `EntityLink` ya soporta `kind=\"empresa\"`; reusar.\n- El modelo `NotaVenta` ya expone `empresa_id` y debería poder anidar `empresa` (verificar serializer backend).\n- Considerar si replicar el cambio en listado de Cotizaciones / Facturas / Boletas para consistencia (probable follow-up).",
       "checklist": [
-        "Identificar campo de vigencia en modelo Cotización",
-        "Agregar campo 'Válido hasta' en template PDF de cotización",
-        "Manejar caso donde vigencia es null/no definida",
-        "REGRESIÓN: reproducir en producción/staging — confirmar que el deploy 051fddd está vivo (Coolify last_online_at + commit)",
-        "Verificar template renderiza el campo (no else silencioso por null)",
-        "Forzar regeneración (no servir PDF cacheado)",
-        "Test E2E: crear cotización con vigencia → descargar PDF → assert texto 'Válido hasta' presente"
+        "Verificar que el endpoint de NV devuelve `empresa` anidada (id + nombre)",
+        "Actualizar tabla en `NotaVentas.tsx`: columna Contacto → Empresa",
+        "Renderizar Empresa con `<EntityLink kind=\"empresa\" id={nv.empresa.id}>`",
+        "Manejar NV sin empresa (mostrar '—')",
+        "Actualizar tests de listado (`NotaVentas.test.tsx`)",
+        "Validar que filtros/búsqueda no se rompen",
+        "Mover tarjeta a In review"
       ]
     }
   ]
