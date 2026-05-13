@@ -191,7 +191,7 @@ export default function NotaVentas() {
                 <TH>Nº</TH>
                 <TH>Fecha</TH>
                 <TH>Cliente</TH>
-                <TH>Contacto</TH>
+                <TH>Empresa</TH>
                 <TH className="text-right">Total</TH>
                 <TH>Estado</TH>
                 <TH>Encargado</TH>
@@ -228,7 +228,11 @@ export default function NotaVentas() {
                       <EntityLink kind="cliente" id={nv.cliente.id}>{nv.cliente.nombre}</EntityLink>
                     ) : (nv.cliente?.nombre ?? '-')}
                   </TD>
-                  <TD className="text-gray-500 dark:text-gray-400">{nv.contacto ?? '-'}</TD>
+                  <TD className="text-gray-500 dark:text-gray-400" onClick={e => e.stopPropagation()}>
+                    {nv.empresa?.id ? (
+                      <EntityLink kind="empresa" id={nv.empresa.id}>{nv.empresa.nombre}</EntityLink>
+                    ) : '—'}
+                  </TD>
                   <TD className="font-num font-medium text-gray-900 dark:text-gray-100 text-right whitespace-nowrap">
                     {fmtMoney(nv.total)}
                   </TD>

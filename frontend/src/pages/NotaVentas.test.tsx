@@ -53,6 +53,38 @@ describe('NotaVentas', () => {
     expect(await screen.findByText('NV-00001')).toBeTruthy()
   })
 
+  it('muestra columna Empresa con link cuando hay empresa', async () => {
+    vi.mocked(api.get).mockResolvedValue(listResponse([{
+      id: 1, numero: 1, cotizacion_id: null,
+      cliente_id: 1, vendedor_id: null, empresa_id: 42,
+      contacto: null, fecha: '2026-04-18',
+      estado: 'pendiente', nota: null, correo: null,
+      total_neto: 1000, total_iva: 190, total: 1190,
+      created_at: '2026-04-18T00:00:00Z', updated_at: '2026-04-18T00:00:00Z',
+      cliente: { id: 1, nombre: 'Cliente X', rut: null, email: null, telefono: null },
+      empresa: { id: 42, nombre: 'Acme SpA' },
+    }]))
+    wrap(<NotaVentas />)
+    expect(await screen.findByText('Empresa')).toBeTruthy()
+    const link = await screen.findByRole('link', { name: 'Acme SpA' })
+    expect(link.getAttribute('href')).toBe('/empresas?detalle=42')
+  })
+
+  it('muestra "—" cuando la NV no tiene empresa', async () => {
+    vi.mocked(api.get).mockResolvedValue(listResponse([{
+      id: 1, numero: 1, cotizacion_id: null,
+      cliente_id: 1, vendedor_id: null, empresa_id: null,
+      contacto: 'Juan', fecha: '2026-04-18',
+      estado: 'pendiente', nota: null, correo: null,
+      total_neto: 0, total_iva: 0, total: 0,
+      created_at: '2026-04-18T00:00:00Z', updated_at: '2026-04-18T00:00:00Z',
+      cliente: { id: 1, nombre: 'Cliente X', rut: null, email: null, telefono: null },
+      empresa: null,
+    }]))
+    wrap(<NotaVentas />)
+    expect(await screen.findByText('—')).toBeTruthy()
+  })
+
   it('muestra badge de estado', async () => {
     vi.mocked(api.get).mockResolvedValue(listResponse([{
       id: 1, numero: 1, cotizacion_id: null,
