@@ -32,23 +32,19 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[UX] SKU clickable en documentos → abre catálogo con producto",
       "labels": [
         "Goal: UX Polish",
         "Size:S"
       ],
-      "desc": "**Contexto / Problema**\nEn cotizaciones, notas de venta, facturas, boletas y guías, el SKU se muestra como texto plano. El usuario no puede saltar rápido al producto en el catálogo para revisar stock, precio o ficha. Hoy implica copiar el SKU, ir a /catalogo y buscar.\n\n**Propuesta**\nCualquier SKU mostrado en la app (vistas y listados de documentos) debe ser un link que abra el catálogo con ese producto abierto en su modal de detalle.\n\n**Acceptance Criteria**\n- SKU en línea de detalle de cotización, NV, factura, boleta y guía es clickable.\n- Click abre `/catalogo?detalle=<id>` (o `?sku=<sku>`) y dispara el modal de detalle del producto.\n- Funciona también desde búsqueda global y desde la vista de un cliente.\n- Si el SKU no existe en catálogo (producto eliminado), no rompe — muestra tooltip 'producto no disponible'.\n\n**Notas técnicas**\n- `Productos.tsx` ya soporta deep-link `?detalle=<id>` (línea 105). Falta soporte por SKU o resolver SKU→id en el componente origen.\n- Crear componente reutilizable `<SkuLink sku=… productoId=… />` para no duplicar lógica.\n- Aplicar en: DetalleCotizacion, DetalleNV, DetalleFactura, DetalleBoleta, DetalleGuia, e impresiones HTML (no PDF).",
+      "desc": "**Resumen** — En documentos (cotizaciones, notas de venta, facturas, etc.), el SKU ahora es un link que lleva al catálogo con el producto en su modal de detalle.\n\n**Cambios / Decisiones**\n- Se reutiliza el componente `EntityLink` con `kind=producto` para renderizar el SKU como link a `/catalogo?detalle=<id>`.\n- Cambio en `NotaVentaDetalle.tsx`: input deshabilitado de SKU se reemplaza por el link cuando hay `producto_id`.\n- Aplicado en líneas de detalle de cotización (`CotizacionDetalle.tsx`), nota de venta (`NotaVentaDetalle.tsx`) y factura/boleta (`FacturaDetalle.tsx`).\n- No se creó un nuevo componente `<SkuLink>`; se usó lógica existente de deep-link por ID.\n- No se implementó manejo de SKUs huérfanos (sin `producto_id`) en esta iteración.",
       "checklist": [
-        "Decidir API: `?detalle=<id>` (existente) vs nuevo `?sku=<sku>`",
-        "Crear componente `<SkuLink>` reutilizable",
-        "Aplicar en detalle de cotización",
-        "Aplicar en detalle de nota de venta",
-        "Aplicar en detalle de factura / boleta",
-        "Aplicar en detalle de guía de despacho",
-        "Manejar SKU huérfano (producto eliminado) sin romper",
-        "Test: click en SKU navega y abre modal correcto",
-        "Mover tarjeta a In review"
+        "Ir a una cotización con productos y verificar que el SKU es un link",
+        "Hacer clic en un SKU y confirmar que lleva a /catalogo con modal abierto",
+        "Revisar que en Nota de Venta el SKU input desaparece por link",
+        "Verificar que líneas sin producto_id sigan mostrando SKU como texto plano",
+        "Probar navegación desde detalle de factura/boleta también abre modal en catálogo"
       ]
     }
   ]
