@@ -32,19 +32,21 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[NV] Listado: reemplazar columna Contacto por Empresa (con link)",
+      "list": "In progress",
+      "name": "selecting a person with ctrl+k sould lead me to the open modal with that person",
       "labels": [
-        "Goal: UX Polish",
-        "Size:S"
+        "Size:S",
+        "Bug",
+        "Goal: UX Polish"
       ],
-      "desc": "**Resumen** — En el listado de Notas de Venta, se reemplaza la columna 'Contacto' (texto libre) por 'Empresa', mostrando el nombre de la empresa asociada como un link clickable. Si no hay empresa, se muestra '—'.\n\n**Cambios / Decisiones** —\n- Se modificó la tabla en `frontend/src/pages/NotaVentas.tsx` (líneas 193-231) para reemplazar la columna Contacto por Empresa.\n- Se usa `EntityLink kind=\"empresa\"` para hacer el nombre de la empresa clickable, reusando el componente existente.\n- El backend ya proveía `empresa` anidada en `NotaVentaListOut`, por lo que solo se requirieron cambios frontend.\n- Se actualizó `frontend/src/pages/NotaVentas.test.tsx` con tests para cubrir el nuevo comportamiento.\n- Se mantiene compatibilidad con filtros y búsqueda existentes.",
+      "desc": "**Contexto / Problema**\nAl usar Cmd+K (búsqueda global) y seleccionar un cliente o empleado, no se abre el modal de detalle: el cliente lleva a /clientes (lista) y el empleado a /rrhh (lista), perdiendo el contexto del seleccionado.\n\n**Causa**\nEn frontend/src/components/search/GlobalSearchModal.tsx (URL_BY_TIPO):\n- cliente: () => /clientes  -- ignora el id\n- empleado: () => /rrhh     -- ignora el id\n\n**Propuesta**\n- cliente: id => /clientes?detalle=<id>  (la pagina Clientes ya soporta deep-link, ver Clientes.tsx:54-72)\n- empleado: id => /rrhh?detalle=<id>     (anadir soporte deep-link en RRHH.tsx)\n\n**Acceptance Criteria**\n- Cmd+K -> seleccionar cliente -> /clientes con el modal de detalle abierto en ese cliente.\n- Cmd+K -> seleccionar empleado -> /rrhh con el modal de detalle abierto en ese empleado.\n- Si el id no existe, abrir la lista sin modal (no romper).",
       "checklist": [
-        "Abrir /notas-venta y verificar columna Empresa en vez de Contacto",
-        "Hacer click en nombre de empresa y verificar navegación correcta",
-        "Verificar visualización de '—' cuando NV no tiene empresa asociada",
-        "Confirmar persistencia de filtros y búsqueda en listado",
-        "Revisar tests unitarios en NotaVentas.test.tsx pasan"
+        "Fix URL_BY_TIPO.cliente para pasar el id",
+        "Anadir deep-link ?detalle= en RRHH.tsx",
+        "Fix URL_BY_TIPO.empleado para pasar el id",
+        "Test: cliente seleccionado en Cmd+K abre modal",
+        "Test: empleado seleccionado en Cmd+K abre modal",
+        "Mover tarjeta a In review"
       ]
     }
   ]
