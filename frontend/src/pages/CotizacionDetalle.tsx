@@ -17,6 +17,7 @@ import UnsavedChangesModal from '../components/UnsavedChangesModal'
 import ClienteSelectModal from '../components/ClienteSelectModal'
 import TareasRelacionadas from '../components/TareasRelacionadas'
 import AlertasTab from '../components/AlertasTab'
+import EntityLink from '../components/EntityLink'
 import {
   Button, Input, Textarea, FormField, Card, CardContent,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
@@ -1286,7 +1287,14 @@ export default function CotizacionDetalle() {
                   />
                   {linea.producto_id && (
                     <div className="mt-1 flex flex-wrap gap-x-3 text-[11px] text-gray-500 dark:text-gray-400 px-1 font-num">
-                      {linea.sku && <span>SKU: {linea.sku}</span>}
+                      {linea.sku && (
+                        <span>
+                          SKU:{' '}
+                          <EntityLink kind="producto" id={linea.producto_id} title="Abrir en catálogo">
+                            {linea.sku}
+                          </EntityLink>
+                        </span>
+                      )}
                       {linea.formato && <span>{linea.formato}</span>}
                       {linea._stock != null && (
                         <span className={linea.cantidad > linea._stock ? 'text-warning-600 dark:text-warning-400' : ''}>

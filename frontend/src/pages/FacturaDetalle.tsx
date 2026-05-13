@@ -992,7 +992,13 @@ export default function FacturaDetalle() {
                       placeholder="SKU"
                     />
                   ) : (
-                    <span className="text-xs text-gray-700 dark:text-gray-300">{linea.sku ?? '—'}</span>
+                    <span className="text-xs text-gray-700 dark:text-gray-300">
+                      {linea.sku ? (
+                        <EntityLink kind="producto" id={linea.producto_id} title="Abrir en catálogo">
+                          {linea.sku}
+                        </EntityLink>
+                      ) : '—'}
+                    </span>
                   )}
                 </TD>
                 <TD>

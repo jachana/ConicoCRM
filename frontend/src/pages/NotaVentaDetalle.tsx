@@ -13,6 +13,7 @@ import type { NotaVenta, NotaVentaLinea, Cliente, User, Producto, Empresa, SedeD
 import CreditWarningModal, { type CreditoInfo, type AprobacionPayload } from '../components/CreditWarningModal'
 import UnsavedChangesModal from '../components/UnsavedChangesModal'
 import TareasRelacionadas from '../components/TareasRelacionadas'
+import EntityLink from '../components/EntityLink'
 import NotaVentaAdjuntos from '../components/NotaVentaAdjuntos'
 import {
   Button, Input, Textarea, FormField, Badge, Card, CardContent, CardHeader,
@@ -888,13 +889,21 @@ export default function NotaVentaDetalle() {
               <TR key={linea._key} className={lineaDirty(idx) ? 'bg-warning-50 dark:bg-warning-500/5' : ''}>
                 <TD className="text-center text-gray-500 dark:text-gray-400 font-num">{idx + 1}</TD>
                 <TD>
-                  <Input
-                    size="sm"
-                    value={linea.sku ?? ''}
-                    onChange={e => updateLinea(idx, { sku: e.target.value || null })}
-                    disabled={isLocked || !!linea.producto_id}
-                    placeholder="SKU"
-                  />
+                  {linea.producto_id ? (
+                    <span className="text-xs text-gray-700 dark:text-gray-300 font-num">
+                      <EntityLink kind="producto" id={linea.producto_id} title="Abrir en catálogo">
+                        {linea.sku ?? '—'}
+                      </EntityLink>
+                    </span>
+                  ) : (
+                    <Input
+                      size="sm"
+                      value={linea.sku ?? ''}
+                      onChange={e => updateLinea(idx, { sku: e.target.value || null })}
+                      disabled={isLocked}
+                      placeholder="SKU"
+                    />
+                  )}
                 </TD>
                 <TD className="relative">
                   <Input
