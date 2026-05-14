@@ -26,20 +26,22 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "Historial de ventas de un producto debe estar filtrada para sus propios clientes/emrpresas para los vendedores, y tanto historial como documento debe ser visible an \"ver\" un producto, no en la pantalla de editar",
+      "list": "In progress",
+      "name": "empresas need to be assignable to a employee/user, if vendedores need to be able to see all their own clients info and their \"empresas\"",
       "labels": [
         "Size:L"
       ],
-      "desc": "**Resumen** — Se implementó el historial de ventas por producto, visible solo en la vista de lectura (`ProductoDetailModal.tsx`), con filtro por vendedor según clientes/empresas asignados.\n\n**Cambios / Decisiones** — Se creó el endpoint `GET /api/productos/{id}/historial-ventas` en `backend/app/api/productos.py`, que une líneas de NV, Factura y Boleta, y filtra por `producto_id`. Los vendedores ven solo ventas asociadas a sus clientes/empresas usando un filtro tipo OR. El frontend muestra esta info en una nueva sección dentro de `ProductoDetailModal.tsx`, incluyendo totales y links clickeables. Se movió también \"Documentos\" y \"Historial de movimientos\" al detalle, limpiando `ProductoModal.tsx`. Se agregó `ProductoHistorialVentas.tsx` y tests unitarios. Se añadió el schema auxiliar en `backend/app/schemas/lista_precios.py`.",
+      "desc": "**Contexto**\nBackend ya tiene scoping vendedor↔empresa↔cliente (`Empresa.vendedor_id`, `Cliente.vendedor_id`, filtros en `empresas.py`, `clientes.py`, `nota_ventas.py`, `facturas.py`, `guias_despacho.py`, productos). **Falta exponer la asignación en la UI**: el modal de edición de Empresa no tiene selector de Vendedor; ídem Cliente. Admins no pueden reasignar desde la app y vendedores no ven a quién está asignada cada empresa/cliente.\n\n**Acceptance Criteria**\n- Admin/subadmin ven un campo \"Vendedor asignado\" en el modal de edición de Empresa y de Cliente, con dropdown de usuarios `role == 'vendedor'`.\n- Admin puede dejar el campo en blanco (`null`) → empresa/cliente sin dueño.\n- Vendedores NO ven el selector como editable (read-only), pero sí ven el nombre del vendedor actual.\n- Cambio se persiste vía PATCH y respeta validación existente en backend (sólo admin/subadmin reasigna).\n- Listado de Empresas muestra columna opcional \"Vendedor\" (toggleable desde column visibility menu).\n- Listado de Clientes igual.\n\n**Stack real**\n- Backend: ya implementado. Endpoints PATCH empresas/clientes aceptan `vendedor_id`; ya bloquean reasignación por vendedor (`Solo administradores pueden reasignar el vendedor`).\n- Endpoint para listar vendedores: confirmar en `backend/app/api/users.py` (filtro `role=vendedor`).\n- Frontend: edit form vive en `frontend/src/pages/Empresas.tsx` (FormFields cerca línea 616) y `frontend/src/pages/Clientes.tsx`.\n\n**Notas técnicas**\n- Agregar FormField \"Vendedor asignado\" con `<select>` (o Combobox si hay muchos) en ambos formularios; `disabled={user.role === 'vendedor'}`.\n- Estado inicial: `form.vendedor_id = empresa.vendedor_id`. En submit, incluir `vendedor_id` en el payload PATCH.\n- Mostrar nombre del vendedor actual en detalle/list:\n  - En API responses confirmar que viene `vendedor` joinedload o devolver `vendedor_nombre` denormalizado.\n  - Si no, agregar `joinedload(Empresa.vendedor)` en `backend/app/api/empresas.py` listing/detail.\n- Reusar `EntityLink` para hacer clickeable el nombre del vendedor.\n\n**Definition of Done**\n- Selector visible y funcional para admin/subadmin en Empresa y Cliente (modal y detalle).\n- Read-only para vendedor con nombre visible.\n- Columna toggleable \"Vendedor\" en ambos listados.\n- Tests Vitest del selector (visible para admin, oculto/disabled para vendedor).\n- Smoke manual con usuario admin y vendedor; card → In review.\n\n<!-- tboard:refined -->",
       "checklist": [
-        "Ingresar como vendedor y abrir un producto con ventas asignadas",
-        "Verificar que en 'Historial de ventas' solo aparecen docs de clientes/empresas del vendedor",
-        "Hacer clic en un documento del historial y confirmar redirección correcta",
-        "Revisar que totales (cantidad y monto) coinciden con el scope filtrado",
-        "Abrir mismo producto como admin y verificar visibilidad de todas las ventas",
-        "Confirmar que `ProductoModal.tsx` no muestra historial de ventas",
-        "Probar paginación en historial con más de 50 registros"
+        "Confirmar endpoint GET /api/users?role=vendedor (o agregar)",
+        "Agregar joinedload(Empresa.vendedor) y joinedload(Cliente.vendedor) en list/detail si falta",
+        "FormField 'Vendedor asignado' en Empresas.tsx edit modal (admin only)",
+        "FormField 'Vendedor asignado' en Clientes.tsx edit modal (admin only)",
+        "Incluir vendedor_id en payload PATCH",
+        "Mostrar vendedor actual en detalle (read-only para rol vendedor)",
+        "Columna toggleable 'Vendedor' en listados Empresas y Clientes",
+        "Tests Vitest: visible para admin, disabled para vendedor",
+        "Smoke manual admin + vendedor; ship-review"
       ]
     }
   ]
