@@ -1,0 +1,192 @@
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  ! empty desc/checklist, skipping
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+Pulling Trello -> JSON before refinement...
+Pulled 218 card(s) across 9 list(s) into trello_cards.json
+Refining 85 card(s) (model=haiku, provider=auto, dry_run=False, force=False).
+
+[1/85] '[Wave 6] Multi-tenant SaaS'  [Ideas]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  879 in / 2993 out  ~$0.0158
+  ~ size=XL  This is a fundamental architectural pivot spanning multi-tenancy model selection, authentication, billing integration, d
+  + breakdown: 6 child card(s) proposed
+
+[2/85] '[Wave 6] App móvil / PWA'  [Ideas]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  841 in / 2112 out  ~$0.0114
+  ~ size=XL  Este es un paraguas multi-feature que abarca auditoría, service worker, instalabilidad y notificaciones push. Requiere t
+  + breakdown: 5 child card(s) proposed
+
+[3/85] '[Wave 6] API pública + webhooks salientes'  [Ideas]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  836 in / 2888 out  ~$0.0153
+  ~ size=XL  This card spans multiple independent systems: OAuth2/API key auth, rate limiting middleware, OpenAPI documentation gener
+  + breakdown: 5 child card(s) proposed
+
+[4/85] '[Wave 5] POS / códigos de barras'  [Ideas]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  843 in / 2999 out  ~$0.0158
+  ~ size=XL  This card encompasses multiple substantial features: barcode scanning hardware integration, a specialized touch-optimize
+  + breakdown: 5 child card(s) proposed
+
+[5/85] '[Wave 4] Conciliación bancaria + multi-moneda + UF'  [Ideas]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  884 in / 2758 out  ~$0.0147
+  ~ size=XL  This card spans multiple independent subsystems: bank statement import (multi-format parser), transaction matching logic
+  + breakdown: 5 child card(s) proposed
+
+[6/85] '[Docs] Architecture overview'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  876 in / 850 out  ~$0.0051
+  ~ size=L  Comprehensive documentation task spanning multiple diagrams, tech stack inventory, and lifecycle walkthroughs. Requires 
+
+[7/85] '[Docs] Local development setup guide'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  891 in / 765 out  ~$0.0047
+  ~ size=M  Documentation task requiring clear sequential instructions, testing the setup end-to-end, and publishing. Spans multiple
+
+[8/85] '[Docs] Environment variables reference'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  904 in / 881 out  ~$0.0053
+  ~ size=M  Single documentation artifact covering multiple subsystems (backend, frontend, Celery, email, Sentry, DTE/Lioren, backup
+
+[9/85] '[Docs] DTE/Lioren integration deep-dive'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  954 in / 1002 out  ~$0.0060
+  ~ size=L  Documentation task spanning multiple subsystems (auth, emission, polling, webhooks, annulment, CAF). Requires research a
+
+[10/85] '[Docs] Roles and permissions matrix'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  870 in / 888 out  ~$0.0053
+  ~ size=M  This is a documentation task covering a single, well-scoped domain (roles & permissions). It requires gathering existing
+
+[11/85] '[Docs] Celery background jobs reference'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  875 in / 808 out  ~$0.0049
+  ~ size=M  Documentation task covering 3 core async workflows (DTE polling, task evaluation, collection reminders) + monitoring gui
+
+[12/85] '[Docs] Database schema reference (ERD)'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  891 in / 728 out  ~$0.0045
+  ~ size=L  Requires creating comprehensive documentation across 5 modules with ERD diagrams, FK relationship documentation, and mig
+
+[13/85] '[Docs] Audit log system internals'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  876 in / 798 out  ~$0.0049
+  ~ size=M  Documentation task requiring research and synthesis across multiple subsystems (SQLAlchemy listeners, middleware, API, e
+
+[14/85] '[User Guide] Getting started: configuracion inicial'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  890 in / 3039 out  ~$0.0161
+  ~ size=XL  This card bundles 6 distinct workflows (company data, logo, bank accounts, CAF folios, user management, 2FA) spanning mu
+  + breakdown: 6 child card(s) proposed
+
+[15/85] '[User Guide] Flujo de ventas: Cotizacion -> NV -> Factura'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  947 in / 2700 out  ~$0.0144
+  ~ size=XL  This is a comprehensive documentation card covering the entire sales pipeline (quotation → NV → invoice) with 9 checklis
+  + breakdown: 4 child card(s) proposed
+
+[16/85] '[User Guide] Boletas electronicas 39 y 41'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  927 in / 986 out  ~$0.0059
+  ~ size=L  This is a comprehensive user documentation task covering multiple DTE/SII concepts (types 39/41, anonymous vs identified
+
+[17/85] '[User Guide] Guias de Despacho 52'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  914 in / 1016 out  ~$0.0060
+  ~ size=L  This is a comprehensive user documentation task covering the full lifecycle of DTE type 52 (dispatch guides): creation, 
+
+[18/85] '[User Guide] Notas de Credito y Debito'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  903 in / 929 out  ~$0.0055
+  ~ size=M  Documentation task covering a single feature domain (NC/ND issuance). Requires writing clear procedural content with DTE
+
+[19/85] '[User Guide] Gestion de Clientes y Empresas'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  886 in / 1748 out  ~$0.0096
+
+[20/85] '[User Guide] Inventario y control de stock'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)
+  llm: openrouter/anthropic/claude-haiku-4.5  894 in / 1042 out  ~$0.0061
+  ~ size=L  Comprehensive user documentation spanning 6 interconnected topics (stock mechanics, viewing, history, adjustments, alert
+
+[21/85] '[User Guide] Ordenes de Compra y recepcion'  [Feature requests]
+  llm: trying straico (anthropic/claude-haiku-4.5)
+  llm: trying openrouter (anthropic/claude-haiku-4.5)  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity
+  llm: straico failed: HTTP Error 422: Unprocessable Entity

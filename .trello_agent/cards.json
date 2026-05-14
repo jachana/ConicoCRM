@@ -18,41 +18,30 @@
     "DTE/SII": "green",
     "Goal: Operations": "lime",
     "Bug": "pink",
-    "Goal: SaaS-ready": "lime",
-    "Size:XL": "red",
-    "Design System": "purple",
-    "Goal: Docs": "lime",
-    "Goal: UX Polish": "lime",
-    "Wave 1": "red",
-    "Tier A": "yellow",
-    "Blocked": "black",
-    "Goal: Performance": "lime",
+    "Wave 1": "purple",
+    "Tier A": "red",
+    "Design System": "black",
     "Size:S": "green",
     "Wave 2": "orange"
   },
   "cards": [
     {
       "list": "In progress",
-      "name": "Vendedores no pueden editar catalogo",
+      "name": "Historial de ventas de un producto debe estar filtrada para sus propios clientes/emrpresas para los vendedores, y tanto historial como documento debe ser visible an \"ver\" un producto, no en la pantalla de editar",
       "labels": [
-        "Size:M"
+        "Size:L"
       ],
-      "desc": "**Contexto / Problema**\nLos usuarios con rol de vendedor actualmente no tienen permisos para editar el catálogo de productos, lo que limita su capacidad de actualizar información durante ventas o demos. Esto genera dependencia del área de administración para cambios rutinarios.\n\n**Acceptance Criteria**\n- Los vendedores pueden acceder al formulario de edición de productos existentes en el catálogo\n- Los vendedores pueden modificar y guardar cambios en campos de productos (nombre, precio, descripción, stock)\n- Los cambios realizados por vendedores se reflejan inmediatamente en el catálogo visible\n- Los vendedores NO pueden eliminar productos (solo editar)\n- Los permisos de administrador, gestor y otros roles no se ven afectados\n- Se registra en logs de auditoría quién realizó cada cambio\n\n**Definition of Done**\n- Tests de autorización para rol vendedor pasan correctamente\n- Tests de regresión para otros roles pasan sin cambios\n- Migración de permisos aplicada y ejecutada en staging\n- Código revisado por par\n- Desplegado en staging y validado manualmente\n- Tarjeta Trello movida a In review\n\n**Notas técnicas**\n- Ajustar política de autorización en `app/policies/product_policy.rb` o equivalente\n- Verificar permisos en controlador `ProductsController#update` y `#edit`\n- Si se usa Pundit/CanCanCan, actualizar definiciones de habilidades para rol `vendedor`\n- Revisar validaciones frontend en componentes de edición de catálogo (probablemente en `views/products/edit` o componente Vue/React)\n- Considerar si existen permisos granulares por campo (ej: vendedor puede editar precio pero no costo)\n\n<!-- tboard:refined -->",
+      "desc": "**Contexto**\nHoy el catálogo de productos no expone historial de ventas por producto. Solo existe `/historial-costos` en `backend/app/api/productos.py:402`. El cliente quiere ver, en la vista DE LECTURA del producto, las últimas ventas; y para vendedor ese historial debe filtrarse a sus propios clientes/empresas. Además, hoy `ProductoModal.tsx` mezcla campos editables con info contextual — el split \"ver vs editar\" debe quedar claro: historial sólo en `ProductoDetailModal`, no en el modal de edición.\n\n**Acceptance Criteria**\n- Vendedor ve sólo ventas del producto a clientes/empresas asignados (mismo scope que `_vendedor_nv_filter` en `nota_ventas.py`).\n- Admin/subadmin ven todas las ventas.\n- Lista muestra: fecha, doc (NV/Factura/Boleta), cliente/empresa, cantidad, precio unitario, total. Cada doc clickeable (EntityLink).\n- Total agregado (cantidad y monto) respeta el mismo scope.\n- Historial NO aparece en el modal de edición (`ProductoModal.tsx`); solo en `ProductoDetailModal.tsx`.\n\n**Stack real**\n- Backend: `backend/app/api/productos.py` (agregar endpoint nuevo).\n- Modelos relevantes: items de Factura/Boleta/NV — verificar nombres reales y FK a producto (vía `sku` o `producto_id`).\n- Frontend: `frontend/src/components/ProductoDetailModal.tsx` (target), `frontend/src/components/ProductoModal.tsx` (limpiar si tuviera historial).\n- Patrón de scope: copiar enfoque de `_vendedor_nv_filter` en `backend/app/api/nota_ventas.py` (vendedor_id, cliente asignado, empresa asignada).\n\n**Notas técnicas**\n- Nuevo endpoint `GET /api/productos/{id}/historial-ventas?limit=50&offset=0`:\n  - Union de items de facturas/boletas/NV donde `producto_id == :id` (o `sku == producto.sku` si los items se guardan por sku).\n  - Join a Factura/Boleta/NV para `vendedor_id`, `cliente_id`, `empresa_id`.\n  - Si `current_user.role == 'vendedor'`: aplicar filtro tipo OR(vendedor_id == user.id, cliente.vendedor_id == user.id, empresa.vendedor_id == user.id).\n  - Respuesta paginada, ordenada desc por fecha emisión.\n- Pydantic schema en `backend/app/schemas/` para `HistorialVentaItem`.\n- Frontend: sección \"Historial de ventas\" en `ProductoDetailModal.tsx`, fetch on open, paginada.\n- Verificar/quitar cualquier historial en `ProductoModal.tsx` (edit) si existiera.\n\n**Definition of Done**\n- Endpoint con tests pytest (admin ve todo; vendedor ve sólo asignados; user sin docs ve []).\n- Sección en DetailModal con loading/empty/error.\n- Sin historial en EditModal.\n- Targeted tests pasan; ship-review.\n\n<!-- tboard:refined -->",
       "checklist": [
-        "Identificar y modificar permisos de rol vendedor para edición de catálogo",
-        "Actualizar controladores de catálogo para permitir acceso a vendedores",
-        "Ajustar validaciones frontend si es necesario para mostrar opciones de edición",
-        "Probar que vendedores pueden editar productos y guardar cambios",
-        "Verificar que otros roles mantienen sus permisos originales",
-        "Ejecutar tests de permisos y autorización",
-        "Deploy a staging y mover tarjeta a In review",
-        "Modificar política de autorización para permitir `update` y `edit` a rol vendedor",
-        "Actualizar controlador de productos para verificar permisos correctamente",
-        "Ajustar UI para mostrar opciones de edición a vendedores (si estaban ocultas por rol)",
-        "Escribir/actualizar tests de autorización para vendedor en catálogo",
-        "Verificar que vendedor NO puede eliminar productos (mantener restricción)",
-        "Ejecutar suite completa de tests de permisos y regresión",
-        "Deployar a staging y mover tarjeta a In review"
+        "Inspeccionar modelos de items (FacturaItem/BoletaItem/NotaVentaItem) y FK a Producto",
+        "Crear endpoint GET /api/productos/{id}/historial-ventas con paginación",
+        "Aplicar vendedor scope (OR vendedor_id / cliente.vendedor_id / empresa.vendedor_id)",
+        "Schema Pydantic HistorialVentaItem",
+        "Tests pytest: admin all, vendedor scoped, vacío",
+        "Agregar sección Historial en ProductoDetailModal.tsx con paginación",
+        "Quitar historial de ProductoModal.tsx (edit) si existiera",
+        "Tests Vitest del componente",
+        "Smoke admin + vendedor; ship-review"
       ]
     }
   ]
