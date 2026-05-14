@@ -33,26 +33,26 @@
   "cards": [
     {
       "list": "In progress",
-      "name": "facturas deben estar filtradas para sus clientes para los vendedores",
+      "name": "guias de despacho deben estar filtradas apra sus clientes para los vendedores",
       "labels": [
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nActualmente los vendedores pueden ver todas las facturas en el sistema, sin importar si pertenecen a sus clientes asignados. Esto genera problemas de privacidad y confusión, ya que ven información de clientes fuera de su cartera.\n\n**Acceptance Criteria**\n- Un vendedor al acceder a la sección de facturas solo ve facturas asociadas a clientes que tiene asignados.\n- El filtrado se aplica automáticamente sin intervención manual del usuario.\n- Los usuarios con rol administrador continúan viendo todas las facturas del sistema sin restricciones.\n- La búsqueda y otros filtros funcionan correctamente sobre el conjunto ya filtrado por vendedor.\n- No aparecen errores de permisos ni facturas vacías si el vendedor no tiene clientes asignados.\n\n**Definition of Done**\n- Lógica de filtrado por vendedor implementada en el backend (endpoint de facturas).\n- Query actualizada para incluir relación vendedor-cliente en la consulta de facturas.\n- Componente de frontend actualizado para consumir datos filtrados.\n- Tests unitarios y de integración agregados para validar el filtrado por rol.\n- Verificado en staging que administradores ven todas las facturas y vendedores solo las suyas.\n- Trello card movida a 'In review'.\n\n**Notas técnicas**\n- Endpoint: `/api/v1/facturas/` (GET)\n- Relación: `Cliente.vendedor_id` → `User.id` → `Factura.cliente_id`\n- Verificar middleware de permisos existente en `backend/apps/facturacion/views.py`\n- Componente frontend: `src/components/Facturacion/FacturasListView.vue`\n- Agregar tests en `backend/apps/facturacion/tests/test_permissions.py`\n\n<!-- tboard:refined -->",
+      "desc": "**Contexto / Problema**\nActualmente los vendedores pueden ver todas las guías de despacho en el sistema, lo que expone información de clientes que no tienen asignados. Se debe restringir la visibilidad para que cada vendedor solo acceda a las guías de sus propios clientes.\n\n**Acceptance Criteria**\n- Un vendedor autenticado solo puede ver guías de despacho asociadas a clientes que tiene asignados.\n- Al cambiar de vendedor (contexto de usuario), las guías mostradas se filtran automáticamente sin mostrar datos ajenos.\n- La búsqueda y paginación respetan el filtro por vendedor.\n- Un intento de acceder directamente a una guía de un cliente no asignado resulta en error 403 o registro vacío.\n- El filtrado se aplica tanto en queries de listado como en endpoints individuales de guías.\n\n**Definition of Done**\n- Filtro implementado en backend y funcionando en staging.\n- Tests unitarios y e2e pasan cubriendo casos de acceso permitido y denegado.\n- Migración de base de datos aplicada si se requiere ajustar esquema de permisos.\n- Code review completado.\n- Tarjeta movida a In review en Trello.\n\n**Notas técnicas**\n- Frontend: `src/views/DispatchGuides.vue` y componentes relacionados de listado/búsqueda.\n- Backend endpoint: `GET /api/dispatch-guides` debe aceptar parámetro `seller_id` y aplicar join con tabla de asignaciones cliente-vendedor.\n- Middleware de permisos: verificar que `current_user.role == 'seller'` implique filtro automático por `current_user.id`.\n- Verificar query scopes en modelo `DispatchGuide` para aplicar filtro en búsqueda, paginación y exportaciones.\n\n<!-- tboard:refined -->",
       "checklist": [
-        "Implementar lógica de filtrado por vendedor en backend",
-        "Actualizar query de facturas para incluir relación vendedor-cliente",
-        "Modificar componente de frontend para consumir datos filtrados",
-        "Agregar tests unitarios para el nuevo filtrado",
-        "Verificar que administradores aún vean todas las facturas",
-        "Probar búsqueda dentro del conjunto filtrado",
-        "Desplegar en staging y actualizar Trello",
-        "Implementar filtrado por vendedor en queryset de facturas (backend)",
-        "Agregar lógica condicional según rol (vendedor vs admin) en el endpoint",
-        "Actualizar componente de listado de facturas en frontend",
-        "Escribir tests unitarios para permisos de vendedor y admin",
-        "Verificar que búsqueda funciona sobre datos filtrados",
-        "Probar en staging con usuarios vendedor y admin",
-        "Desplegar y mover card a 'In review'"
+        "Implementar filtro backend para guías por seller_id",
+        "Actualizar vista frontend para usar el nuevo filtro",
+        "Agregar validaciones de permisos en capa de servicio",
+        "Escribir pruebas unitarias del nuevo filtro",
+        "Realizar pruebas e2e para confirmar visibilidad correcta",
+        "Verificar comportamiento en búsqueda y paginación",
+        "Deploy a staging y actualizar Trello",
+        "Implementar scope o filtro en modelo backend para asociar guías con vendedor via clientes asignados",
+        "Agregar validación de permisos en endpoint GET /api/dispatch-guides",
+        "Actualizar frontend para enviar seller_id en requests y manejar respuesta filtrada",
+        "Escribir tests unitarios para queries filtradas y casos de acceso denegado",
+        "Escribir tests e2e simulando login de vendedor y verificando visibilidad de guías",
+        "Verificar que búsqueda y paginación respeten el filtro",
+        "Deploy a staging, validar manualmente y mover tarjeta a In review"
       ]
     }
   ]
