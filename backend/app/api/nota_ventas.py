@@ -100,6 +100,47 @@ def _can_edit(current_user: User, nv: NotaVenta) -> bool:
     return nv.vendedor_id == current_user.id
 
 
+def _vendedor_nv_filter(query, user: User):
+    """Restrict NV to vendedor: NV creada por él, o cuyo cliente esté asignado a él
+    (directo o vía empresa del cliente), o cuya empresa de despacho le esté asignada."""
+    from sqlalchemy import select
+    empresas_del_vendedor = select(Empresa.id).where(Empresa.vendedor_id == user.id)
+    return query.outerjoin(Cliente, Cliente.id == NotaVenta.cliente_id).outerjoin(
+        Empresa, Empresa.id == Cliente.empresa_id
+    ).filter(
+        or_(
+            NotaVenta.vendedor_id == user.id,
+            Cliente.vendedor_id == user.id,
+            Empresa.vendedor_id == user.id,
+            NotaVenta.empresa_id.in_(empresas_del_vendedor),
+        )
+    )
+
+
+def _enforce_nv_scope(nv: NotaVenta, user: User, db: Session) -> None:
+    """Raise 403 if vendedor accesses an NV that isn't theirs by cliente/empresa/creación."""
+    if user.role != "vendedor":
+        return
+    if nv.vendedor_id == user.id:
+        return
+    cli = db.get(Cliente, nv.cliente_id) if nv.cliente_id else None
+    if cli is not None:
+        if cli.vendedor_id == user.id:
+            return
+        if cli.empresa_id is not None:
+            emp = db.get(Empresa, cli.empresa_id)
+            if emp is not None and emp.vendedor_id == user.id:
+                return
+    if nv.empresa_id is not None:
+        emp = db.get(Empresa, nv.empresa_id)
+        if emp is not None and emp.vendedor_id == user.id:
+            return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="No tienes acceso a esta nota de venta",
+    )
+
+
 def _check_credit_limit(db: Session, empresa_id: int | None, total: Decimal, current_user: User) -> None:
     if current_user.role in ("admin", "subadmin"):
         return
@@ -181,12 +222,14 @@ def exportar_excel(
     ids: list[int] | None = Query(None),
     perms: tuple[User, Session] = require_permission("nota_venta", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     q = (
         db.query(NotaVenta)
         .options(joinedload(NotaVenta.cliente), joinedload(NotaVenta.vendedor))
-        .order_by(NotaVenta.fecha.desc(), NotaVenta.numero.desc())
     )
+    if current_user.role == "vendedor":
+        q = _vendedor_nv_filter(q, current_user)
+    q = q.order_by(NotaVenta.fecha.desc(), NotaVenta.numero.desc())
     if ids:
         q = q.filter(NotaVenta.id.in_(ids))
     nvs = q.all()
@@ -228,12 +271,14 @@ def listar_nvs(
     offset: int = Query(0, ge=0),
     perms: tuple[User, Session] = require_permission("nota_venta", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     query = db.query(NotaVenta).options(
         joinedload(NotaVenta.cliente),
         joinedload(NotaVenta.vendedor),
         joinedload(NotaVenta.empresa),
     )
+    if current_user.role == "vendedor":
+        query = _vendedor_nv_filter(query, current_user)
     if estado:
         query = query.filter(NotaVenta.estado == estado)
     if vendedor_id:
@@ -403,6 +448,7 @@ def obtener_nv(
 ):
     current_user, db = perms
     nv = _load_nv(db, nv_id)
+    _enforce_nv_scope(nv, current_user, db)
     if current_user.role == "vendedor":
         out = NotaVentaOut.model_validate(nv)
         for linea in out.lineas:

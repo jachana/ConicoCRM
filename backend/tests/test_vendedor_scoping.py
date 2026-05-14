@@ -117,3 +117,87 @@ def test_admin_ve_todos_los_clientes(client, admin_token, vendedor_user, vendedo
     assert r.status_code == 200
     nombres = {c["nombre"] for c in r.json()}
     assert {"C1", "C2"} <= nombres
+
+
+# --- Nota de Venta scoping ---
+
+def _make_nv(client, token, cliente_id):
+    r = client.post(
+        "/api/nota_ventas/",
+        json={"cliente_id": cliente_id, "retiro_en_conico": True},
+        headers=_auth(token),
+    )
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def test_vendedor_lista_solo_nv_de_clientes_asignados(client, admin_token, vendedor_user, vendedor_token):
+    # admin creates two clientes, assigns one to vendedor
+    rc1 = client.post("/api/clientes/", json={"nombre": "Cli Mio"}, headers=_auth(admin_token))
+    cid_mio = rc1.json()["id"]
+    client.patch(f"/api/clientes/{cid_mio}", json={"vendedor_id": vendedor_user.id}, headers=_auth(admin_token))
+
+    rc2 = client.post("/api/clientes/", json={"nombre": "Cli Ajeno"}, headers=_auth(admin_token))
+    cid_ajeno = rc2.json()["id"]
+
+    # admin creates NV for each
+    nv_mio = _make_nv(client, admin_token, cid_mio)
+    nv_ajeno = _make_nv(client, admin_token, cid_ajeno)
+
+    # vendedor lists -> only NV of Cli Mio
+    rl = client.get("/api/nota_ventas/", headers=_auth(vendedor_token))
+    assert rl.status_code == 200
+    ids = {nv["id"] for nv in rl.json()["data"]}
+    assert nv_mio["id"] in ids
+    assert nv_ajeno["id"] not in ids
+
+
+def test_vendedor_lista_nv_via_empresa_asignada(client, admin_token, vendedor_user, vendedor_token):
+    # empresa asignada al vendedor, cliente bajo esa empresa
+    re = client.post("/api/empresas/", json={"nombre": "Emp V", "rut": "88.888.888-8"}, headers=_auth(admin_token))
+    eid = re.json()["id"]
+    client.patch(f"/api/empresas/{eid}", json={"vendedor_id": vendedor_user.id}, headers=_auth(admin_token))
+
+    rc = client.post("/api/clientes/", json={"nombre": "Cli Emp", "empresa_id": eid}, headers=_auth(admin_token))
+    cid = rc.json()["id"]
+    nv = _make_nv(client, admin_token, cid)
+
+    rl = client.get("/api/nota_ventas/", headers=_auth(vendedor_token))
+    assert rl.status_code == 200
+    ids = {item["id"] for item in rl.json()["data"]}
+    assert nv["id"] in ids
+
+
+def test_vendedor_403_en_nv_de_cliente_no_asignado(client, admin_token, vendedor_token):
+    rc = client.post("/api/clientes/", json={"nombre": "Cli Otro"}, headers=_auth(admin_token))
+    cid = rc.json()["id"]
+    nv = _make_nv(client, admin_token, cid)
+
+    rg = client.get(f"/api/nota_ventas/{nv['id']}", headers=_auth(vendedor_token))
+    assert rg.status_code == 403
+
+
+def test_vendedor_acceso_nv_de_cliente_asignado(client, admin_token, vendedor_user, vendedor_token):
+    rc = client.post("/api/clientes/", json={"nombre": "Cli Mio2"}, headers=_auth(admin_token))
+    cid = rc.json()["id"]
+    client.patch(f"/api/clientes/{cid}", json={"vendedor_id": vendedor_user.id}, headers=_auth(admin_token))
+    nv = _make_nv(client, admin_token, cid)
+
+    rg = client.get(f"/api/nota_ventas/{nv['id']}", headers=_auth(vendedor_token))
+    assert rg.status_code == 200
+    assert rg.json()["id"] == nv["id"]
+
+
+def test_admin_ve_todas_las_nv(client, admin_token, vendedor_user, vendedor_token):
+    rc1 = client.post("/api/clientes/", json={"nombre": "C-admin"}, headers=_auth(admin_token))
+    cid1 = rc1.json()["id"]
+    rc2 = client.post("/api/clientes/", json={"nombre": "C-vend"}, headers=_auth(vendedor_token))
+    cid2 = rc2.json()["id"]
+
+    nv1 = _make_nv(client, admin_token, cid1)
+    nv2 = _make_nv(client, vendedor_token, cid2)
+
+    rl = client.get("/api/nota_ventas/", headers=_auth(admin_token))
+    assert rl.status_code == 200
+    ids = {item["id"] for item in rl.json()["data"]}
+    assert {nv1["id"], nv2["id"]} <= ids
