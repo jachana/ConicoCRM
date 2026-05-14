@@ -26,22 +26,20 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "Historial de ventas de un producto debe estar filtrada para sus propios clientes/emrpresas para los vendedores, y tanto historial como documento debe ser visible an \"ver\" un producto, no en la pantalla de editar",
       "labels": [
         "Size:L"
       ],
-      "desc": "**Contexto**\nHoy el catálogo de productos no expone historial de ventas por producto. Solo existe `/historial-costos` en `backend/app/api/productos.py:402`. El cliente quiere ver, en la vista DE LECTURA del producto, las últimas ventas; y para vendedor ese historial debe filtrarse a sus propios clientes/empresas. Además, hoy `ProductoModal.tsx` mezcla campos editables con info contextual — el split \"ver vs editar\" debe quedar claro: historial sólo en `ProductoDetailModal`, no en el modal de edición.\n\n**Acceptance Criteria**\n- Vendedor ve sólo ventas del producto a clientes/empresas asignados (mismo scope que `_vendedor_nv_filter` en `nota_ventas.py`).\n- Admin/subadmin ven todas las ventas.\n- Lista muestra: fecha, doc (NV/Factura/Boleta), cliente/empresa, cantidad, precio unitario, total. Cada doc clickeable (EntityLink).\n- Total agregado (cantidad y monto) respeta el mismo scope.\n- Historial NO aparece en el modal de edición (`ProductoModal.tsx`); solo en `ProductoDetailModal.tsx`.\n\n**Stack real**\n- Backend: `backend/app/api/productos.py` (agregar endpoint nuevo).\n- Modelos relevantes: items de Factura/Boleta/NV — verificar nombres reales y FK a producto (vía `sku` o `producto_id`).\n- Frontend: `frontend/src/components/ProductoDetailModal.tsx` (target), `frontend/src/components/ProductoModal.tsx` (limpiar si tuviera historial).\n- Patrón de scope: copiar enfoque de `_vendedor_nv_filter` en `backend/app/api/nota_ventas.py` (vendedor_id, cliente asignado, empresa asignada).\n\n**Notas técnicas**\n- Nuevo endpoint `GET /api/productos/{id}/historial-ventas?limit=50&offset=0`:\n  - Union de items de facturas/boletas/NV donde `producto_id == :id` (o `sku == producto.sku` si los items se guardan por sku).\n  - Join a Factura/Boleta/NV para `vendedor_id`, `cliente_id`, `empresa_id`.\n  - Si `current_user.role == 'vendedor'`: aplicar filtro tipo OR(vendedor_id == user.id, cliente.vendedor_id == user.id, empresa.vendedor_id == user.id).\n  - Respuesta paginada, ordenada desc por fecha emisión.\n- Pydantic schema en `backend/app/schemas/` para `HistorialVentaItem`.\n- Frontend: sección \"Historial de ventas\" en `ProductoDetailModal.tsx`, fetch on open, paginada.\n- Verificar/quitar cualquier historial en `ProductoModal.tsx` (edit) si existiera.\n\n**Definition of Done**\n- Endpoint con tests pytest (admin ve todo; vendedor ve sólo asignados; user sin docs ve []).\n- Sección en DetailModal con loading/empty/error.\n- Sin historial en EditModal.\n- Targeted tests pasan; ship-review.\n\n<!-- tboard:refined -->",
+      "desc": "**Resumen** — Se implementó el historial de ventas por producto, visible solo en la vista de lectura (`ProductoDetailModal.tsx`), con filtro por vendedor según clientes/empresas asignados.\n\n**Cambios / Decisiones** — Se creó el endpoint `GET /api/productos/{id}/historial-ventas` en `backend/app/api/productos.py`, que une líneas de NV, Factura y Boleta, y filtra por `producto_id`. Los vendedores ven solo ventas asociadas a sus clientes/empresas usando un filtro tipo OR. El frontend muestra esta info en una nueva sección dentro de `ProductoDetailModal.tsx`, incluyendo totales y links clickeables. Se movió también \"Documentos\" y \"Historial de movimientos\" al detalle, limpiando `ProductoModal.tsx`. Se agregó `ProductoHistorialVentas.tsx` y tests unitarios. Se añadió el schema auxiliar en `backend/app/schemas/lista_precios.py`.",
       "checklist": [
-        "Inspeccionar modelos de items (FacturaItem/BoletaItem/NotaVentaItem) y FK a Producto",
-        "Crear endpoint GET /api/productos/{id}/historial-ventas con paginación",
-        "Aplicar vendedor scope (OR vendedor_id / cliente.vendedor_id / empresa.vendedor_id)",
-        "Schema Pydantic HistorialVentaItem",
-        "Tests pytest: admin all, vendedor scoped, vacío",
-        "Agregar sección Historial en ProductoDetailModal.tsx con paginación",
-        "Quitar historial de ProductoModal.tsx (edit) si existiera",
-        "Tests Vitest del componente",
-        "Smoke admin + vendedor; ship-review"
+        "Ingresar como vendedor y abrir un producto con ventas asignadas",
+        "Verificar que en 'Historial de ventas' solo aparecen docs de clientes/empresas del vendedor",
+        "Hacer clic en un documento del historial y confirmar redirección correcta",
+        "Revisar que totales (cantidad y monto) coinciden con el scope filtrado",
+        "Abrir mismo producto como admin y verificar visibilidad de todas las ventas",
+        "Confirmar que `ProductoModal.tsx` no muestra historial de ventas",
+        "Probar paginación en historial con más de 50 registros"
       ]
     }
   ]
