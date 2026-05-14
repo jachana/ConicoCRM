@@ -3,8 +3,12 @@ import type { Producto } from '../types'
 import {
   Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter,
   Card, CardContent, Button, Badge,
+  Tabs, TabsList, TabsTrigger, TabsContent,
 } from './ui'
 import { Pencil } from 'lucide-react'
+import ProductoHistorialVentas from './ProductoHistorialVentas'
+import ProductoDocumentos from './ProductoDocumentos'
+import ProductoHistorial from './ProductoHistorial'
 
 interface Props {
   producto: Producto | null
@@ -26,6 +30,83 @@ export default function ProductoDetailModal({ producto, onClose, onEdit, showCos
   const subtitle = subtitleParts.join(' · ')
   const stockBajo = producto.stock_actual < producto.stock_minimo
 
+  const datosNode = (
+    <>
+      {onEdit && (
+        <div className="flex justify-end mb-3">
+          <Button size="sm" variant="outline" leftIcon={<Pencil size={14} />} onClick={() => onEdit(producto)}>
+            Editar
+          </Button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="SKU" value={producto.sku ?? '—'} />
+        <Field label="Formato" value={producto.formato ?? '—'} />
+        <Field label="Marca" value={producto.marca?.nombre ?? '—'} />
+        <Field label="Volumen" value={producto.volumen != null ? String(producto.volumen) : '—'} />
+
+        <Field label="Precio venta" value={fmtCLP(producto.precio_venta)} />
+        <Field label="Precio venta c/IVA" value={fmtCLP(producto.precio_con_iva)} />
+
+        {showCosto && (
+          <>
+            <Field label="Precio costo" value={fmtCLP(producto.precio_costo)} />
+            <Field label="Costo c/IVA" value={fmtCLP(producto.costo_con_iva)} />
+          </>
+        )}
+
+        <Field
+          label="Stock actual"
+          value={
+            <span className={stockBajo ? 'text-danger-600 dark:text-danger-400 font-semibold' : ''}>
+              {producto.stock_actual}
+              {stockBajo && <span className="ml-1 text-xs">⚠ bajo mínimo</span>}
+            </span>
+          }
+        />
+        <Field label="Stock mínimo" value={String(producto.stock_minimo)} />
+
+        {producto.descripcion && (
+          <Field label="Descripción" value={producto.descripcion} className="col-span-2" />
+        )}
+
+        {producto.tipos && producto.tipos.length > 0 && (
+          <div className="col-span-2">
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Tipos</div>
+            <div className="flex flex-wrap gap-1">
+              {producto.tipos.map(t => (
+                <Badge key={t.id} variant="brand" size="sm">{t.nombre}</Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {producto.specs && producto.specs.length > 0 && (
+          <div className="col-span-2">
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Especificaciones</div>
+            <div className="flex flex-wrap gap-1">
+              {producto.specs.map(s => (
+                <Badge key={s} variant="info" size="sm">{s}</Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {producto.tags && producto.tags.length > 0 && (
+          <div className="col-span-2">
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Tags</div>
+            <div className="flex flex-wrap gap-1">
+              {producto.tags.map(t => (
+                <Badge key={t} variant="neutral" size="sm">{t}</Badge>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  )
+
   return (
     <Modal open onOpenChange={(o) => { if (!o) onClose() }}>
       <ModalContent size="2xl" className="flex flex-col max-h-[90vh] p-0">
@@ -35,78 +116,24 @@ export default function ProductoDetailModal({ producto, onClose, onEdit, showCos
         </ModalHeader>
 
         <ModalBody className="px-6 py-5 overflow-y-auto">
-          {onEdit && (
-            <div className="flex justify-end mb-3">
-              <Button size="sm" variant="outline" leftIcon={<Pencil size={14} />} onClick={() => onEdit(producto)}>
-                Editar
-              </Button>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="SKU" value={producto.sku ?? '—'} />
-            <Field label="Formato" value={producto.formato ?? '—'} />
-            <Field label="Marca" value={producto.marca?.nombre ?? '—'} />
-            <Field label="Volumen" value={producto.volumen != null ? String(producto.volumen) : '—'} />
-
-            <Field label="Precio venta" value={fmtCLP(producto.precio_venta)} />
-            <Field label="Precio venta c/IVA" value={fmtCLP(producto.precio_con_iva)} />
-
-            {showCosto && (
-              <>
-                <Field label="Precio costo" value={fmtCLP(producto.precio_costo)} />
-                <Field label="Costo c/IVA" value={fmtCLP(producto.costo_con_iva)} />
-              </>
-            )}
-
-            <Field
-              label="Stock actual"
-              value={
-                <span className={stockBajo ? 'text-danger-600 dark:text-danger-400 font-semibold' : ''}>
-                  {producto.stock_actual}
-                  {stockBajo && <span className="ml-1 text-xs">⚠ bajo mínimo</span>}
-                </span>
-              }
-            />
-            <Field label="Stock mínimo" value={String(producto.stock_minimo)} />
-
-            {producto.descripcion && (
-              <Field label="Descripción" value={producto.descripcion} className="col-span-2" />
-            )}
-
-            {producto.tipos && producto.tipos.length > 0 && (
-              <div className="col-span-2">
-                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Tipos</div>
-                <div className="flex flex-wrap gap-1">
-                  {producto.tipos.map(t => (
-                    <Badge key={t.id} variant="brand" size="sm">{t.nombre}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {producto.specs && producto.specs.length > 0 && (
-              <div className="col-span-2">
-                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Especificaciones</div>
-                <div className="flex flex-wrap gap-1">
-                  {producto.specs.map(s => (
-                    <Badge key={s} variant="info" size="sm">{s}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {producto.tags && producto.tags.length > 0 && (
-              <div className="col-span-2">
-                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Tags</div>
-                <div className="flex flex-wrap gap-1">
-                  {producto.tags.map(t => (
-                    <Badge key={t} variant="neutral" size="sm">{t}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <Tabs defaultValue="datos">
+            <TabsList variant="underline">
+              <TabsTrigger value="datos">Datos</TabsTrigger>
+              <TabsTrigger value="ventas">Historial de ventas</TabsTrigger>
+              <TabsTrigger value="documentos">Documentos</TabsTrigger>
+              <TabsTrigger value="movimientos">Movimientos</TabsTrigger>
+            </TabsList>
+            <TabsContent value="datos" className="mt-4">{datosNode}</TabsContent>
+            <TabsContent value="ventas" className="mt-4">
+              <ProductoHistorialVentas productoId={producto.id} />
+            </TabsContent>
+            <TabsContent value="documentos" className="mt-4">
+              <ProductoDocumentos productoId={producto.id} />
+            </TabsContent>
+            <TabsContent value="movimientos" className="mt-4">
+              <ProductoHistorial productoId={producto.id} />
+            </TabsContent>
+          </Tabs>
         </ModalBody>
 
         <ModalFooter>

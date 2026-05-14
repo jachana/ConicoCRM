@@ -13,15 +13,19 @@ from sqlalchemy.orm import Session
 
 from app.api.config import require_admin
 from app.api.deps import require_permission
+from app.models.boleta import Boleta, BoletaLinea
+from app.models.cliente import Cliente
+from app.models.empresa import Empresa
 from app.models.factura import Factura, FacturaLinea
 from app.models.lista_precios import ListaPrecios, ListaPreciosItem
+from app.models.nota_venta import NotaVenta, NotaVentaLinea
 from app.models.producto import Producto
 from app.models.system_config import SystemConfig
 from app.models.tag import ProductoTag
 from app.models.tipo_producto import TipoProducto
 from app.models.user import User
 from app.models.movimiento_inventario import MovimientoInventario
-from app.schemas.lista_precios import HistorialCostoItem
+from app.schemas.lista_precios import HistorialCostoItem, HistorialVentaItem, HistorialVentaPage
 from app.schemas.producto import (
     BulkPreciosRequest,
     BulkPreciosResponse,
@@ -426,6 +430,141 @@ def historial_costos(
         )
         for lp, item in rows
     ]
+
+
+def _scope_filter_vendedor(doc_model, user_id: int):
+    """Filter expression OR(doc.vendedor_id, cliente.vendedor_id, empresa.vendedor_id, doc.empresa_id ∈ empresas asignadas)."""
+    from sqlalchemy import or_, select
+    empresas_del_vendedor = select(Empresa.id).where(Empresa.vendedor_id == user_id)
+    conds = [
+        doc_model.vendedor_id == user_id,
+        Cliente.vendedor_id == user_id,
+        Empresa.vendedor_id == user_id,
+    ]
+    if hasattr(doc_model, "empresa_id"):
+        conds.append(doc_model.empresa_id.in_(empresas_del_vendedor))
+    return or_(*conds)
+
+
+@router.get("/{producto_id}/historial-ventas", response_model=HistorialVentaPage)
+def historial_ventas(
+    producto_id: int,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    perms: tuple[User, Session] = require_permission("catalogo", "view"),
+):
+    """Sales history for a producto: union of NV/Factura/Boleta lines.
+
+    Vendedor only sees lines from docs whose vendedor_id, cliente.vendedor_id,
+    empresa.vendedor_id, or doc.empresa_id matches them.
+    """
+    from decimal import Decimal as D
+    user, db = perms
+    producto = db.get(Producto, producto_id)
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    is_vendedor = user.role == "vendedor"
+
+    # --- NV ---
+    nv_q = (
+        db.query(NotaVentaLinea, NotaVenta, Cliente, Empresa)
+        .join(NotaVenta, NotaVenta.id == NotaVentaLinea.nv_id)
+        .outerjoin(Cliente, Cliente.id == NotaVenta.cliente_id)
+        .outerjoin(Empresa, Empresa.id == Cliente.empresa_id)
+        .filter(NotaVentaLinea.producto_id == producto_id)
+    )
+    if is_vendedor:
+        nv_q = nv_q.filter(_scope_filter_vendedor(NotaVenta, user.id))
+
+    # --- Factura ---
+    fa_q = (
+        db.query(FacturaLinea, Factura, Cliente, Empresa)
+        .join(Factura, Factura.id == FacturaLinea.factura_id)
+        .outerjoin(Cliente, Cliente.id == Factura.cliente_id)
+        .outerjoin(Empresa, Empresa.id == Cliente.empresa_id)
+        .filter(FacturaLinea.producto_id == producto_id)
+    )
+    if is_vendedor:
+        fa_q = fa_q.filter(_scope_filter_vendedor(Factura, user.id))
+
+    # --- Boleta ---
+    bo_q = (
+        db.query(BoletaLinea, Boleta, Cliente, Empresa)
+        .join(Boleta, Boleta.id == BoletaLinea.boleta_id)
+        .outerjoin(Cliente, Cliente.id == Boleta.cliente_id)
+        .outerjoin(Empresa, Empresa.id == Cliente.empresa_id)
+        .filter(BoletaLinea.producto_id == producto_id)
+    )
+    if is_vendedor:
+        bo_q = bo_q.filter(_scope_filter_vendedor(Boleta, user.id))
+
+    items: list[HistorialVentaItem] = []
+
+    for linea, nv, cliente, empresa in nv_q.all():
+        cantidad = D(linea.cantidad or 0)
+        precio = D(linea.valor_neto or 0)
+        items.append(HistorialVentaItem(
+            fecha=nv.fecha,
+            doc_tipo="NV",
+            doc_id=nv.id,
+            doc_numero=nv.numero,
+            cliente_id=cliente.id if cliente else None,
+            cliente_nombre=cliente.nombre if cliente else None,
+            empresa_id=empresa.id if empresa else None,
+            empresa_nombre=empresa.nombre if empresa else None,
+            cantidad=cantidad,
+            precio_unitario=precio,
+            total=D(linea.total_neto or 0),
+        ))
+
+    for linea, fa, cliente, empresa in fa_q.all():
+        cantidad = D(linea.cantidad or 0)
+        precio = D(linea.valor_neto or 0)
+        items.append(HistorialVentaItem(
+            fecha=fa.fecha,
+            doc_tipo="Factura",
+            doc_id=fa.id,
+            doc_numero=fa.numero,
+            cliente_id=cliente.id if cliente else None,
+            cliente_nombre=cliente.nombre if cliente else None,
+            empresa_id=empresa.id if empresa else None,
+            empresa_nombre=empresa.nombre if empresa else None,
+            cantidad=cantidad,
+            precio_unitario=precio,
+            total=D(linea.total_neto or 0),
+        ))
+
+    for linea, bo, cliente, empresa in bo_q.all():
+        cantidad = D(linea.cantidad or 0)
+        precio = D(linea.precio_unitario or 0)
+        items.append(HistorialVentaItem(
+            fecha=bo.fecha,
+            doc_tipo="Boleta",
+            doc_id=bo.id,
+            doc_numero=bo.numero,
+            cliente_id=cliente.id if cliente else None,
+            cliente_nombre=cliente.nombre if cliente else None,
+            empresa_id=empresa.id if empresa else None,
+            empresa_nombre=empresa.nombre if empresa else None,
+            cantidad=cantidad,
+            precio_unitario=precio,
+            total=D(linea.total_neto or 0),
+        ))
+
+    items.sort(key=lambda x: (x.fecha, x.doc_id), reverse=True)
+
+    total = len(items)
+    total_cantidad = sum((it.cantidad for it in items), D(0))
+    total_monto = sum((it.total for it in items), D(0))
+
+    page = items[offset: offset + limit]
+    return HistorialVentaPage(
+        items=page,
+        total=total,
+        total_cantidad=total_cantidad,
+        total_monto=total_monto,
+    )
 
 
 # ============================================================================

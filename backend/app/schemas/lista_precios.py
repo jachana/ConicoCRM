@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from pydantic import BaseModel
 
@@ -50,3 +50,24 @@ class HistorialCostoItem(BaseModel):
     costo_unitario: Decimal
     lista_id: int
     nombre_archivo: str
+
+
+class HistorialVentaItem(BaseModel):
+    fecha: date
+    doc_tipo: str  # 'NV' | 'Factura' | 'Boleta'
+    doc_id: int
+    doc_numero: int | None
+    cliente_id: int | None
+    cliente_nombre: str | None
+    empresa_id: int | None
+    empresa_nombre: str | None
+    cantidad: Decimal
+    precio_unitario: Decimal
+    total: Decimal
+
+
+class HistorialVentaPage(BaseModel):
+    items: list[HistorialVentaItem]
+    total: int
+    total_cantidad: Decimal
+    total_monto: Decimal

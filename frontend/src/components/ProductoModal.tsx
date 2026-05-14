@@ -3,8 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { api } from '../lib/api'
 import type { Producto, Marca, TipoProducto } from '../types'
-import ProductoDocumentos from './ProductoDocumentos'
-import ProductoHistorial from './ProductoHistorial'
 import ProductoHistorialCostos from './ProductoHistorialCostos'
 import {
   Modal, ModalContent, ModalHeader, ModalTitle,
@@ -361,26 +359,16 @@ export default function ProductoModal({ editando, onClose, userRole }: Props) {
         </ModalHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
-          {editando ? (
+          {editando && isAdmin ? (
             <Tabs defaultValue="datos">
               <TabsList variant="underline">
                 <TabsTrigger value="datos">Datos</TabsTrigger>
-                <TabsTrigger value="documentos">Documentos</TabsTrigger>
-                <TabsTrigger value="historial">Historial</TabsTrigger>
-                {isAdmin && <TabsTrigger value="historial_costos">Historial costos</TabsTrigger>}
+                <TabsTrigger value="historial_costos">Historial costos</TabsTrigger>
               </TabsList>
               <TabsContent value="datos" className="mt-4">{formNode}</TabsContent>
-              <TabsContent value="documentos" className="mt-4">
-                <ProductoDocumentos productoId={editando.id} />
+              <TabsContent value="historial_costos" className="mt-4">
+                <ProductoHistorialCostos productoId={editando.id} />
               </TabsContent>
-              <TabsContent value="historial" className="mt-4">
-                <ProductoHistorial productoId={editando.id} />
-              </TabsContent>
-              {isAdmin && (
-                <TabsContent value="historial_costos" className="mt-4">
-                  <ProductoHistorialCostos productoId={editando.id} />
-                </TabsContent>
-              )}
             </Tabs>
           ) : formNode}
         </div>
