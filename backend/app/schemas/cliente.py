@@ -1,6 +1,7 @@
 from datetime import datetime, date
 from pydantic import BaseModel, field_validator
 from app.schemas.empresa import EmpresaRef
+from app.schemas.user import UsuarioMinOut
 from app.utils.rut import validate_rut
 
 
@@ -63,5 +64,6 @@ class ClienteUpdate(BaseModel):
 class ClienteOut(ClienteBase):
     id: int
     empresa: EmpresaRef | None = None
+    vendedor: UsuarioMinOut | None = None
     created_at: datetime
     model_config = {"from_attributes": True}

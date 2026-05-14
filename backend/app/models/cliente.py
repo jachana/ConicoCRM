@@ -35,3 +35,4 @@ class Cliente(Base):
     )
 
     empresa: Mapped["Empresa | None"] = relationship("Empresa", back_populates="clientes")
+    vendedor: Mapped["User | None"] = relationship("User", foreign_keys=[vendedor_id])

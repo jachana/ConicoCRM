@@ -2,6 +2,8 @@ from datetime import date, datetime
 from decimal import Decimal
 from pydantic import BaseModel, Field, computed_field
 
+from app.schemas.user import UsuarioMinOut
+
 
 class ContactoEmpresaCreate(BaseModel):
     nombre: str
@@ -72,6 +74,7 @@ class EmpresaOut(EmpresaBase):
     id: int
     created_at: datetime
     logo_path: str | None = Field(default=None, exclude=True)
+    vendedor: UsuarioMinOut | None = None
     model_config = {"from_attributes": True}
 
     @computed_field

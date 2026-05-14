@@ -44,6 +44,7 @@ class Empresa(Base):
         server_default=text("CURRENT_TIMESTAMP"),
     )
 
+    vendedor: Mapped["User | None"] = relationship("User", foreign_keys=[vendedor_id])
     clientes: Mapped[list["Cliente"]] = relationship("Cliente", back_populates="empresa")
     sedes_despacho: Mapped[list["SedeDespacho"]] = relationship(
         "SedeDespacho", back_populates="empresa", cascade="all, delete-orphan"
