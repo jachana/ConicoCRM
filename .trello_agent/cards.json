@@ -33,26 +33,26 @@
   "cards": [
     {
       "list": "In progress",
-      "name": "Vendedores solo deven ver NV relacionadas a sus clientes",
+      "name": "facturas deben estar filtradas para sus clientes para los vendedores",
       "labels": [
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nActualmente los vendedores pueden ver todas las notas de venta del sistema, lo que expone información sensible de clientes asignados a otros vendedores. Se requiere implementar un filtrado automático por relación cliente-vendedor para proteger esta información.\n\n**Acceptance Criteria**\n- Un vendedor autenticado solo visualiza notas de venta de clientes asignados a él en el listado.\n- Al intentar acceder directamente por URL a una nota de venta de un cliente no asignado, el sistema retorna error 403 Forbidden.\n- El listado de notas de venta no muestra registros de clientes que pertenecen a otros vendedores.\n- Los filtros y búsquedas respetan la restricción de visualización por vendedor.\n\n**Definition of Done**\n- Lógica de filtrado implementada en backend verificando relación cliente-vendedor.\n- Endpoint de listado GET /api/notas-venta aplica filtro automático según usuario.\n- Endpoint de detalle GET /api/notas-venta/:id valida permisos antes de retornar datos.\n- Frontend actualizado para consumir datos filtrados sin cambios visuales.\n- Tests unitarios cubren validación de permisos y filtrado.\n- Tests de integración verifican acceso autorizado y denegado.\n- Desplegado en staging y validado con usuario rol vendedor.\n- Tarjeta movida a 'In review' en Trello.\n\n**Notas técnicas**\n- Verificar modelo User->Cliente para relación vendedor-cliente.\n- Middleware de autorización en rutas de notas de venta.\n- Posible ajuste en query builder para aplicar .where('cliente.vendedor_id', userId).\n- Frontend: componentes ListadoNotasVenta y DetalleNotaVenta.\n\n<!-- tboard:refined -->",
+      "desc": "**Contexto / Problema**\nActualmente los vendedores pueden ver todas las facturas en el sistema, sin importar si pertenecen a sus clientes asignados. Esto genera problemas de privacidad y confusión, ya que ven información de clientes fuera de su cartera.\n\n**Acceptance Criteria**\n- Un vendedor al acceder a la sección de facturas solo ve facturas asociadas a clientes que tiene asignados.\n- El filtrado se aplica automáticamente sin intervención manual del usuario.\n- Los usuarios con rol administrador continúan viendo todas las facturas del sistema sin restricciones.\n- La búsqueda y otros filtros funcionan correctamente sobre el conjunto ya filtrado por vendedor.\n- No aparecen errores de permisos ni facturas vacías si el vendedor no tiene clientes asignados.\n\n**Definition of Done**\n- Lógica de filtrado por vendedor implementada en el backend (endpoint de facturas).\n- Query actualizada para incluir relación vendedor-cliente en la consulta de facturas.\n- Componente de frontend actualizado para consumir datos filtrados.\n- Tests unitarios y de integración agregados para validar el filtrado por rol.\n- Verificado en staging que administradores ven todas las facturas y vendedores solo las suyas.\n- Trello card movida a 'In review'.\n\n**Notas técnicas**\n- Endpoint: `/api/v1/facturas/` (GET)\n- Relación: `Cliente.vendedor_id` → `User.id` → `Factura.cliente_id`\n- Verificar middleware de permisos existente en `backend/apps/facturacion/views.py`\n- Componente frontend: `src/components/Facturacion/FacturasListView.vue`\n- Agregar tests en `backend/apps/facturacion/tests/test_permissions.py`\n\n<!-- tboard:refined -->",
       "checklist": [
-        "Implementar lógica de filtrado por vendedor en el backend",
-        "Actualizar endpoint de listado de notas de venta con filtro automático",
-        "Validar acceso directo a NV mediante ID ajeno al vendedor",
-        "Ajustar frontend para consumir datos filtrados",
-        "Escribir pruebas unitarias e integración",
-        "Desplegar en staging y verificar funcionamiento",
-        "Mover tarjeta a 'In review' en Trello",
-        "Implementar filtrado en query de notas de venta según cliente.vendedor_id",
-        "Agregar middleware de validación de permisos en GET /api/notas-venta/:id",
-        "Actualizar endpoint de listado con filtro automático por vendedor",
-        "Ajustar frontend para manejar respuestas 403 y datos filtrados",
-        "Escribir tests unitarios para lógica de filtrado y permisos",
-        "Escribir tests de integración para escenarios autorizado/no autorizado",
-        "Desplegar en staging y validar con usuario vendedor"
+        "Implementar lógica de filtrado por vendedor en backend",
+        "Actualizar query de facturas para incluir relación vendedor-cliente",
+        "Modificar componente de frontend para consumir datos filtrados",
+        "Agregar tests unitarios para el nuevo filtrado",
+        "Verificar que administradores aún vean todas las facturas",
+        "Probar búsqueda dentro del conjunto filtrado",
+        "Desplegar en staging y actualizar Trello",
+        "Implementar filtrado por vendedor en queryset de facturas (backend)",
+        "Agregar lógica condicional según rol (vendedor vs admin) en el endpoint",
+        "Actualizar componente de listado de facturas en frontend",
+        "Escribir tests unitarios para permisos de vendedor y admin",
+        "Verificar que búsqueda funciona sobre datos filtrados",
+        "Probar en staging con usuarios vendedor y admin",
+        "Desplegar y mover card a 'In review'"
       ]
     }
   ]
