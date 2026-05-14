@@ -270,6 +270,90 @@ def test_admin_ve_todas_las_facturas(client, admin_token, vendedor_user, vendedo
     assert {f1["id"], f2["id"]} <= ids
 
 
+# --- Guia de Despacho scoping ---
+
+def _make_guia(client, token, cliente_id):
+    r = client.post(
+        "/api/guias-despacho/",
+        json={
+            "cliente_id": cliente_id,
+            "motivo_traslado": 1,
+            "lineas": [{"descripcion": "Item", "cantidad": "1", "precio_unitario": "1190"}],
+        },
+        headers=_auth(token),
+    )
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def test_vendedor_lista_solo_guias_de_clientes_asignados(client, admin_token, vendedor_user, vendedor_token):
+    rc1 = client.post("/api/clientes/", json={"nombre": "Cli GD Mio"}, headers=_auth(admin_token))
+    cid_mio = rc1.json()["id"]
+    client.patch(f"/api/clientes/{cid_mio}", json={"vendedor_id": vendedor_user.id}, headers=_auth(admin_token))
+
+    rc2 = client.post("/api/clientes/", json={"nombre": "Cli GD Ajeno"}, headers=_auth(admin_token))
+    cid_ajeno = rc2.json()["id"]
+
+    g_mio = _make_guia(client, admin_token, cid_mio)
+    g_ajeno = _make_guia(client, admin_token, cid_ajeno)
+
+    rl = client.get("/api/guias-despacho/", headers=_auth(vendedor_token))
+    assert rl.status_code == 200
+    ids = {g["id"] for g in rl.json()["data"]}
+    assert g_mio["id"] in ids
+    assert g_ajeno["id"] not in ids
+
+
+def test_vendedor_lista_guias_via_empresa_asignada(client, admin_token, vendedor_user, vendedor_token):
+    re = client.post("/api/empresas/", json={"nombre": "Emp GD V", "rut": "99.999.999-9"}, headers=_auth(admin_token))
+    eid = re.json()["id"]
+    client.patch(f"/api/empresas/{eid}", json={"vendedor_id": vendedor_user.id}, headers=_auth(admin_token))
+
+    rc = client.post("/api/clientes/", json={"nombre": "Cli Emp GD", "empresa_id": eid}, headers=_auth(admin_token))
+    cid = rc.json()["id"]
+    g = _make_guia(client, admin_token, cid)
+
+    rl = client.get("/api/guias-despacho/", headers=_auth(vendedor_token))
+    assert rl.status_code == 200
+    ids = {item["id"] for item in rl.json()["data"]}
+    assert g["id"] in ids
+
+
+def test_vendedor_403_guia_de_cliente_no_asignado(client, admin_token, vendedor_token):
+    rc = client.post("/api/clientes/", json={"nombre": "Cli GD Otro"}, headers=_auth(admin_token))
+    cid = rc.json()["id"]
+    g = _make_guia(client, admin_token, cid)
+
+    rg = client.get(f"/api/guias-despacho/{g['id']}", headers=_auth(vendedor_token))
+    assert rg.status_code == 403
+
+
+def test_vendedor_acceso_guia_de_cliente_asignado(client, admin_token, vendedor_user, vendedor_token):
+    rc = client.post("/api/clientes/", json={"nombre": "Cli GD Mio2"}, headers=_auth(admin_token))
+    cid = rc.json()["id"]
+    client.patch(f"/api/clientes/{cid}", json={"vendedor_id": vendedor_user.id}, headers=_auth(admin_token))
+    g = _make_guia(client, admin_token, cid)
+
+    rg = client.get(f"/api/guias-despacho/{g['id']}", headers=_auth(vendedor_token))
+    assert rg.status_code == 200
+    assert rg.json()["id"] == g["id"]
+
+
+def test_admin_ve_todas_las_guias(client, admin_token, vendedor_user, vendedor_token):
+    rc1 = client.post("/api/clientes/", json={"nombre": "Cli GD A"}, headers=_auth(admin_token))
+    cid1 = rc1.json()["id"]
+    rc2 = client.post("/api/clientes/", json={"nombre": "Cli GD B"}, headers=_auth(admin_token))
+    cid2 = rc2.json()["id"]
+
+    g1 = _make_guia(client, admin_token, cid1)
+    g2 = _make_guia(client, admin_token, cid2)
+
+    rl = client.get("/api/guias-despacho/", headers=_auth(admin_token))
+    assert rl.status_code == 200
+    ids = {item["id"] for item in rl.json()["data"]}
+    assert {g1["id"], g2["id"]} <= ids
+
+
 def test_admin_ve_todas_las_nv(client, admin_token, vendedor_user, vendedor_token):
     rc1 = client.post("/api/clientes/", json={"nombre": "C-admin"}, headers=_auth(admin_token))
     cid1 = rc1.json()["id"]

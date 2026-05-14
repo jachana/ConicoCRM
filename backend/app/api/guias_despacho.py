@@ -2,10 +2,12 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import Response
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import require_modulo, require_permission
 from app.api.dte import _next_numero
+from app.models.cliente import Cliente
 from app.models.empresa import Empresa
 from app.models.guia_despacho import GuiaDespacho, GuiaDespachoLinea
 from app.models.system_config import SystemConfig
@@ -58,6 +60,48 @@ def _calcular_lineas_y_totales_guia(guia: GuiaDespacho) -> None:
     guia.total_neto = total_neto
     guia.total_iva = total_iva
     guia.total = total_bruto
+
+
+def _vendedor_guia_filter(query, user: User):
+    """Restrict guías to vendedor: guía asignada a él, o cuyo cliente esté
+    asignado a él (directo o vía empresa del cliente), o cuya empresa de
+    despacho le esté asignada."""
+    from sqlalchemy import select
+    empresas_del_vendedor = select(Empresa.id).where(Empresa.vendedor_id == user.id)
+    return query.outerjoin(Cliente, Cliente.id == GuiaDespacho.cliente_id).outerjoin(
+        Empresa, Empresa.id == Cliente.empresa_id
+    ).filter(
+        or_(
+            GuiaDespacho.vendedor_id == user.id,
+            Cliente.vendedor_id == user.id,
+            Empresa.vendedor_id == user.id,
+            GuiaDespacho.empresa_id.in_(empresas_del_vendedor),
+        )
+    )
+
+
+def _enforce_guia_scope(guia: GuiaDespacho, user: User, db: Session) -> None:
+    """Raise 403 if vendedor accesses a guía que no es suya por cliente/empresa/asignación."""
+    if user.role != "vendedor":
+        return
+    if guia.vendedor_id == user.id:
+        return
+    cli = db.get(Cliente, guia.cliente_id) if guia.cliente_id else None
+    if cli is not None:
+        if cli.vendedor_id == user.id:
+            return
+        if cli.empresa_id is not None:
+            emp = db.get(Empresa, cli.empresa_id)
+            if emp is not None and emp.vendedor_id == user.id:
+                return
+    if guia.empresa_id is not None:
+        emp = db.get(Empresa, guia.empresa_id)
+        if emp is not None and emp.vendedor_id == user.id:
+            return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="No tienes acceso a esta guía de despacho",
+    )
 
 
 def _load_guia(db: Session, guia_id: int) -> GuiaDespacho:
@@ -136,8 +180,10 @@ def listar_guias_despacho(
     limit: int = Query(50, ge=1, le=500),
     perms: tuple[User, Session] = require_permission("guias_despacho", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     q = db.query(GuiaDespacho)
+    if current_user.role == "vendedor":
+        q = _vendedor_guia_filter(q, current_user)
     if estado:
         q = q.filter(GuiaDespacho.estado == estado)
     if dte_estado:
@@ -158,8 +204,10 @@ def obtener_guia(
     guia_id: int,
     perms: tuple[User, Session] = require_permission("guias_despacho", "view"),
 ):
-    _, db = perms
-    return _load_guia(db, guia_id)
+    current_user, db = perms
+    guia = _load_guia(db, guia_id)
+    _enforce_guia_scope(guia, current_user, db)
+    return guia
 
 
 @router.patch("/{guia_id}", response_model=GuiaDespachoOut)
@@ -168,8 +216,9 @@ def editar_guia(
     body: GuiaDespachoUpdate,
     perms: tuple[User, Session] = require_permission("guias_despacho", "edit"),
 ):
-    _, db = perms
+    current_user, db = perms
     guia = _load_guia(db, guia_id)
+    _enforce_guia_scope(guia, current_user, db)
     try:
         for field, value in body.model_dump(exclude_unset=True).items():
             setattr(guia, field, value)
@@ -186,8 +235,9 @@ def eliminar_guia(
     guia_id: int,
     perms: tuple[User, Session] = require_permission("guias_despacho", "delete"),
 ):
-    _, db = perms
+    current_user, db = perms
     guia = _load_guia(db, guia_id)
+    _enforce_guia_scope(guia, current_user, db)
     if guia.dte_estado != "no_emitida":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -218,7 +268,7 @@ def exportar_excel(
         joinedload(GuiaDespacho.vendedor),
     )
     if user.role == "vendedor":
-        q = q.filter(GuiaDespacho.vendedor_id == user.id)
+        q = _vendedor_guia_filter(q, user)
     if fecha_desde:
         q = q.filter(GuiaDespacho.fecha >= fecha_desde)
     if fecha_hasta:
@@ -275,8 +325,9 @@ def descargar_pdf_guia(
     guia_id: int,
     perms: tuple[User, Session] = require_permission("guias_despacho", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     guia = _load_guia(db, guia_id)
+    _enforce_guia_scope(guia, current_user, db)
     config = _config_dict(db)
     apply_config_logo(config, db.get(Empresa, guia.empresa_id) if guia.empresa_id else None)
     pdf_bytes = generar_pdf_guia_despacho(guia, config)
@@ -295,8 +346,9 @@ def enviar_email_guia(
     body: GuiaEmailBody,
     perms: tuple[User, Session] = require_permission("guias_despacho", "edit"),
 ):
-    _, db = perms
+    current_user, db = perms
     guia = _load_guia(db, guia_id)
+    _enforce_guia_scope(guia, current_user, db)
     destino = (body.email or guia.email_envio or
                (guia.cliente.email if guia.cliente and getattr(guia.cliente, "email", None) else None))
     if not destino:
