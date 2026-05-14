@@ -32,19 +32,27 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[UX] SKU clickable en documentos → abre catálogo con producto",
+      "list": "In progress",
+      "name": "Vendedores solo deven ver NV relacionadas a sus clientes",
       "labels": [
-        "Goal: UX Polish",
-        "Size:S"
+        "Size:M"
       ],
-      "desc": "**Resumen** — En documentos (cotizaciones, notas de venta, facturas, etc.), el SKU ahora es un link que lleva al catálogo con el producto en su modal de detalle.\n\n**Cambios / Decisiones**\n- Se reutiliza el componente `EntityLink` con `kind=producto` para renderizar el SKU como link a `/catalogo?detalle=<id>`.\n- Cambio en `NotaVentaDetalle.tsx`: input deshabilitado de SKU se reemplaza por el link cuando hay `producto_id`.\n- Aplicado en líneas de detalle de cotización (`CotizacionDetalle.tsx`), nota de venta (`NotaVentaDetalle.tsx`) y factura/boleta (`FacturaDetalle.tsx`).\n- No se creó un nuevo componente `<SkuLink>`; se usó lógica existente de deep-link por ID.\n- No se implementó manejo de SKUs huérfanos (sin `producto_id`) en esta iteración.",
+      "desc": "**Contexto / Problema**\nActualmente los vendedores pueden ver todas las notas de venta del sistema, lo que expone información sensible de clientes asignados a otros vendedores. Se requiere implementar un filtrado automático por relación cliente-vendedor para proteger esta información.\n\n**Acceptance Criteria**\n- Un vendedor autenticado solo visualiza notas de venta de clientes asignados a él en el listado.\n- Al intentar acceder directamente por URL a una nota de venta de un cliente no asignado, el sistema retorna error 403 Forbidden.\n- El listado de notas de venta no muestra registros de clientes que pertenecen a otros vendedores.\n- Los filtros y búsquedas respetan la restricción de visualización por vendedor.\n\n**Definition of Done**\n- Lógica de filtrado implementada en backend verificando relación cliente-vendedor.\n- Endpoint de listado GET /api/notas-venta aplica filtro automático según usuario.\n- Endpoint de detalle GET /api/notas-venta/:id valida permisos antes de retornar datos.\n- Frontend actualizado para consumir datos filtrados sin cambios visuales.\n- Tests unitarios cubren validación de permisos y filtrado.\n- Tests de integración verifican acceso autorizado y denegado.\n- Desplegado en staging y validado con usuario rol vendedor.\n- Tarjeta movida a 'In review' en Trello.\n\n**Notas técnicas**\n- Verificar modelo User->Cliente para relación vendedor-cliente.\n- Middleware de autorización en rutas de notas de venta.\n- Posible ajuste en query builder para aplicar .where('cliente.vendedor_id', userId).\n- Frontend: componentes ListadoNotasVenta y DetalleNotaVenta.\n\n<!-- tboard:refined -->",
       "checklist": [
-        "Ir a una cotización con productos y verificar que el SKU es un link",
-        "Hacer clic en un SKU y confirmar que lleva a /catalogo con modal abierto",
-        "Revisar que en Nota de Venta el SKU input desaparece por link",
-        "Verificar que líneas sin producto_id sigan mostrando SKU como texto plano",
-        "Probar navegación desde detalle de factura/boleta también abre modal en catálogo"
+        "Implementar lógica de filtrado por vendedor en el backend",
+        "Actualizar endpoint de listado de notas de venta con filtro automático",
+        "Validar acceso directo a NV mediante ID ajeno al vendedor",
+        "Ajustar frontend para consumir datos filtrados",
+        "Escribir pruebas unitarias e integración",
+        "Desplegar en staging y verificar funcionamiento",
+        "Mover tarjeta a 'In review' en Trello",
+        "Implementar filtrado en query de notas de venta según cliente.vendedor_id",
+        "Agregar middleware de validación de permisos en GET /api/notas-venta/:id",
+        "Actualizar endpoint de listado con filtro automático por vendedor",
+        "Ajustar frontend para manejar respuestas 403 y datos filtrados",
+        "Escribir tests unitarios para lógica de filtrado y permisos",
+        "Escribir tests de integración para escenarios autorizado/no autorizado",
+        "Desplegar en staging y validar con usuario vendedor"
       ]
     }
   ]
