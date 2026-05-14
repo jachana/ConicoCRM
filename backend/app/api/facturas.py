@@ -51,6 +51,48 @@ def _dte_is_locked(dte_estado: str | None) -> bool:
     return dte_estado in _DTE_LOCKED_STATES
 
 
+def _vendedor_factura_filter(query, user: User):
+    """Restrict facturas to vendedor: factura asignada a él, o cuyo cliente esté
+    asignado a él (directo o vía empresa del cliente), o cuya empresa de
+    facturación le esté asignada."""
+    from sqlalchemy import select
+    empresas_del_vendedor = select(Empresa.id).where(Empresa.vendedor_id == user.id)
+    return query.outerjoin(Cliente, Cliente.id == Factura.cliente_id).outerjoin(
+        Empresa, Empresa.id == Cliente.empresa_id
+    ).filter(
+        or_(
+            Factura.vendedor_id == user.id,
+            Cliente.vendedor_id == user.id,
+            Empresa.vendedor_id == user.id,
+            Factura.empresa_id.in_(empresas_del_vendedor),
+        )
+    )
+
+
+def _enforce_factura_scope(factura: Factura, user: User, db: Session) -> None:
+    """Raise 403 if vendedor accesses a factura that isn't theirs by cliente/empresa/asignación."""
+    if user.role != "vendedor":
+        return
+    if factura.vendedor_id == user.id:
+        return
+    cli = db.get(Cliente, factura.cliente_id) if factura.cliente_id else None
+    if cli is not None:
+        if cli.vendedor_id == user.id:
+            return
+        if cli.empresa_id is not None:
+            emp = db.get(Empresa, cli.empresa_id)
+            if emp is not None and emp.vendedor_id == user.id:
+                return
+    if factura.empresa_id is not None:
+        emp = db.get(Empresa, factura.empresa_id)
+        if emp is not None and emp.vendedor_id == user.id:
+            return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="No tienes acceso a esta factura",
+    )
+
+
 def _apply_text_search(query, db: Session, q: str):
     """Filter Factura query by free text matching numero, cliente nombre, or
     line item (descripción/SKU/producto nombre/SKU/marca/tipo/tag)."""
@@ -250,6 +292,8 @@ def exportar_excel(
             selectinload(Factura.lineas),
         )
     )
+    if current_user.role == "vendedor":
+        q = _vendedor_factura_filter(q, current_user)
     if ids:
         q = q.filter(Factura.id.in_(ids))
     else:
@@ -325,6 +369,8 @@ def listar_facturas(
         joinedload(Factura.empresa),
         selectinload(Factura.lineas),
     )
+    if current_user.role == "vendedor":
+        query = _vendedor_factura_filter(query, current_user)
     if estado:
         query = query.filter(Factura.estado.in_(estado))
     if cliente_id:
@@ -539,6 +585,7 @@ def obtener_factura(
 ):
     current_user, db = perms
     factura = _load_factura(db, factura_id)
+    _enforce_factura_scope(factura, current_user, db)
     if current_user.role == "vendedor":
         out = FacturaOut.model_validate(factura)
         for linea in out.lineas:
@@ -668,8 +715,9 @@ def generar_pdf(
     factura_id: int,
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     factura = _load_factura(db, factura_id)
+    _enforce_factura_scope(factura, current_user, db)
     config = _get_config_dict(db)
     apply_config_logo(config, db.get(Empresa, factura.empresa_id) if factura.empresa_id else None)
     pdf_bytes = generar_pdf_factura(factura, config)
@@ -688,8 +736,9 @@ def enviar_email(
     factura_id: int,
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
-    _, db = perms
+    current_user, db = perms
     factura = _load_factura(db, factura_id)
+    _enforce_factura_scope(factura, current_user, db)
     config = _get_config_dict(db)
     apply_config_logo(config, db.get(Empresa, factura.empresa_id) if factura.empresa_id else None)
     try:

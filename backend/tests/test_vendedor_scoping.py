@@ -188,6 +188,88 @@ def test_vendedor_acceso_nv_de_cliente_asignado(client, admin_token, vendedor_us
     assert rg.json()["id"] == nv["id"]
 
 
+# --- Factura scoping ---
+
+def _make_factura(client, token, cliente_id, lineas=None):
+    if lineas is None:
+        lineas = [{"orden": 0, "descripcion": "Item", "cantidad": 1, "valor_neto": 1000}]
+    r = client.post(
+        "/api/facturas/",
+        json={"cliente_id": cliente_id, "correo": "f@test.com", "lineas": lineas},
+        headers=_auth(token),
+    )
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def test_vendedor_lista_solo_facturas_de_clientes_asignados(client, admin_token, vendedor_user, vendedor_token):
+    rc1 = client.post("/api/clientes/", json={"nombre": "Cli Fac Mio"}, headers=_auth(admin_token))
+    cid_mio = rc1.json()["id"]
+    client.patch(f"/api/clientes/{cid_mio}", json={"vendedor_id": vendedor_user.id}, headers=_auth(admin_token))
+
+    rc2 = client.post("/api/clientes/", json={"nombre": "Cli Fac Ajeno"}, headers=_auth(admin_token))
+    cid_ajeno = rc2.json()["id"]
+
+    f_mio = _make_factura(client, admin_token, cid_mio)
+    f_ajeno = _make_factura(client, admin_token, cid_ajeno)
+
+    rl = client.get("/api/facturas/", headers=_auth(vendedor_token))
+    assert rl.status_code == 200
+    ids = {f["id"] for f in rl.json()["data"]}
+    assert f_mio["id"] in ids
+    assert f_ajeno["id"] not in ids
+
+
+def test_vendedor_lista_facturas_via_empresa_asignada(client, admin_token, vendedor_user, vendedor_token):
+    re = client.post("/api/empresas/", json={"nombre": "Emp Fac V", "rut": "66.666.666-6"}, headers=_auth(admin_token))
+    eid = re.json()["id"]
+    client.patch(f"/api/empresas/{eid}", json={"vendedor_id": vendedor_user.id}, headers=_auth(admin_token))
+
+    rc = client.post("/api/clientes/", json={"nombre": "Cli Emp Fac", "empresa_id": eid}, headers=_auth(admin_token))
+    cid = rc.json()["id"]
+    f = _make_factura(client, admin_token, cid)
+
+    rl = client.get("/api/facturas/", headers=_auth(vendedor_token))
+    assert rl.status_code == 200
+    ids = {item["id"] for item in rl.json()["data"]}
+    assert f["id"] in ids
+
+
+def test_vendedor_403_factura_de_cliente_no_asignado(client, admin_token, vendedor_token):
+    rc = client.post("/api/clientes/", json={"nombre": "Cli Fac Otro"}, headers=_auth(admin_token))
+    cid = rc.json()["id"]
+    f = _make_factura(client, admin_token, cid)
+
+    rg = client.get(f"/api/facturas/{f['id']}", headers=_auth(vendedor_token))
+    assert rg.status_code == 403
+
+
+def test_vendedor_acceso_factura_de_cliente_asignado(client, admin_token, vendedor_user, vendedor_token):
+    rc = client.post("/api/clientes/", json={"nombre": "Cli Fac Mio2"}, headers=_auth(admin_token))
+    cid = rc.json()["id"]
+    client.patch(f"/api/clientes/{cid}", json={"vendedor_id": vendedor_user.id}, headers=_auth(admin_token))
+    f = _make_factura(client, admin_token, cid)
+
+    rg = client.get(f"/api/facturas/{f['id']}", headers=_auth(vendedor_token))
+    assert rg.status_code == 200
+    assert rg.json()["id"] == f["id"]
+
+
+def test_admin_ve_todas_las_facturas(client, admin_token, vendedor_user, vendedor_token):
+    rc1 = client.post("/api/clientes/", json={"nombre": "Cli Fac Admin"}, headers=_auth(admin_token))
+    cid1 = rc1.json()["id"]
+    rc2 = client.post("/api/clientes/", json={"nombre": "Cli Fac Vend"}, headers=_auth(vendedor_token))
+    cid2 = rc2.json()["id"]
+
+    f1 = _make_factura(client, admin_token, cid1)
+    f2 = _make_factura(client, admin_token, cid2)
+
+    rl = client.get("/api/facturas/", headers=_auth(admin_token))
+    assert rl.status_code == 200
+    ids = {item["id"] for item in rl.json()["data"]}
+    assert {f1["id"], f2["id"]} <= ids
+
+
 def test_admin_ve_todas_las_nv(client, admin_token, vendedor_user, vendedor_token):
     rc1 = client.post("/api/clientes/", json={"nombre": "C-admin"}, headers=_auth(admin_token))
     cid1 = rc1.json()["id"]
