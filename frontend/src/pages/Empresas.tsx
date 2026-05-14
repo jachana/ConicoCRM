@@ -9,6 +9,7 @@ import { validateRut, cleanRut } from '../utils/rut'
 import type { Empresa, EmpresaListItem, DeudaBulkItem, SedeDespacho } from '../types'
 import EmpresaFilters from '../components/EmpresaFilters'
 import EmpresaDetailModal from '../components/EmpresaDetailModal'
+import VendedorSelect from '../components/VendedorSelect'
 import ColumnsMenu from '../components/ColumnsMenu'
 import { useColumnVisibility, type ColumnDef } from '../hooks/useColumnVisibility'
 import {
@@ -35,6 +36,7 @@ type FormData = {
   nota_cobranza: string
   ubicacion: string
   ruts_adicionales: string[]
+  vendedor_id: number | null
 }
 
 const EMPTY_FORM: FormData = {
@@ -42,9 +44,10 @@ const EMPTY_FORM: FormData = {
   linea_credito: '', plazo_credito: '',
   sector: '', email: '', nota_cobranza: '', ubicacion: '',
   ruts_adicionales: [],
+  vendedor_id: null,
 }
 
-type SortField = 'nombre' | 'rut' | 'sector' | 'ultima_compra' | 'deuda_total' | 'deuda_vencida'
+type SortField = 'nombre' | 'rut' | 'sector' | 'vendedor' | 'ultima_compra' | 'deuda_total' | 'deuda_vencida'
 
 function fmt(n: number) {
   return '$' + n.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -148,6 +151,10 @@ export default function Empresas() {
         const ta = a.ultima_compra ? new Date(a.ultima_compra + 'T00:00:00').getTime() : 0
         const tb = b.ultima_compra ? new Date(b.ultima_compra + 'T00:00:00').getTime() : 0
         cmp = ta - tb
+      } else if (sortField === 'vendedor') {
+        const va = a.vendedor?.name ?? ''
+        const vb = b.vendedor?.name ?? ''
+        cmp = va.localeCompare(vb, 'es-CL')
       } else {
         const va = String(a[sortField as keyof EmpresaListItem] ?? '')
         const vb = String(b[sortField as keyof EmpresaListItem] ?? '')
@@ -169,6 +176,7 @@ export default function Empresas() {
       sector: e.sector ?? '',
       email: e.email ?? '', nota_cobranza: e.nota_cobranza ?? '', ubicacion: e.ubicacion ?? '',
       ruts_adicionales: e.ruts_adicionales ?? [],
+      vendedor_id: e.vendedor_id ?? null,
     })
     setRutError(null); setRutAdicionalInput(''); setRutAdicionalError(null)
     setError(null); setModalOpen(true)
@@ -299,6 +307,7 @@ export default function Empresas() {
     { field: 'nombre',        label: 'Nombre' },
     { field: 'rut',           label: 'RUT' },
     { field: 'sector',        label: 'Sector' },
+    { field: 'vendedor',      label: 'Vendedor' },
     { field: 'ultima_compra', label: 'Última Compra' },
     { field: 'deuda_total',   label: 'Deuda',   align: 'right' },
     { field: 'deuda_vencida', label: 'Vencida', align: 'right' },
@@ -308,6 +317,7 @@ export default function Empresas() {
     { key: 'nombre',        label: 'Nombre', alwaysVisible: true },
     { key: 'rut',           label: 'RUT' },
     { key: 'sector',        label: 'Sector' },
+    { key: 'vendedor',      label: 'Vendedor', defaultHidden: true },
     { key: 'ultima_compra', label: 'Última Compra' },
     { key: 'deuda_total',   label: 'Deuda' },
     { key: 'deuda_vencida', label: 'Vencida' },
@@ -423,6 +433,9 @@ export default function Empresas() {
                       )}
                       {cols.isVisible('sector') && (
                         <TD className="text-gray-500 dark:text-gray-400">{e.sector ?? '—'}</TD>
+                      )}
+                      {cols.isVisible('vendedor') && (
+                        <TD className="text-gray-500 dark:text-gray-400">{e.vendedor?.name ?? '—'}</TD>
                       )}
                       {cols.isVisible('ultima_compra') && (
                         <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">
@@ -615,6 +628,14 @@ export default function Empresas() {
                     step="0.01"
                     value={form.linea_credito}
                     onChange={e => setForm(f => ({ ...f, linea_credito: e.target.value }))}
+                    disabled={user?.role === 'vendedor'}
+                  />
+                </FormField>
+
+                <FormField label="Vendedor asignado" className="col-span-2">
+                  <VendedorSelect
+                    value={form.vendedor_id}
+                    onChange={v => setForm(f => ({ ...f, vendedor_id: v }))}
                     disabled={user?.role === 'vendedor'}
                   />
                 </FormField>

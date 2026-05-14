@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select as sa_select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_permission
 from app.models.cliente import Cliente as ClienteModel
@@ -143,8 +143,10 @@ def listar_empresas(
         .subquery()
     )
 
-    query = db.query(Empresa, ultima_compra_subq.c.ultima_compra).outerjoin(
-        ultima_compra_subq, ultima_compra_subq.c.empresa_id == Empresa.id
+    query = (
+        db.query(Empresa, ultima_compra_subq.c.ultima_compra)
+        .outerjoin(ultima_compra_subq, ultima_compra_subq.c.empresa_id == Empresa.id)
+        .options(joinedload(Empresa.vendedor))
     )
 
     if current_user.role == "vendedor":
@@ -181,9 +183,8 @@ def listar_empresas(
     rows = query.order_by(Empresa.nombre).all()
     result = []
     for empresa, ultima_compra in rows:
-        item = EmpresaListItem.model_validate(
-            {**empresa.__dict__, "ultima_compra": ultima_compra}
-        )
+        item = EmpresaListItem.model_validate(empresa, from_attributes=True)
+        item.ultima_compra = ultima_compra
         result.append(item)
     return result
 
@@ -615,7 +616,12 @@ def obtener_empresa(
     perms: tuple[User, Session] = require_permission("empresas", "view"),
 ):
     current_user, db = perms
-    e = db.get(Empresa, empresa_id)
+    e = (
+        db.query(Empresa)
+        .options(joinedload(Empresa.vendedor))
+        .filter(Empresa.id == empresa_id)
+        .first()
+    )
     if not e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
     _enforce_empresa_scope(e, current_user)
@@ -638,7 +644,11 @@ def actualizar_empresa(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="El RUT no puede modificarse después de creada la empresa")
     if "linea_credito" in datos and user.role == "vendedor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores pueden modificar la línea de crédito")
-    if "vendedor_id" in datos and user.role == "vendedor":
+    if (
+        "vendedor_id" in datos
+        and user.role == "vendedor"
+        and datos["vendedor_id"] != e.vendedor_id
+    ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores pueden reasignar el vendedor")
     nuevos_ruts = datos.pop("ruts_adicionales", None)
     if nuevos_ruts is not None:

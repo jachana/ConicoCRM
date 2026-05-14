@@ -83,7 +83,7 @@ def listar_clientes(
     perms: tuple[User, Session] = require_permission("clientes", "view"),
 ):
     current_user, db = perms
-    query = db.query(Cliente)
+    query = db.query(Cliente).options(joinedload(Cliente.vendedor))
     is_vendedor = current_user.role == "vendedor"
     if is_vendedor:
         query = _vendedor_cliente_filter(query, current_user)
@@ -151,7 +151,11 @@ def actualizar_cliente(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
     _enforce_cliente_scope(c, current_user, db)
     datos = body.model_dump(exclude_unset=True)
-    if "vendedor_id" in datos and current_user.role == "vendedor":
+    if (
+        "vendedor_id" in datos
+        and current_user.role == "vendedor"
+        and datos["vendedor_id"] != c.vendedor_id
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Solo administradores pueden reasignar el vendedor",

@@ -8,6 +8,8 @@ import { validateRut } from '../utils/rut'
 import type { Cliente, Empresa } from '../types'
 import ClienteDetailModal from '../components/ClienteDetailModal'
 import ColumnsMenu from '../components/ColumnsMenu'
+import VendedorSelect from '../components/VendedorSelect'
+import { useAuthStore } from '../stores/auth'
 import { useColumnVisibility, type ColumnDef } from '../hooks/useColumnVisibility'
 import {
   Button, Input, Textarea, FormField, Badge, EmptyState, Skeleton,
@@ -23,16 +25,19 @@ type FormData = {
   recibe_correo: boolean; despacho_o_retiro: string
   comuna: string; ultimo_contacto: string; forma_captacion: string
   compromiso: string; es_nuevo: boolean
+  vendedor_id: number | null
 }
 
 const EMPTY_FORM: FormData = {
   nombre: '', rut: '', email: '', telefono: '', direccion_despacho: '', notas: '',
   empresa_id: null, recibe_correo: true, despacho_o_retiro: '',
   comuna: '', ultimo_contacto: '', forma_captacion: '', compromiso: '', es_nuevo: false,
+  vendedor_id: null,
 }
 
 export default function Clientes() {
   const qc = useQueryClient()
+  const user = useAuthStore(s => s.user)
   const [busqueda, setBusqueda] = useState('')
   const debouncedBusqueda = useDebounce(busqueda, 300)
 
@@ -84,6 +89,7 @@ export default function Clientes() {
     { key: 'rut',      label: 'RUT' },
     { key: 'email',    label: 'Email' },
     { key: 'telefono', label: 'Teléfono' },
+    { key: 'vendedor', label: 'Vendedor', defaultHidden: true },
   ]
   const cols = useColumnVisibility('clientes-table', COLUMNS)
 
@@ -98,6 +104,7 @@ export default function Clientes() {
       comuna: c.comuna ?? '', ultimo_contacto: c.ultimo_contacto ?? '',
       forma_captacion: c.forma_captacion ?? '', compromiso: c.compromiso ?? '',
       es_nuevo: c.es_nuevo,
+      vendedor_id: c.vendedor_id ?? null,
     })
     setError(null); setModalOpen(true)
   }
@@ -226,6 +233,7 @@ export default function Clientes() {
                   {cols.isVisible('rut')      && <TH>RUT</TH>}
                   {cols.isVisible('email')    && <TH>Email</TH>}
                   {cols.isVisible('telefono') && <TH>Teléfono</TH>}
+                  {cols.isVisible('vendedor') && <TH>Vendedor</TH>}
                   <TH className="text-right">Acciones</TH>
                 </TR>
               </THead>
@@ -244,6 +252,7 @@ export default function Clientes() {
                     {cols.isVisible('rut')      && <TD className="text-gray-500 dark:text-gray-400 font-num">{c.rut ?? '—'}</TD>}
                     {cols.isVisible('email')    && <TD className="text-gray-500 dark:text-gray-400">{c.email ?? '—'}</TD>}
                     {cols.isVisible('telefono') && <TD className="text-gray-500 dark:text-gray-400">{c.telefono ?? '—'}</TD>}
+                    {cols.isVisible('vendedor') && <TD className="text-gray-500 dark:text-gray-400">{c.vendedor?.name ?? '—'}</TD>}
                     <TD onClick={e => e.stopPropagation()}>
                       {eliminandoId === c.id ? (
                         <div className="flex items-center justify-end gap-2 text-xs">
@@ -365,6 +374,14 @@ export default function Clientes() {
 
                 <FormField label="Forma Captación" className="col-span-2">
                   <Input value={form.forma_captacion} onChange={e => setForm(f => ({ ...f, forma_captacion: e.target.value }))} />
+                </FormField>
+
+                <FormField label="Vendedor asignado" className="col-span-2">
+                  <VendedorSelect
+                    value={form.vendedor_id}
+                    onChange={v => setForm(f => ({ ...f, vendedor_id: v }))}
+                    disabled={user?.role === 'vendedor'}
+                  />
                 </FormField>
 
                 <FormField label="Dirección de Despacho" className="col-span-2">

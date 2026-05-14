@@ -49,6 +49,11 @@ export interface EmpresaRef {
   rut: string | null
 }
 
+export interface UserMin {
+  id: number
+  name: string
+}
+
 export interface Empresa {
   id: number
   nombre: string
@@ -63,6 +68,8 @@ export interface Empresa {
   created_at: string
   has_logo: boolean
   ruts_adicionales: string[]
+  vendedor_id: number | null
+  vendedor: UserMin | null
 }
 
 export interface DeudaBulkItem {
@@ -183,6 +190,8 @@ export interface Cliente {
   compromiso: string | null
   es_nuevo: boolean
   created_at: string
+  vendedor_id: number | null
+  vendedor: UserMin | null
 }
 
 export interface FacturaResumen {
