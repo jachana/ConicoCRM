@@ -14,8 +14,13 @@ def vendedor(db):
 def test_vendedor_can_view_catalogo(db, vendedor):
     assert has_permission(db, vendedor, "catalogo", "view") is True
 
-def test_vendedor_cannot_edit_catalogo(db, vendedor):
-    assert has_permission(db, vendedor, "catalogo", "edit") is False
+def test_vendedor_can_edit_catalogo(db, vendedor):
+    assert has_permission(db, vendedor, "catalogo", "edit") is True
+    assert has_permission(db, vendedor, "catalogo", "create") is True
+
+
+def test_vendedor_cannot_delete_catalogo(db, vendedor):
+    assert has_permission(db, vendedor, "catalogo", "delete") is False
 
 def test_vendedor_cannot_view_rrhh(db, vendedor):
     assert has_permission(db, vendedor, "rrhh", "view") is False

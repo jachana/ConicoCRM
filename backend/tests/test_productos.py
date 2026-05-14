@@ -11,13 +11,43 @@ def test_vendedor_puede_ver_productos(client, vendedor_token):
     assert r.status_code == 200
 
 
-def test_vendedor_no_puede_crear_producto(client, vendedor_token):
+def test_vendedor_puede_crear_producto(client, vendedor_token):
     r = client.post(
         "/api/productos/",
         json={"nombre": "Prod X", "precio_venta": "20.00"},
         headers={"Authorization": f"Bearer {vendedor_token}"},
     )
-    assert r.status_code == 403
+    assert r.status_code == 201
+
+
+def test_vendedor_puede_editar_producto(client, vendedor_token, admin_token):
+    r = client.post(
+        "/api/productos/",
+        json={"nombre": "Prod Editable", "precio_venta": "100.00"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201
+    pid = r.json()["id"]
+    rp = client.patch(
+        f"/api/productos/{pid}",
+        json={"precio_venta": "150.00", "descripcion": "Updated by vendedor"},
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert rp.status_code == 200
+
+
+def test_vendedor_no_puede_eliminar_producto(client, vendedor_token, admin_token):
+    r = client.post(
+        "/api/productos/",
+        json={"nombre": "Prod No Delete", "precio_venta": "100.00"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    pid = r.json()["id"]
+    rd = client.delete(
+        f"/api/productos/{pid}",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert rd.status_code == 403
 
 
 def test_crear_producto(client, admin_token):
@@ -421,14 +451,14 @@ def test_bulk_precios_rechaza_ids_duplicados(client, admin_token):
     assert r.status_code == 422
 
 
-def test_bulk_precios_vendedor_no_puede(client, vendedor_token, admin_token):
+def test_bulk_precios_vendedor_puede(client, vendedor_token, admin_token):
     a = _crear_producto(client, admin_token, "BulkVend", "100.00")
     r = client.patch(
         "/api/productos/bulk-precios",
         json={"items": [{"id": a, "precio_venta": "150.00"}]},
         headers={"Authorization": f"Bearer {vendedor_token}"},
     )
-    assert r.status_code == 403
+    assert r.status_code == 200
 
 
 # Specs (technical specifications) tests ------------------------------------
