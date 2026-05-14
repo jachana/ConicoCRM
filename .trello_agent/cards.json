@@ -33,26 +33,26 @@
   "cards": [
     {
       "list": "In progress",
-      "name": "guias de despacho deben estar filtradas apra sus clientes para los vendedores",
+      "name": "Vendedores no pueden editar catalogo",
       "labels": [
         "Size:M"
       ],
-      "desc": "**Contexto / Problema**\nActualmente los vendedores pueden ver todas las guías de despacho en el sistema, lo que expone información de clientes que no tienen asignados. Se debe restringir la visibilidad para que cada vendedor solo acceda a las guías de sus propios clientes.\n\n**Acceptance Criteria**\n- Un vendedor autenticado solo puede ver guías de despacho asociadas a clientes que tiene asignados.\n- Al cambiar de vendedor (contexto de usuario), las guías mostradas se filtran automáticamente sin mostrar datos ajenos.\n- La búsqueda y paginación respetan el filtro por vendedor.\n- Un intento de acceder directamente a una guía de un cliente no asignado resulta en error 403 o registro vacío.\n- El filtrado se aplica tanto en queries de listado como en endpoints individuales de guías.\n\n**Definition of Done**\n- Filtro implementado en backend y funcionando en staging.\n- Tests unitarios y e2e pasan cubriendo casos de acceso permitido y denegado.\n- Migración de base de datos aplicada si se requiere ajustar esquema de permisos.\n- Code review completado.\n- Tarjeta movida a In review en Trello.\n\n**Notas técnicas**\n- Frontend: `src/views/DispatchGuides.vue` y componentes relacionados de listado/búsqueda.\n- Backend endpoint: `GET /api/dispatch-guides` debe aceptar parámetro `seller_id` y aplicar join con tabla de asignaciones cliente-vendedor.\n- Middleware de permisos: verificar que `current_user.role == 'seller'` implique filtro automático por `current_user.id`.\n- Verificar query scopes en modelo `DispatchGuide` para aplicar filtro en búsqueda, paginación y exportaciones.\n\n<!-- tboard:refined -->",
+      "desc": "**Contexto / Problema**\nLos usuarios con rol de vendedor actualmente no tienen permisos para editar el catálogo de productos, lo que limita su capacidad de actualizar información durante ventas o demos. Esto genera dependencia del área de administración para cambios rutinarios.\n\n**Acceptance Criteria**\n- Los vendedores pueden acceder al formulario de edición de productos existentes en el catálogo\n- Los vendedores pueden modificar y guardar cambios en campos de productos (nombre, precio, descripción, stock)\n- Los cambios realizados por vendedores se reflejan inmediatamente en el catálogo visible\n- Los vendedores NO pueden eliminar productos (solo editar)\n- Los permisos de administrador, gestor y otros roles no se ven afectados\n- Se registra en logs de auditoría quién realizó cada cambio\n\n**Definition of Done**\n- Tests de autorización para rol vendedor pasan correctamente\n- Tests de regresión para otros roles pasan sin cambios\n- Migración de permisos aplicada y ejecutada en staging\n- Código revisado por par\n- Desplegado en staging y validado manualmente\n- Tarjeta Trello movida a In review\n\n**Notas técnicas**\n- Ajustar política de autorización en `app/policies/product_policy.rb` o equivalente\n- Verificar permisos en controlador `ProductsController#update` y `#edit`\n- Si se usa Pundit/CanCanCan, actualizar definiciones de habilidades para rol `vendedor`\n- Revisar validaciones frontend en componentes de edición de catálogo (probablemente en `views/products/edit` o componente Vue/React)\n- Considerar si existen permisos granulares por campo (ej: vendedor puede editar precio pero no costo)\n\n<!-- tboard:refined -->",
       "checklist": [
-        "Implementar filtro backend para guías por seller_id",
-        "Actualizar vista frontend para usar el nuevo filtro",
-        "Agregar validaciones de permisos en capa de servicio",
-        "Escribir pruebas unitarias del nuevo filtro",
-        "Realizar pruebas e2e para confirmar visibilidad correcta",
-        "Verificar comportamiento en búsqueda y paginación",
-        "Deploy a staging y actualizar Trello",
-        "Implementar scope o filtro en modelo backend para asociar guías con vendedor via clientes asignados",
-        "Agregar validación de permisos en endpoint GET /api/dispatch-guides",
-        "Actualizar frontend para enviar seller_id en requests y manejar respuesta filtrada",
-        "Escribir tests unitarios para queries filtradas y casos de acceso denegado",
-        "Escribir tests e2e simulando login de vendedor y verificando visibilidad de guías",
-        "Verificar que búsqueda y paginación respeten el filtro",
-        "Deploy a staging, validar manualmente y mover tarjeta a In review"
+        "Identificar y modificar permisos de rol vendedor para edición de catálogo",
+        "Actualizar controladores de catálogo para permitir acceso a vendedores",
+        "Ajustar validaciones frontend si es necesario para mostrar opciones de edición",
+        "Probar que vendedores pueden editar productos y guardar cambios",
+        "Verificar que otros roles mantienen sus permisos originales",
+        "Ejecutar tests de permisos y autorización",
+        "Deploy a staging y mover tarjeta a In review",
+        "Modificar política de autorización para permitir `update` y `edit` a rol vendedor",
+        "Actualizar controlador de productos para verificar permisos correctamente",
+        "Ajustar UI para mostrar opciones de edición a vendedores (si estaban ocultas por rol)",
+        "Escribir/actualizar tests de autorización para vendedor en catálogo",
+        "Verificar que vendedor NO puede eliminar productos (mantener restricción)",
+        "Ejecutar suite completa de tests de permisos y regresión",
+        "Deployar a staging y mover tarjeta a In review"
       ]
     }
   ]
