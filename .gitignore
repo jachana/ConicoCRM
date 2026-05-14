@@ -5,7 +5,9 @@
 # Environment
 .env
 .env.prod
-scripts/.trello.env
+.trello_agent/.env
+.trello_agent/logs/
+.trello_agent/failure_log.json
 
 # Python
 __pycache__/
@@ -45,7 +47,6 @@ coverage.xml
 
 # Claude local settings (permissions, personal config)
 .claude/settings.local.json
-.claude/auto_loop_logs/
 .claude/loop.md
 
 # Auto-loop local artifacts

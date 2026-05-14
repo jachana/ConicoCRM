@@ -1,15 +1,17 @@
 # tboard project config for Conico CRM.
+# Paths below are resolved relative to this file's directory.
 # See https://github.com/<owner>/tboard for schema.
 
 project_name = "Conico CRM"
 domain_hint  = "Chilean SaaS"
 stack        = "FastAPI + SQLAlchemy + Alembic backend; React + Vite + TS frontend"
 
-cards_file       = "scripts/trello_cards.json"
-env_file         = "scripts/.trello.env"
-breakdowns_file  = "scripts/triage_breakdowns.json"
+cards_file       = "cards.json"
+env_file         = ".env"
+breakdowns_file  = "breakdowns.json"
 
 # Paths used by the implementer pre-scope step (`git ls-files <paths>`).
+# Resolved relative to the git repo root, not this file.
 source_paths = ["backend/app", "frontend/src", "migrations"]
 
 [checklist]
@@ -30,12 +32,12 @@ skip_name_prefixes   = ["onboarding", "import ", "migra"]
 skip_labels          = ["Blocked"]
 dirty_ignore_prefixes = [
     ".claude/",
+    ".trello_agent/",
     "Conico-reportes",
-    "scripts/trello_cards.json",
 ]
-codebase_map_file    = "scripts/impl_codebase_map.md"
-failure_log_file     = ".claude/failure_log.json"
-log_dir              = ".claude/auto_loop_logs"
+codebase_map_file    = "codebase_map.md"
+failure_log_file     = "failure_log.json"
+log_dir              = "logs"
 
 # Tests run after each implementation attempt, in order.
 # cmd[0] shims: "bash" -> first usable bash on PATH (skips step if none);

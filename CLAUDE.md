@@ -11,9 +11,11 @@ When executing implementation plans, always use **superpowers:subagent-driven-de
 
 ## Trello sync
 
-The Trello board (ConicoCRM, id `69f0015d87f756962fb74da8`) is the **single source of truth** for project status. The local `scripts/trello_cards.json` is **not** a mirror of the board — it holds only the card currently being worked on, as a transient working file.
+The Trello board (ConicoCRM, id `69f0015d87f756962fb74da8`) is the **single source of truth** for project status. The local `.trello_agent/cards.json` is **not** a mirror of the board — it holds only the card currently being worked on, as a transient working file.
 
-Sync is driven by the **`tboard`** CLI (project-agnostic, lives in `C:/Otros/trello`, installed via `pip install -e`). It reads `trello.toml` at the repo root for project-specific config (paths, lists, test pipeline). Idempotent — matches cards by name.
+All project-specific tboard artifacts live under `.trello_agent/`: `config.toml`, `cards.json`, `.env` (gitignored), `breakdowns.json`, `codebase_map.md`, `logs/` (gitignored), `failure_log.json` (gitignored).
+
+Sync is driven by the **`tboard`** CLI (project-agnostic, lives in `C:/Otros/trello`, installed via `pip install -e`). It auto-discovers `.trello_agent/config.toml` walking up from CWD. Idempotent — matches cards by name.
 
 Conflict rule: **online wins**. If local JSON disagrees with the board, `tboard sync --pull` overwrites local. But online must also be kept up to date — every state change (start, ship, scope, new bug) must be pushed to Trello.
 
@@ -21,7 +23,7 @@ Conflict rule: **online wins**. If local JSON disagrees with the board, `tboard 
 
 1. **Pull to look around.** `tboard sync --pull` to fetch current board into JSON. Read what's available, decide what to work on. Don't commit this snapshot — it's transient.
 2. **Pick a card.** Confirm it is NOT already in `In progress` (another agent may have claimed it). If it is, pick a different one.
-3. **Prune local JSON to just that card.** Remove every other card from `scripts/trello_cards.json` so the file represents only the active claim.
+3. **Prune local JSON to just that card.** Remove every other card from `.trello_agent/cards.json` so the file represents only the active claim.
 4. **Claim on Trello.** Set the chosen card's `list` to `In progress`, run `tboard sync --apply`, commit with `chore(trello): claim <card name>`. `--apply` never deletes cards from Trello, so pruning local JSON is safe.
 5. **Do the work.**
 6. **Update Trello as state changes.** Move list, tick checklist items, append sub-tasks — edit local JSON for the active card, `tboard sync --apply`, commit.
@@ -64,11 +66,11 @@ tboard loop --dry-run                    # triage only
 tboard loop --triage-model qwen-72b --provider openrouter
 ```
 
-Logs at `.claude/auto_loop_logs/<ts>_<slug>.log`.
+Logs at `.trello_agent/logs/<ts>_<slug>.log`.
 
 ### Notes
 
-- `scripts/.trello.env` is gitignored — never commit credentials.
+- `.trello_agent/.env` is gitignored — never commit credentials.
 - `tboard sync --apply` never deletes cards or checklist items from Trello; deletions happen on the board, then `--pull` reconciles.
 - `--pull` removes JSON-only cards (Trello is canonical) and adds Trello-only cards. Only the configured checklist (`Subtareas`) is round-tripped; checked/unchecked state lives only on Trello.
 - Card `name` is the stable id — never rename casually.
