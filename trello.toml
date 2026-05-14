@@ -1,0 +1,63 @@
+# tboard project config for Conico CRM.
+# See https://github.com/<owner>/tboard for schema.
+
+project_name = "Conico CRM"
+domain_hint  = "Chilean SaaS"
+stack        = "FastAPI + SQLAlchemy + Alembic backend; React + Vite + TS frontend"
+
+cards_file       = "scripts/trello_cards.json"
+env_file         = "scripts/.trello.env"
+breakdowns_file  = "scripts/triage_breakdowns.json"
+
+# Paths used by the implementer pre-scope step (`git ls-files <paths>`).
+source_paths = ["backend/app", "frontend/src", "migrations"]
+
+[checklist]
+name = "Subtareas"
+
+[lists]
+eligible      = "Feature requests"
+claimed       = "In progress"
+shipped       = "In review"
+done          = ["In review", "Friendly Beta 0.1", "Live Beta 0.2", "Live 1.0"]
+refine        = ["Ideas", "Feature requests", "Bugs", "Client feedback"]
+autoship_from = ["Feature requests", "Bugs", "Client feedback"]
+
+[pipeline]
+default_branch       = "master"
+agent_backend        = "claude"
+skip_name_prefixes   = ["onboarding", "import ", "migra"]
+skip_labels          = ["Blocked"]
+dirty_ignore_prefixes = [
+    ".claude/",
+    "Conico-reportes",
+    "scripts/trello_cards.json",
+]
+codebase_map_file    = "scripts/impl_codebase_map.md"
+failure_log_file     = ".claude/failure_log.json"
+log_dir              = ".claude/auto_loop_logs"
+
+# Tests run after each implementation attempt, in order.
+# cmd[0] shims: "bash" -> first usable bash on PATH (skips step if none);
+#               "npm" -> "npm.cmd" on Windows; "python" -> sys.executable.
+
+[[pipeline.test_steps]]
+name              = "backend pytest"
+cwd               = "backend"
+cmd               = ["bash", "./run_tests.sh"]
+test_path_prefix  = "backend/"
+test_glob         = ["test_*.py", "*_test.py"]
+
+[[pipeline.test_steps]]
+name                  = "frontend vitest"
+cwd                   = "frontend"
+cmd                   = ["npm", "test", "--", "--run"]
+test_path_prefix      = "frontend/"
+test_glob             = ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx", "*.test.js", "*.test.jsx"]
+only_if_changed_under = "frontend/"
+
+[[pipeline.test_steps]]
+name                  = "frontend build"
+cwd                   = "frontend"
+cmd                   = ["npm", "run", "build"]
+only_if_changed_under = "frontend/"

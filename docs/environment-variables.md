@@ -48,7 +48,7 @@
 | `.env.prod` | `docker-compose.prod.yml` (`env_file: .env.prod`) | Producción backend + frontend build |
 | `.env.prod.example` | Plantilla producción con backups, Sentry, S3 | Solo referencia |
 | `frontend/.env.example` / `frontend/.env.production` | Vite (cargadas por nombre de modo: `dev` / `production`) | Frontend build |
-| `scripts/.trello.env` | `scripts/trello_sync.py`, `scripts/auto_loop.py` | Tooling (no se carga al runtime de la app) |
+| `scripts/.trello.env` | `tboard` CLI (`tboard sync` / `tboard loop`) | Tooling (no se carga al runtime de la app) |
 
 **Reglas:**
 - Backend lee primero `os.environ` y luego `.env` (pydantic-settings). Si una var está definida en ambos, **gana `os.environ`**.
@@ -253,10 +253,10 @@ Servicio `rclone/rclone:1.65`. **Si `S3_BUCKET` está vacío, el contenedor sale
 
 | Variable | Required | Descripción | Source |
 |---|---|---|---|
-| `TRELLO_API_KEY` | **REQUIRED** (para usar `trello_sync.py`) | API key Trello. Obtener en https://trello.com/app-key. | `scripts/.trello.env`, `scripts/trello_sync.py` |
-| `TRELLO_TOKEN` | **REQUIRED** (idem) | Token OAuth Trello, debe tener permisos read/write sobre el board. | `scripts/.trello.env`, `scripts/trello_sync.py` |
+| `TRELLO_API_KEY` | **REQUIRED** (para usar `tboard`) | API key Trello. Obtener en https://trello.com/app-key. | `scripts/.trello.env` |
+| `TRELLO_TOKEN` | **REQUIRED** (idem) | Token OAuth Trello, debe tener permisos read/write sobre el board. | `scripts/.trello.env` |
 | `TRELLO_BOARD_ID` | **REQUIRED** (idem) | ID del board de Conico (`69f0015d87f756962fb74da8`). | `scripts/.trello.env` |
-| `OPENROUTER_API_KEY` | OPTIONAL | API key OpenRouter (triage en `auto_loop.py` con `--provider openrouter`). | `scripts/.trello.env` |
+| `OPENROUTER_API_KEY` | OPTIONAL | API key OpenRouter (triage en `tboard loop` con `--provider openrouter`). | `scripts/.trello.env` |
 | `STRAICO_API_KEY` | OPTIONAL | API key Straico (triage default). | `scripts/.trello.env` |
 | `COOLIFY_READONLY_KEY` | OPTIONAL | Token read-only de Coolify para inspección de despliegues. | `scripts/.trello.env`, `.env.prod` |
 | `DATA_SEED_DIR` | OPTIONAL (default `/data_seed`) | Path al directorio de seeds dentro del contenedor backend. | `backend/scripts/seed_all.py:30` |
