@@ -45,10 +45,40 @@ def _layout_to_preset(layout: DashboardLayout) -> PresetOut:
     return PresetOut(slot=layout.slot, name=layout.name, layout=payload, updated_at=layout.updated_at)
 
 
-def _get_presets_for_role(db: Session, role: str) -> list[DashboardLayout]:
-    rows = db.query(DashboardLayout).filter_by(role=role).order_by(DashboardLayout.slot).all()
+_MAX_PER_SCOPE = 5
+
+
+def _is_personal_scope(user: User) -> bool:
+    """Vendedor manages their own personal templates; everyone else manages role-shared ones."""
+    return user.role == "vendedor"
+
+
+def _shared_query(db: Session, role: str):
+    return (
+        db.query(DashboardLayout)
+        .filter(DashboardLayout.role == role, DashboardLayout.user_id.is_(None))
+        .order_by(DashboardLayout.slot)
+    )
+
+
+def _personal_query(db: Session, user_id: int, role: str):
+    return (
+        db.query(DashboardLayout)
+        .filter(DashboardLayout.user_id == user_id, DashboardLayout.role == role)
+        .order_by(DashboardLayout.slot)
+    )
+
+
+def _get_presets_for_user(db: Session, user: User, role: str) -> list[DashboardLayout]:
+    if _is_personal_scope(user):
+        rows = _personal_query(db, user.id, role).all()
+        if rows:
+            return rows
+        # Fallback: show role-shared template until vendedor creates their own.
+        return _shared_query(db, role).all()
+    rows = _shared_query(db, role).all()
     if not rows and role == "subadmin":
-        rows = db.query(DashboardLayout).filter_by(role="admin").order_by(DashboardLayout.slot).all()
+        rows = _shared_query(db, "admin").all()
     return rows
 
 
@@ -58,7 +88,7 @@ def list_presets(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return [_layout_to_preset(l) for l in _get_presets_for_role(db, role)]
+    return [_layout_to_preset(l) for l in _get_presets_for_user(db, current_user, role)]
 
 
 @router.post("/layout/{role}", response_model=PresetOut, status_code=201)
@@ -68,16 +98,23 @@ def create_preset(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if current_user.role != "admin":
+    personal = _is_personal_scope(current_user)
+    if not personal and current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin puede crear dashboards")
-    existing = db.query(DashboardLayout).filter_by(role=role).all()
-    if len(existing) >= 5:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Máximo 5 dashboards por rol")
+
+    if personal:
+        existing = _personal_query(db, current_user.id, role).all()
+    else:
+        existing = _shared_query(db, role).all()
+
+    if len(existing) >= _MAX_PER_SCOPE:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Máximo {_MAX_PER_SCOPE} dashboards")
     used_slots = {l.slot for l in existing}
-    slot = next(s for s in range(1, 6) if s not in used_slots)
+    slot = next(s for s in range(1, _MAX_PER_SCOPE + 1) if s not in used_slots)
     layout = DashboardLayout(
         role=role, slot=slot, name=body.name,
         layout_json='{"widgets": []}',
+        user_id=current_user.id if personal else None,
         updated_by=current_user.id,
         updated_at=datetime.now(timezone.utc),
     )
@@ -85,6 +122,12 @@ def create_preset(
     db.commit()
     db.refresh(layout)
     return _layout_to_preset(layout)
+
+
+def _find_owned(db: Session, user: User, role: str, slot: int) -> DashboardLayout | None:
+    if _is_personal_scope(user):
+        return _personal_query(db, user.id, role).filter(DashboardLayout.slot == slot).first()
+    return _shared_query(db, role).filter(DashboardLayout.slot == slot).first()
 
 
 @router.put("/layout/{role}/{slot}", response_model=PresetOut)
@@ -95,9 +138,10 @@ def save_preset(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if current_user.role != "admin":
+    personal = _is_personal_scope(current_user)
+    if not personal and current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin puede editar el layout")
-    layout = db.query(DashboardLayout).filter_by(role=role, slot=slot).first()
+    layout = _find_owned(db, current_user, role, slot)
     if layout is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dashboard no encontrado")
     layout.name = body.name
@@ -116,12 +160,16 @@ def delete_preset(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if current_user.role != "admin":
+    personal = _is_personal_scope(current_user)
+    if not personal and current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo admin puede eliminar dashboards")
-    layout = db.query(DashboardLayout).filter_by(role=role, slot=slot).first()
+    layout = _find_owned(db, current_user, role, slot)
     if not layout:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dashboard no encontrado")
-    count = db.query(DashboardLayout).filter_by(role=role).count()
+    if personal:
+        count = _personal_query(db, current_user.id, role).count()
+    else:
+        count = _shared_query(db, role).count()
     if count <= 1:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se puede eliminar el único dashboard")
     db.delete(layout)

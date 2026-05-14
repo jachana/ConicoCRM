@@ -20,6 +20,7 @@ export default function Dashboard() {
   const { role: effectiveRole } = useEffectivePermissions()
   const role = effectiveRole ?? user?.role ?? 'vendedor'
   const isAdmin = role === 'admin'
+  const canEdit = isAdmin || role === 'vendedor'
 
   const { query, create, save, remove } = useDashboardPresets(role)
   const presets = query.data ?? []
@@ -132,7 +133,7 @@ export default function Dashboard() {
             userName={user?.name ?? user?.email ?? ''}
             presetName={currentPreset?.name}
           />
-          {isAdmin && !isMobile && (
+          {canEdit && !isMobile && (
             <div className="absolute top-3 right-4 md:right-6">
               <Button
                 size="sm"
@@ -223,7 +224,7 @@ export default function Dashboard() {
           )
         })}
 
-        {isAdmin && !editMode && presets.length < 5 && !isMobile && (
+        {canEdit && !editMode && presets.length < 5 && !isMobile && (
           <Button
             size="sm"
             variant="ghost"
@@ -235,7 +236,7 @@ export default function Dashboard() {
           </Button>
         )}
 
-        {isAdmin && editMode && presets.length > 1 && (
+        {canEdit && editMode && presets.length > 1 && (
           <Button
             size="sm"
             variant="ghost"
@@ -257,16 +258,16 @@ export default function Dashboard() {
               <div className="absolute inset-0 opacity-40 pointer-events-none [background-image:radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.06)_1px,transparent_0)] dark:[background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.06)_1px,transparent_0)] [background-size:18px_18px]" />
               <EmptyState
                 icon={<LayoutDashboard />}
-                title={isAdmin ? (editMode ? 'Agrega tu primer widget' : 'Dashboard vacío') : 'Sin widgets configurados'}
+                title={canEdit ? (editMode ? 'Agrega tu primer widget' : 'Dashboard vacío') : 'Sin widgets configurados'}
                 description={
-                  isAdmin
+                  canEdit
                     ? editMode
                       ? 'Selecciona widgets desde el panel derecho para empezar a construir tu vista. O usa un template para empezar rápido.'
                       : 'Personaliza esta vista con KPIs, gráficos y rankings que importen para tu equipo.'
                     : 'El dashboard aún no tiene widgets configurados.'
                 }
                 action={
-                  isAdmin && !editMode && currentPreset ? (
+                  canEdit && !editMode && currentPreset ? (
                     <Button leftIcon={<Pencil />} onClick={enterEdit}>Editar dashboard</Button>
                   ) : null
                 }

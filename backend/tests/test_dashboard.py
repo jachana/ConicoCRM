@@ -99,7 +99,7 @@ class TestPresetCRUD:
         widget = r2.json()["layout"]["widgets"][0]
         assert widget["goal"] == 5_000_000
 
-    def test_create_forbidden_for_vendedor(self, client, setup_test_db):
+    def test_vendedor_can_create_personal_preset(self, client, setup_test_db):
         _make_user("vendedor", "v@test.cl")
         tok = _token(client, "v@test.cl")
         r = client.post(
@@ -107,7 +107,71 @@ class TestPresetCRUD:
             json={"name": "Mi dash"},
             headers={"Authorization": f"Bearer {tok}"},
         )
-        assert r.status_code == 403
+        assert r.status_code == 201
+        assert r.json()["name"] == "Mi dash"
+
+    def test_vendedor_personal_isolated_per_user(self, client, setup_test_db):
+        _make_user("vendedor", "v1@test.cl")
+        _make_user("vendedor", "v2@test.cl")
+        t1 = _token(client, "v1@test.cl")
+        t2 = _token(client, "v2@test.cl")
+        client.post("/api/dashboard/layout/vendedor", json={"name": "V1 priv"},
+                    headers={"Authorization": f"Bearer {t1}"})
+        r = client.get("/api/dashboard/layout/vendedor", headers={"Authorization": f"Bearer {t2}"})
+        assert r.status_code == 200
+        assert r.json() == []
+
+    def test_vendedor_max_5_personal(self, client, setup_test_db):
+        _make_user("vendedor", "v@test.cl")
+        tok = _token(client, "v@test.cl")
+        for i in range(5):
+            r = client.post("/api/dashboard/layout/vendedor", json={"name": f"D{i}"},
+                            headers={"Authorization": f"Bearer {tok}"})
+            assert r.status_code == 201
+        r = client.post("/api/dashboard/layout/vendedor", json={"name": "Extra"},
+                        headers={"Authorization": f"Bearer {tok}"})
+        assert r.status_code == 400
+
+    def test_vendedor_cannot_edit_shared_admin_preset(self, client, setup_test_db):
+        _make_user("admin", "a@test.cl")
+        _make_user("vendedor", "v@test.cl")
+        admin_tok = _token(client, "a@test.cl")
+        r = client.post("/api/dashboard/layout/vendedor", json={"name": "Shared"},
+                        headers={"Authorization": f"Bearer {admin_tok}"})
+        slot = r.json()["slot"]
+        v_tok = _token(client, "v@test.cl")
+        r = client.put(
+            f"/api/dashboard/layout/vendedor/{slot}",
+            json={"name": "Hacked", "layout": SAMPLE_LAYOUT},
+            headers={"Authorization": f"Bearer {v_tok}"},
+        )
+        assert r.status_code == 404
+
+    def test_vendedor_falls_back_to_shared_when_no_personal(self, client, setup_test_db):
+        _make_user("admin", "a@test.cl")
+        _make_user("vendedor", "v@test.cl")
+        admin_tok = _token(client, "a@test.cl")
+        client.post("/api/dashboard/layout/vendedor", json={"name": "Shared default"},
+                    headers={"Authorization": f"Bearer {admin_tok}"})
+        v_tok = _token(client, "v@test.cl")
+        r = client.get("/api/dashboard/layout/vendedor", headers={"Authorization": f"Bearer {v_tok}"})
+        assert r.status_code == 200
+        assert len(r.json()) == 1
+        assert r.json()[0]["name"] == "Shared default"
+
+    def test_vendedor_personal_overrides_shared_in_list(self, client, setup_test_db):
+        _make_user("admin", "a@test.cl")
+        _make_user("vendedor", "v@test.cl")
+        admin_tok = _token(client, "a@test.cl")
+        client.post("/api/dashboard/layout/vendedor", json={"name": "Shared"},
+                    headers={"Authorization": f"Bearer {admin_tok}"})
+        v_tok = _token(client, "v@test.cl")
+        client.post("/api/dashboard/layout/vendedor", json={"name": "Mine"},
+                    headers={"Authorization": f"Bearer {v_tok}"})
+        r = client.get("/api/dashboard/layout/vendedor", headers={"Authorization": f"Bearer {v_tok}"})
+        assert r.status_code == 200
+        names = [p["name"] for p in r.json()]
+        assert names == ["Mine"]
 
     def test_subadmin_fallback_to_admin_presets(self, client, setup_test_db):
         _make_user("admin", "a@test.cl")
