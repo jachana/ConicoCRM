@@ -45,6 +45,8 @@ const CLIENTE_FIXTURE: Cliente = {
   forma_captacion: 'referido',
   compromiso: 'Entrega mensual',
   es_nuevo: false,
+  vendedor_id: null,
+  vendedor: null,
   created_at: '2026-01-01T00:00:00Z',
 }
 
