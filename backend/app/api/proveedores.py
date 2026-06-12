@@ -1,16 +1,19 @@
+from datetime import date
 from io import BytesIO
 
 import openpyxl
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.config import require_admin
 from app.api.deps import require_modulo, require_permission
+from app.models.factura_compra import FacturaCompra
+from app.models.orden_compra import OrdenCompra
 from app.models.proveedor import Proveedor
 from app.models.user import User
-from app.schemas.proveedor import ProveedorCreate, ProveedorOut, ProveedorUpdate
+from app.schemas.proveedor import CompraDocItem, ProveedorCreate, ProveedorOut, ProveedorUpdate
 from app.services.proveedor_parser import (
     ALL_COLUMNS,
     ParseError,
@@ -293,3 +296,73 @@ def eliminar_proveedor(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proveedor no encontrado")
     db.delete(p)
     db.commit()
+
+
+@router.get("/{proveedor_id}/ordenes-compra", response_model=list[CompraDocItem])
+def ordenes_compra_proveedor(
+    proveedor_id: int,
+    estado: list[str] = Query(default=[]),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    sort_by: str = Query("fecha"),
+    sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
+    perms: tuple[User, Session] = require_permission("ordenes_compra", "view"),
+):
+    """Órdenes de compra del proveedor para el detalle de proveedor."""
+    _, db = perms
+    p = db.get(Proveedor, proveedor_id)
+    if not p:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proveedor no encontrado")
+
+    query = db.query(OrdenCompra).filter(OrdenCompra.proveedor_id == proveedor_id)
+    if estado:
+        query = query.filter(OrdenCompra.estado.in_(estado))
+    if fecha_desde:
+        query = query.filter(OrdenCompra.fecha >= fecha_desde)
+    if fecha_hasta:
+        query = query.filter(OrdenCompra.fecha <= fecha_hasta)
+
+    sort_col = {
+        "fecha": OrdenCompra.fecha,
+        "numero": OrdenCompra.numero,
+        "total": OrdenCompra.total,
+        "estado": OrdenCompra.estado,
+    }.get(sort_by, OrdenCompra.fecha)
+    query = query.order_by(sort_col.desc() if sort_dir == "desc" else sort_col.asc())
+    return query.all()
+
+
+@router.get("/{proveedor_id}/facturas-compra", response_model=list[CompraDocItem])
+def facturas_compra_proveedor(
+    proveedor_id: int,
+    estado: list[str] = Query(default=[]),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    sort_by: str = Query("fecha"),
+    sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
+    perms: tuple[User, Session] = require_permission("facturas", "view"),
+):
+    """Facturas de compra del proveedor para el detalle de proveedor."""
+    current_user, db = perms
+    if current_user.role == "vendedor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido")
+    p = db.get(Proveedor, proveedor_id)
+    if not p:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proveedor no encontrado")
+
+    query = db.query(FacturaCompra).filter(FacturaCompra.proveedor_id == proveedor_id)
+    if estado:
+        query = query.filter(FacturaCompra.estado.in_(estado))
+    if fecha_desde:
+        query = query.filter(FacturaCompra.fecha >= fecha_desde)
+    if fecha_hasta:
+        query = query.filter(FacturaCompra.fecha <= fecha_hasta)
+
+    sort_col = {
+        "fecha": FacturaCompra.fecha,
+        "numero": FacturaCompra.numero,
+        "total": FacturaCompra.total,
+        "estado": FacturaCompra.estado,
+    }.get(sort_by, FacturaCompra.fecha)
+    query = query.order_by(sort_col.desc() if sort_dir == "desc" else sort_col.asc())
+    return query.all()

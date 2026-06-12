@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 from pydantic import BaseModel, field_validator
 from app.utils.rut import validate_rut
 
@@ -52,4 +53,14 @@ class ProveedorUpdate(BaseModel):
 class ProveedorOut(ProveedorBase):
     id: int
     created_at: datetime
+    model_config = {"from_attributes": True}
+
+
+class CompraDocItem(BaseModel):
+    id: int
+    numero: int
+    fecha: date
+    estado: str
+    total: Decimal
+    fecha_entrega_esperada: date | None = None
     model_config = {"from_attributes": True}
