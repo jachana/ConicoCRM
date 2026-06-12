@@ -70,9 +70,9 @@ describe('ProductoCompras', () => {
     wrap(<ProductoCompras productoId={42} />)
 
     await waitFor(() => {
-      expect(screen.getByText('OC-0012')).toBeInTheDocument()
+      expect(screen.getByText('OC-00012')).toBeInTheDocument()
     })
-    expect(screen.getByText('OC-0012').closest('a')).toHaveAttribute('href', '/ordenes-compra/10')
+    expect(screen.getByText('OC-00012').closest('a')).toHaveAttribute('href', '/ordenes-compra/10')
     expect(screen.getByText('Prov X')).toBeInTheDocument()
     expect(screen.getByText('Prov Y')).toBeInTheDocument()
     expect(screen.getByText('Recibida completa')).toBeInTheDocument()

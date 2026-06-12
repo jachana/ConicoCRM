@@ -111,7 +111,7 @@ export default function ProductoCompras({ productoId }: { productoId: number }) 
                   </TD>
                   <TD className="whitespace-nowrap font-num text-xs">
                     <EntityLink kind="oc" id={it.oc_id}>
-                      OC-{String(it.oc_numero).padStart(4, '0')}
+                      OC-{String(it.oc_numero).padStart(5, '0')}
                     </EntityLink>
                   </TD>
                   <TD className="text-gray-700 dark:text-gray-200 text-xs">
