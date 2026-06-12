@@ -32,19 +32,17 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Nav] Empresa/Cliente: filas navegables + tab Cotizaciones/NVs",
+      "list": "In progress",
+      "name": "[Nav] Producto: tab compras (OC) + UI historial de costos",
       "labels": [
         "Core"
       ],
-      "desc": "**Resumen** — Se habilitó la navegación por clic en las filas de Facturas y Productos de Empresa y Cliente, y se incorporó un nuevo tab \"Ventas\" que unifica cotizaciones y notas de venta.\n\n**Cambios / Decisiones** —\n- Backend: se implementaron sub-recursos `GET /api/empresas/{id}/cotizaciones` y `/nota-ventas` en `backend/app/api/empresas.py`, y sus equivalentes en `backend/app/api/clientes.py`. Se añadió filtrado por vendedor actual para restringir datos.\n- Frontend: `EmpresaTabFacturas.tsx`, `ClienteTabFacturas.tsx` y `EmpresaTabProductos.tsx` ahora renderizan filas clickeables que navegan a `/facturas/:id` y vistas de producto.\n- Frontend: se creó `VentasTab.tsx` (y su test) integrado en `EmpresaDetailModal.tsx` y `ClienteDetailModal.tsx`. Se extendieron interfaces en `frontend/src/types/index.ts`.\n- Tests: `test_empresas.py` y `test_clientes.py` validan los endpoints y el filtrado por rol.",
+      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". ProductoDetailModal tiene historial de ventas y movimientos pero no de compras (OC) — y el endpoint /api/productos/{id}/historial-costos existe sin UI.\n\n**Scope**\nTab 'Compras' (líneas de OC del producto, navegables a la OC) + tab/sección 'Costos' consumiendo historial-costos.",
       "checklist": [
-        "Verificar que GET /api/empresas/:id/cotizaciones y /nota-ventas retornan 200 y lista de documentos.",
-        "Confirmar que al hacer clic en filas de Facturas o Productos en Empresa/Cliente se redirige correctamente.",
-        "Abrir EmpresaDetailModal, verificar existencia del tab Ventas y que lista cotizaciones y NVs.",
-        "Validar que el tab Ventas en ClienteDetailModal carga respetando el filtrado por vendedor actual.",
-        "Ejecutar pytest backend/tests/test_empresas.py backend/tests/test_clientes.py y confirmar éxito.",
-        "Revisar VentasTab.tsx y tipos en types/index.ts para asegurar consistencia de estructuras."
+        "Backend: endpoint historial-compras (líneas OC) por producto si falta",
+        "Tab Compras en ProductoDetailModal con EntityLink a OC",
+        "UI historial-costos en el modal",
+        "Tests backend + vitest"
       ]
     }
   ]
