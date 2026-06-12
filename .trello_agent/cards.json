@@ -32,20 +32,18 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Nav] Producto: tab compras (OC) + UI historial de costos",
+      "list": "In progress",
+      "name": "[Nav] ProveedorDetailModal con OCs y facturas de compra",
       "labels": [
         "Core"
       ],
-      "desc": "**Resumen**\nSe implementó la navegación bidireccional entre productos y órdenes de compra, agregando una pestaña \"Compras\" que lista líneas de OC (con enlace a la orden) y una pestaña \"Costos\" que consume el endpoint de historial de precios existente.\n\n**Cambios / Decisiones**\n- Backend: Se añadió el endpoint `historial-compras` en `backend/app/api/productos.py` para retornar líneas de OC por producto, con validación en `backend/app/schemas/lista_precios.py`.\n- Frontend: Se creó `frontend/src/components/ProductoCompras.tsx` para renderizar la tabla de OC, con `EntityLink` a la orden y padding de 5 dígitos en el número para consistencia.\n- Integración: Se insertaron los tabs \"Compras\" y \"Costos\" en `frontend/src/components/ProductoDetailModal.tsx`.\n- Tests: Se añadieron suites de Vitest en `backend/tests/test_productos.py` y en los archivos `.test.tsx` de frontend para validar endpoint y componentes.\n- Se reutilizó `/api/productos/{id}/historial-costos` existente para la UI sin cambios backend adicionales.",
+      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". Proveedor no tiene detail modal ni sub-recursos: imposible ver las OC y facturas de compra de un proveedor desde el proveedor.\n\n**Scope**\nBackend: /api/proveedores/{id}/ordenes-compra y /facturas-compra. Frontend: ProveedorDetailModal (patrón EmpresaDetailModal) con tabs Datos / OCs / Facturas compra, filas navegables.",
       "checklist": [
-        "Abrir detalle de producto con compras previas y verificar pestaña \"Compras\" visible.",
-        "En \"Compras\", confirmar que el número de OC tiene padding a 5 dígitos y es un link.",
-        "Click en el número de OC y verificar navegación al detalle/listado de la orden.",
-        "Revisar pestaña \"Costos\" del modal y validar visualización del historial de precios.",
-        "Consultar `GET /api/productos/{id}/historial-compras` y verificar respuesta 200 con líneas.",
-        "Correr `npm run test ProductoCompras` y confirmar que pasan las pruebas de Vitest.",
-        "Validar esquema de respuesta contra `backend/app/schemas/lista_precios.py`."
+        "Backend: sub-recursos OCs y facturas-compra por proveedor",
+        "ProveedorDetailModal con tabs",
+        "Filas navegables con EntityLink",
+        "Abrir modal desde lista Proveedores",
+        "Tests backend + vitest"
       ]
     }
   ]
