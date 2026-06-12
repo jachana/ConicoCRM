@@ -32,19 +32,19 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Nav] Empresa/Cliente: filas navegables + tab Cotizaciones/NVs",
       "labels": [
         "Core"
       ],
-      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". En EmpresaDetailModal las filas de tabs Facturas y Productos no son clickeables (solo Crédito navega). No existe tab de Cotizaciones/NVs: el historial de ventas pre-factura solo está mezclado en el Timeline. ClienteDetailModal igual de limitado.\n\n**Scope**\nFilas navegables en tabs existentes + nuevo tab 'Ventas' (cotizaciones + NVs) en Empresa y Cliente. Backend: sub-recursos /api/empresas/{id}/cotizaciones y /nota-ventas (y equivalentes cliente) si faltan.",
+      "desc": "**Resumen** — Se habilitó la navegación por clic en las filas de Facturas y Productos de Empresa y Cliente, y se incorporó un nuevo tab \"Ventas\" que unifica cotizaciones y notas de venta.\n\n**Cambios / Decisiones** —\n- Backend: se implementaron sub-recursos `GET /api/empresas/{id}/cotizaciones` y `/nota-ventas` en `backend/app/api/empresas.py`, y sus equivalentes en `backend/app/api/clientes.py`. Se añadió filtrado por vendedor actual para restringir datos.\n- Frontend: `EmpresaTabFacturas.tsx`, `ClienteTabFacturas.tsx` y `EmpresaTabProductos.tsx` ahora renderizan filas clickeables que navegan a `/facturas/:id` y vistas de producto.\n- Frontend: se creó `VentasTab.tsx` (y su test) integrado en `EmpresaDetailModal.tsx` y `ClienteDetailModal.tsx`. Se extendieron interfaces en `frontend/src/types/index.ts`.\n- Tests: `test_empresas.py` y `test_clientes.py` validan los endpoints y el filtrado por rol.",
       "checklist": [
-        "Backend: endpoints cotizaciones/NVs por empresa y por cliente",
-        "Filas de EmpresaTabFacturas navegan a /facturas/:id",
-        "Filas de EmpresaTabProductos navegan al documento",
-        "Tab Ventas (cot+NV) en EmpresaDetailModal",
-        "Tab Ventas en ClienteDetailModal",
-        "Tests backend + vitest"
+        "Verificar que GET /api/empresas/:id/cotizaciones y /nota-ventas retornan 200 y lista de documentos.",
+        "Confirmar que al hacer clic en filas de Facturas o Productos en Empresa/Cliente se redirige correctamente.",
+        "Abrir EmpresaDetailModal, verificar existencia del tab Ventas y que lista cotizaciones y NVs.",
+        "Validar que el tab Ventas en ClienteDetailModal carga respetando el filtrado por vendedor actual.",
+        "Ejecutar pytest backend/tests/test_empresas.py backend/tests/test_clientes.py y confirmar éxito.",
+        "Revisar VentasTab.tsx y tipos en types/index.ts para asegurar consistencia de estructuras."
       ]
     }
   ]
