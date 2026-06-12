@@ -7,6 +7,7 @@ import {
 import { BarChart3, Pencil } from 'lucide-react'
 import Timeline from './Timeline'
 import ClienteTabFacturas from './ClienteTabFacturas'
+import VentasTab from './VentasTab'
 import { useAuthStore } from '../stores/auth'
 import type { Cliente } from '../types'
 
@@ -37,6 +38,7 @@ export default function ClienteDetailModal({ cliente, onClose, onEdit }: Props) 
           <TabsList variant="underline" className="px-6 flex-shrink-0">
             <TabsTrigger value="datos">Datos</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            <TabsTrigger value="ventas">Ventas</TabsTrigger>
             <TabsTrigger value="facturas">Facturas</TabsTrigger>
           </TabsList>
 
@@ -79,6 +81,9 @@ export default function ClienteDetailModal({ cliente, onClose, onEdit }: Props) 
             </TabsContent>
             <TabsContent value="timeline">
               <Timeline scope="cliente" entityId={cliente.id} />
+            </TabsContent>
+            <TabsContent value="ventas">
+              <VentasTab scope="clientes" entityId={cliente.id} />
             </TabsContent>
             <TabsContent value="facturas">
               <ClienteTabFacturas clienteId={cliente.id} />

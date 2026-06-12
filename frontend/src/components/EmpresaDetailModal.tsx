@@ -4,6 +4,7 @@ import EmpresaTabFacturas from './EmpresaTabFacturas'
 import EmpresaTabProductos from './EmpresaTabProductos'
 import EmpresaTabCredito from './EmpresaTabCredito'
 import EmpresaTabContactos from './EmpresaTabContactos'
+import VentasTab from './VentasTab'
 import Timeline from './Timeline'
 import {
   Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription,
@@ -33,6 +34,7 @@ export default function EmpresaDetailModal({ empresa, onClose, onEdit }: Props) 
           <TabsList variant="underline" className="px-6 flex-shrink-0">
             <TabsTrigger value="resumen">Resumen</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            <TabsTrigger value="ventas">Ventas</TabsTrigger>
             <TabsTrigger value="facturas">Facturas</TabsTrigger>
             <TabsTrigger value="productos">Productos</TabsTrigger>
             <TabsTrigger value="credito">Crédito</TabsTrigger>
@@ -45,6 +47,9 @@ export default function EmpresaDetailModal({ empresa, onClose, onEdit }: Props) 
             </TabsContent>
             <TabsContent value="timeline">
               <Timeline scope="empresa" entityId={empresa.id} />
+            </TabsContent>
+            <TabsContent value="ventas">
+              <VentasTab scope="empresas" entityId={empresa.id} />
             </TabsContent>
             <TabsContent value="facturas">
               <EmpresaTabFacturas empresaId={empresa.id} empresaNombre={empresa.nombre} />

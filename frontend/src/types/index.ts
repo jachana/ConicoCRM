@@ -813,6 +813,14 @@ export interface EmpresaFacturaItem {
   pendiente: number
 }
 
+export interface VentaDocItem {
+  id: number
+  numero: number | null
+  fecha: string
+  estado: string
+  total: number
+}
+
 export interface EmpresaProductoLine {
   fecha: string
   factura_id: number
