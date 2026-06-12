@@ -33,18 +33,7 @@
   "cards": [
     {
       "list": "In progress",
-      "name": "[Nav] Aprobaciones: link a cotización/NV origen",
-      "labels": [
-        "Core"
-      ],
-      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". En Aprobaciones.tsx la referencia 'COT-{id}' es texto plano: el admin aprueba crédito/margen/descuento sin poder abrir con un click el documento que está aprobando.\n\n**Scope**\nFrontend only: usar EntityLink (kind cotizacion/nv) en las 3 tablas de aprobaciones. Empresa y vendedor también linkeables donde aplique.",
-      "checklist": [
-        "Reemplazar COT-id texto por EntityLink en tab crédito",
-        "EntityLink en tab margen",
-        "EntityLink en tab costo/descuento",
-        "Empresa linkeable en tablas",
-        "Test vitest actualizado"
-      ]
+      "name": "[Nav] Auditoría: link a la entidad afectada"
     }
   ]
 }
