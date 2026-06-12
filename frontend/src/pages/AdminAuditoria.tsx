@@ -9,6 +9,7 @@ import {
   Lock,
 } from 'lucide-react'
 import { listarAuditoria, exportarAuditoriaCsvUrl, type AuditLog, type AuditFiltros } from '../api/auditoria'
+import EntityLink, { type EntityKind } from '../components/EntityLink'
 import { useAuthStore } from '../stores/auth'
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions'
 import {
@@ -50,6 +51,23 @@ const ACTION_VARIANT: Record<string, 'info' | 'warning' | 'danger' | 'neutral'> 
   create: 'info',
   update: 'warning',
   delete: 'danger',
+}
+
+// entity_type (nombre de clase del backend) → kind de EntityLink.
+// Tipos sin equivalente navegable (User, SystemConfig, etc.) quedan como texto plano.
+const ENTITY_KIND: Record<string, EntityKind> = {
+  Cotizacion: 'cotizacion',
+  NotaVenta: 'nv',
+  Factura: 'factura',
+  Boleta: 'boleta',
+  GuiaDespacho: 'guia',
+  NotaCredito: 'nc',
+  NotaDebito: 'nd',
+  OrdenCompra: 'oc',
+  FacturaCompra: 'fc',
+  Cliente: 'cliente',
+  Empresa: 'empresa',
+  Producto: 'producto',
 }
 
 const PAGE_SIZE = 50
@@ -265,7 +283,15 @@ export default function AdminAuditoria() {
                     </Badge>
                   </TD>
                   <TD className="text-gray-700 dark:text-gray-300">{it.entity_type}</TD>
-                  <TD className="font-num text-gray-600 dark:text-gray-400">{it.entity_id}</TD>
+                  <TD className="font-num text-gray-600 dark:text-gray-400">
+                    {ENTITY_KIND[it.entity_type] && it.entity_id ? (
+                      <EntityLink kind={ENTITY_KIND[it.entity_type]} id={it.entity_id}>
+                        {it.entity_id}
+                      </EntityLink>
+                    ) : (
+                      it.entity_id
+                    )}
+                  </TD>
                   <TD className="font-mono text-xs text-gray-500 dark:text-gray-400">{it.ip ?? ''}</TD>
                   <TD className="text-right">
                     <Tooltip label="Ver diff">

@@ -53,8 +53,21 @@ const MOCK_PAGE = {
       user_agent: null,
       created_at: '2026-04-24T11:00:00Z',
     },
+    {
+      id: 3,
+      user_id: 7,
+      user_name: 'Admin Test 2',
+      user_email: 'admin@test.cl',
+      action: 'update',
+      entity_type: 'SystemConfig',
+      entity_id: '9',
+      diff_json: { before: { v: 1 }, after: { v: 2 }, changed: ['v'] },
+      ip: '127.0.0.1',
+      user_agent: 'vitest',
+      created_at: '2026-04-24T12:00:00Z',
+    },
   ],
-  total: 2,
+  total: 3,
   limit: 50,
   offset: 0,
 }
@@ -71,17 +84,36 @@ describe('AdminAuditoria', () => {
     // 'Admin Test' es único; 'Sistema' aparece solo cuando user_id es null.
     await waitFor(() => expect(screen.getByText('Admin Test')).toBeInTheDocument())
     expect(screen.getByText('Sistema')).toBeInTheDocument()
-    expect(screen.getAllByLabelText('Ver diff')).toHaveLength(2)
+    expect(screen.getAllByLabelText('Ver diff')).toHaveLength(3)
     // Las celdas de tabla incluyen los entity_type (también aparecen en el select).
     expect(screen.getAllByText('Cliente').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Empresa').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('links entity_id for navegable entity types and leaves others as plain text', async () => {
+    vi.mocked(apiModule.api.get).mockResolvedValue({ data: MOCK_PAGE })
+    render(wrap(<AdminAuditoria />))
+
+    await waitFor(() => expect(screen.getByText('Admin Test')).toBeInTheDocument())
+
+    // Cliente #42 → link a /clientes?detalle=42
+    const clienteLink = screen.getByRole('link', { name: '42' })
+    expect(clienteLink).toHaveAttribute('href', '/clientes?detalle=42')
+
+    // Empresa #5 → link a /empresas?detalle=5
+    const empresaLink = screen.getByRole('link', { name: '5' })
+    expect(empresaLink).toHaveAttribute('href', '/empresas?detalle=5')
+
+    // SystemConfig #9 → sin mapeo, texto plano (no link)
+    expect(screen.queryByRole('link', { name: '9' })).not.toBeInTheDocument()
+    expect(screen.getByText('9')).toBeInTheDocument()
   })
 
   it('opens diff modal with JSON when Ver diff clicked', async () => {
     vi.mocked(apiModule.api.get).mockResolvedValue({ data: MOCK_PAGE })
     render(wrap(<AdminAuditoria />))
 
-    await waitFor(() => expect(screen.getAllByLabelText('Ver diff')).toHaveLength(2))
+    await waitFor(() => expect(screen.getAllByLabelText('Ver diff')).toHaveLength(3))
     fireEvent.click(screen.getAllByLabelText('Ver diff')[0])
 
     await waitFor(() =>
@@ -94,6 +126,6 @@ describe('AdminAuditoria', () => {
     vi.mocked(apiModule.api.get).mockResolvedValue({ data: MOCK_PAGE })
     render(wrap(<AdminAuditoria />))
 
-    await waitFor(() => expect(screen.getByText(/2 registros/)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/3 registros/)).toBeInTheDocument())
   })
 })
