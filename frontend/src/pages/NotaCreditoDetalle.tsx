@@ -5,6 +5,7 @@ import { Send, FileText } from 'lucide-react'
 import { api } from '../lib/api'
 import { openPdf } from '../lib/pdf'
 import DteBadge from '../components/DteBadge'
+import EntityLink from '../components/EntityLink'
 import type { NotaCredito } from '../types'
 import {
   Button, Card, CardContent, Skeleton,
@@ -67,6 +68,22 @@ export default function NotaCreditoDetalle() {
       <Card>
         <CardContent className="space-y-2 text-sm">
           <Row label="Fecha" value={nc.fecha} />
+          {nc.boleta_id != null && (
+            <div className="flex justify-between">
+              <span className="text-gray-500 dark:text-gray-400">Rectifica</span>
+              <EntityLink kind="boleta" id={nc.boleta_id}>
+                Boleta N° {nc.boleta_numero ?? nc.boleta_id}
+              </EntityLink>
+            </div>
+          )}
+          {nc.guia_despacho_id != null && (
+            <div className="flex justify-between">
+              <span className="text-gray-500 dark:text-gray-400">Rectifica</span>
+              <EntityLink kind="guia" id={nc.guia_despacho_id}>
+                Guía de despacho N° {nc.guia_despacho_numero ?? nc.guia_despacho_id}
+              </EntityLink>
+            </div>
+          )}
           <Row label="Razón" value={nc.razon} />
           <Row label="Neto" value={fmt(nc.monto_neto)} />
           <Row label="IVA" value={fmt(nc.monto_iva)} />

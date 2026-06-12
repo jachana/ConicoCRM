@@ -45,6 +45,14 @@ class NotaCreditoOut(BaseModel):
     dte_estado: str
     created_at: datetime
     lineas: list[NotaCreditoLineaOut] = []
+    # Documento que la NC rectifica/anula. NO existe FK a factura en el modelo
+    # (NotaCredito solo referencia boleta_id y guia_despacho_id) — cuando se
+    # agregue factura_id via migración, exponer aquí factura_id/factura_numero.
+    boleta_id: int | None = None
+    guia_despacho_id: int | None = None
+    # Números legibles, resueltos en el endpoint GET detail (no vienen del ORM).
+    boleta_numero: int | None = None
+    guia_despacho_numero: int | None = None
     model_config = {"from_attributes": True}
 
 

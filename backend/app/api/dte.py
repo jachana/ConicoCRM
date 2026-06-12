@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_modulo, require_permission
+from app.models.boleta import Boleta
 from app.models.dte_emision import DteEmision
 from app.models.factura import Factura
 from app.models.guia_despacho import GuiaDespacho
@@ -121,10 +122,15 @@ def crear_nc(
     perms: tuple[User, Session] = require_permission("facturas", "create"),
 ):
     _, db = perms
+    if body.guia_despacho_id is not None:
+        guia = db.query(GuiaDespacho).filter_by(id=body.guia_despacho_id).first()
+        if not guia:
+            raise HTTPException(status_code=404, detail="Guía de despacho no encontrada")
     nc = NotaCredito(
         numero=_next_numero(db, "nc_last_id"),
         fecha=body.fecha or date.today(),
         cliente_id=body.cliente_id,
+        guia_despacho_id=body.guia_despacho_id,
         razon=body.razon,
         monto_neto=Decimal("0"),
         monto_iva=Decimal("0"),
@@ -165,7 +171,16 @@ def get_nc(
     nc = db.query(NotaCredito).options(joinedload(NotaCredito.lineas)).filter_by(id=nc_id).first()
     if not nc:
         raise HTTPException(status_code=404, detail="Nota de crédito no encontrada")
-    return nc
+    out = NotaCreditoOut.model_validate(nc)
+    # Resolver números legibles del documento referenciado (no hay FK a factura
+    # en el modelo NotaCredito; solo boleta/guía de despacho).
+    if nc.boleta_id is not None:
+        out.boleta_numero = db.query(Boleta.numero).filter(Boleta.id == nc.boleta_id).scalar()
+    if nc.guia_despacho_id is not None:
+        out.guia_despacho_numero = (
+            db.query(GuiaDespacho.numero).filter(GuiaDespacho.id == nc.guia_despacho_id).scalar()
+        )
+    return out
 
 
 @router.get("/notas-credito/{nc_id}/pdf", dependencies=[require_modulo("nota_credito")])
