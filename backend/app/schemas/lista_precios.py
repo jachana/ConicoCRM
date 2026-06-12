@@ -71,3 +71,23 @@ class HistorialVentaPage(BaseModel):
     total: int
     total_cantidad: Decimal
     total_monto: Decimal
+
+
+class HistorialCompraItem(BaseModel):
+    fecha: date
+    oc_id: int
+    oc_numero: int
+    proveedor_id: int
+    proveedor_nombre: str
+    estado: str
+    cantidad: int
+    cantidad_recibida: int
+    precio_unitario: Decimal
+    total: Decimal
+
+
+class HistorialCompraPage(BaseModel):
+    items: list[HistorialCompraItem]
+    total: int
+    total_cantidad: int
+    total_monto: Decimal

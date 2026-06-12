@@ -25,7 +25,15 @@ from app.models.tag import ProductoTag
 from app.models.tipo_producto import TipoProducto
 from app.models.user import User
 from app.models.movimiento_inventario import MovimientoInventario
-from app.schemas.lista_precios import HistorialCostoItem, HistorialVentaItem, HistorialVentaPage
+from app.models.orden_compra import OrdenCompra, OrdenCompraLinea
+from app.models.proveedor import Proveedor
+from app.schemas.lista_precios import (
+    HistorialCompraItem,
+    HistorialCompraPage,
+    HistorialCostoItem,
+    HistorialVentaItem,
+    HistorialVentaPage,
+)
 from app.schemas.producto import (
     BulkPreciosRequest,
     BulkPreciosResponse,
@@ -564,6 +572,70 @@ def historial_ventas(
         total=total,
         total_cantidad=total_cantidad,
         total_monto=total_monto,
+    )
+
+
+@router.get("/{producto_id}/historial-compras", response_model=HistorialCompraPage)
+def historial_compras(
+    producto_id: int,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    perms: tuple[User, Session] = require_permission("ordenes_compra", "view"),
+):
+    """Purchase history for a producto: lineas de ordenes de compra, newest first."""
+    from decimal import Decimal as D
+    _, db = perms
+    producto = db.get(Producto, producto_id)
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    base_q = (
+        db.query(OrdenCompraLinea, OrdenCompra, Proveedor)
+        .join(OrdenCompra, OrdenCompra.id == OrdenCompraLinea.orden_compra_id)
+        .join(Proveedor, Proveedor.id == OrdenCompra.proveedor_id)
+        .filter(OrdenCompraLinea.producto_id == producto_id)
+    )
+
+    total = base_q.count()
+    total_cantidad, total_monto = (
+        db.query(
+            func.coalesce(func.sum(OrdenCompraLinea.cantidad), 0),
+            func.coalesce(func.sum(OrdenCompraLinea.total_neto), 0),
+        )
+        .join(OrdenCompra, OrdenCompra.id == OrdenCompraLinea.orden_compra_id)
+        .filter(OrdenCompraLinea.producto_id == producto_id)
+        .one()
+    )
+
+    rows = (
+        base_q
+        .order_by(OrdenCompra.fecha.desc(), OrdenCompra.id.desc(), OrdenCompraLinea.id.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    items = [
+        HistorialCompraItem(
+            fecha=oc.fecha,
+            oc_id=oc.id,
+            oc_numero=oc.numero,
+            proveedor_id=prov.id,
+            proveedor_nombre=prov.nombre,
+            estado=oc.estado,
+            cantidad=linea.cantidad,
+            cantidad_recibida=linea.cantidad_recibida,
+            precio_unitario=D(linea.valor_neto or 0),
+            total=D(linea.total_neto or 0),
+        )
+        for linea, oc, prov in rows
+    ]
+
+    return HistorialCompraPage(
+        items=items,
+        total=total,
+        total_cantidad=int(total_cantidad or 0),
+        total_monto=D(total_monto or 0),
     )
 
 

@@ -542,3 +542,134 @@ def test_specs_incluido_en_busqueda(client, admin_token):
     assert len(resultados) >= 1
     assert any(p["nombre"] == "Hidraulico Premium" for p in resultados)
     assert any(p["specs"] == ["ISO 46", "ACEA C3"] for p in resultados)
+
+
+# ============================================================================
+# Historial de compras (lineas de OC) por producto
+# ============================================================================
+
+
+def _crear_proveedor_hc(client, admin_token, nombre="Prov HC", email="provhc@test.cl"):
+    r = client.post(
+        "/api/proveedores/",
+        json={"nombre": nombre, "rut": None, "email": email},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201, r.text
+    return r.json()["id"]
+
+
+def _crear_oc_hc(client, admin_token, proveedor_id, fecha, lineas):
+    r = client.post(
+        "/api/ordenes-compra/",
+        json={"proveedor_id": proveedor_id, "fecha": fecha, "lineas": lineas},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def test_historial_compras_404_producto_inexistente(client, admin_token):
+    r = client.get(
+        "/api/productos/999999/historial-compras",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 404
+
+
+def test_historial_compras_403_vendedor(client, vendedor_token, admin_token):
+    pid = _crear_producto(client, admin_token, "ProdHC403", "100.00")
+    r = client.get(
+        f"/api/productos/{pid}/historial-compras",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert r.status_code == 403
+
+
+def test_historial_compras_solo_lineas_del_producto_newest_first(client, admin_token):
+    prod_a = _crear_producto(client, admin_token, "ProdHC A", "100.00")
+    prod_b = _crear_producto(client, admin_token, "ProdHC B", "200.00")
+    prov = _crear_proveedor_hc(client, admin_token, nombre="Prov Historial", email="provhc1@test.cl")
+
+    oc_vieja = _crear_oc_hc(client, admin_token, prov, "2026-01-10", [
+        {"orden": 1, "descripcion": "A vieja", "producto_id": prod_a, "cantidad": 3, "valor_neto": 1000},
+        {"orden": 2, "descripcion": "B no debe salir", "producto_id": prod_b, "cantidad": 9, "valor_neto": 500},
+    ])
+    oc_nueva = _crear_oc_hc(client, admin_token, prov, "2026-03-05", [
+        {"orden": 1, "descripcion": "A nueva", "producto_id": prod_a, "cantidad": 5, "valor_neto": 1200},
+    ])
+
+    r = client.get(
+        f"/api/productos/{prod_a}/historial-compras",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] == 2
+    assert len(body["items"]) == 2
+
+    first, second = body["items"]
+    # newest first
+    assert first["oc_id"] == oc_nueva["id"]
+    assert first["oc_numero"] == oc_nueva["numero"]
+    assert first["fecha"] == "2026-03-05"
+    assert first["proveedor_id"] == prov
+    assert first["proveedor_nombre"] == "Prov Historial"
+    assert first["estado"] == "borrador"
+    assert first["cantidad"] == 5
+    assert first["cantidad_recibida"] == 0
+    assert float(first["precio_unitario"]) == 1200.0
+    assert float(first["total"]) == 6000.0
+
+    assert second["oc_id"] == oc_vieja["id"]
+    assert second["oc_numero"] == oc_vieja["numero"]
+    assert second["cantidad"] == 3
+
+    # aggregates over all matching lines
+    assert float(body["total_cantidad"]) == 8.0
+    assert float(body["total_monto"]) == 9000.0
+
+
+def test_historial_compras_paginacion(client, admin_token):
+    pid = _crear_producto(client, admin_token, "ProdHC Pag", "100.00")
+    prov = _crear_proveedor_hc(client, admin_token, nombre="Prov Pag", email="provhc2@test.cl")
+
+    for i in range(3):
+        _crear_oc_hc(client, admin_token, prov, f"2026-02-0{i + 1}", [
+            {"orden": 1, "descripcion": f"L{i}", "producto_id": pid, "cantidad": 2, "valor_neto": 100},
+        ])
+
+    r = client.get(
+        f"/api/productos/{pid}/historial-compras",
+        params={"limit": 2, "offset": 0},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] == 3
+    assert len(body["items"]) == 2
+    # aggregates cover ALL rows, not just the page
+    assert float(body["total_cantidad"]) == 6.0
+    assert float(body["total_monto"]) == 600.0
+
+    r2 = client.get(
+        f"/api/productos/{pid}/historial-compras",
+        params={"limit": 2, "offset": 2},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r2.status_code == 200
+    assert len(r2.json()["items"]) == 1
+
+
+def test_historial_compras_vacio(client, admin_token):
+    pid = _crear_producto(client, admin_token, "ProdHC Vacio", "100.00")
+    r = client.get(
+        f"/api/productos/{pid}/historial-compras",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["items"] == []
+    assert body["total"] == 0
+    assert float(body["total_cantidad"]) == 0.0
+    assert float(body["total_monto"]) == 0.0
