@@ -32,18 +32,19 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Nav] NC/ND: migración factura_id + referencia a factura",
       "labels": [
         "Core"
       ],
-      "desc": "**Contexto / Problema**\nDerivada de '[Nav] NC/ND: mostrar y linkear factura de referencia'. Los modelos NotaCredito/NotaDebito NO tienen FK a factura (NC solo referencia boleta_id/guia_despacho_id; ND nada). Una NC/ND que rectifica una factura 33 no guarda cuál.\n\n**Scope**\nMigración Alembic: factura_id nullable en notas_credito y notas_debito; poblar al crear NC/ND desde factura; exponer en schemas Out (hay comentario TODO en backend/app/schemas/dte.py); fila 'Rectifica factura' con EntityLink en ambos detalles; considerar backfill por folio en onboarding_nc.",
+      "desc": "**Resumen** — Se implementa la migración y persistencia del campo `factura_id` en los modelos de Notas de Crédito/Débito para vincularlas correctamente con la factura que rectifican, incluyendo exposición en APIs, UI de referencia y backfill histórico.\n\n**Cambios / Decisiones** —\n- Migración Alembic `f2a3b4c5d6e7`: añade `factura_id` nullable (FK a `facturas.id`, `SET NULL`, index) en `notas_credito` y `notas_debito`.\n- Modelos/Schemas: se añade `factura_id` a `NotaCredito/NotaDebito`; `Create` valida XOR estricto (`factura_id` vs `guía_despacho_id` en NC); `Out` expone `factura_id` y `factura_numero`.\n- Backend API (`backend/app/api/dte.py`): valida existencia 404, persiste `factura_id` al crear, resuelve `factura_numero` en `GET detail`.\n- Backfill (`backend/app/api/onboarding_nc.py`): recupera `factura_id` histórico por `folio_referencia` con gating estricto por `tipo_referencia` y XOR.\n- Frontend (`frontend/src/pages/...`): detalle NC/ND muestra fila \"Rectifica factura\" con `EntityLink` (kind=factura); formularios nuevos soportan `?factura_id=` para prefill de cliente/razón, muestran banner y habilitan envío con XOR de guía en NC.\n- Tests: cubren validación XOR, link en detalle, prefill desde factura y backfill con gating.",
       "checklist": [
-        "Migración factura_id en NC y ND (un solo head)",
-        "Persistir factura_id al crear NC/ND desde factura",
-        "Exponer factura_id/factura_numero en schemas Out",
-        "EntityLink en NC/ND detalle",
-        "Tests backend + vitest"
+        "POST `/{empresa}/api/notas-credito` con `factura_id` válido y verificar 201 y `factura_numero` en respuesta.",
+        "POST `/{empresa}/api/notas-debito` sin `factura_id` y con `guía_despacho_id`; verificar que persiste sin error.",
+        "GET detalle de una NC/ND con referencia y confirmar fila \"Rectifica factura\" con `EntityLink` funcional.",
+        "Abrir `?factura_id=<id>` en `NotaCreditoNueva` y verificar que auto-rellena cliente/razón y muestra banner.",
+        "Importar NC histórica vía onboarding con `folio_referencia` y validar que backfill asigna `factura_id` correctamente.",
+        "Validar XOR en NC: enviar payload con ambos `factura_id` y `guía_despacho_id` y verificar respuesta 422/400."
       ]
     }
   ]
