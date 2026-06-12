@@ -32,19 +32,20 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Nav] Reportes: filtro por empresa y por marca (backend + deep-link)",
       "labels": [
         "Core"
       ],
-      "desc": "**Contexto / Problema**\nDerivada de '[Nav] Reportes pre-filtrados desde entidades (deep-link)'. /reportes ya acepta tab, cliente_id y date_from/date_to por query param, pero no existe filtro por empresa ni por marca en los endpoints /api/reportes/* — por eso EmpresaDetailModal y ProductoDetailModal quedaron sin botón 'Ver en reportes'.\n\n**Scope**\nBackend: param empresa_id en reportes de ventas/cobranza y marca_id en por-marca. Frontend: query params nuevos + botones en EmpresaDetailModal y ProductoDetailModal.",
+      "desc": "**Resumen** — Se habilitaron los filtros por empresa y por marca en la sección de reportes, integrando parámetros de consulta en el backend y botones de navegación profundos (deep-link) desde los modales de detalle en el frontend.\n\n**Cambios / Decisiones** — \n- `backend/app/api/reportes.py`: `/api/reportes/ventas` y `/api/reportes/cobranza` ahora aceptan `empresa_id` para filtrar facturas y boletas. El parámetro se incluye en `_filters` del cache para evitar colisiones de claves.\n- `frontend/src/pages/Reportes.tsx`: Se agregaron deep-links `?empresa_id=` y `?marca_id=` con chips de filtro descartables que resuelven el nombre vía `GET /api/empresas/{id}` con fallback a `#id`.\n- `frontend/src/components/EmpresaTabResumen.tsx` y `EmpresaDetailModal.tsx`: Botón \"Ver en reportes\" que navega a `/reportes?tab=ventas&empresa_id=N` (oculto para vendedores).\n- `frontend/src/components/ProductoDetailModal.tsx`: Botón \"Ver reportes de la marca\" a `/reportes?tab=por_marca&marca_id=N` (solo visible si existe `marca_id` y el usuario no es vendedor).\n- Se actualizaron los tests en `backend/tests/test_reportes.py` y componentes frontend para cubrir filtros, roles y navegación.",
       "checklist": [
-        "Backend: empresa_id en endpoints de reportes ventas/cobranza",
-        "Backend: marca_id en /api/reportes/por-marca",
-        "Query params empresa_id/marca_id en Reportes.tsx",
-        "Botón 'Ver en reportes' en EmpresaDetailModal",
-        "Botón 'Ver reportes de la marca' en ProductoDetailModal",
-        "Tests backend + vitest"
+        "Hacer GET a /api/reportes/ventas?empresa_id=1 y verificar que solo retorna facturas/boletas de esa empresa.",
+        "Abrir detalle de un cliente, buscar su empresa y verificar que aparece el botón \"Ver en reportes\".",
+        "Clic en \"Ver en reportes\", confirmar que la URL carga ?tab=ventas&empresa_id=N y muestra datos filtrados.",
+        "Ir a detalle de un producto con marca, verificar botón \"Ver reportes de la marca\" y hacer clic.",
+        "Asegurar que se navega a /reportes?tab=por_marca&marca_id=N sin error y se filtra correctamente.",
+        "Verificar que un usuario con rol vendedor no ve los botones de navegación a reportes en ambos modales.",
+        "Comprobar que los chips de filtro ?empresa_id y ?marca_id muestran el nombre de la entidad o fallback #id."
       ]
     }
   ]
