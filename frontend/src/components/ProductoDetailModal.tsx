@@ -7,8 +7,10 @@ import {
 } from './ui'
 import { Pencil } from 'lucide-react'
 import ProductoHistorialVentas from './ProductoHistorialVentas'
+import ProductoCompras from './ProductoCompras'
 import ProductoDocumentos from './ProductoDocumentos'
 import ProductoHistorial from './ProductoHistorial'
+import ProductoHistorialCostos from './ProductoHistorialCostos'
 
 interface Props {
   producto: Producto | null
@@ -120,19 +122,31 @@ export default function ProductoDetailModal({ producto, onClose, onEdit, showCos
             <TabsList variant="underline">
               <TabsTrigger value="datos">Datos</TabsTrigger>
               <TabsTrigger value="ventas">Historial de ventas</TabsTrigger>
+              {showCosto && <TabsTrigger value="compras">Compras</TabsTrigger>}
               <TabsTrigger value="documentos">Documentos</TabsTrigger>
               <TabsTrigger value="movimientos">Movimientos</TabsTrigger>
+              {showCosto && <TabsTrigger value="costos">Costos</TabsTrigger>}
             </TabsList>
             <TabsContent value="datos" className="mt-4">{datosNode}</TabsContent>
             <TabsContent value="ventas" className="mt-4">
               <ProductoHistorialVentas productoId={producto.id} />
             </TabsContent>
+            {showCosto && (
+              <TabsContent value="compras" className="mt-4">
+                <ProductoCompras productoId={producto.id} />
+              </TabsContent>
+            )}
             <TabsContent value="documentos" className="mt-4">
               <ProductoDocumentos productoId={producto.id} />
             </TabsContent>
             <TabsContent value="movimientos" className="mt-4">
               <ProductoHistorial productoId={producto.id} />
             </TabsContent>
+            {showCosto && (
+              <TabsContent value="costos" className="mt-4">
+                <ProductoHistorialCostos productoId={producto.id} />
+              </TabsContent>
+            )}
           </Tabs>
         </ModalBody>
 
