@@ -11,6 +11,7 @@ import {
   Badge, Button, Card, EmptyState, Skeleton, Tooltip,
   Table, THead, TBody, TR, TH, TD,
 } from '../components/ui'
+import EntityLink from '../components/EntityLink'
 
 interface CreditAprobacion {
   tipo: 'credito'
@@ -238,9 +239,15 @@ export default function Aprobaciones() {
                       </TD>
                       <TD>{a.vendedor?.name ?? <span className="text-gray-500 dark:text-gray-400">—</span>}</TD>
                       <TD>
-                        {a.tipo === 'credito'
-                          ? (a.empresa?.nombre ?? '—')
-                          : `COT-${String(a.cotizacion_id ?? '').padStart(5, '0')}`}
+                        {a.tipo === 'credito' ? (
+                          a.empresa ? (
+                            <EntityLink kind="empresa" id={a.empresa.id}>{a.empresa.nombre}</EntityLink>
+                          ) : '—'
+                        ) : (
+                          <EntityLink kind="cotizacion" id={a.cotizacion_id}>
+                            {`COT-${String(a.cotizacion_id ?? '').padStart(5, '0')}`}
+                          </EntityLink>
+                        )}
                       </TD>
                       <TD className="text-right font-medium text-gray-900 dark:text-white font-num">
                         {a.tipo === 'credito' ? fmtMoney(a.total) : '—'}
@@ -359,8 +366,14 @@ export default function Aprobaciones() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                        COT-{String(cot.numero).padStart(5, '0')}
-                        {cot.empresa && <span className="ml-2 text-gray-500 font-normal">— {cot.empresa.nombre}</span>}
+                        <EntityLink kind="cotizacion" id={cot.id}>
+                          COT-{String(cot.numero).padStart(5, '0')}
+                        </EntityLink>
+                        {cot.empresa && (
+                          <span className="ml-2 text-gray-500 font-normal">
+                            — <EntityLink kind="empresa" id={cot.empresa.id}>{cot.empresa.nombre}</EntityLink>
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         Términos solicitados: <strong className="text-warning-700 dark:text-warning-400">{cot.terminos_pago}</strong>
