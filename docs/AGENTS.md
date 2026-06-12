@@ -2,17 +2,18 @@
 
 > Este documento define **cómo trabaja un equipo de agentes (humanos o IA) sobre Conico** sin pisarse: cómo elegir tarea, cómo aislar contexto, cómo entregar.
 
-Última actualización: 2026-04-24. Documentos relacionados: `docs/architecture.md`, `docs/backlog.md`, `docs/state-of-product.html`, `PROGRESS.md`.
+Última actualización: 2026-06-11. Documentos relacionados: `docs/codebase-map.md`, `docs/architecture.md`, `docs/backlog.md`, `docs/state-of-product.html`, `PROGRESS.md`.
 
 ---
 
 ## 0. Lectura obligatoria antes de la primera tarea
 
 1. `CLAUDE.md` (raíz) — política de comandos y reglas del proyecto.
-2. `docs/architecture.md` — stack, modelo de datos, flujos.
-3. `docs/backlog.md` — tareas con scope cerrado.
-4. `PROGRESS.md` — qué ya está hecho.
-5. `docs/dudas-cliente.md` — decisiones bloqueantes pendientes.
+2. `docs/codebase-map.md` — **mapa del código**: dónde vive cada cosa, patrones, gotchas, estado actual.
+3. `docs/architecture.md` — stack, modelo de datos, flujos.
+4. `docs/backlog.md` — tareas con scope cerrado.
+5. `PROGRESS.md` — qué ya está hecho.
+6. `docs/dudas-cliente.md` — decisiones bloqueantes pendientes.
 
 ---
 
@@ -85,7 +86,7 @@ Si tu tarea depende de otra **no completada**, NO la empieces. Marca `blockedBy`
 
 ### Backend
 - **Endpoints:** plural en español: `/api/cotizaciones`, `/api/notas-venta`.
-- **Permisos:** decorator `Depends(require_perm("modulo:accion"))`. Acciones: `view`, `view_all`, `create`, `edit`, `delete`, `admin`.
+- **Permisos:** dependency `Depends(require_permission("modulo", "accion"))` (en `backend/app/api/deps.py`). Acciones: `view`, `view_all`, `create`, `edit`, `delete`, `admin`. Módulos opcionales: `require_modulo("slug")`.
 - **Schemas Pydantic:** sufijos `Create`, `Update`, `Out`. `Out` siempre tiene `model_config = ConfigDict(from_attributes=True)`.
 - **SQLAlchemy:** Mapped + typed columns; FK con `ondelete` explícito; nada de `relationship()` sin `back_populates` o motivo.
 - **Migraciones:** una migración por tarea funcional; nunca editar migraciones ya mergeadas.

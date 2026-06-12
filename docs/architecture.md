@@ -1,6 +1,8 @@
 # Conico — Arquitectura de Alto Nivel
 
-> Estado: documento vivo. Última revisión: 2026-05-06. Mantener sincronizado con `PROGRESS.md` y `docs/backlog.md`.
+> Estado: documento vivo. Última revisión: 2026-06-11. Mantener sincronizado con `PROGRESS.md` y `docs/backlog.md`.
+>
+> Mapa del código (dónde vive cada cosa, patrones, gotchas): ver [`docs/codebase-map.md`](codebase-map.md).
 >
 > Variables de entorno: ver [`docs/environment-variables.md`](environment-variables.md) para la referencia canónica (backend, frontend, Celery, backups, Sentry).
 >
@@ -263,10 +265,10 @@ Factura/NC/ND  ──build_payload──▶  DteService  ──httpx──▶  L
                                                        Celery task de polling
 ```
 
-- `DteService` construye payloads (DTE 33 factura, 61 NC, 56 ND).
+- `DteService` construye payloads (DTE 33 factura, 61 NC, 56 ND, 39/41 boletas, 52 guía de despacho).
 - `DteEmision` guarda `track_id`, `estado`, `respuesta_sii`, intentos de poll.
 - Webhook validado por HMAC con `webhook_secret`.
-- Falta: boletas (39/41), guía de despacho electrónica (52), libro de compras/ventas, intercambio DTE.
+- Libros de compras/ventas (`services/libro_service.py`, `/api/libros`) y recepción de DTE (`/api/dte-recepcion`) implementados. CAF management en `services/caf_service.py` + `/api/cafs` con alertas diarias de folios bajos.
 
 ---
 
@@ -361,21 +363,27 @@ Variables clave (`backend/app/config.py`):
 
 ## 15. Calidad y CI
 
-- Backend: `pytest` (smoke + integration). DB de pruebas SQLite.
-- Frontend: `vitest` por página.
-- Sin pipeline CI configurado todavía (gap — ver backlog).
+- Backend: `pytest` (smoke + integration). DB de pruebas SQLite in-memory (`backend/tests/conftest.py`).
+- Frontend: `vitest` por página (`.test.tsx` colocados).
+- CI en GitHub Actions: `.github/workflows/ci.yml` (guard de Alembic single-head, ruff, pytest, tsc, vitest) + `docker-build.yml`.
 
 ---
 
 ## 16. Brechas arquitectónicas conocidas
 
+Vigentes a 2026-06-11:
+
 1. **Multi-tenant:** modelo no tiene `tenant_id`; uploads compartidos. Bloqueante si se quiere SaaS.
-2. **Audit log:** no existe `AuditLog` global; sólo flags `is_locked` y campos `*_at`. Crítico cuando hay >3 usuarios concurrentes.
-3. **Notificaciones:** no hay campana in-app ni email digest. Tareas suplen parcialmente.
-4. **Boletas / guías electrónicas / libro IVA:** DTE solo cubre 33/61/56.
-5. **Conciliación bancaria:** no existe.
-6. **Multi-moneda / UF / USD:** todos los montos asumen CLP.
-7. **2FA / SSO:** sólo password.
-8. **Customer portal:** clientes no pueden ver sus facturas/cotizaciones.
-9. **Backup automático:** sin script de respaldo programado.
-10. **CI/CD:** sin pipeline (lint + test + deploy).
+2. **Conciliación bancaria:** sólo importación de pagos con matching (`services/payment_matcher.py`); no hay conciliación contra cartola completa.
+3. **Multi-moneda / UF / USD:** todos los montos asumen CLP.
+4. **Customer portal:** clientes no pueden ver sus facturas/cotizaciones.
+5. **SSO:** hay 2FA TOTP pero no SSO/SAML.
+
+Cerradas desde la revisión 2026-05-06 (evidencia en código):
+
+- **Audit log** → `models/audit_log.py` + `audit_log_archive.py`, `/api/auditoria`, archivo semanal vía Celery (`tasks/audit_retention.py`). Ver `docs/audit-log-system.md`.
+- **Notificaciones in-app** → `models/notification.py`, `/api/notifications`, campana en UI (`NotificationBell.tsx`).
+- **Boletas 39/41, guías 52, libros compra/venta, recepción DTE** → ver §7.
+- **2FA** → TOTP + recovery codes (`core/security.py`).
+- **Backup automático** → `docs/runbooks/backup-restore.md` (postgres-backup-local + S3, rotación 7d/4w/6m).
+- **CI/CD** → `.github/workflows/ci.yml` y `docker-build.yml`.

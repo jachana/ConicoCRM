@@ -1,5 +1,7 @@
 # Conico Codebase Map
 
+> Mapa completo y actualizado: `docs/codebase-map.md`. Este archivo es solo el resumen mínimo para `tboard loop`.
+
 ## Backend (FastAPI + SQLAlchemy + Alembic)
 
 **Add a new endpoint:**
