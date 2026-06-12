@@ -32,23 +32,8 @@
   },
   "cards": [
     {
-      "list": "Feature requests",
-      "name": "[Nav] NC/ND: migración factura_id + referencia a factura",
-      "labels": [
-        "Core"
-      ],
-      "desc": "**Contexto / Problema**\nDerivada de '[Nav] NC/ND: mostrar y linkear factura de referencia'. Los modelos NotaCredito/NotaDebito NO tienen FK a factura (NC solo referencia boleta_id/guia_despacho_id; ND nada). Una NC/ND que rectifica una factura 33 no guarda cuál.\n\n**Scope**\nMigración Alembic: factura_id nullable en notas_credito y notas_debito; poblar al crear NC/ND desde factura; exponer en schemas Out (hay comentario TODO en backend/app/schemas/dte.py); fila 'Rectifica factura' con EntityLink en ambos detalles; considerar backfill por folio en onboarding_nc.",
-      "checklist": [
-        "Migración factura_id en NC y ND (un solo head)",
-        "Persistir factura_id al crear NC/ND desde factura",
-        "Exponer factura_id/factura_numero en schemas Out",
-        "EntityLink en NC/ND detalle",
-        "Tests backend + vitest"
-      ]
-    },
-    {
       "list": "In progress",
-      "name": "[Nav] TareaDrawer: sección 'Vinculado a' con link a la entidad"
+      "name": "[Nav] Reportes pre-filtrados desde entidades (deep-link)"
     }
   ]
 }
