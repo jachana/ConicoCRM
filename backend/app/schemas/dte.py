@@ -22,13 +22,12 @@ class NotaCreditoCreate(BaseModel):
     razon: str
     lineas: list[NotaCreditoLineaCreate] = []
     guia_despacho_id: int | None = None  # D-15: NC puede anular guía
+    factura_id: int | None = None  # NC puede rectificar factura
 
     @model_validator(mode="after")
     def _xor_anulacion(self):
-        # D-15: una NC anula UNA cosa. Hoy `factura_id` no está en el schema, así
-        # que esto es no-op. Cuando aparezca, el guard se activa automáticamente.
-        fid = getattr(self, "factura_id", None)
-        if fid and self.guia_despacho_id:
+        # D-15: una NC anula UNA cosa: factura XOR guía de despacho.
+        if self.factura_id and self.guia_despacho_id:
             raise ValueError("Una NC anula UNA cosa: factura_id XOR guia_despacho_id")
         return self
 
@@ -45,14 +44,14 @@ class NotaCreditoOut(BaseModel):
     dte_estado: str
     created_at: datetime
     lineas: list[NotaCreditoLineaOut] = []
-    # Documento que la NC rectifica/anula. NO existe FK a factura en el modelo
-    # (NotaCredito solo referencia boleta_id y guia_despacho_id) — cuando se
-    # agregue factura_id via migración, exponer aquí factura_id/factura_numero.
+    # Documento que la NC rectifica/anula (boleta, guía de despacho o factura).
     boleta_id: int | None = None
     guia_despacho_id: int | None = None
+    factura_id: int | None = None
     # Números legibles, resueltos en el endpoint GET detail (no vienen del ORM).
     boleta_numero: int | None = None
     guia_despacho_numero: int | None = None
+    factura_numero: int | None = None
     model_config = {"from_attributes": True}
 
 
@@ -74,6 +73,7 @@ class NotaDebitoCreate(BaseModel):
     cliente_id: int
     razon: str
     lineas: list[NotaDebitoLineaCreate] = []
+    factura_id: int | None = None  # ND puede rectificar factura
 
 
 class NotaDebitoOut(BaseModel):
@@ -88,6 +88,9 @@ class NotaDebitoOut(BaseModel):
     dte_estado: str
     created_at: datetime
     lineas: list[NotaDebitoLineaOut] = []
+    # Factura que la ND rectifica; numero resuelto en el endpoint GET detail.
+    factura_id: int | None = None
+    factura_numero: int | None = None
     model_config = {"from_attributes": True}
 
 

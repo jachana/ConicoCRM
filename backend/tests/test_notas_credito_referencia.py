@@ -1,9 +1,6 @@
 """
-Tests: NotaCreditoOut expone el documento que la NC rectifica/anula.
-
-NOTA: el modelo NotaCredito NO tiene FK a factura (solo boleta_id y
-guia_despacho_id), por lo que la referencia a factura no puede exponerse sin
-migración. Estos tests cubren lo disponible: boleta y guía de despacho.
+Tests: NotaCreditoOut/NotaDebitoOut exponen el documento que la NC/ND
+rectifica/anula: boleta, guía de despacho o factura (factura_id + numero).
 """
 
 import random
@@ -32,6 +29,20 @@ def _create_guia(client, token):
             "direccion_destino": "Av. Test 123",
             "comuna_destino": "Santiago",
             "lineas": [{"descripcion": "Item", "cantidad": "1", "precio_unitario": "1000"}],
+        },
+        headers=_auth(token),
+    )
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def _create_factura(client, token, cliente_id):
+    r = client.post(
+        "/api/facturas/",
+        json={
+            "cliente_id": cliente_id,
+            "correo": "test@test.com",
+            "lineas": [{"orden": 0, "descripcion": "Item A", "cantidad": 1, "valor_neto": 1000}],
         },
         headers=_auth(token),
     )
@@ -117,3 +128,111 @@ def test_nc_de_boleta_anulada_expone_boleta_id_y_numero(mock_emit, client, admin
     body = r4.json()
     assert body["boleta_id"] == boleta["id"]
     assert body["boleta_numero"] == boleta["numero"]
+
+
+# ── Referencia a factura (NC) ──────────────────────────────────────────────────
+
+def test_crear_nc_persiste_factura_id_y_detail_expone_numero(client, admin_token):
+    """POST NC con factura_id la persiste; GET detail expone id + numero de la factura."""
+    cliente = _create_cliente(client, admin_token)
+    factura = _create_factura(client, admin_token, cliente["id"])
+
+    r = client.post(
+        "/api/dte/notas-credito/",
+        json={
+            "cliente_id": cliente["id"],
+            "razon": f"Rectifica factura N°{factura['numero']}",
+            "factura_id": factura["id"],
+            "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "1000"}],
+        },
+        headers=_auth(admin_token),
+    )
+    assert r.status_code == 201, r.text
+    nc_id = r.json()["id"]
+    assert r.json()["factura_id"] == factura["id"]
+
+    r2 = client.get(f"/api/dte/notas-credito/{nc_id}", headers=_auth(admin_token))
+    assert r2.status_code == 200, r2.text
+    body = r2.json()
+    assert body["factura_id"] == factura["id"]
+    assert body["factura_numero"] == factura["numero"]
+    assert body["boleta_id"] is None
+    assert body["guia_despacho_id"] is None
+
+
+def test_crear_nc_factura_inexistente_404(client, admin_token):
+    cliente = _create_cliente(client, admin_token)
+    r = client.post(
+        "/api/dte/notas-credito/",
+        json={
+            "cliente_id": cliente["id"],
+            "razon": "ref rota",
+            "factura_id": 999999,
+            "lineas": [],
+        },
+        headers=_auth(admin_token),
+    )
+    assert r.status_code == 404, r.text
+
+
+def test_crear_nc_factura_y_guia_422_xor(client, admin_token):
+    """Una NC anula UNA cosa: factura_id XOR guia_despacho_id → 422."""
+    cliente = _create_cliente(client, admin_token)
+    factura = _create_factura(client, admin_token, cliente["id"])
+    guia = _create_guia(client, admin_token)
+
+    r = client.post(
+        "/api/dte/notas-credito/",
+        json={
+            "cliente_id": cliente["id"],
+            "razon": "doble referencia",
+            "factura_id": factura["id"],
+            "guia_despacho_id": guia["id"],
+            "lineas": [],
+        },
+        headers=_auth(admin_token),
+    )
+    assert r.status_code == 422, r.text
+
+
+# ── Referencia a factura (ND) ──────────────────────────────────────────────────
+
+def test_crear_nd_persiste_factura_id_y_detail_expone_numero(client, admin_token):
+    """POST ND con factura_id la persiste; GET detail expone id + numero de la factura."""
+    cliente = _create_cliente(client, admin_token)
+    factura = _create_factura(client, admin_token, cliente["id"])
+
+    r = client.post(
+        "/api/dte/notas-debito/",
+        json={
+            "cliente_id": cliente["id"],
+            "razon": f"Rectifica factura N°{factura['numero']}",
+            "factura_id": factura["id"],
+            "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "1000"}],
+        },
+        headers=_auth(admin_token),
+    )
+    assert r.status_code == 201, r.text
+    nd_id = r.json()["id"]
+    assert r.json()["factura_id"] == factura["id"]
+
+    r2 = client.get(f"/api/dte/notas-debito/{nd_id}", headers=_auth(admin_token))
+    assert r2.status_code == 200, r2.text
+    body = r2.json()
+    assert body["factura_id"] == factura["id"]
+    assert body["factura_numero"] == factura["numero"]
+
+
+def test_crear_nd_factura_inexistente_404(client, admin_token):
+    cliente = _create_cliente(client, admin_token)
+    r = client.post(
+        "/api/dte/notas-debito/",
+        json={
+            "cliente_id": cliente["id"],
+            "razon": "ref rota",
+            "factura_id": 999999,
+            "lineas": [],
+        },
+        headers=_auth(admin_token),
+    )
+    assert r.status_code == 404, r.text

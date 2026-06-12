@@ -126,11 +126,16 @@ def crear_nc(
         guia = db.query(GuiaDespacho).filter_by(id=body.guia_despacho_id).first()
         if not guia:
             raise HTTPException(status_code=404, detail="Guía de despacho no encontrada")
+    if body.factura_id is not None:
+        factura = db.query(Factura).filter_by(id=body.factura_id).first()
+        if not factura:
+            raise HTTPException(status_code=404, detail="Factura no encontrada")
     nc = NotaCredito(
         numero=_next_numero(db, "nc_last_id"),
         fecha=body.fecha or date.today(),
         cliente_id=body.cliente_id,
         guia_despacho_id=body.guia_despacho_id,
+        factura_id=body.factura_id,
         razon=body.razon,
         monto_neto=Decimal("0"),
         monto_iva=Decimal("0"),
@@ -172,14 +177,15 @@ def get_nc(
     if not nc:
         raise HTTPException(status_code=404, detail="Nota de crédito no encontrada")
     out = NotaCreditoOut.model_validate(nc)
-    # Resolver números legibles del documento referenciado (no hay FK a factura
-    # en el modelo NotaCredito; solo boleta/guía de despacho).
+    # Resolver números legibles del documento referenciado.
     if nc.boleta_id is not None:
         out.boleta_numero = db.query(Boleta.numero).filter(Boleta.id == nc.boleta_id).scalar()
     if nc.guia_despacho_id is not None:
         out.guia_despacho_numero = (
             db.query(GuiaDespacho.numero).filter(GuiaDespacho.id == nc.guia_despacho_id).scalar()
         )
+    if nc.factura_id is not None:
+        out.factura_numero = db.query(Factura.numero).filter(Factura.id == nc.factura_id).scalar()
     return out
 
 
@@ -243,10 +249,15 @@ def crear_nd(
     perms: tuple[User, Session] = require_permission("facturas", "create"),
 ):
     _, db = perms
+    if body.factura_id is not None:
+        factura = db.query(Factura).filter_by(id=body.factura_id).first()
+        if not factura:
+            raise HTTPException(status_code=404, detail="Factura no encontrada")
     nd = NotaDebito(
         numero=_next_numero(db, "nd_last_id"),
         fecha=body.fecha or date.today(),
         cliente_id=body.cliente_id,
+        factura_id=body.factura_id,
         razon=body.razon,
         monto_neto=Decimal("0"),
         monto_iva=Decimal("0"),
@@ -282,7 +293,10 @@ def get_nd(
     nd = db.query(NotaDebito).options(joinedload(NotaDebito.lineas)).filter_by(id=nd_id).first()
     if not nd:
         raise HTTPException(status_code=404, detail="Nota de débito no encontrada")
-    return nd
+    out = NotaDebitoOut.model_validate(nd)
+    if nd.factura_id is not None:
+        out.factura_numero = db.query(Factura.numero).filter(Factura.id == nd.factura_id).scalar()
+    return out
 
 
 @router.get("/notas-debito/{nd_id}/pdf", dependencies=[require_modulo("nota_debito")])

@@ -47,10 +47,10 @@ def _get_existing_nd_folios(db: Session) -> set[int]:
     return {r[0] for r in rows if r[0] is not None}
 
 
-def _get_facturas_by_numero(db: Session) -> dict[int, int]:
-    """Return {numero: cliente_id} for all facturas."""
-    rows = db.query(Factura.numero, Factura.cliente_id).filter(Factura.numero.isnot(None)).all()
-    return {r[0]: r[1] for r in rows if r[0] is not None}
+def _get_facturas_by_numero(db: Session) -> dict[int, tuple[int, int]]:
+    """Return {numero: (factura_id, cliente_id)} for all facturas."""
+    rows = db.query(Factura.numero, Factura.id, Factura.cliente_id).filter(Factura.numero.isnot(None)).all()
+    return {r[0]: (r[1], r[2]) for r in rows if r[0] is not None}
 
 
 def _get_boletas_by_numero(db: Session) -> dict[int, tuple[int, int]]:
@@ -255,9 +255,10 @@ async def import_nc_nd(
                 report_rows.append({**row_dict, "import_status": "omitido"})
                 continue
 
-            # Determine cliente_id and optional boleta_id from folio_referencia
+            # Determine cliente_id and optional boleta_id/factura_id from folio_referencia
             cliente_id = None
             boleta_id = None
+            factura_id = None
             pendiente_ref = False
 
             if row.folio_referencia is not None:
@@ -267,7 +268,9 @@ async def import_nc_nd(
                     boleta_id = blt_id
                     cliente_id = blt_cliente_id
                 elif row.folio_referencia in facturas_by_numero:
-                    cliente_id = facturas_by_numero[row.folio_referencia]
+                    fac_id, fac_cliente_id = facturas_by_numero[row.folio_referencia]
+                    factura_id = fac_id
+                    cliente_id = fac_cliente_id
                 elif row.folio_referencia in boletas_by_numero:
                     blt_id, blt_cliente_id = boletas_by_numero[row.folio_referencia]
                     boleta_id = blt_id
@@ -293,6 +296,7 @@ async def import_nc_nd(
                     fecha=row.fecha,
                     cliente_id=cliente_id,
                     boleta_id=boleta_id,
+                    factura_id=factura_id,
                     razon=row.motivo,
                     monto_neto=row.neto,
                     monto_iva=row.iva,
@@ -328,6 +332,7 @@ async def import_nc_nd(
                     numero=row.folio,
                     fecha=row.fecha,
                     cliente_id=cliente_id,
+                    factura_id=factura_id,
                     razon=row.motivo,
                     monto_neto=row.neto,
                     monto_iva=row.iva,

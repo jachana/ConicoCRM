@@ -17,6 +17,9 @@ class NotaCredito(Base):
     boleta_id: Mapped[int | None] = mapped_column(
         ForeignKey("boletas.id", ondelete="SET NULL"), nullable=True
     )
+    factura_id: Mapped[int | None] = mapped_column(
+        ForeignKey("facturas.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     guia_despacho_id: Mapped[int | None] = mapped_column(
         ForeignKey("guias_despacho.id", ondelete="SET NULL"), nullable=True, index=True
     )
