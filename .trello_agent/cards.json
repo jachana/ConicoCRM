@@ -32,21 +32,119 @@
   },
   "cards": [
     {
-      "list": "In progress",
-      "name": "Vendedor needs to be able to make dashboard templates for themselves (up to 5)",
+      "list": "Feature requests",
+      "name": "[Nav] Aprobaciones: link a cotización/NV origen",
       "labels": [
-        "Size:L"
+        "Core"
       ],
-      "desc": "**Contexto**\nLos vendedores quieren personalizar su dashboard sin sobrescribir el layout global. Hoy existe `DashboardLayout` (tabla `dashboard_layouts`) pero es por `(role, slot)` — un layout compartido por rol, no por usuario. Falta un mecanismo de templates personales.\n\n**Acceptance Criteria**\n- Vendedor puede guardar hasta 5 templates propios (nombre + layout completo + filtros).\n- Vendedor puede listar, aplicar, renombrar y eliminar sus templates.\n- Al intentar guardar el 6° template, UI bloquea con mensaje claro (\"Máximo 5 templates\").\n- Templates son privados (no visibles a otros usuarios).\n- Aplicar un template restaura widgets, posiciones y filtros.\n\n**Stack real**\n- Backend: FastAPI + SQLAlchemy 2.0 (Mapped[…]) + Alembic.\n- Frontend: React 18 + TS + Tailwind + componentes propios (`ui/Modal`, `Button`, `FormField`).\n- Modelo base existente: `backend/app/models/dashboard_layout.py` (NO reusar — es por rol).\n\n**Notas técnicas**\n- Nuevo modelo `backend/app/models/dashboard_template.py`:\n  - tabla `dashboard_templates`, cols: `id`, `user_id` FK → users.id (ondelete CASCADE), `name` String(50), `layout_json` Text default '{}', `created_at`, `updated_at`\n  - `UniqueConstraint(\"user_id\", \"name\", name=\"uq_dashboard_template_user_name\")`\n- Migración en `backend/migrations/versions/` (Alembic). Verificar `alembic heads` == 1 antes de commit.\n- Endpoints en `backend/app/api/dashboard.py` (existe el router):\n  - `GET /api/dashboard/templates` → lista del usuario actual\n  - `POST /api/dashboard/templates` → valida `count(user_id) < 5` antes de crear, retorna 409 si excede\n  - `PUT /api/dashboard/templates/{id}` → solo si `template.user_id == current_user.id`\n  - `DELETE /api/dashboard/templates/{id}` → idem\n  - `POST /api/dashboard/templates/{id}/apply` opcional (o resolver en cliente)\n- Frontend: extender `frontend/src/pages/Dashboard.tsx` o componentes Dashboard:\n  - Dropdown \"Mis templates\" con lista + acciones (aplicar/renombrar/eliminar/crear desde layout actual)\n  - Usar `useAuthStore` para `user.id` y `Modal` (no `Dialog`) para el flujo crear/renombrar\n  - Toasts vía sistema actual; no `window.alert/confirm`\n\n**Definition of Done**\n- Modelo + migración aplicada; `alembic heads` == 1.\n- Endpoints con tests (pytest, `backend/tests/test_dashboard_templates.py`) cubriendo límite 5 y ownership.\n- UI funcional + tests frontend (Vitest) para el cap y privacidad.\n- Targeted tests pasan; card → In review vía `tboard sync --ship-review`.\n\n<!-- tboard:refined -->",
+      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". En Aprobaciones.tsx la referencia 'COT-{id}' es texto plano: el admin aprueba crédito/margen/descuento sin poder abrir con un click el documento que está aprobando.\n\n**Scope**\nFrontend only: usar EntityLink (kind cotizacion/nv) en las 3 tablas de aprobaciones. Empresa y vendedor también linkeables donde aplique.",
       "checklist": [
-        "Crear modelo DashboardTemplate (user_id, name, layout_json, timestamps) + unique (user_id, name)",
-        "Generar migración Alembic; verificar alembic heads == 1",
-        "Endpoints CRUD en backend/app/api/dashboard.py con scope por current_user",
-        "Validación límite 5 en POST (409 al exceder)",
-        "Tests pytest: ownership, límite, CRUD",
-        "UI Mis templates en Dashboard (listar/aplicar/renombrar/eliminar/crear)",
-        "Tests Vitest del dropdown + cap visual",
-        "Smoke manual + ship-review"
+        "Reemplazar COT-id texto por EntityLink en tab crédito",
+        "EntityLink en tab margen",
+        "EntityLink en tab costo/descuento",
+        "Empresa linkeable en tablas",
+        "Test vitest actualizado"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Nav] TareaDrawer: sección 'Vinculado a' con link a la entidad",
+      "labels": [
+        "Core"
+      ],
+      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". Tarea tiene 6 FKs nullables a entidades (factura, cotización, cliente...) pero TareaDrawer no muestra ni linkea la entidad vinculada: la tarea dice 'haz algo' sin llevarte a dónde.\n\n**Scope**\nVerificar que el schema TareaOut exponga las FKs (backend si falta) + sección 'Vinculado a' en el drawer con EntityLink.",
+      "checklist": [
+        "Backend: exponer FKs/entidad vinculada en TareaOut si falta",
+        "Sección 'Vinculado a' en TareaDrawer con EntityLink",
+        "Cubrir los 6 tipos de entidad",
+        "Test vitest"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Nav] NC/ND: mostrar y linkear factura de referencia",
+      "labels": [
+        "Core"
+      ],
+      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". NotaCreditoDetalle.tsx no menciona 'factura' ni una vez: una NC no muestra ni linkea la factura que rectifica. Igual NotaDebitoDetalle.\n\n**Scope**\nMostrar factura origen (numero + EntityLink) en detalle de NC y ND; verificar que el schema la exponga.",
+      "checklist": [
+        "Backend: factura_id/numero en NotaCreditoOut y NotaDebitoOut si falta",
+        "Banner/campo 'Rectifica factura N°X' con EntityLink en NC detalle",
+        "Ídem ND detalle",
+        "Test vitest"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Nav] Empresa/Cliente: filas navegables + tab Cotizaciones/NVs",
+      "labels": [
+        "Core"
+      ],
+      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". En EmpresaDetailModal las filas de tabs Facturas y Productos no son clickeables (solo Crédito navega). No existe tab de Cotizaciones/NVs: el historial de ventas pre-factura solo está mezclado en el Timeline. ClienteDetailModal igual de limitado.\n\n**Scope**\nFilas navegables en tabs existentes + nuevo tab 'Ventas' (cotizaciones + NVs) en Empresa y Cliente. Backend: sub-recursos /api/empresas/{id}/cotizaciones y /nota-ventas (y equivalentes cliente) si faltan.",
+      "checklist": [
+        "Backend: endpoints cotizaciones/NVs por empresa y por cliente",
+        "Filas de EmpresaTabFacturas navegan a /facturas/:id",
+        "Filas de EmpresaTabProductos navegan al documento",
+        "Tab Ventas (cot+NV) en EmpresaDetailModal",
+        "Tab Ventas en ClienteDetailModal",
+        "Tests backend + vitest"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Nav] Producto: tab compras (OC) + UI historial de costos",
+      "labels": [
+        "Core"
+      ],
+      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". ProductoDetailModal tiene historial de ventas y movimientos pero no de compras (OC) — y el endpoint /api/productos/{id}/historial-costos existe sin UI.\n\n**Scope**\nTab 'Compras' (líneas de OC del producto, navegables a la OC) + tab/sección 'Costos' consumiendo historial-costos.",
+      "checklist": [
+        "Backend: endpoint historial-compras (líneas OC) por producto si falta",
+        "Tab Compras en ProductoDetailModal con EntityLink a OC",
+        "UI historial-costos en el modal",
+        "Tests backend + vitest"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Nav] ProveedorDetailModal con OCs y facturas de compra",
+      "labels": [
+        "Core"
+      ],
+      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". Proveedor no tiene detail modal ni sub-recursos: imposible ver las OC y facturas de compra de un proveedor desde el proveedor.\n\n**Scope**\nBackend: /api/proveedores/{id}/ordenes-compra y /facturas-compra. Frontend: ProveedorDetailModal (patrón EmpresaDetailModal) con tabs Datos / OCs / Facturas compra, filas navegables.",
+      "checklist": [
+        "Backend: sub-recursos OCs y facturas-compra por proveedor",
+        "ProveedorDetailModal con tabs",
+        "Filas navegables con EntityLink",
+        "Abrir modal desde lista Proveedores",
+        "Tests backend + vitest"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Nav] Auditoría: link a la entidad afectada",
+      "labels": [
+        "Core"
+      ],
+      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". AdminAuditoria muestra entity_type/entity_id como texto muerto.\n\n**Scope**\nFrontend: mapear entity_type→ruta/modal y renderizar EntityLink cuando el tipo sea navegable.",
+      "checklist": [
+        "Mapa entity_type→kind de EntityLink",
+        "Render link en tabla de auditoría",
+        "Fallback texto para tipos sin ruta",
+        "Test vitest"
+      ]
+    },
+    {
+      "list": "Feature requests",
+      "name": "[Nav] Reportes pre-filtrados desde entidades (deep-link)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\" + 'sacar reportes desde donde está la información'. /reportes no acepta query params: desde una empresa/marca hay que re-filtrar a mano.\n\n**Scope**\nReportes.tsx lee query params (empresa_id, cliente_id, marca_id) e inicializa filtros; botón 'Ver en reportes' en EmpresaDetailModal/ProductoDetailModal.",
+      "checklist": [
+        "Reportes.tsx inicializa filtros desde query params",
+        "Botón 'Ver en reportes' en EmpresaDetailModal",
+        "Botón en ProductoDetailModal (por marca/producto)",
+        "Test vitest"
       ]
     }
   ]
