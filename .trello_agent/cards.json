@@ -32,18 +32,18 @@
   },
   "cards": [
     {
-      "list": "Feature requests",
-      "name": "[Nav] Reportes: filtro por empresa y por marca (backend + deep-link)",
+      "list": "In progress",
+      "name": "[Nav] Empresa/Cliente: filas navegables + tab Cotizaciones/NVs",
       "labels": [
         "Core"
       ],
-      "desc": "**Contexto / Problema**\nDerivada de '[Nav] Reportes pre-filtrados desde entidades (deep-link)'. /reportes ya acepta tab, cliente_id y date_from/date_to por query param, pero no existe filtro por empresa ni por marca en los endpoints /api/reportes/* — por eso EmpresaDetailModal y ProductoDetailModal quedaron sin botón 'Ver en reportes'.\n\n**Scope**\nBackend: param empresa_id en reportes de ventas/cobranza y marca_id en por-marca. Frontend: query params nuevos + botones en EmpresaDetailModal y ProductoDetailModal.",
+      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". En EmpresaDetailModal las filas de tabs Facturas y Productos no son clickeables (solo Crédito navega). No existe tab de Cotizaciones/NVs: el historial de ventas pre-factura solo está mezclado en el Timeline. ClienteDetailModal igual de limitado.\n\n**Scope**\nFilas navegables en tabs existentes + nuevo tab 'Ventas' (cotizaciones + NVs) en Empresa y Cliente. Backend: sub-recursos /api/empresas/{id}/cotizaciones y /nota-ventas (y equivalentes cliente) si faltan.",
       "checklist": [
-        "Backend: empresa_id en endpoints de reportes ventas/cobranza",
-        "Backend: marca_id en /api/reportes/por-marca",
-        "Query params empresa_id/marca_id en Reportes.tsx",
-        "Botón 'Ver en reportes' en EmpresaDetailModal",
-        "Botón 'Ver reportes de la marca' en ProductoDetailModal",
+        "Backend: endpoints cotizaciones/NVs por empresa y por cliente",
+        "Filas de EmpresaTabFacturas navegan a /facturas/:id",
+        "Filas de EmpresaTabProductos navegan al documento",
+        "Tab Ventas (cot+NV) en EmpresaDetailModal",
+        "Tab Ventas en ClienteDetailModal",
         "Tests backend + vitest"
       ]
     }
