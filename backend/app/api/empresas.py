@@ -15,14 +15,16 @@ from sqlalchemy.orm import Session, joinedload
 from app.api.deps import require_permission
 from app.models.cliente import Cliente as ClienteModel
 from app.models.contacto_empresa import ContactoEmpresa
+from app.models.cotizacion import Cotizacion
 from app.models.empresa import Empresa, EmpresaRutAdicional
 from app.models.factura import Factura, FacturaLinea
+from app.models.nota_venta import NotaVenta
 from app.models.user import User
 from app.utils.rut import validate_rut, clean_rut
 from app.schemas.empresa import (
     EmpresaCreate, EmpresaDeudaOut, EmpresaCreditoOut, EmpresaOut, EmpresaUpdate,
     FacturaResumen, EmpresaDeudaBulkItem, EmpresaListItem,
-    EmpresaFacturaDetailItem, EmpresaProductoLineOut,
+    EmpresaFacturaDetailItem, EmpresaProductoLineOut, VentaDocItem,
     ContactoEmpresaCreate, ContactoEmpresaUpdate, ContactoEmpresaOut,
 )
 from app.utils.search import unaccent_ilike
@@ -428,6 +430,76 @@ def facturas_empresa(
         )
         for f in facturas
     ]
+
+
+@router.get("/{empresa_id}/cotizaciones", response_model=list[VentaDocItem])
+def cotizaciones_empresa(
+    empresa_id: int,
+    estado: list[str] = Query(default=[]),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    sort_by: str = Query("fecha"),
+    sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
+    perms: tuple[User, Session] = require_permission("empresas", "view"),
+):
+    """Cotizaciones de la empresa para el tab Ventas en EmpresaDetail."""
+    current_user, db = perms
+    e = db.get(Empresa, empresa_id)
+    if not e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    _enforce_empresa_scope(e, current_user)
+
+    query = db.query(Cotizacion).filter(Cotizacion.empresa_id == empresa_id)
+    if estado:
+        query = query.filter(Cotizacion.estado.in_(estado))
+    if fecha_desde:
+        query = query.filter(Cotizacion.fecha >= fecha_desde)
+    if fecha_hasta:
+        query = query.filter(Cotizacion.fecha <= fecha_hasta)
+
+    sort_col = {
+        "fecha": Cotizacion.fecha,
+        "numero": Cotizacion.numero,
+        "total": Cotizacion.total,
+        "estado": Cotizacion.estado,
+    }.get(sort_by, Cotizacion.fecha)
+    query = query.order_by(sort_col.desc() if sort_dir == "desc" else sort_col.asc())
+    return query.all()
+
+
+@router.get("/{empresa_id}/nota-ventas", response_model=list[VentaDocItem])
+def nota_ventas_empresa(
+    empresa_id: int,
+    estado: list[str] = Query(default=[]),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    sort_by: str = Query("fecha"),
+    sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
+    perms: tuple[User, Session] = require_permission("empresas", "view"),
+):
+    """Notas de venta de la empresa para el tab Ventas en EmpresaDetail."""
+    current_user, db = perms
+    e = db.get(Empresa, empresa_id)
+    if not e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa no encontrada")
+    _enforce_empresa_scope(e, current_user)
+
+    query = db.query(NotaVenta).filter(NotaVenta.empresa_id == empresa_id)
+    if estado:
+        query = query.filter(NotaVenta.estado.in_(estado))
+    if fecha_desde:
+        query = query.filter(NotaVenta.fecha >= fecha_desde)
+    if fecha_hasta:
+        query = query.filter(NotaVenta.fecha <= fecha_hasta)
+
+    sort_col = {
+        "fecha": NotaVenta.fecha,
+        "numero": NotaVenta.numero,
+        "total": NotaVenta.total,
+        "estado": NotaVenta.estado,
+    }.get(sort_by, NotaVenta.fecha)
+    query = query.order_by(sort_col.desc() if sort_dir == "desc" else sort_col.asc())
+    return query.all()
 
 
 @router.get("/{empresa_id}/productos", response_model=list[EmpresaProductoLineOut])

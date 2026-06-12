@@ -408,3 +408,135 @@ def test_crear_empresa_rut_invalido_rechazado(client, admin_token):
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert r.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Sub-recursos ventas — GET /api/empresas/{id}/cotizaciones y /nota-ventas
+# ---------------------------------------------------------------------------
+
+
+def _crear_cotizacion_db(db, cliente_id, vendedor_id, empresa_id=None, numero=1,
+                         fecha=None, estado="no_definido", total="1000"):
+    from decimal import Decimal
+    from app.models.cotizacion import Cotizacion
+    cot = Cotizacion(
+        numero=numero,
+        cliente_id=cliente_id,
+        vendedor_id=vendedor_id,
+        empresa_id=empresa_id,
+        fecha=fecha or datetime.date(2026, 1, 1),
+        estado=estado,
+        total=Decimal(total),
+    )
+    db.add(cot)
+    db.commit()
+    db.refresh(cot)
+    return cot
+
+
+def _crear_nv_db(db, cliente_id, empresa_id=None, numero=None, fecha=None,
+                 estado="pendiente", total="1000"):
+    from decimal import Decimal
+    from app.models.nota_venta import NotaVenta
+    nv = NotaVenta(
+        numero=numero,
+        cliente_id=cliente_id,
+        empresa_id=empresa_id,
+        fecha=fecha or datetime.date(2026, 1, 1),
+        estado=estado,
+        total=Decimal(total),
+    )
+    db.add(nv)
+    db.commit()
+    db.refresh(nv)
+    return nv
+
+
+def test_cotizaciones_empresa_filtra_y_ordena(client, admin_token, admin_user, db):
+    emp_a = client.post("/api/empresas/", json={"nombre": "Emp Ventas A"}, headers={"Authorization": f"Bearer {admin_token}"}).json()
+    emp_b = client.post("/api/empresas/", json={"nombre": "Emp Ventas B"}, headers={"Authorization": f"Bearer {admin_token}"}).json()
+    cid = _create_cliente_bulk(client, admin_token, empresa_id=emp_a["id"])
+
+    c1 = _crear_cotizacion_db(db, cid, admin_user.id, empresa_id=emp_a["id"], numero=1,
+                              fecha=datetime.date(2026, 1, 10), total="1000")
+    c2 = _crear_cotizacion_db(db, cid, admin_user.id, empresa_id=emp_a["id"], numero=2,
+                              fecha=datetime.date(2026, 2, 10), total="2000")
+    _crear_cotizacion_db(db, cid, admin_user.id, empresa_id=emp_b["id"], numero=3,
+                         fecha=datetime.date(2026, 3, 10))
+
+    r = client.get(f"/api/empresas/{emp_a['id']}/cotizaciones", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    data = r.json()
+    assert [d["id"] for d in data] == [c2.id, c1.id]  # desc por fecha
+    assert data[0]["numero"] == 2
+    assert float(data[0]["total"]) == 2000.0
+    assert data[0]["estado"] == "no_definido"
+    assert data[0]["fecha"] == "2026-02-10"
+
+
+def test_cotizaciones_empresa_filtro_estado(client, admin_token, admin_user, db):
+    emp = client.post("/api/empresas/", json={"nombre": "Emp Cot Estado"}, headers={"Authorization": f"Bearer {admin_token}"}).json()
+    cid = _create_cliente_bulk(client, admin_token, empresa_id=emp["id"])
+    _crear_cotizacion_db(db, cid, admin_user.id, empresa_id=emp["id"], numero=1, estado="aceptada")
+    _crear_cotizacion_db(db, cid, admin_user.id, empresa_id=emp["id"], numero=2, estado="rechazada")
+
+    r = client.get(
+        f"/api/empresas/{emp['id']}/cotizaciones?estado=aceptada",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) == 1
+    assert data[0]["estado"] == "aceptada"
+
+
+def test_nota_ventas_empresa_filtra_y_ordena(client, admin_token, db):
+    emp_a = client.post("/api/empresas/", json={"nombre": "Emp NV A"}, headers={"Authorization": f"Bearer {admin_token}"}).json()
+    emp_b = client.post("/api/empresas/", json={"nombre": "Emp NV B"}, headers={"Authorization": f"Bearer {admin_token}"}).json()
+    cid = _create_cliente_bulk(client, admin_token, empresa_id=emp_a["id"])
+
+    n1 = _crear_nv_db(db, cid, empresa_id=emp_a["id"], numero=10,
+                      fecha=datetime.date(2026, 1, 5), total="500")
+    n2 = _crear_nv_db(db, cid, empresa_id=emp_a["id"], numero=None,
+                      fecha=datetime.date(2026, 2, 5), total="700")
+    _crear_nv_db(db, cid, empresa_id=emp_b["id"], numero=30)
+
+    r = client.get(f"/api/empresas/{emp_a['id']}/nota-ventas", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    data = r.json()
+    assert [d["id"] for d in data] == [n2.id, n1.id]  # desc por fecha
+    assert data[0]["numero"] is None
+    assert data[1]["numero"] == 10
+    assert float(data[1]["total"]) == 500.0
+    assert data[0]["estado"] == "pendiente"
+
+
+def test_nota_ventas_empresa_filtro_estado(client, admin_token, db):
+    emp = client.post("/api/empresas/", json={"nombre": "Emp NV Estado"}, headers={"Authorization": f"Bearer {admin_token}"}).json()
+    cid = _create_cliente_bulk(client, admin_token, empresa_id=emp["id"])
+    _crear_nv_db(db, cid, empresa_id=emp["id"], numero=1, estado="facturada")
+    _crear_nv_db(db, cid, empresa_id=emp["id"], numero=2, estado="pendiente")
+
+    r = client.get(
+        f"/api/empresas/{emp['id']}/nota-ventas?estado=facturada",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) == 1
+    assert data[0]["estado"] == "facturada"
+
+
+def test_ventas_empresa_404_si_no_existe(client, admin_token):
+    r = client.get("/api/empresas/99999/cotizaciones", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 404
+    r = client.get("/api/empresas/99999/nota-ventas", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 404
+
+
+def test_ventas_empresa_vendedor_403_si_no_asignada(client, admin_token, vendedor_token):
+    emp = client.post("/api/empresas/", json={"nombre": "Emp Ajena Ventas"}, headers={"Authorization": f"Bearer {admin_token}"}).json()
+    r = client.get(f"/api/empresas/{emp['id']}/cotizaciones", headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert r.status_code == 403
+    r = client.get(f"/api/empresas/{emp['id']}/nota-ventas", headers={"Authorization": f"Bearer {vendedor_token}"})
+    assert r.status_code == 403

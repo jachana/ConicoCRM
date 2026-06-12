@@ -14,11 +14,12 @@ from app.models.cliente import Cliente
 from app.models.cotizacion import Cotizacion
 from app.models.empresa import Empresa
 from app.models.nota_alerta import NotaAlerta
+from app.models.nota_venta import NotaVenta
 from app.utils.search import unaccent_ilike
 from app.models.factura import Factura
 from app.models.user import User
 from app.schemas.cliente import ClienteCreate, ClienteOut, ClienteUpdate
-from app.schemas.empresa import EmpresaFacturaDetailItem
+from app.schemas.empresa import EmpresaFacturaDetailItem, VentaDocItem
 from app.schemas.nota_alerta import NotaAlertaOut
 
 router = APIRouter()
@@ -246,6 +247,76 @@ def facturas_cliente(
         )
         for f in facturas
     ]
+
+
+@router.get("/{cliente_id}/cotizaciones", response_model=list[VentaDocItem])
+def cotizaciones_cliente(
+    cliente_id: int,
+    estado: list[str] = Query(default=[]),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    sort_by: str = Query("fecha"),
+    sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
+    perms: tuple[User, Session] = require_permission("clientes", "view"),
+):
+    """Cotizaciones del cliente para el tab Ventas en ClienteDetailModal."""
+    current_user, db = perms
+    c = db.get(Cliente, cliente_id)
+    if not c:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
+    _enforce_cliente_scope(c, current_user, db)
+
+    query = db.query(Cotizacion).filter(Cotizacion.cliente_id == cliente_id)
+    if estado:
+        query = query.filter(Cotizacion.estado.in_(estado))
+    if fecha_desde:
+        query = query.filter(Cotizacion.fecha >= fecha_desde)
+    if fecha_hasta:
+        query = query.filter(Cotizacion.fecha <= fecha_hasta)
+
+    sort_col = {
+        "fecha": Cotizacion.fecha,
+        "numero": Cotizacion.numero,
+        "total": Cotizacion.total,
+        "estado": Cotizacion.estado,
+    }.get(sort_by, Cotizacion.fecha)
+    query = query.order_by(sort_col.desc() if sort_dir == "desc" else sort_col.asc())
+    return query.all()
+
+
+@router.get("/{cliente_id}/nota-ventas", response_model=list[VentaDocItem])
+def nota_ventas_cliente(
+    cliente_id: int,
+    estado: list[str] = Query(default=[]),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    sort_by: str = Query("fecha"),
+    sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
+    perms: tuple[User, Session] = require_permission("clientes", "view"),
+):
+    """Notas de venta del cliente para el tab Ventas en ClienteDetailModal."""
+    current_user, db = perms
+    c = db.get(Cliente, cliente_id)
+    if not c:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
+    _enforce_cliente_scope(c, current_user, db)
+
+    query = db.query(NotaVenta).filter(NotaVenta.cliente_id == cliente_id)
+    if estado:
+        query = query.filter(NotaVenta.estado.in_(estado))
+    if fecha_desde:
+        query = query.filter(NotaVenta.fecha >= fecha_desde)
+    if fecha_hasta:
+        query = query.filter(NotaVenta.fecha <= fecha_hasta)
+
+    sort_col = {
+        "fecha": NotaVenta.fecha,
+        "numero": NotaVenta.numero,
+        "total": NotaVenta.total,
+        "estado": NotaVenta.estado,
+    }.get(sort_by, NotaVenta.fecha)
+    query = query.order_by(sort_col.desc() if sort_dir == "desc" else sort_col.asc())
+    return query.all()
 
 
 @router.get("/{cliente_id}/notes", response_model=list[NotaAlertaOut])

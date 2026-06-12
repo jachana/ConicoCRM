@@ -133,6 +133,16 @@ class EmpresaFacturaDetailItem(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class VentaDocItem(BaseModel):
+    """Item compartido para sub-recursos de ventas (cotizaciones / notas de venta)."""
+    id: int
+    numero: int | None = None
+    fecha: date
+    estado: str
+    total: Decimal
+    model_config = {"from_attributes": True}
+
+
 class EmpresaProductoLineOut(BaseModel):
     model_config = {"from_attributes": True}
     fecha: date
