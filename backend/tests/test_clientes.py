@@ -322,7 +322,7 @@ def _crear_cotizacion_db(db, cliente_id, vendedor_id, empresa_id=None, numero=1,
 
 
 def _crear_nv_db(db, cliente_id, empresa_id=None, numero=None, fecha=None,
-                 estado="pendiente", total="1000"):
+                 estado="pendiente", total="1000", vendedor_id=None):
     from datetime import date
     from decimal import Decimal
     from app.models.nota_venta import NotaVenta
@@ -330,6 +330,7 @@ def _crear_nv_db(db, cliente_id, empresa_id=None, numero=None, fecha=None,
         numero=numero,
         cliente_id=cliente_id,
         empresa_id=empresa_id,
+        vendedor_id=vendedor_id,
         fecha=fecha or date(2026, 1, 1),
         estado=estado,
         total=Decimal(total),
@@ -415,6 +416,48 @@ def test_ventas_cliente_404_si_no_existe(client, admin_token):
     assert r.status_code == 404
     r = client.get("/api/clientes/99999/nota-ventas", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 404
+
+
+def test_cotizaciones_cliente_vendedor_solo_ve_propias(
+    client, admin_token, vendedor_token, vendedor_user, admin_user, db
+):
+    """Vendedor solo ve cotizaciones que le pertenecen — paridad con facturas_cliente."""
+    c = client.post("/api/clientes/", json={"nombre": "ClienteVendedorCot"}, headers={"Authorization": f"Bearer {admin_token}"}).json()
+    # Assign cliente to vendedor so the scope check doesn't 403 the request
+    client.patch(f"/api/clientes/{c['id']}", json={"vendedor_id": vendedor_user.id}, headers={"Authorization": f"Bearer {admin_token}"})
+
+    cot_propia = _crear_cotizacion_db(db, c["id"], vendedor_user.id, numero=101, total="1000")
+    _crear_cotizacion_db(db, c["id"], admin_user.id, numero=102, total="2000")
+
+    r = client.get(
+        f"/api/clientes/{c['id']}/cotizaciones",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) == 1
+    assert data[0]["id"] == cot_propia.id
+
+
+def test_nota_ventas_cliente_vendedor_solo_ve_propias(
+    client, admin_token, vendedor_token, vendedor_user, admin_user, db
+):
+    """Vendedor solo ve notas de venta que le pertenecen — paridad con facturas_cliente."""
+    c = client.post("/api/clientes/", json={"nombre": "ClienteVendedorNV"}, headers={"Authorization": f"Bearer {admin_token}"}).json()
+    # Assign cliente to vendedor so the scope check doesn't 403 the request
+    client.patch(f"/api/clientes/{c['id']}", json={"vendedor_id": vendedor_user.id}, headers={"Authorization": f"Bearer {admin_token}"})
+
+    nv_propia = _crear_nv_db(db, c["id"], numero=201, vendedor_id=vendedor_user.id)
+    _crear_nv_db(db, c["id"], numero=202, vendedor_id=admin_user.id)
+
+    r = client.get(
+        f"/api/clientes/{c['id']}/nota-ventas",
+        headers={"Authorization": f"Bearer {vendedor_token}"},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) == 1
+    assert data[0]["id"] == nv_propia.id
 
 
 def test_ventas_cliente_vendedor_403_si_no_asignado(client, admin_token, vendedor_token):

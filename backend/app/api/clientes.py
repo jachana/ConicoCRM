@@ -259,7 +259,10 @@ def cotizaciones_cliente(
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     perms: tuple[User, Session] = require_permission("clientes", "view"),
 ):
-    """Cotizaciones del cliente para el tab Ventas en ClienteDetailModal."""
+    """Cotizaciones del cliente para el tab Ventas en ClienteDetailModal.
+
+    Vendedor scope: ve sólo cotizaciones propias (vendedor_id == current_user.id).
+    """
     current_user, db = perms
     c = db.get(Cliente, cliente_id)
     if not c:
@@ -267,6 +270,8 @@ def cotizaciones_cliente(
     _enforce_cliente_scope(c, current_user, db)
 
     query = db.query(Cotizacion).filter(Cotizacion.cliente_id == cliente_id)
+    if current_user.role == "vendedor":
+        query = query.filter(Cotizacion.vendedor_id == current_user.id)
     if estado:
         query = query.filter(Cotizacion.estado.in_(estado))
     if fecha_desde:
@@ -294,7 +299,10 @@ def nota_ventas_cliente(
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     perms: tuple[User, Session] = require_permission("clientes", "view"),
 ):
-    """Notas de venta del cliente para el tab Ventas en ClienteDetailModal."""
+    """Notas de venta del cliente para el tab Ventas en ClienteDetailModal.
+
+    Vendedor scope: ve sólo notas de venta propias (vendedor_id == current_user.id).
+    """
     current_user, db = perms
     c = db.get(Cliente, cliente_id)
     if not c:
@@ -302,6 +310,8 @@ def nota_ventas_cliente(
     _enforce_cliente_scope(c, current_user, db)
 
     query = db.query(NotaVenta).filter(NotaVenta.cliente_id == cliente_id)
+    if current_user.role == "vendedor":
+        query = query.filter(NotaVenta.vendedor_id == current_user.id)
     if estado:
         query = query.filter(NotaVenta.estado.in_(estado))
     if fecha_desde:
