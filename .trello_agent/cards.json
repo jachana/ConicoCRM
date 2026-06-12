@@ -32,17 +32,20 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Nav] Producto: tab compras (OC) + UI historial de costos",
       "labels": [
         "Core"
       ],
-      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". ProductoDetailModal tiene historial de ventas y movimientos pero no de compras (OC) — y el endpoint /api/productos/{id}/historial-costos existe sin UI.\n\n**Scope**\nTab 'Compras' (líneas de OC del producto, navegables a la OC) + tab/sección 'Costos' consumiendo historial-costos.",
+      "desc": "**Resumen**\nSe implementó la navegación bidireccional entre productos y órdenes de compra, agregando una pestaña \"Compras\" que lista líneas de OC (con enlace a la orden) y una pestaña \"Costos\" que consume el endpoint de historial de precios existente.\n\n**Cambios / Decisiones**\n- Backend: Se añadió el endpoint `historial-compras` en `backend/app/api/productos.py` para retornar líneas de OC por producto, con validación en `backend/app/schemas/lista_precios.py`.\n- Frontend: Se creó `frontend/src/components/ProductoCompras.tsx` para renderizar la tabla de OC, con `EntityLink` a la orden y padding de 5 dígitos en el número para consistencia.\n- Integración: Se insertaron los tabs \"Compras\" y \"Costos\" en `frontend/src/components/ProductoDetailModal.tsx`.\n- Tests: Se añadieron suites de Vitest en `backend/tests/test_productos.py` y en los archivos `.test.tsx` de frontend para validar endpoint y componentes.\n- Se reutilizó `/api/productos/{id}/historial-costos` existente para la UI sin cambios backend adicionales.",
       "checklist": [
-        "Backend: endpoint historial-compras (líneas OC) por producto si falta",
-        "Tab Compras en ProductoDetailModal con EntityLink a OC",
-        "UI historial-costos en el modal",
-        "Tests backend + vitest"
+        "Abrir detalle de producto con compras previas y verificar pestaña \"Compras\" visible.",
+        "En \"Compras\", confirmar que el número de OC tiene padding a 5 dígitos y es un link.",
+        "Click en el número de OC y verificar navegación al detalle/listado de la orden.",
+        "Revisar pestaña \"Costos\" del modal y validar visualización del historial de precios.",
+        "Consultar `GET /api/productos/{id}/historial-compras` y verificar respuesta 200 con líneas.",
+        "Correr `npm run test ProductoCompras` y confirmar que pasan las pruebas de Vitest.",
+        "Validar esquema de respuesta contra `backend/app/schemas/lista_precios.py`."
       ]
     }
   ]
