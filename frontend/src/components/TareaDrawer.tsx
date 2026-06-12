@@ -5,6 +5,7 @@ import type { Tarea } from '../types/tarea';
 import { useAuth } from '../hooks/useAuth';
 import { useEffectivePermissions } from '../hooks/useEffectivePermissions';
 import ConfirmModal from './ui/ConfirmModal';
+import EntityLink, { type EntityKind } from './EntityLink';
 
 function extractErrorDetail(e: unknown, fallback: string): string {
   const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
@@ -36,6 +37,16 @@ const ORIGEN_LABEL: Record<Tarea['origen'], string> = {
   auto: 'Automática',
 };
 
+function entidadVinculada(t: Tarea): { kind: EntityKind; id: number; label: string } | null {
+  if (t.cliente_id != null) return { kind: 'cliente', id: t.cliente_id, label: `Cliente #${t.cliente_id}` };
+  if (t.empresa_id != null) return { kind: 'empresa', id: t.empresa_id, label: `Empresa #${t.empresa_id}` };
+  if (t.cotizacion_id != null) return { kind: 'cotizacion', id: t.cotizacion_id, label: `Cotización N° ${t.cotizacion_id}` };
+  if (t.nota_venta_id != null) return { kind: 'nv', id: t.nota_venta_id, label: `Nota de venta N° ${t.nota_venta_id}` };
+  if (t.factura_id != null) return { kind: 'factura', id: t.factura_id, label: `Factura N° ${t.factura_id}` };
+  if (t.producto_id != null) return { kind: 'producto', id: t.producto_id, label: `Producto #${t.producto_id}` };
+  return null;
+}
+
 interface Props {
   tarea: Tarea;
   onClose: () => void;
@@ -58,6 +69,7 @@ export default function TareaDrawer({ tarea, onClose, onChanged }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  const vinculo = entidadVinculada(tarea);
   const esPendiente = tarea.estado === 'pendiente';
   const puedeDescartar = esPendiente && (tarea.origen === 'auto' || isAdmin);
   const puedeEliminar = esPendiente && tarea.origen === 'manual' && isAdmin;
@@ -176,6 +188,19 @@ export default function TareaDrawer({ tarea, onClose, onChanged }: Props) {
                 {tarea.asignado_nombre}
               </dd>
             </div>
+
+            {vinculo && (
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  Vinculado a
+                </dt>
+                <dd className="mt-0.5 text-gray-900 dark:text-white">
+                  <EntityLink kind={vinculo.kind} id={vinculo.id}>
+                    {vinculo.label}
+                  </EntityLink>
+                </dd>
+              </div>
+            )}
 
             {tarea.descripcion && (
               <div>
