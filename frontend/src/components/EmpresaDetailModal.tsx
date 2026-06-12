@@ -43,7 +43,7 @@ export default function EmpresaDetailModal({ empresa, onClose, onEdit }: Props) 
 
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <TabsContent value="resumen">
-              <EmpresaTabResumen empresa={empresa} onEdit={onEdit} />
+              <EmpresaTabResumen empresa={empresa} onEdit={onEdit} onClose={onClose} />
             </TabsContent>
             <TabsContent value="timeline">
               <Timeline scope="empresa" entityId={empresa.id} />

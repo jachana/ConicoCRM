@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { Producto } from '../types'
 import {
   Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter,
   Card, CardContent, Button, Badge,
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from './ui'
-import { Pencil } from 'lucide-react'
+import { BarChart3, Pencil } from 'lucide-react'
+import { useAuthStore } from '../stores/auth'
 import ProductoHistorialVentas from './ProductoHistorialVentas'
 import ProductoCompras from './ProductoCompras'
 import ProductoDocumentos from './ProductoDocumentos'
@@ -26,19 +28,39 @@ function fmtCLP(n: number | string | null | undefined) {
 }
 
 export default function ProductoDetailModal({ producto, onClose, onEdit, showCosto = true }: Props) {
+  const navigate = useNavigate()
+  const user = useAuthStore(s => s.user)
+  const isVendedor = user?.role === 'vendedor'
+
   if (!producto) return null
 
   const subtitleParts = [producto.sku, producto.formato, producto.marca?.nombre].filter(Boolean)
   const subtitle = subtitleParts.join(' · ')
   const stockBajo = producto.stock_actual < producto.stock_minimo
+  const showMarcaReportes = producto.marca_id != null && !isVendedor
 
   const datosNode = (
     <>
-      {onEdit && (
-        <div className="flex justify-end mb-3">
-          <Button size="sm" variant="outline" leftIcon={<Pencil size={14} />} onClick={() => onEdit(producto)}>
-            Editar
-          </Button>
+      {(onEdit || showMarcaReportes) && (
+        <div className="flex justify-end gap-2 mb-3">
+          {showMarcaReportes && (
+            <Button
+              size="sm"
+              variant="ghost"
+              leftIcon={<BarChart3 size={14} />}
+              onClick={() => {
+                onClose()
+                navigate(`/reportes?tab=por_marca&marca_id=${producto.marca_id}`)
+              }}
+            >
+              Ver reportes de la marca
+            </Button>
+          )}
+          {onEdit && (
+            <Button size="sm" variant="outline" leftIcon={<Pencil size={14} />} onClick={() => onEdit(producto)}>
+              Editar
+            </Button>
+          )}
         </div>
       )}
 

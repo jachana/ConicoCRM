@@ -1,5 +1,5 @@
 import { it, expect, vi, describe, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 vi.mock('../hooks/useModulos', () => ({
@@ -200,5 +200,80 @@ describe('Reportes deep-links (query params)', () => {
     renderAt('/reportes?tab=no_existe')
 
     expect(screen.getByRole('tab', { name: 'Ventas' }).getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('?tab=por_marca&marca_id=3 pre-filters por-marca request and shows chip', async () => {
+    renderAt('/reportes?tab=por_marca&marca_id=3')
+
+    await waitFor(() => {
+      const call = mockApiGet.mock.calls.find(([url]) =>
+        String(url).startsWith('/api/reportes/por-marca'),
+      )
+      expect(call).toBeTruthy()
+      expect(String(call![0])).toContain('marca_id=3')
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Marca filtrada (1)')).toBeTruthy()
+    })
+  })
+})
+
+describe('Reportes deep-link empresa_id', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUseModulos.mockReturnValue(allOn())
+    mockApiGet.mockImplementation((url: string) => {
+      if (url.startsWith('/api/empresas/7')) {
+        return Promise.resolve({ data: { id: 7, nombre: 'Constructora Solar' } })
+      }
+      return Promise.resolve({ data: null })
+    })
+  })
+
+  it('?tab=ventas&empresa_id=7 appends empresa_id to ventas request', async () => {
+    renderAt('/reportes?tab=ventas&empresa_id=7')
+
+    expect(screen.getByRole('tab', { name: 'Ventas' }).getAttribute('aria-selected')).toBe('true')
+
+    await waitFor(() => {
+      const call = mockApiGet.mock.calls.find(([url]) =>
+        String(url).startsWith('/api/reportes/ventas'),
+      )
+      expect(call).toBeTruthy()
+      expect(String(call![0])).toContain('empresa_id=7')
+    })
+  })
+
+  it('shows dismissible chip with empresa nombre; clearing refetches without empresa_id', async () => {
+    renderAt('/reportes?tab=ventas&empresa_id=7')
+
+    await waitFor(() => {
+      expect(screen.getByText('Filtrado por empresa: Constructora Solar')).toBeTruthy()
+    })
+
+    mockApiGet.mockClear()
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar filtro de empresa' }))
+
+    expect(screen.queryByText(/Filtrado por empresa/)).toBeNull()
+    await waitFor(() => {
+      const call = mockApiGet.mock.calls.find(([url]) =>
+        String(url).startsWith('/api/reportes/ventas'),
+      )
+      expect(call).toBeTruthy()
+      expect(String(call![0])).not.toContain('empresa_id')
+    })
+  })
+
+  it('?tab=cobranza&empresa_id=7 appends empresa_id to cobranza request', async () => {
+    renderAt('/reportes?tab=cobranza&empresa_id=7')
+
+    await waitFor(() => {
+      const call = mockApiGet.mock.calls.find(([url]) =>
+        String(url).startsWith('/api/reportes/cobranza'),
+      )
+      expect(call).toBeTruthy()
+      expect(String(call![0])).toContain('empresa_id=7')
+    })
   })
 })

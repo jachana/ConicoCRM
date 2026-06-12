@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts'
-import { FileSpreadsheet, FileText, Inbox } from 'lucide-react'
+import { FileSpreadsheet, FileText, Inbox, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { useModulos } from '../hooks/useModulos'
 import { isModuloEnabled } from '../lib/modulos'
@@ -207,6 +207,22 @@ function ErrorBlock() {
   )
 }
 
+function FilterChip({ label, onClear, clearLabel }: { label: string; onClear: () => void; clearLabel: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-info-50 dark:bg-info-950/40 border border-info-200 dark:border-info-800 px-2.5 py-1 text-xs text-info-700 dark:text-info-300">
+      {label}
+      <button
+        type="button"
+        aria-label={clearLabel}
+        onClick={onClear}
+        className="rounded-full hover:bg-info-100 dark:hover:bg-info-900/60 p-0.5"
+      >
+        <X size={12} />
+      </button>
+    </span>
+  )
+}
+
 // Margin tone helper
 function marginTone(pct: number): 'success' | 'warning' | 'danger' {
   if (pct >= 20) return 'success'
@@ -225,16 +241,25 @@ function marginClass(pct: number): string {
 
 // ── Ventas Tab ────────────────────────────────────────────────────────────────
 
-function VentasTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
+function VentasTab({
+  dateFrom,
+  dateTo,
+  empresaId = null,
+}: {
+  dateFrom: string
+  dateTo: string
+  empresaId?: number | null
+}) {
   const [data, setData] = useState<ReportesVentas | null>(null)
   const [loading, setLoading] = useState(true)
+  const empresaQuery = empresaId != null ? `&empresa_id=${empresaId}` : ''
 
   useEffect(() => {
     setLoading(true)
-    api.get<ReportesVentas>(`/api/reportes/ventas?date_from=${dateFrom}&date_to=${dateTo}`)
+    api.get<ReportesVentas>(`/api/reportes/ventas?date_from=${dateFrom}&date_to=${dateTo}${empresaQuery}`)
       .then(r => setData(r.data))
       .finally(() => setLoading(false))
-  }, [dateFrom, dateTo])
+  }, [dateFrom, dateTo, empresaQuery])
 
   if (loading) return <LoadingBlock />
   if (!data) return <ErrorBlock />
@@ -299,16 +324,25 @@ function VentasTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
 
 // ── Cobranza Tab ──────────────────────────────────────────────────────────────
 
-function CobranzaTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
+function CobranzaTab({
+  dateFrom,
+  dateTo,
+  empresaId = null,
+}: {
+  dateFrom: string
+  dateTo: string
+  empresaId?: number | null
+}) {
   const [data, setData] = useState<ReportesCobranza | null>(null)
   const [loading, setLoading] = useState(true)
+  const empresaQuery = empresaId != null ? `&empresa_id=${empresaId}` : ''
 
   useEffect(() => {
     setLoading(true)
-    api.get<ReportesCobranza>(`/api/reportes/cobranza?date_from=${dateFrom}&date_to=${dateTo}`)
+    api.get<ReportesCobranza>(`/api/reportes/cobranza?date_from=${dateFrom}&date_to=${dateTo}${empresaQuery}`)
       .then(r => setData(r.data))
       .finally(() => setLoading(false))
-  }, [dateFrom, dateTo])
+  }, [dateFrom, dateTo, empresaQuery])
 
   if (loading) return <LoadingBlock />
   if (!data) return <ErrorBlock />
@@ -577,17 +611,22 @@ function MarcaTab({
   dateFrom,
   dateTo,
   initialClienteIds = [],
+  initialMarcaIds = [],
 }: {
   dateFrom: string
   dateTo: string
   initialClienteIds?: number[]
+  initialMarcaIds?: number[]
 }) {
   const [clienteIds, setClienteIds] = useState<number[]>(initialClienteIds)
+  const [marcaIds, setMarcaIds] = useState<number[]>(initialMarcaIds)
   const [data, setData] = useState<ReportesPorMarca | null>(null)
   const [loading, setLoading] = useState(true)
   const [subtab, setSubtab] = useState<'marca' | 'marca_cliente'>('marca')
 
-  const extraQuery = clienteIds.map(id => `&cliente_id=${id}`).join('')
+  const extraQuery =
+    clienteIds.map(id => `&cliente_id=${id}`).join('') +
+    marcaIds.map(id => `&marca_id=${id}`).join('')
 
   useEffect(() => {
     setLoading(true)
@@ -608,6 +647,13 @@ function MarcaTab({
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-xs text-gray-500 dark:text-gray-400">Clientes:</span>
         <ClienteMultiSelect selected={clienteIds} onChange={setClienteIds} />
+        {marcaIds.length > 0 && (
+          <FilterChip
+            label={`Marca filtrada (${marcaIds.length})`}
+            clearLabel="Quitar filtro de marca"
+            onClear={() => setMarcaIds([])}
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -834,7 +880,8 @@ export default function Reportes() {
   )
 
   // Deep-link support: ?tab=, ?cliente_id= (repeatable, applies to "Por Marca"),
-  // ?date_from= & ?date_to= (ISO dates → preset "personalizado").
+  // ?marca_id= (repeatable, applies to "Por Marca"), ?empresa_id= (applies to
+  // "Ventas" y "Cobranza"), ?date_from= & ?date_to= (ISO dates → preset "personalizado").
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     const t = searchParams.get('tab')
     return TABS.some(tab => tab.id === t) ? (t as Tab) : 'ventas'
@@ -847,6 +894,33 @@ export default function Reportes() {
         .filter(n => Number.isInteger(n) && n > 0),
     [searchParams],
   )
+  const initialMarcaIds = useMemo(
+    () =>
+      searchParams
+        .getAll('marca_id')
+        .map(Number)
+        .filter(n => Number.isInteger(n) && n > 0),
+    [searchParams],
+  )
+  const [empresaId, setEmpresaId] = useState<number | null>(() => {
+    const raw = searchParams.get('empresa_id')
+    if (raw == null) return null
+    const n = Number(raw)
+    return Number.isInteger(n) && n > 0 ? n : null
+  })
+  const [empresaNombre, setEmpresaNombre] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (empresaId == null) {
+      setEmpresaNombre(null)
+      return
+    }
+    let cancelled = false
+    api.get<{ nombre: string }>(`/api/empresas/${empresaId}`)
+      .then(r => { if (!cancelled) setEmpresaNombre(r.data?.nombre ?? null) })
+      .catch(() => { /* fallback: show #id */ })
+    return () => { cancelled = true }
+  }, [empresaId])
   const defaultDates = getPresetDates('este_mes')
   const urlDatesValid =
     DATE_RE.test(searchParams.get('date_from') ?? '') && DATE_RE.test(searchParams.get('date_to') ?? '')
@@ -934,12 +1008,22 @@ export default function Reportes() {
           ))}
         </TabsList>
 
-        <TabsContent value="ventas"><VentasTab dateFrom={dateFrom} dateTo={dateTo} /></TabsContent>
-        <TabsContent value="cobranza"><CobranzaTab dateFrom={dateFrom} dateTo={dateTo} /></TabsContent>
+        {empresaId != null && (activeTab === 'ventas' || activeTab === 'cobranza') && (
+          <div className="mt-3">
+            <FilterChip
+              label={`Filtrado por empresa: ${empresaNombre ?? `#${empresaId}`}`}
+              clearLabel="Quitar filtro de empresa"
+              onClear={() => setEmpresaId(null)}
+            />
+          </div>
+        )}
+
+        <TabsContent value="ventas"><VentasTab dateFrom={dateFrom} dateTo={dateTo} empresaId={empresaId} /></TabsContent>
+        <TabsContent value="cobranza"><CobranzaTab dateFrom={dateFrom} dateTo={dateTo} empresaId={empresaId} /></TabsContent>
         <TabsContent value="inventario"><InventarioTab dateFrom={dateFrom} dateTo={dateTo} /></TabsContent>
         <TabsContent value="compras"><ComprasTab dateFrom={dateFrom} dateTo={dateTo} /></TabsContent>
         <TabsContent value="margenes"><MargenesTab dateFrom={dateFrom} dateTo={dateTo} /></TabsContent>
-        <TabsContent value="por_marca"><MarcaTab dateFrom={dateFrom} dateTo={dateTo} initialClienteIds={initialClienteIds} /></TabsContent>
+        <TabsContent value="por_marca"><MarcaTab dateFrom={dateFrom} dateTo={dateTo} initialClienteIds={initialClienteIds} initialMarcaIds={initialMarcaIds} /></TabsContent>
         <TabsContent value="dte"><DteTab dateFrom={dateFrom} dateTo={dateTo} /></TabsContent>
       </Tabs>
     </div>

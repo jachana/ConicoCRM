@@ -1,5 +1,6 @@
 import { useRef } from 'react'
-import { Pencil, Upload } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { BarChart3, Pencil, Upload } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { EmpresaListItem, Empresa } from '../types'
@@ -10,6 +11,7 @@ import { useAuthStore } from '../stores/auth'
 interface Props {
   empresa: EmpresaListItem
   onEdit?: (e: Empresa) => void
+  onClose?: () => void
 }
 
 function fmtDate(s: string | null) {
@@ -35,9 +37,11 @@ function Field({ label, value, highlight }: { label: string; value: string; high
   )
 }
 
-export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
+export default function EmpresaTabResumen({ empresa, onEdit, onClose }: Props) {
+  const navigate = useNavigate()
   const user = useAuthStore(s => s.user)
   const canEdit = user?.role === 'admin' || user?.role === 'subadmin'
+  const isVendedor = user?.role === 'vendedor'
   const fileRef = useRef<HTMLInputElement>(null)
   const qc = useQueryClient()
 
@@ -151,11 +155,26 @@ export default function EmpresaTabResumen({ empresa, onEdit }: Props) {
           </CardContent>
         </Card>
       )}
-      {onEdit && (
-        <div>
-          <Button leftIcon={<Pencil />} onClick={() => onEdit(empresa)}>
-            Editar empresa
-          </Button>
+      {(onEdit || !isVendedor) && (
+        <div className="flex items-center gap-2">
+          {onEdit && (
+            <Button leftIcon={<Pencil />} onClick={() => onEdit(empresa)}>
+              Editar empresa
+            </Button>
+          )}
+          {!isVendedor && (
+            <Button
+              size="sm"
+              variant="ghost"
+              leftIcon={<BarChart3 size={14} />}
+              onClick={() => {
+                onClose?.()
+                navigate(`/reportes?tab=ventas&empresa_id=${empresa.id}`)
+              }}
+            >
+              Ver en reportes
+            </Button>
+          )}
         </div>
       )}
     </div>
