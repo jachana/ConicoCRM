@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { api } from '../lib/api'
 import { validateRut } from '../utils/rut'
 import type { Proveedor } from '../types'
+import ProveedorDetailModal from '../components/ProveedorDetailModal'
 import {
   Button, Input, Textarea, FormField, EmptyState, Skeleton, Tooltip,
   Table, THead, TBody, TR, TH, TD,
@@ -39,6 +40,7 @@ export default function Proveedores() {
   const [error, setError] = useState<string | null>(null)
   const [rutError, setRutError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<Proveedor | null>(null)
+  const [detalle, setDetalle] = useState<Proveedor | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   function abrirCrear() {
@@ -141,7 +143,7 @@ export default function Proveedores() {
             </THead>
             <TBody>
               {proveedores.map(p => (
-                <TR key={p.id}>
+                <TR key={p.id} interactive onClick={() => setDetalle(p)}>
                   <TD className="font-medium text-gray-900 dark:text-white">{p.nombre}</TD>
                   <TD className="text-gray-500 dark:text-gray-400">{p.rut ?? '—'}</TD>
                   <TD className="text-gray-500 dark:text-gray-400">{p.contacto ?? '—'}</TD>
@@ -150,7 +152,7 @@ export default function Proveedores() {
                   <TD>
                     <div className="flex items-center gap-1">
                       <Tooltip label="Editar">
-                        <Button size="icon-sm" variant="ghost" onClick={() => abrirEditar(p)}>
+                        <Button size="icon-sm" variant="ghost" onClick={e => { e.stopPropagation(); abrirEditar(p) }}>
                           <Pencil size={14} />
                         </Button>
                       </Tooltip>
@@ -159,7 +161,7 @@ export default function Proveedores() {
                           size="icon-sm"
                           variant="ghost"
                           className="text-danger-500 hover:text-danger-600 hover:bg-danger-500/10"
-                          onClick={() => { setConfirmDelete(p); setDeleteError(null) }}
+                          onClick={e => { e.stopPropagation(); setConfirmDelete(p); setDeleteError(null) }}
                         >
                           <Trash2 size={14} />
                         </Button>
@@ -172,6 +174,12 @@ export default function Proveedores() {
           </Table>
         </Card>
       )}
+
+      <ProveedorDetailModal
+        proveedor={detalle}
+        onClose={() => setDetalle(null)}
+        onEdit={p => { setDetalle(null); abrirEditar(p) }}
+      />
 
       <Modal open={modalOpen} onOpenChange={open => { if (!open) cerrarModal() }}>
         <ModalContent size="md">

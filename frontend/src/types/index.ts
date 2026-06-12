@@ -821,6 +821,15 @@ export interface VentaDocItem {
   total: number
 }
 
+export interface CompraDocItem {
+  id: number
+  numero: number
+  fecha: string
+  estado: string
+  total: number | string
+  fecha_entrega_esperada: string | null
+}
+
 export interface EmpresaProductoLine {
   fecha: string
   factura_id: number
