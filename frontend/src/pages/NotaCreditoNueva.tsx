@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { api } from '../lib/api'
 import { getGuiaDespacho } from '../api/guiasDespacho'
+import type { Factura } from '../types'
 import {
   Button, Card, CardContent, FormField, Input, Textarea,
 } from '../components/ui'
@@ -14,6 +15,7 @@ export default function NotaCreditoNueva() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const guiaIdParam = searchParams.get('guia_despacho_id')
+  const facturaIdParam = searchParams.get('factura_id')
   const [clienteId, setClienteId] = useState('')
   const [razon, setRazon] = useState('')
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10))
@@ -22,6 +24,8 @@ export default function NotaCreditoNueva() {
   const [error, setError] = useState('')
   const [guiaDespachoId, setGuiaDespachoId] = useState<number | null>(null)
   const [guiaNumero, setGuiaNumero] = useState<number | null>(null)
+  const [facturaId, setFacturaId] = useState<number | null>(null)
+  const [facturaNumero, setFacturaNumero] = useState<number | null>(null)
 
   useEffect(() => {
     if (!guiaIdParam) return
@@ -42,6 +46,21 @@ export default function NotaCreditoNueva() {
       })
       .catch(() => setError(`No se pudo cargar la guía ${id}`))
   }, [guiaIdParam])
+
+  useEffect(() => {
+    // Una NC anula UNA cosa: factura XOR guía (el backend rechaza ambas).
+    if (!facturaIdParam || guiaIdParam) return
+    const id = Number(facturaIdParam)
+    setFacturaId(id)
+    api.get<Factura>(`/api/facturas/${id}`)
+      .then(r => {
+        const factura = r.data
+        if (factura.cliente_id) setClienteId(String(factura.cliente_id))
+        setRazon(`Rectifica factura N°${factura.numero}`)
+        setFacturaNumero(factura.numero)
+      })
+      .catch(() => setError(`No se pudo cargar la factura ${id}`))
+  }, [facturaIdParam, guiaIdParam])
 
   function addLinea() {
     setLineas([...lineas, { descripcion: '', cantidad: '1', precio_unitario: '0' }])
@@ -66,6 +85,7 @@ export default function NotaCreditoNueva() {
         cliente_id: Number(clienteId),
         razon,
         ...(guiaDespachoId ? { guia_despacho_id: guiaDespachoId } : {}),
+        ...(!guiaDespachoId && facturaId ? { factura_id: facturaId } : {}),
         lineas: lineas.map((l, i) => ({
           orden: i,
           descripcion: l.descripcion,
@@ -94,6 +114,13 @@ export default function NotaCreditoNueva() {
         <div className="flex items-start gap-3 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/30 rounded-md text-sm text-warning-800 dark:text-warning-200">
           <AlertTriangle className="size-4 mt-0.5 shrink-0" />
           <span>Esta NC anulará la guía N°{guiaNumero} cuando sea aceptada por SII.</span>
+        </div>
+      )}
+
+      {facturaNumero !== null && (
+        <div className="flex items-start gap-3 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/30 rounded-md text-sm text-warning-800 dark:text-warning-200">
+          <AlertTriangle className="size-4 mt-0.5 shrink-0" />
+          <span>Esta NC rectificará la factura N°{facturaNumero}.</span>
         </div>
       )}
 

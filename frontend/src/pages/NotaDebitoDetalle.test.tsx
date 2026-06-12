@@ -34,6 +34,8 @@ function makeNd(overrides: Partial<NotaDebito> = {}): NotaDebito {
     lineas: [
       { id: 1, orden: 0, descripcion: 'Interés', cantidad: '1', precio_unitario: '5000', subtotal: '5000' },
     ],
+    factura_id: null,
+    factura_numero: null,
     ...overrides,
   }
 }
@@ -61,9 +63,29 @@ describe('NotaDebitoDetalle', () => {
     expect(screen.getByText('Interés')).toBeInTheDocument()
   })
 
-  // NOTA: el modelo NotaDebito no tiene referencia a factura (ni a ningún
-  // documento), por lo que el detalle no puede mostrar "Referencia factura".
-  // Requiere migración (factura_id en notas_debito) — fuera de alcance aquí.
+  it('muestra link "Rectifica" a la factura cuando hay factura_id', async () => {
+    mockGet.mockResolvedValue({ data: makeNd({ factura_id: 21, factura_numero: 340 }) })
+    renderPage()
+    await waitFor(() => expect(screen.getByText('Rectifica')).toBeInTheDocument())
+    const link = screen.getByRole('link', { name: /Factura N° 340/ })
+    expect(link).toHaveAttribute('href', '/facturas/21')
+  })
+
+  it('usa factura_id como fallback cuando factura_numero es null', async () => {
+    mockGet.mockResolvedValue({ data: makeNd({ factura_id: 21, factura_numero: null }) })
+    renderPage()
+    await waitFor(() => expect(screen.getByText('Rectifica')).toBeInTheDocument())
+    const link = screen.getByRole('link', { name: /Factura N° 21/ })
+    expect(link).toHaveAttribute('href', '/facturas/21')
+  })
+
+  it('no muestra fila "Rectifica" cuando la ND no referencia factura', async () => {
+    mockGet.mockResolvedValue({ data: makeNd() })
+    renderPage()
+    await waitFor(() => expect(screen.getByText('ND-8')).toBeInTheDocument())
+    expect(screen.queryByText('Rectifica')).not.toBeInTheDocument()
+  })
+
   it('muestra botón Emitir DTE cuando dte_estado=no_emitida', async () => {
     mockGet.mockResolvedValue({ data: makeNd({ dte_estado: 'no_emitida' }) })
     renderPage()

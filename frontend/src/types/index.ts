@@ -650,11 +650,13 @@ export interface NotaCredito {
   dte_estado: string
   created_at: string
   lineas: NotaCreditoLinea[]
-  // Documento que la NC rectifica/anula (el modelo no tiene FK a factura)
+  // Documento que la NC rectifica/anula (boleta, guía de despacho o factura)
   boleta_id?: number | null
   guia_despacho_id?: number | null
+  factura_id?: number | null
   boleta_numero?: number | null
   guia_despacho_numero?: number | null
+  factura_numero?: number | null
 }
 
 export interface NotaDebitoLinea {
@@ -678,6 +680,9 @@ export interface NotaDebito {
   dte_estado: string
   created_at: string
   lineas: NotaDebitoLinea[]
+  // Factura que la ND rectifica
+  factura_id?: number | null
+  factura_numero?: number | null
 }
 
 export interface FacturaCompraLinea {

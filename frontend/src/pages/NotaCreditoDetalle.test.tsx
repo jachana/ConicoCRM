@@ -36,8 +36,10 @@ function makeNc(overrides: Partial<NotaCredito> = {}): NotaCredito {
     ],
     boleta_id: null,
     guia_despacho_id: null,
+    factura_id: null,
     boleta_numero: null,
     guia_despacho_numero: null,
+    factura_numero: null,
     ...overrides,
   }
 }
@@ -79,6 +81,22 @@ describe('NotaCreditoDetalle', () => {
     await waitFor(() => expect(screen.getByText('Rectifica')).toBeInTheDocument())
     const link = screen.getByRole('link', { name: /Guía de despacho N° 120/ })
     expect(link).toHaveAttribute('href', '/guias-despacho/4')
+  })
+
+  it('muestra link "Rectifica" a la factura cuando hay factura_id', async () => {
+    mockGet.mockResolvedValue({ data: makeNc({ factura_id: 17, factura_numero: 230 }) })
+    renderPage()
+    await waitFor(() => expect(screen.getByText('Rectifica')).toBeInTheDocument())
+    const link = screen.getByRole('link', { name: /Factura N° 230/ })
+    expect(link).toHaveAttribute('href', '/facturas/17')
+  })
+
+  it('usa factura_id como fallback cuando factura_numero es null', async () => {
+    mockGet.mockResolvedValue({ data: makeNc({ factura_id: 17, factura_numero: null }) })
+    renderPage()
+    await waitFor(() => expect(screen.getByText('Rectifica')).toBeInTheDocument())
+    const link = screen.getByRole('link', { name: /Factura N° 17/ })
+    expect(link).toHaveAttribute('href', '/facturas/17')
   })
 
   it('no muestra fila "Rectifica" cuando la NC no referencia documento', async () => {

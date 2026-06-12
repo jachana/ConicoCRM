@@ -1,8 +1,9 @@
-import { useState, FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, FormEvent } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { api } from '../lib/api'
+import type { Factura } from '../types'
 import {
   Button, Card, CardContent, FormField, Input, Textarea,
 } from '../components/ui'
@@ -11,12 +12,30 @@ interface Linea { descripcion: string; cantidad: string; precio_unitario: string
 
 export default function NotaDebitoNueva() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const facturaIdParam = searchParams.get('factura_id')
   const [clienteId, setClienteId] = useState('')
   const [razon, setRazon] = useState('')
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10))
   const [lineas, setLineas] = useState<Linea[]>([{ descripcion: '', cantidad: '1', precio_unitario: '0' }])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [facturaId, setFacturaId] = useState<number | null>(null)
+  const [facturaNumero, setFacturaNumero] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!facturaIdParam) return
+    const id = Number(facturaIdParam)
+    setFacturaId(id)
+    api.get<Factura>(`/api/facturas/${id}`)
+      .then(r => {
+        const factura = r.data
+        if (factura.cliente_id) setClienteId(String(factura.cliente_id))
+        setRazon(`Rectifica factura N°${factura.numero}`)
+        setFacturaNumero(factura.numero)
+      })
+      .catch(() => setError(`No se pudo cargar la factura ${id}`))
+  }, [facturaIdParam])
 
   function addLinea() {
     setLineas([...lineas, { descripcion: '', cantidad: '1', precio_unitario: '0' }])
@@ -40,6 +59,7 @@ export default function NotaDebitoNueva() {
         fecha,
         cliente_id: Number(clienteId),
         razon,
+        ...(facturaId ? { factura_id: facturaId } : {}),
         lineas: lineas.map((l, i) => ({
           orden: i,
           descripcion: l.descripcion,
@@ -63,6 +83,13 @@ export default function NotaDebitoNueva() {
   return (
     <div className="p-6 max-w-3xl space-y-6">
       <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Nueva Nota de Débito</h1>
+
+      {facturaNumero !== null && (
+        <div className="flex items-start gap-3 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/30 rounded-md text-sm text-warning-800 dark:text-warning-200">
+          <AlertTriangle className="size-4 mt-0.5 shrink-0" />
+          <span>Esta ND rectificará la factura N°{facturaNumero}.</span>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-2 gap-4">

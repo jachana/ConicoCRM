@@ -68,6 +68,14 @@ export default function NotaCreditoDetalle() {
       <Card>
         <CardContent className="space-y-2 text-sm">
           <Row label="Fecha" value={nc.fecha} />
+          {nc.factura_id != null && (
+            <div className="flex justify-between">
+              <span className="text-gray-500 dark:text-gray-400">Rectifica</span>
+              <EntityLink kind="factura" id={nc.factura_id}>
+                Factura N° {nc.factura_numero ?? nc.factura_id}
+              </EntityLink>
+            </div>
+          )}
           {nc.boleta_id != null && (
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">Rectifica</span>

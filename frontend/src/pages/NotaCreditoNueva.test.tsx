@@ -17,8 +17,23 @@ vi.mock('../api/guiasDespacho', () => ({
   getGuiaDespacho: vi.fn(),
 }))
 
+vi.mock('../lib/api', () => ({
+  api: {
+    get: vi.fn(),
+    post: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+  },
+}))
+
+import { api } from '../lib/api'
+
+const mockFactura = { id: 17, numero: 230, cliente_id: 7 }
+
 beforeEach(() => {
+  vi.clearAllMocks()
   vi.mocked(apiGuias.getGuiaDespacho).mockResolvedValue(mockGuia as any)
+  vi.mocked(api.get).mockResolvedValue({ data: mockFactura })
 })
 
 describe('NotaCreditoNueva', () => {
@@ -38,5 +53,22 @@ describe('NotaCreditoNueva', () => {
     await waitFor(() => expect(screen.getByText(/anulará la guía N°100/i)).toBeInTheDocument())
     expect(screen.getByDisplayValue('Producto X')).toBeInTheDocument()
     expect(screen.getByDisplayValue(/anulación guía despacho/i)).toBeInTheDocument()
+  })
+
+  it('precharges from ?factura_id=X y muestra banner de rectificación', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={['/notas-credito/nueva?factura_id=17']}>
+          <Routes>
+            <Route path="/notas-credito/nueva" element={<NotaCreditoNueva />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith('/api/facturas/17'))
+    await waitFor(() => expect(screen.getByText(/rectificará la factura N°230/i)).toBeInTheDocument())
+    expect(screen.getByDisplayValue('7')).toBeInTheDocument()
+    expect(screen.getByDisplayValue(/rectifica factura/i)).toBeInTheDocument()
   })
 })
