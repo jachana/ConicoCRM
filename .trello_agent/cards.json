@@ -32,7 +32,7 @@
   },
   "cards": [
     {
-      "list": "Feature requests",
+      "list": "In progress",
       "name": "[Nav] Aprobaciones: link a cotización/NV origen",
       "labels": [
         "Core"
@@ -44,107 +44,6 @@
         "EntityLink en tab costo/descuento",
         "Empresa linkeable en tablas",
         "Test vitest actualizado"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Nav] TareaDrawer: sección 'Vinculado a' con link a la entidad",
-      "labels": [
-        "Core"
-      ],
-      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". Tarea tiene 6 FKs nullables a entidades (factura, cotización, cliente...) pero TareaDrawer no muestra ni linkea la entidad vinculada: la tarea dice 'haz algo' sin llevarte a dónde.\n\n**Scope**\nVerificar que el schema TareaOut exponga las FKs (backend si falta) + sección 'Vinculado a' en el drawer con EntityLink.",
-      "checklist": [
-        "Backend: exponer FKs/entidad vinculada en TareaOut si falta",
-        "Sección 'Vinculado a' en TareaDrawer con EntityLink",
-        "Cubrir los 6 tipos de entidad",
-        "Test vitest"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Nav] NC/ND: mostrar y linkear factura de referencia",
-      "labels": [
-        "Core"
-      ],
-      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". NotaCreditoDetalle.tsx no menciona 'factura' ni una vez: una NC no muestra ni linkea la factura que rectifica. Igual NotaDebitoDetalle.\n\n**Scope**\nMostrar factura origen (numero + EntityLink) en detalle de NC y ND; verificar que el schema la exponga.",
-      "checklist": [
-        "Backend: factura_id/numero en NotaCreditoOut y NotaDebitoOut si falta",
-        "Banner/campo 'Rectifica factura N°X' con EntityLink en NC detalle",
-        "Ídem ND detalle",
-        "Test vitest"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Nav] Empresa/Cliente: filas navegables + tab Cotizaciones/NVs",
-      "labels": [
-        "Core"
-      ],
-      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". En EmpresaDetailModal las filas de tabs Facturas y Productos no son clickeables (solo Crédito navega). No existe tab de Cotizaciones/NVs: el historial de ventas pre-factura solo está mezclado en el Timeline. ClienteDetailModal igual de limitado.\n\n**Scope**\nFilas navegables en tabs existentes + nuevo tab 'Ventas' (cotizaciones + NVs) en Empresa y Cliente. Backend: sub-recursos /api/empresas/{id}/cotizaciones y /nota-ventas (y equivalentes cliente) si faltan.",
-      "checklist": [
-        "Backend: endpoints cotizaciones/NVs por empresa y por cliente",
-        "Filas de EmpresaTabFacturas navegan a /facturas/:id",
-        "Filas de EmpresaTabProductos navegan al documento",
-        "Tab Ventas (cot+NV) en EmpresaDetailModal",
-        "Tab Ventas en ClienteDetailModal",
-        "Tests backend + vitest"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Nav] Producto: tab compras (OC) + UI historial de costos",
-      "labels": [
-        "Core"
-      ],
-      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". ProductoDetailModal tiene historial de ventas y movimientos pero no de compras (OC) — y el endpoint /api/productos/{id}/historial-costos existe sin UI.\n\n**Scope**\nTab 'Compras' (líneas de OC del producto, navegables a la OC) + tab/sección 'Costos' consumiendo historial-costos.",
-      "checklist": [
-        "Backend: endpoint historial-compras (líneas OC) por producto si falta",
-        "Tab Compras en ProductoDetailModal con EntityLink a OC",
-        "UI historial-costos en el modal",
-        "Tests backend + vitest"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Nav] ProveedorDetailModal con OCs y facturas de compra",
-      "labels": [
-        "Core"
-      ],
-      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". Proveedor no tiene detail modal ni sub-recursos: imposible ver las OC y facturas de compra de un proveedor desde el proveedor.\n\n**Scope**\nBackend: /api/proveedores/{id}/ordenes-compra y /facturas-compra. Frontend: ProveedorDetailModal (patrón EmpresaDetailModal) con tabs Datos / OCs / Facturas compra, filas navegables.",
-      "checklist": [
-        "Backend: sub-recursos OCs y facturas-compra por proveedor",
-        "ProveedorDetailModal con tabs",
-        "Filas navegables con EntityLink",
-        "Abrir modal desde lista Proveedores",
-        "Tests backend + vitest"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Nav] Auditoría: link a la entidad afectada",
-      "labels": [
-        "Core"
-      ],
-      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\". AdminAuditoria muestra entity_type/entity_id como texto muerto.\n\n**Scope**\nFrontend: mapear entity_type→ruta/modal y renderizar EntityLink cuando el tipo sea navegable.",
-      "checklist": [
-        "Mapa entity_type→kind de EntityLink",
-        "Render link en tabla de auditoría",
-        "Fallback texto para tipos sin ruta",
-        "Test vitest"
-      ]
-    },
-    {
-      "list": "Feature requests",
-      "name": "[Nav] Reportes pre-filtrados desde entidades (deep-link)",
-      "labels": [
-        "Core"
-      ],
-      "desc": "**Contexto / Problema**\nNavegabilidad: principio \"todo ID navegable con un click / info relacionada a un click\" + 'sacar reportes desde donde está la información'. /reportes no acepta query params: desde una empresa/marca hay que re-filtrar a mano.\n\n**Scope**\nReportes.tsx lee query params (empresa_id, cliente_id, marca_id) e inicializa filtros; botón 'Ver en reportes' en EmpresaDetailModal/ProductoDetailModal.",
-      "checklist": [
-        "Reportes.tsx inicializa filtros desde query params",
-        "Botón 'Ver en reportes' en EmpresaDetailModal",
-        "Botón en ProductoDetailModal (por marca/producto)",
-        "Test vitest"
       ]
     }
   ]
