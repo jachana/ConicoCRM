@@ -32,8 +32,20 @@
   },
   "cards": [
     {
-      "list": "In progress",
-      "name": "[Nav] Reportes pre-filtrados desde entidades (deep-link)"
+      "list": "Feature requests",
+      "name": "[Nav] Reportes: filtro por empresa y por marca (backend + deep-link)",
+      "labels": [
+        "Core"
+      ],
+      "desc": "**Contexto / Problema**\nDerivada de '[Nav] Reportes pre-filtrados desde entidades (deep-link)'. /reportes ya acepta tab, cliente_id y date_from/date_to por query param, pero no existe filtro por empresa ni por marca en los endpoints /api/reportes/* — por eso EmpresaDetailModal y ProductoDetailModal quedaron sin botón 'Ver en reportes'.\n\n**Scope**\nBackend: param empresa_id en reportes de ventas/cobranza y marca_id en por-marca. Frontend: query params nuevos + botones en EmpresaDetailModal y ProductoDetailModal.",
+      "checklist": [
+        "Backend: empresa_id en endpoints de reportes ventas/cobranza",
+        "Backend: marca_id en /api/reportes/por-marca",
+        "Query params empresa_id/marca_id en Reportes.tsx",
+        "Botón 'Ver en reportes' en EmpresaDetailModal",
+        "Botón 'Ver reportes de la marca' en ProductoDetailModal",
+        "Tests backend + vitest"
+      ]
     }
   ]
 }
