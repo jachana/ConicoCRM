@@ -32,19 +32,18 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Nav] ProveedorDetailModal con OCs y facturas de compra",
+      "list": "In progress",
+      "name": "[Nav] NC/ND: migración factura_id + referencia a factura",
       "labels": [
         "Core"
       ],
-      "desc": "**Resumen**\nSe implementó un modal de detalle para proveedores que permite navegar directamente a sus órdenes de compra y facturas relacionadas, cumpliendo el principio de que todo ID sea navegable con un clic.\n\n**Cambios / Decisiones**\n- **Backend**: se crearon los endpoints `/proveedores/{id}/ordenes-compra` y `/facturas-compra` en `backend/app/api/proveedores.py`, con sus respectivos schemas en `backend/app/schemas/proveedor.py`. Se añadieron pruebas unitarias en `backend/tests/test_proveedores.py`.\n- **Frontend**: se desarrolló `ProveedorDetailModal` (siguiendo el patrón `EmpresaDetailModal`) con 3 tabs: Datos, OCs y Facturas compra. Las filas se renderizan con `EntityLink` para navegación directa.\n- Se actualizó `frontend/src/pages/Proveedores.tsx` para abrir el modal desde la lista principal.\n- Se agregaron tipados TypeScript en `frontend/src/types/index.ts` y tests de componente en `ProveedorDetailModal.test.tsx`.\n- **Decisión**: mantener la estructura de tabs idéntica al detalle de empresas para consistencia UX, y reutilizar `EntityLink` para evitar duplicar lógica de navegación.",
+      "desc": "**Contexto / Problema**\nDerivada de '[Nav] NC/ND: mostrar y linkear factura de referencia'. Los modelos NotaCredito/NotaDebito NO tienen FK a factura (NC solo referencia boleta_id/guia_despacho_id; ND nada). Una NC/ND que rectifica una factura 33 no guarda cuál.\n\n**Scope**\nMigración Alembic: factura_id nullable en notas_credito y notas_debito; poblar al crear NC/ND desde factura; exponer en schemas Out (hay comentario TODO en backend/app/schemas/dte.py); fila 'Rectifica factura' con EntityLink en ambos detalles; considerar backfill por folio en onboarding_nc.",
       "checklist": [
-        "Abrir /proveedores y hacer clic en el nombre de un proveedor para verificar que abre el modal de detalle.",
-        "Navegar a la tab OCs dentro del modal y confirmar que lista las órdenes de compra asociadas.",
-        "Clic en una OC desde la lista para verificar navegación directa a la página de detalle de la orden.",
-        "Cambiar a la tab Facturas compra y comprobar que se muestran las facturas vinculadas al proveedor.",
-        "Ejecutar pytest backend/tests/test_proveedores.py -k ordenes para validar endpoints de backend.",
-        "Correr vitest frontend/src/components/ProveedorDetailModal.test.tsx y asegurar que pasan todas las suites."
+        "Migración factura_id en NC y ND (un solo head)",
+        "Persistir factura_id al crear NC/ND desde factura",
+        "Exponer factura_id/factura_numero en schemas Out",
+        "EntityLink en NC/ND detalle",
+        "Tests backend + vitest"
       ]
     }
   ]
