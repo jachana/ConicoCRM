@@ -27,7 +27,7 @@ class NotaCreditoCreate(BaseModel):
     @model_validator(mode="after")
     def _xor_anulacion(self):
         # D-15: una NC anula UNA cosa: factura XOR guía de despacho.
-        if self.factura_id and self.guia_despacho_id:
+        if self.factura_id is not None and self.guia_despacho_id is not None:
             raise ValueError("Una NC anula UNA cosa: factura_id XOR guia_despacho_id")
         return self
 

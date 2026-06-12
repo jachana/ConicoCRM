@@ -371,6 +371,63 @@ def test_import_nc_with_boleta_reference_sets_boleta_id(client, admin_token, bol
         db.close()
 
 
+def test_import_nc_with_factura_reference_sets_factura_id(client, admin_token, factura_ref, cliente_nc):
+    """Import NC with tipo_referencia=33 (factura) sets factura_id on NotaCredito."""
+    row = _nc_row(tipo="NC", folio=5002, folio_referencia=500, tipo_referencia=33)
+    content = _xlsx([row])
+    r = _upload(client, admin_token, content, f"{BASE}/import")
+    assert r.status_code == 200
+
+    from app.models.nota_credito import NotaCredito
+    db = TestingSession()
+    try:
+        nc = db.query(NotaCredito).filter(NotaCredito.numero == 5002).first()
+        assert nc is not None
+        assert nc.factura_id == factura_ref.id
+        assert nc.cliente_id == cliente_nc.id
+    finally:
+        db.close()
+
+
+def test_import_nd_with_factura_reference_sets_factura_id(client, admin_token, factura_ref, cliente_nc):
+    """Import ND with tipo_referencia=33 (factura) sets factura_id on NotaDebito."""
+    row = _nc_row(tipo="ND", folio=5003, folio_referencia=500, tipo_referencia=33)
+    content = _xlsx([row])
+    r = _upload(client, admin_token, content, f"{BASE}/import")
+    assert r.status_code == 200
+    assert r.json()["report"]["created_count"] == 1
+
+    from app.models.nota_debito import NotaDebito
+    db = TestingSession()
+    try:
+        nd = db.query(NotaDebito).filter(NotaDebito.numero == 5003).first()
+        assert nd is not None
+        assert nd.factura_id == factura_ref.id
+        assert nd.cliente_id == cliente_nc.id
+    finally:
+        db.close()
+
+
+def test_import_nc_with_guia_reference_does_not_set_factura_id(client, admin_token, factura_ref):
+    """Import NC with tipo_referencia=52 (guía) must NOT link factura_id even if
+    a factura with that numero exists."""
+    row = _nc_row(tipo="NC", folio=5004, folio_referencia=500, tipo_referencia=52)
+    content = _xlsx([row])
+    r = _upload(client, admin_token, content, f"{BASE}/import")
+    assert r.status_code == 200
+    assert r.json()["report"]["created_count"] == 1
+
+    from app.models.nota_credito import NotaCredito
+    db = TestingSession()
+    try:
+        nc = db.query(NotaCredito).filter(NotaCredito.numero == 5004).first()
+        assert nc is not None
+        assert nc.factura_id is None
+        assert nc.boleta_id is None
+    finally:
+        db.close()
+
+
 # ---------------------------------------------------------------------------
 # 7. Import omits records that already exist
 # ---------------------------------------------------------------------------

@@ -267,7 +267,10 @@ async def import_nc_nd(
                     blt_id, blt_cliente_id = boletas_by_numero[row.folio_referencia]
                     boleta_id = blt_id
                     cliente_id = blt_cliente_id
-                elif row.folio_referencia in facturas_by_numero:
+                elif (
+                    row.tipo_referencia in (33, 34) or row.tipo_referencia is None
+                ) and row.folio_referencia in facturas_by_numero:
+                    # Factura reference (tipo 33 afecta / 34 exenta), o sin tipo declarado
                     fac_id, fac_cliente_id = facturas_by_numero[row.folio_referencia]
                     factura_id = fac_id
                     cliente_id = fac_cliente_id
