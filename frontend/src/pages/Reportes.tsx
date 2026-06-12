@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts'
 import { FileSpreadsheet, FileText, Inbox } from 'lucide-react'
 import { api } from '../lib/api'
@@ -572,8 +573,16 @@ function MargenesTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string })
 
 // ── Por Marca Tab ─────────────────────────────────────────────────────────────
 
-function MarcaTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
-  const [clienteIds, setClienteIds] = useState<number[]>([])
+function MarcaTab({
+  dateFrom,
+  dateTo,
+  initialClienteIds = [],
+}: {
+  dateFrom: string
+  dateTo: string
+  initialClienteIds?: number[]
+}) {
+  const [clienteIds, setClienteIds] = useState<number[]>(initialClienteIds)
   const [data, setData] = useState<ReportesPorMarca | null>(null)
   const [loading, setLoading] = useState(true)
   const [subtab, setSubtab] = useState<'marca' | 'marca_cliente'>('marca')
@@ -813,19 +822,41 @@ const PRESETS = [
   { id: 'personalizado', label: 'Rango personalizado' },
 ]
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
 export default function Reportes() {
   const { effective: modulos } = useModulos()
+  const [searchParams] = useSearchParams()
 
   const visibleTabs = useMemo(
     () => TABS.filter(t => !t.modulo || isModuloEnabled(modulos, t.modulo)),
     [modulos],
   )
 
-  const [activeTab, setActiveTab] = useState<Tab>('ventas')
-  const [preset, setPreset] = useState('este_mes')
+  // Deep-link support: ?tab=, ?cliente_id= (repeatable, applies to "Por Marca"),
+  // ?date_from= & ?date_to= (ISO dates → preset "personalizado").
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const t = searchParams.get('tab')
+    return TABS.some(tab => tab.id === t) ? (t as Tab) : 'ventas'
+  })
+  const initialClienteIds = useMemo(
+    () =>
+      searchParams
+        .getAll('cliente_id')
+        .map(Number)
+        .filter(n => Number.isInteger(n) && n > 0),
+    [searchParams],
+  )
   const defaultDates = getPresetDates('este_mes')
-  const [dateFrom, setDateFrom] = useState(defaultDates.from)
-  const [dateTo, setDateTo] = useState(defaultDates.to)
+  const urlDatesValid =
+    DATE_RE.test(searchParams.get('date_from') ?? '') && DATE_RE.test(searchParams.get('date_to') ?? '')
+  const [preset, setPreset] = useState(() => (urlDatesValid ? 'personalizado' : 'este_mes'))
+  const [dateFrom, setDateFrom] = useState(() =>
+    urlDatesValid ? (searchParams.get('date_from') as string) : defaultDates.from,
+  )
+  const [dateTo, setDateTo] = useState(() =>
+    urlDatesValid ? (searchParams.get('date_to') as string) : defaultDates.to,
+  )
 
   useEffect(() => {
     if (visibleTabs.length > 0 && !visibleTabs.find(t => t.id === activeTab)) {
@@ -908,7 +939,7 @@ export default function Reportes() {
         <TabsContent value="inventario"><InventarioTab dateFrom={dateFrom} dateTo={dateTo} /></TabsContent>
         <TabsContent value="compras"><ComprasTab dateFrom={dateFrom} dateTo={dateTo} /></TabsContent>
         <TabsContent value="margenes"><MargenesTab dateFrom={dateFrom} dateTo={dateTo} /></TabsContent>
-        <TabsContent value="por_marca"><MarcaTab dateFrom={dateFrom} dateTo={dateTo} /></TabsContent>
+        <TabsContent value="por_marca"><MarcaTab dateFrom={dateFrom} dateTo={dateTo} initialClienteIds={initialClienteIds} /></TabsContent>
         <TabsContent value="dte"><DteTab dateFrom={dateFrom} dateTo={dateTo} /></TabsContent>
       </Tabs>
     </div>

@@ -1,11 +1,13 @@
+import { useNavigate } from 'react-router-dom'
 import {
   Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription,
   Tabs, TabsList, TabsTrigger, TabsContent,
   Card, CardContent, Button,
 } from './ui'
-import { Pencil } from 'lucide-react'
+import { BarChart3, Pencil } from 'lucide-react'
 import Timeline from './Timeline'
 import ClienteTabFacturas from './ClienteTabFacturas'
+import { useAuthStore } from '../stores/auth'
 import type { Cliente } from '../types'
 
 interface Props {
@@ -15,6 +17,10 @@ interface Props {
 }
 
 export default function ClienteDetailModal({ cliente, onClose, onEdit }: Props) {
+  const navigate = useNavigate()
+  const user = useAuthStore(s => s.user)
+  const isVendedor = user?.role === 'vendedor'
+
   if (!cliente) return null
 
   const subtitle = [cliente.rut, cliente.empresa?.nombre, cliente.email].filter(Boolean).join(' · ')
@@ -37,7 +43,20 @@ export default function ClienteDetailModal({ cliente, onClose, onEdit }: Props) 
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <TabsContent value="datos">
               <div className="space-y-4">
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                  {!isVendedor && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      leftIcon={<BarChart3 size={14} />}
+                      onClick={() => {
+                        onClose()
+                        navigate(`/reportes?tab=por_marca&cliente_id=${cliente.id}`)
+                      }}
+                    >
+                      Ver en reportes
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" leftIcon={<Pencil size={14} />} onClick={() => onEdit(cliente)}>
                     Editar
                   </Button>

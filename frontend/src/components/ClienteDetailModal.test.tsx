@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import ClienteDetailModal from './ClienteDetailModal'
 import type { Cliente } from '../types'
@@ -23,9 +23,10 @@ vi.mock('../lib/api', () => ({
   },
 }))
 
+const authState = vi.hoisted(() => ({ role: 'admin' }))
 vi.mock('../stores/auth', () => ({
   useAuthStore: (fn?: (s: { user: { role: string } }) => unknown) =>
-    fn ? fn({ user: { role: 'admin' } }) : { user: { role: 'admin' } },
+    fn ? fn({ user: { role: authState.role } }) : { user: { role: authState.role } },
 }))
 
 const CLIENTE_FIXTURE: Cliente = {
@@ -59,6 +60,25 @@ function wrap(ui: React.ReactNode) {
   )
 }
 
+function ReportesProbe() {
+  const loc = useLocation()
+  return <div data-testid="reportes-probe">{loc.pathname + loc.search}</div>
+}
+
+function wrapWithRoutes(ui: React.ReactNode) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={['/clientes']}>
+        <Routes>
+          <Route path="/clientes" element={ui} />
+          <Route path="/reportes" element={<ReportesProbe />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
 describe('ClienteDetailModal', () => {
   const onClose = vi.fn()
   const onEdit = vi.fn()
@@ -66,6 +86,7 @@ describe('ClienteDetailModal', () => {
   beforeEach(() => {
     onClose.mockClear()
     onEdit.mockClear()
+    authState.role = 'admin'
   })
 
   it('1. renders cliente nombre and Datos tab fields', () => {
@@ -124,5 +145,29 @@ describe('ClienteDetailModal', () => {
 
     expect(onEdit).toHaveBeenCalledTimes(1)
     expect(onEdit).toHaveBeenCalledWith(CLIENTE_FIXTURE)
+  })
+
+  it('5. click "Ver en reportes" closes modal and navigates with cliente_id query param', () => {
+    wrapWithRoutes(
+      <ClienteDetailModal cliente={CLIENTE_FIXTURE} onClose={onClose} onEdit={onEdit} />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /ver en reportes/i }))
+
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('reportes-probe').textContent).toBe(
+      '/reportes?tab=por_marca&cliente_id=42',
+    )
+  })
+
+  it('6. hides "Ver en reportes" button for vendedor role', () => {
+    authState.role = 'vendedor'
+    wrap(
+      <ClienteDetailModal cliente={CLIENTE_FIXTURE} onClose={onClose} onEdit={onEdit} />,
+    )
+
+    expect(screen.queryByRole('button', { name: /ver en reportes/i })).toBeNull()
+    // Editar sigue visible
+    expect(screen.getByRole('button', { name: /editar/i })).toBeTruthy()
   })
 })
