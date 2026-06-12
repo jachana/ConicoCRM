@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import type { EmpresaFacturaItem } from '../types'
 import { EMPRESA_FACTURA_COLS } from '../lib/columnDefs'
 import EmpresaExportPanel from './EmpresaExportPanel'
+import EntityLink from './EntityLink'
 import {
   Button, Input, Badge, EmptyState, Skeleton,
   Table, THead, TBody, TR, TH, TD,
@@ -193,7 +194,9 @@ export default function EmpresaTabFacturas({ empresaId, empresaNombre }: Props) 
             <TBody>
               {facturas.map(f => (
                 <TR key={f.id}>
-                  <TD className="font-num font-medium text-gray-900 dark:text-gray-100">FAC-{String(f.numero).padStart(4, '0')}</TD>
+                  <TD className="font-num font-medium">
+                    <EntityLink kind="factura" id={f.id}>FAC-{String(f.numero).padStart(4, '0')}</EntityLink>
+                  </TD>
                   <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">{fmtDate(f.fecha)}</TD>
                   <TD>
                     <Badge variant={ESTADO_VARIANT[f.estado] ?? 'neutral'} showDot className="capitalize">{f.estado}</Badge>

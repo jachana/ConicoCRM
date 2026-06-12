@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import type { EmpresaProductoLine } from '../types'
 import { EMPRESA_PRODUCTO_COLS } from '../lib/columnDefs'
 import EmpresaExportPanel from './EmpresaExportPanel'
+import EntityLink from './EntityLink'
 import {
   Button, Input, EmptyState, Skeleton,
   Table, THead, TBody, TR, TH, TD,
@@ -172,8 +173,10 @@ export default function EmpresaTabProductos({ empresaId, empresaNombre }: Props)
               {lineas.map((l, i) => (
                 <TR key={i}>
                   <TD className="text-gray-500 dark:text-gray-400 whitespace-nowrap font-num">{fmtDate(l.fecha)}</TD>
-                  <TD className="text-brand-600 dark:text-brand-400 font-num text-xs whitespace-nowrap">
-                    FAC-{String(l.factura_numero).padStart(4, '0')}
+                  <TD className="font-num text-xs whitespace-nowrap">
+                    <EntityLink kind="factura" id={l.factura_id}>
+                      FAC-{String(l.factura_numero).padStart(4, '0')}
+                    </EntityLink>
                   </TD>
                   <TD className="font-num text-xs text-gray-500 dark:text-gray-400">{l.sku ?? '—'}</TD>
                   <TD className="text-gray-700 dark:text-gray-300">{l.descripcion}</TD>
