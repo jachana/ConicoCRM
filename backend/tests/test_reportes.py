@@ -257,3 +257,119 @@ def test_reporte_ventas_aggregates_boletas(mock_emit, client, admin_token):
     assert body["boletas"]["cantidad"] >= 1
     assert body["boletas"]["total"] >= 1190
     assert any(d["fecha"] == hoy for d in body["boletas"]["ventas_diarias"])
+
+
+# ---------------------------------------------------------------------------
+# Filtro empresa_id en ventas / cobranza
+# ---------------------------------------------------------------------------
+
+from decimal import Decimal
+
+from app.models.boleta import Boleta
+from app.models.empresa import Empresa
+from app.models.factura import Factura
+
+
+def _mk_dos_empresas(db):
+    """Two empresas, one factura + one boleta each, all within May 2026."""
+    emp1 = Empresa(nombre="EmpFiltro1-TST", rut="76111111-1")
+    emp2 = Empresa(nombre="EmpFiltro2-TST", rut="76222222-2")
+    db.add_all([emp1, emp2])
+    db.flush()
+    f1 = Factura(
+        numero=910001,
+        fecha=date(2026, 5, 10),
+        empresa_id=emp1.id,
+        estado="emitida",
+        total_neto=Decimal("1000"),
+        total_iva=Decimal("190"),
+        total=Decimal("1190"),
+    )
+    f2 = Factura(
+        numero=910002,
+        fecha=date(2026, 5, 11),
+        empresa_id=emp2.id,
+        estado="emitida",
+        total_neto=Decimal("2000"),
+        total_iva=Decimal("380"),
+        total=Decimal("2380"),
+    )
+    b1 = Boleta(
+        numero=910001,
+        fecha=date(2026, 5, 10),
+        tipo_dte="39",
+        empresa_id=emp1.id,
+        total_neto=Decimal("500"),
+        total_iva=Decimal("95"),
+        total=Decimal("595"),
+    )
+    b2 = Boleta(
+        numero=910002,
+        fecha=date(2026, 5, 11),
+        tipo_dte="39",
+        empresa_id=emp2.id,
+        total_neto=Decimal("700"),
+        total_iva=Decimal("133"),
+        total=Decimal("833"),
+    )
+    db.add_all([f1, f2, b1, b2])
+    db.commit()
+    return {"emp1": emp1, "emp2": emp2}
+
+
+def test_ventas_filtra_por_empresa(client, admin_token, db):
+    fx = _mk_dos_empresas(db)
+    params = {"date_from": "2026-05-01", "date_to": "2026-05-31"}
+
+    r_all = client.get(
+        "/api/reportes/ventas",
+        params=params,
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r_all.status_code == 200
+    assert r_all.json()["kpis"]["total_vendido"] == 3570  # 1190 + 2380
+
+    r = client.get(
+        "/api/reportes/ventas",
+        params={**params, "empresa_id": fx["emp1"].id},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    kpis = r.json()["kpis"]
+    assert kpis["total_vendido"] == 1190  # emp2 factura excluded
+    assert kpis["num_facturas"] == 1
+
+
+def test_ventas_empresa_id_filtra_boletas(client, admin_token, db):
+    fx = _mk_dos_empresas(db)
+    r = client.get(
+        "/api/reportes/ventas",
+        params={
+            "date_from": "2026-05-01",
+            "date_to": "2026-05-31",
+            "empresa_id": fx["emp1"].id,
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    boletas = r.json()["boletas"]
+    assert boletas["cantidad"] == 1  # emp2 boleta excluded
+    assert boletas["total"] == 595
+
+
+def test_cobranza_filtra_por_empresa(client, admin_token, db):
+    fx = _mk_dos_empresas(db)
+    r = client.get(
+        "/api/reportes/cobranza",
+        params={
+            "date_from": "2026-05-01",
+            "date_to": "2026-05-31",
+            "empresa_id": fx["emp1"].id,
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    nombres = {e["nombre"] for e in data["por_empresa"]}
+    assert nombres == {"EmpFiltro1-TST"}
+    assert data["kpis"]["total_por_cobrar"] == 1190  # sin pagos, solo emp1

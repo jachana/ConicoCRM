@@ -67,6 +67,7 @@ def _sum_pagos_for_ids(db: Session, factura_ids: list[int]) -> Decimal:
 def reporte_ventas(
     date_from: date = Query(...),
     date_to: date = Query(...),
+    empresa_id: int | None = Query(None),
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
@@ -75,7 +76,7 @@ def reporte_ventas(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
     _cache = get_report_cache()
-    _filters = {"date_from": str(date_from), "date_to": str(date_to)}
+    _filters = {"date_from": str(date_from), "date_to": str(date_to), "empresa_id": empresa_id}
     if _cache and current_user.empresa_id is not None:
         _cached = _cache.get(current_user.empresa_id, "ventas", _filters)
         if _cached is not None:
@@ -90,6 +91,8 @@ def reporte_ventas(
             Factura.estado != "anulada",
         )
     )
+    if empresa_id is not None:
+        base_q = base_q.filter(Factura.empresa_id == empresa_id)
 
     facturas = base_q.all()
 
@@ -114,6 +117,8 @@ def reporte_ventas(
         Factura.fecha <= prev_to,
         Factura.estado != "anulada",
     )
+    if empresa_id is not None:
+        prev_q = prev_q.filter(Factura.empresa_id == empresa_id)
     prev_total_raw = prev_q.scalar()
     prev_total = Decimal(str(prev_total_raw)) if prev_total_raw else _ZERO
 
@@ -177,6 +182,8 @@ def reporte_ventas(
         Boleta.fecha <= date_to,
         Boleta.estado != "anulada",
     )
+    if empresa_id is not None:
+        boletas_q = boletas_q.filter(Boleta.empresa_id == empresa_id)
     boletas = boletas_q.all()
 
     total_boletas = sum((b.total for b in boletas), _ZERO)
@@ -220,6 +227,7 @@ def reporte_ventas(
 def reporte_cobranza(
     date_from: date = Query(...),
     date_to: date = Query(...),
+    empresa_id: int | None = Query(None),
     perms: tuple[User, Session] = require_permission("facturas", "view"),
 ):
     _validate_dates(date_from, date_to)
@@ -228,7 +236,7 @@ def reporte_cobranza(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso restringido a admin/subadmin")
 
     _cache = get_report_cache()
-    _filters = {"date_from": str(date_from), "date_to": str(date_to)}
+    _filters = {"date_from": str(date_from), "date_to": str(date_to), "empresa_id": empresa_id}
     if _cache and current_user.empresa_id is not None:
         _cached = _cache.get(current_user.empresa_id, "cobranza", _filters)
         if _cached is not None:
@@ -236,7 +244,7 @@ def reporte_cobranza(
 
     today = date.today()
 
-    facturas = (
+    facturas_q = (
         db.query(Factura)
         .options(joinedload(Factura.empresa))
         .filter(
@@ -244,8 +252,10 @@ def reporte_cobranza(
             Factura.fecha <= date_to,
             Factura.estado != "anulada",
         )
-        .all()
     )
+    if empresa_id is not None:
+        facturas_q = facturas_q.filter(Factura.empresa_id == empresa_id)
+    facturas = facturas_q.all()
 
     factura_ids = [f.id for f in facturas]
     # Build a map of pago totals per factura
