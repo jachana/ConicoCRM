@@ -32,21 +32,13 @@
   },
   "cards": [
     {
-      "list": "In review",
-      "name": "[Nav] Reportes: filtro por empresa y por marca (backend + deep-link)",
+      "list": "Ideas",
+      "name": "[UX] Ctrl+K: recomendaciones de búsqueda (última búsqueda como recomendación)",
       "labels": [
-        "Core"
+        "Goal: UX Polish"
       ],
-      "desc": "**Resumen** — Se habilitaron los filtros por empresa y por marca en la sección de reportes, integrando parámetros de consulta en el backend y botones de navegación profundos (deep-link) desde los modales de detalle en el frontend.\n\n**Cambios / Decisiones** — \n- `backend/app/api/reportes.py`: `/api/reportes/ventas` y `/api/reportes/cobranza` ahora aceptan `empresa_id` para filtrar facturas y boletas. El parámetro se incluye en `_filters` del cache para evitar colisiones de claves.\n- `frontend/src/pages/Reportes.tsx`: Se agregaron deep-links `?empresa_id=` y `?marca_id=` con chips de filtro descartables que resuelven el nombre vía `GET /api/empresas/{id}` con fallback a `#id`.\n- `frontend/src/components/EmpresaTabResumen.tsx` y `EmpresaDetailModal.tsx`: Botón \"Ver en reportes\" que navega a `/reportes?tab=ventas&empresa_id=N` (oculto para vendedores).\n- `frontend/src/components/ProductoDetailModal.tsx`: Botón \"Ver reportes de la marca\" a `/reportes?tab=por_marca&marca_id=N` (solo visible si existe `marca_id` y el usuario no es vendedor).\n- Se actualizaron los tests en `backend/tests/test_reportes.py` y componentes frontend para cubrir filtros, roles y navegación.",
-      "checklist": [
-        "Hacer GET a /api/reportes/ventas?empresa_id=1 y verificar que solo retorna facturas/boletas de esa empresa.",
-        "Abrir detalle de un cliente, buscar su empresa y verificar que aparece el botón \"Ver en reportes\".",
-        "Clic en \"Ver en reportes\", confirmar que la URL carga ?tab=ventas&empresa_id=N y muestra datos filtrados.",
-        "Ir a detalle de un producto con marca, verificar botón \"Ver reportes de la marca\" y hacer clic.",
-        "Asegurar que se navega a /reportes?tab=por_marca&marca_id=N sin error y se filtra correctamente.",
-        "Verificar que un usuario con rol vendedor no ve los botones de navegación a reportes en ambos modales.",
-        "Comprobar que los chips de filtro ?empresa_id y ?marca_id muestran el nombre de la entidad o fallback #id."
-      ]
+      "desc": "Idea del usuario (2026-06-12): el GlobalSearchModal (Ctrl+K) hoy retiene el query al cerrar, a propósito, para no perder la última búsqueda. Una evolución mejor sería mostrar **recomendaciones de búsqueda** al abrir el modal, donde la última búsqueda aparece como una recomendación más (en vez de quedar pegada en el input).\n\nScope tentativo:\n- Al abrir Ctrl+K con input vacío, mostrar lista de recomendaciones: últimas N búsquedas (localStorage) y/o entidades visitadas recientemente.\n- Seleccionar una recomendación ejecuta esa búsqueda.\n- El input parte vacío; la retención actual del query se reemplaza por este mecanismo.\n\nContexto: `frontend/src/components/GlobalSearchModal.tsx`.",
+      "checklist": []
     }
   ]
 }

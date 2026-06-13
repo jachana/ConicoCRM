@@ -28,24 +28,28 @@ Detalles no obvios:
   /cobranza; **incluido en cache keys** `_filters`. `marca_id` en por-marca ya existía.
 - Exports de ventas/cobranza NO reciben empresa_id (fuera de scope, posible follow-up).
 
-## Quick wins detectados (análisis 2026-06-13, sin implementar)
+## Quick wins detectados (análisis 2026-06-13, corregido por feedback del usuario)
 
-Rankeados. Los 5 primeros caben en una sesión:
+Rankeados. NO confundir con los dos descartados de abajo:
 
-1. **SEGURIDAD — Boletas sin vendedor scoping** `backend/app/api/boletas.py:170-211`:
-   lista y detail devuelven todo a vendedores; facturas/NVs sí filtran. ~30 min.
-2. **Sidebar highlight doble** `frontend/src/components/layout/Sidebar.tsx:67`: falta
+1. **Sidebar highlight doble** `frontend/src/components/layout/Sidebar.tsx:67`: falta
    `end: true` en `/inventario/listas-precios`. 5 min. Card "[Bug:Sidebar]".
-3. **Ctrl+K no limpia query al cerrar** `GlobalSearchModal.tsx:52-57`. 15 min. Card existe.
-4. **Ctrl+K empresa → 404** `GlobalSearchModal.tsx:24-33`: navega a `/empresas?detalle=id`;
+2. **Ctrl+K empresa → 404** `GlobalSearchModal.tsx:24-33`: navega a `/empresas?detalle=id`;
    verificar que Empresas.tsx lea ese param. Card existe.
-5. **Búsqueda sin unaccent en numero** `nota_ventas.py:302`, `facturas.py:108`,
+3. **Búsqueda sin unaccent en numero** `nota_ventas.py:302`, `facturas.py:108`,
    `cotizaciones.py:59`: `ilike` directo en vez de `unaccent_ilike`. 15 min.
-6. `backend/test*.db` (4) trackeados en git → gitignorar + `git rm --cached`.
-7. `except Exception: db.rollback()` sin re-raise en `guias_despacho.py:165,227,249,367`
+4. `backend/test*.db` (4) trackeados en git → gitignorar + `git rm --cached`.
+5. `except Exception: db.rollback()` sin re-raise en `guias_despacho.py:165,227,249,367`
    (puede explicar el 500 de guías del board).
-8. Duplicación: ESTADO_LABELS/VARIANT en 12+ páginas (→ `lib/estadoMaps.ts`);
+6. Duplicación: ESTADO_LABELS/VARIANT en 12+ páginas (→ `lib/estadoMaps.ts`);
    `_get_config_dict` en 5+ routers; `METODOS_PAGO` redefinido en `Pagos.tsx:16`.
+
+**Descartados por diseño (confirmado por el usuario 2026-06-12 — NO re-reportar):**
+- Boletas SIN vendedor scoping es intencional: las boletas no representan un cliente
+  ligado a un vendedor (`boletas.py:170-211` se queda como está).
+- Ctrl+K retiene el query al cerrar a propósito (no perder la última búsqueda).
+  Evolución posible: recomendaciones de búsqueda con la última búsqueda como
+  recomendación → card en Ideas.
 
 **Cards del board ya obsoletas (verificado — archivar):** dark mode Auditoría/Cobranza
 (ya tienen `dark:`), window.alert/confirm (cero usos), CRLF entrypoint.sh (.gitattributes

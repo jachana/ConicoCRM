@@ -38,7 +38,7 @@ cd backend && python -m alembic heads                  # debe dar 1 head ANTES d
   schema items/total + agregados SQL sobre TODAS las filas.
 - **Reportes** (reportes.py): cache por `_filters` dict — **todo param nuevo VA en _filters**
   o colisiona cache. Vendedor 403 antes del cache check.
-- **Búsqueda:** `unaccent_ilike` para texto (numero aún usa ilike directo — quick win #5).
+- **Búsqueda:** `unaccent_ilike` para texto (numero aún usa ilike directo — quick win pendiente).
 
 ## Patrones frontend (React 18 + TS + TanStack Query v5)
 
