@@ -28,32 +28,35 @@ Detalles no obvios:
   /cobranza; **incluido en cache keys** `_filters`. `marca_id` en por-marca ya existía.
 - Exports de ventas/cobranza NO reciben empresa_id (fuera de scope, posible follow-up).
 
-## Quick wins detectados (análisis 2026-06-13, corregido por feedback del usuario)
+## Quick wins (análisis 2026-06-13; depurado 2026-06-12 tras verificar código+board)
 
-Rankeados. NO confundir con los dos descartados de abajo:
+Vigentes (hygiene, sin card — el usuario optó por NO hacerlos aún):
 
-1. **Sidebar highlight doble** `frontend/src/components/layout/Sidebar.tsx:67`: falta
-   `end: true` en `/inventario/listas-precios`. 5 min. Card "[Bug:Sidebar]".
-2. **Ctrl+K empresa → 404** `GlobalSearchModal.tsx:24-33`: navega a `/empresas?detalle=id`;
-   verificar que Empresas.tsx lea ese param. Card existe.
-3. **Búsqueda sin unaccent en numero** `nota_ventas.py:302`, `facturas.py:108`,
-   `cotizaciones.py:59`: `ilike` directo en vez de `unaccent_ilike`. 15 min.
-4. `backend/test*.db` (4) trackeados en git → gitignorar + `git rm --cached`.
-5. `except Exception: db.rollback()` sin re-raise en `guias_despacho.py:165,227,249,367`
-   (puede explicar el 500 de guías del board).
-6. Duplicación: ESTADO_LABELS/VARIANT en 12+ páginas (→ `lib/estadoMaps.ts`);
+1. `backend/test*.db` (4) trackeados en git → gitignorar + `git rm --cached`.
+2. `except Exception: db.rollback()` sin re-raise en `guias_despacho.py:165,227,249,367`
+   (puede explicar el 500 de guías del board, card en Friendly Beta).
+3. Duplicación: ESTADO_LABELS/VARIANT en 12+ páginas (→ `lib/estadoMaps.ts`);
    `_get_config_dict` en 5+ routers; `METODOS_PAGO` redefinido en `Pagos.tsx:16`.
 
-**Descartados por diseño (confirmado por el usuario 2026-06-12 — NO re-reportar):**
-- Boletas SIN vendedor scoping es intencional: las boletas no representan un cliente
-  ligado a un vendedor (`boletas.py:170-211` se queda como está).
-- Ctrl+K retiene el query al cerrar a propósito (no perder la última búsqueda).
-  Evolución posible: recomendaciones de búsqueda con la última búsqueda como
-  recomendación → card en Ideas.
+**Falsos positivos del análisis original — NO re-reportar:**
+- Boletas SIN vendedor scoping = diseño (boletas no ligan cliente-vendedor). Usuario 2026-06-12.
+- Ctrl+K retiene query al cerrar = diseño. Evolución: card Ideas "[UX] Ctrl+K:
+  recomendaciones de búsqueda".
+- Sidebar highlight doble = YA ARREGLADO (`end: true` en `/inventario`, commit 0ec666d;
+  card en Friendly Beta 0.1).
+- Ctrl+K empresa → 404 = YA ARREGLADO (commit 01cb4fe, Empresas.tsx:116 lee `?detalle=`;
+  card en Friendly Beta 0.1).
+- `ilike` directo en numero (NV/facturas/cotizaciones) = NO-ISSUE: numero es numérico
+  casteado a string, unaccent es no-op en dígitos. Campos de texto ya usan
+  `unaccent_ilike` (commit b655fdc).
+
+**Regla aprendida:** cards en `Friendly Beta 0.1` / `Live *` ya están shippeadas —
+verificar lista del board Y git log antes de re-flaggear algo como pendiente.
 
 **Cards del board ya obsoletas (verificado — archivar):** dark mode Auditoría/Cobranza
 (ya tienen `dark:`), window.alert/confirm (cero usos), CRLF entrypoint.sh (.gitattributes
-ya fuerza LF), artefactos .js compilados duplicados (no existen).
+ya fuerza LF), artefactos .js compilados duplicados (no existen), y "on closing ctrl+k
+search, the content should be cleared" (invalidada por decisión de diseño → card Ideas).
 
 ## Pendientes / problemas conocidos
 
