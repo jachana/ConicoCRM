@@ -32,21 +32,19 @@
   },
   "cards": [
     {
-      "list": "In progress",
+      "list": "In review",
       "name": "[Validación] Integridad de documentos: líneas no-negativas + NC/ND no vacías/match cliente + descuento boleta",
       "labels": [
         "Bug",
         "Core"
       ],
-      "desc": "Gaps de validación detectados en documentos DTE (análisis 2026-06-13). Hoy se pueden persistir documentos financieramente inválidos:\n\n1. **Líneas negativas**: ningún schema de líneas (factura/NV/cotización/boleta/NC/ND/guía) valida `cantidad > 0` ni `valor_neto/precio_unitario >= 0`. Una línea con cantidad -1 o precio -100 genera totales negativos (crédito fantasma sin NC).\n2. **NC/ND con líneas vacías**: `NotaCreditoCreate`/`NotaDebitoCreate` aceptan `lineas: []` (default), creando documentos de total $0 que queman un folio. Boleta ya valida con `lineas_no_vacias`.\n3. **NC/ND sin match de cliente**: el handler valida que la factura/guía referenciada exista, pero NO que pertenezca al `cliente_id` del body → una NC puede rectificar la factura de otro cliente.\n4. **Boleta `descuento_pct` sin cotas**: acepta negativos (infla precio) y >100 (total negativo).\n\nIncluye tests para cada caso.",
+      "desc": "**Resumen** — Se cierran gaps de validación en documentos DTE: líneas con valores negativos, NC/ND sin líneas o con cliente no coincidente, y descuentos inválidos en boletas.\n\n**Cambios / Decisiones** — Se agregaron restricciones a schemas: `cantidad > 0` y `valor_neto/precio_unitario >= 0` en factura, NV, cotización, boleta, NC, ND y guía. Cotización permite `cantidad >= 0` por recotizar. NC/ND requieren al menos una línea. En `crear_nc`/`crear_nd`, se valida que la referencia pertenezca al `cliente_id`. Boleta y guía acotan `descuento_pct` a [0,100]. Se agregan tests unitarios para cada caso de error.",
       "checklist": [
-        "Schemas de líneas: cantidad > 0, valor_neto/precio_unitario >= 0 (factura, NV, cotización, boleta, NC, ND, guía)",
-        "NotaCreditoCreate/NotaDebitoCreate: validar lineas no vacías",
-        "Handler crear_nc/crear_nd: 422 si factura/guía referenciada no es del cliente_id del body",
-        "BoletaLineaCreate: descuento_pct entre 0 y 100",
-        "Tests: línea negativa -> 422 en cada documento",
-        "Tests: NC/ND sin líneas -> 422; NC/ND con factura de otro cliente -> 422",
-        "Tests: boleta descuento_pct fuera de [0,100] -> 422"
+        "Crear factura con línea cantidad=-1, verificar 422",
+        "Crear NC sin líneas, verificar 422",
+        "Crear NC con factura de otro cliente, verificar 422",
+        "Crear boleta con descuento_pct=150, verificar 422",
+        "Crear cotización con precio_unitario=-50, verificar 422"
       ]
     }
   ]
