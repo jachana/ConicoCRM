@@ -1,13 +1,13 @@
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class NotaCreditoLineaCreate(BaseModel):
     orden: int | None = None
     descripcion: str
-    cantidad: Decimal = Decimal("1")
-    precio_unitario: Decimal = Decimal("0")
+    cantidad: Decimal = Field(Decimal("1"), gt=0)
+    precio_unitario: Decimal = Field(Decimal("0"), ge=0)
 
 
 class NotaCreditoLineaOut(NotaCreditoLineaCreate):
@@ -23,6 +23,13 @@ class NotaCreditoCreate(BaseModel):
     lineas: list[NotaCreditoLineaCreate] = []
     guia_despacho_id: int | None = None  # D-15: NC puede anular guía
     factura_id: int | None = None  # NC puede rectificar factura
+
+    @field_validator("lineas")
+    @classmethod
+    def _lineas_no_vacias(cls, v):
+        if not v:
+            raise ValueError("Requiere al menos una línea")
+        return v
 
     @model_validator(mode="after")
     def _xor_anulacion(self):
@@ -58,8 +65,8 @@ class NotaCreditoOut(BaseModel):
 class NotaDebitoLineaCreate(BaseModel):
     orden: int | None = None
     descripcion: str
-    cantidad: Decimal = Decimal("1")
-    precio_unitario: Decimal = Decimal("0")
+    cantidad: Decimal = Field(Decimal("1"), gt=0)
+    precio_unitario: Decimal = Field(Decimal("0"), ge=0)
 
 
 class NotaDebitoLineaOut(NotaDebitoLineaCreate):
@@ -74,6 +81,13 @@ class NotaDebitoCreate(BaseModel):
     razon: str
     lineas: list[NotaDebitoLineaCreate] = []
     factura_id: int | None = None  # ND puede rectificar factura
+
+    @field_validator("lineas")
+    @classmethod
+    def _lineas_no_vacias(cls, v):
+        if not v:
+            raise ValueError("Requiere al menos una línea")
+        return v
 
 
 class NotaDebitoOut(BaseModel):

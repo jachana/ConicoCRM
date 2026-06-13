@@ -13,8 +13,8 @@ class FacturaLineaCreate(BaseModel):
     sku: str | None = None
     descripcion: str
     formato: str | None = None
-    cantidad: int = 1
-    valor_neto: Decimal = Decimal("0")
+    cantidad: int = Field(1, gt=0)
+    valor_neto: Decimal = Field(Decimal("0"), ge=0)
 
 
 class FacturaLineaOut(FacturaLineaCreate):

@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from pydantic import BaseModel, computed_field, model_validator
+from pydantic import BaseModel, Field, computed_field, model_validator
 from typing import Self
 from app.schemas.empresa import EmpresaRef
 from app.schemas.metodo_pago import METODOS_PAGO, validate_metodo_plazo
@@ -12,9 +12,9 @@ class CotizacionLineaCreate(BaseModel):
     sku: str | None = None
     descripcion: str
     formato: str | None = None
-    cantidad: int = 1
-    valor_neto: Decimal = Decimal("0")
-    descuento: Decimal = Decimal("0")
+    cantidad: int = Field(1, ge=0)  # ge=0 (no gt): recotizar usa cantidad=0 como centinela de producto descontinuado
+    valor_neto: Decimal = Field(Decimal("0"), ge=0)
+    descuento: Decimal = Field(Decimal("0"), ge=0)
 
 
 class CotizacionLineaOut(CotizacionLineaCreate):

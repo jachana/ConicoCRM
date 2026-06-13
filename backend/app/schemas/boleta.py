@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 METODOS_PAGO_BOLETA = {"efectivo", "debito", "credito", "transferencia", "otro"}
@@ -19,9 +19,9 @@ class BoletaLineaCreate(BaseModel):
     orden: int = 0
     producto_id: int | None = None
     descripcion: str
-    cantidad: Decimal = Decimal("1")
-    precio_unitario: Decimal = Decimal("0")
-    descuento_pct: Decimal = Decimal("0")
+    cantidad: Decimal = Field(Decimal("1"), gt=0)
+    precio_unitario: Decimal = Field(Decimal("0"), ge=0)
+    descuento_pct: Decimal = Field(Decimal("0"), ge=0, le=100)
     exenta: bool = False
 
 

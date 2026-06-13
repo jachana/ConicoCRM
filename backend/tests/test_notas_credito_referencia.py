@@ -21,17 +21,16 @@ def _create_cliente(client, token, nombre=None):
     return r.json()
 
 
-def _create_guia(client, token):
-    r = client.post(
-        "/api/guias-despacho/",
-        json={
-            "motivo_traslado": 1,
-            "direccion_destino": "Av. Test 123",
-            "comuna_destino": "Santiago",
-            "lineas": [{"descripcion": "Item", "cantidad": "1", "precio_unitario": "1000"}],
-        },
-        headers=_auth(token),
-    )
+def _create_guia(client, token, cliente_id=None):
+    body = {
+        "motivo_traslado": 1,
+        "direccion_destino": "Av. Test 123",
+        "comuna_destino": "Santiago",
+        "lineas": [{"descripcion": "Item", "cantidad": "1", "precio_unitario": "1000"}],
+    }
+    if cliente_id is not None:
+        body["cliente_id"] = cliente_id
+    r = client.post("/api/guias-despacho/", json=body, headers=_auth(token))
     assert r.status_code == 201, r.text
     return r.json()
 
@@ -86,7 +85,7 @@ def test_crear_nc_guia_inexistente_404(client, admin_token):
             "cliente_id": cliente["id"],
             "razon": "ref rota",
             "guia_despacho_id": 999999,
-            "lineas": [],
+            "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "1000"}],
         },
         headers=_auth(admin_token),
     )
@@ -168,7 +167,7 @@ def test_crear_nc_factura_inexistente_404(client, admin_token):
             "cliente_id": cliente["id"],
             "razon": "ref rota",
             "factura_id": 999999,
-            "lineas": [],
+            "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "1000"}],
         },
         headers=_auth(admin_token),
     )
@@ -188,7 +187,7 @@ def test_crear_nc_factura_y_guia_422_xor(client, admin_token):
             "razon": "doble referencia",
             "factura_id": factura["id"],
             "guia_despacho_id": guia["id"],
-            "lineas": [],
+            "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "1000"}],
         },
         headers=_auth(admin_token),
     )
@@ -231,8 +230,108 @@ def test_crear_nd_factura_inexistente_404(client, admin_token):
             "cliente_id": cliente["id"],
             "razon": "ref rota",
             "factura_id": 999999,
-            "lineas": [],
+            "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "1000"}],
         },
         headers=_auth(admin_token),
     )
     assert r.status_code == 404, r.text
+
+
+# ── Validaciones de líneas y referencia-cliente (NC/ND) ─────────────────────────
+
+
+def test_crear_nc_sin_lineas_422(client, admin_token):
+    cliente = _create_cliente(client, admin_token)
+    factura = _create_factura(client, admin_token, cliente["id"])
+    r = client.post(
+        "/api/dte/notas-credito/",
+        json={
+            "cliente_id": cliente["id"],
+            "razon": "sin lineas",
+            "factura_id": factura["id"],
+            "lineas": [],
+        },
+        headers=_auth(admin_token),
+    )
+    assert r.status_code == 422, r.text
+
+
+def test_crear_nd_sin_lineas_422(client, admin_token):
+    cliente = _create_cliente(client, admin_token)
+    r = client.post(
+        "/api/dte/notas-debito/",
+        json={
+            "cliente_id": cliente["id"],
+            "razon": "sin lineas",
+            "lineas": [],
+        },
+        headers=_auth(admin_token),
+    )
+    assert r.status_code == 422, r.text
+
+
+def test_crear_nc_factura_de_otro_cliente_422(client, admin_token):
+    cliente_a = _create_cliente(client, admin_token, nombre="Cliente A")
+    factura = _create_factura(client, admin_token, cliente_a["id"])
+    cliente_b = _create_cliente(client, admin_token, nombre="Cliente B")
+    r = client.post(
+        "/api/dte/notas-credito/",
+        json={
+            "cliente_id": cliente_b["id"],
+            "razon": "factura de otro cliente",
+            "factura_id": factura["id"],
+            "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "1000"}],
+        },
+        headers=_auth(admin_token),
+    )
+    assert r.status_code == 422, r.text
+
+
+def test_crear_nc_guia_de_otro_cliente_422(client, admin_token):
+    cliente_a = _create_cliente(client, admin_token, nombre="Cliente A")
+    guia = _create_guia(client, admin_token, cliente_id=cliente_a["id"])
+    cliente_b = _create_cliente(client, admin_token, nombre="Cliente B")
+    r = client.post(
+        "/api/dte/notas-credito/",
+        json={
+            "cliente_id": cliente_b["id"],
+            "razon": "guía de otro cliente",
+            "guia_despacho_id": guia["id"],
+            "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "1000"}],
+        },
+        headers=_auth(admin_token),
+    )
+    assert r.status_code == 422, r.text
+
+
+def test_crear_nd_factura_de_otro_cliente_422(client, admin_token):
+    cliente_a = _create_cliente(client, admin_token, nombre="Cliente A")
+    factura = _create_factura(client, admin_token, cliente_a["id"])
+    cliente_b = _create_cliente(client, admin_token, nombre="Cliente B")
+    r = client.post(
+        "/api/dte/notas-debito/",
+        json={
+            "cliente_id": cliente_b["id"],
+            "razon": "factura de otro cliente",
+            "factura_id": factura["id"],
+            "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "1", "precio_unitario": "1000"}],
+        },
+        headers=_auth(admin_token),
+    )
+    assert r.status_code == 422, r.text
+
+
+def test_crear_nc_linea_cantidad_negativa_422(client, admin_token):
+    cliente = _create_cliente(client, admin_token)
+    factura = _create_factura(client, admin_token, cliente["id"])
+    r = client.post(
+        "/api/dte/notas-credito/",
+        json={
+            "cliente_id": cliente["id"],
+            "razon": "cantidad negativa",
+            "factura_id": factura["id"],
+            "lineas": [{"orden": 0, "descripcion": "x", "cantidad": "-1", "precio_unitario": "1000"}],
+        },
+        headers=_auth(admin_token),
+    )
+    assert r.status_code == 422, r.text

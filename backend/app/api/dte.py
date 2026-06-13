@@ -126,10 +126,14 @@ def crear_nc(
         guia = db.query(GuiaDespacho).filter_by(id=body.guia_despacho_id).first()
         if not guia:
             raise HTTPException(status_code=404, detail="Guía de despacho no encontrada")
+        if guia.cliente_id is not None and guia.cliente_id != body.cliente_id:
+            raise HTTPException(status_code=422, detail="La guía referenciada no pertenece al cliente indicado")
     if body.factura_id is not None:
         factura = db.query(Factura).filter_by(id=body.factura_id).first()
         if not factura:
             raise HTTPException(status_code=404, detail="Factura no encontrada")
+        if factura.cliente_id is not None and factura.cliente_id != body.cliente_id:
+            raise HTTPException(status_code=422, detail="La factura referenciada no pertenece al cliente indicado")
     nc = NotaCredito(
         numero=_next_numero(db, "nc_last_id"),
         fecha=body.fecha or date.today(),
@@ -253,6 +257,8 @@ def crear_nd(
         factura = db.query(Factura).filter_by(id=body.factura_id).first()
         if not factura:
             raise HTTPException(status_code=404, detail="Factura no encontrada")
+        if factura.cliente_id is not None and factura.cliente_id != body.cliente_id:
+            raise HTTPException(status_code=422, detail="La factura referenciada no pertenece al cliente indicado")
     nd = NotaDebito(
         numero=_next_numero(db, "nd_last_id"),
         fecha=body.fecha or date.today(),

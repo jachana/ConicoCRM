@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 from typing import Self
 from app.schemas.empresa import EmpresaRef
 from app.schemas.sede_despacho import SedeDespachoRef
@@ -13,8 +13,8 @@ class NotaVentaLineaCreate(BaseModel):
     sku: str | None = None
     descripcion: str
     formato: str | None = None
-    cantidad: int = 1
-    valor_neto: Decimal = Decimal("0")
+    cantidad: int = Field(1, gt=0)
+    valor_neto: Decimal = Field(Decimal("0"), ge=0)
 
 
 class NotaVentaLineaOut(NotaVentaLineaCreate):
