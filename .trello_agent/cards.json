@@ -32,13 +32,22 @@
   },
   "cards": [
     {
-      "list": "Ideas",
-      "name": "[UX] Ctrl+K: recomendaciones de búsqueda (última búsqueda como recomendación)",
+      "list": "In progress",
+      "name": "[Validación] Integridad de documentos: líneas no-negativas + NC/ND no vacías/match cliente + descuento boleta",
       "labels": [
-        "Goal: UX Polish"
+        "Bug",
+        "Core"
       ],
-      "desc": "Idea del usuario (2026-06-12): el GlobalSearchModal (Ctrl+K) hoy retiene el query al cerrar, a propósito, para no perder la última búsqueda. Una evolución mejor sería mostrar **recomendaciones de búsqueda** al abrir el modal, donde la última búsqueda aparece como una recomendación más (en vez de quedar pegada en el input).\n\nScope tentativo:\n- Al abrir Ctrl+K con input vacío, mostrar lista de recomendaciones: últimas N búsquedas (localStorage) y/o entidades visitadas recientemente.\n- Seleccionar una recomendación ejecuta esa búsqueda.\n- El input parte vacío; la retención actual del query se reemplaza por este mecanismo.\n\nContexto: `frontend/src/components/GlobalSearchModal.tsx`.",
-      "checklist": []
+      "desc": "Gaps de validación detectados en documentos DTE (análisis 2026-06-13). Hoy se pueden persistir documentos financieramente inválidos:\n\n1. **Líneas negativas**: ningún schema de líneas (factura/NV/cotización/boleta/NC/ND/guía) valida `cantidad > 0` ni `valor_neto/precio_unitario >= 0`. Una línea con cantidad -1 o precio -100 genera totales negativos (crédito fantasma sin NC).\n2. **NC/ND con líneas vacías**: `NotaCreditoCreate`/`NotaDebitoCreate` aceptan `lineas: []` (default), creando documentos de total $0 que queman un folio. Boleta ya valida con `lineas_no_vacias`.\n3. **NC/ND sin match de cliente**: el handler valida que la factura/guía referenciada exista, pero NO que pertenezca al `cliente_id` del body → una NC puede rectificar la factura de otro cliente.\n4. **Boleta `descuento_pct` sin cotas**: acepta negativos (infla precio) y >100 (total negativo).\n\nIncluye tests para cada caso.",
+      "checklist": [
+        "Schemas de líneas: cantidad > 0, valor_neto/precio_unitario >= 0 (factura, NV, cotización, boleta, NC, ND, guía)",
+        "NotaCreditoCreate/NotaDebitoCreate: validar lineas no vacías",
+        "Handler crear_nc/crear_nd: 422 si factura/guía referenciada no es del cliente_id del body",
+        "BoletaLineaCreate: descuento_pct entre 0 y 100",
+        "Tests: línea negativa -> 422 en cada documento",
+        "Tests: NC/ND sin líneas -> 422; NC/ND con factura de otro cliente -> 422",
+        "Tests: boleta descuento_pct fuera de [0,100] -> 422"
+      ]
     }
   ]
 }
